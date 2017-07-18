@@ -6,3 +6,9 @@
  :menu/showing?
  (fn [db _]
    (get-in db [:menu :showing])))
+
+
+(reg-sub
+ :menu/items
+ (fn [db _]
+   (get-in db [:menu :items])))
