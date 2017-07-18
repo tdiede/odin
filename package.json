@@ -1,0 +1,26 @@
+{
+    "name": "admin",
+    "version": "1.0.0",
+    "description": "Starcity's Member Application",
+    "main": "index.js",
+    "directories": {
+        "doc": "doc",
+        "test": "test"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/starcity-properties/admin.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "homepage": "https://admin.joinstarcity.com",
+    "dependencies": {
+        "antd": "^2.11.2",
+        "bulma": "^0.4.3",
+        "spinkit": "^1.2.5",
+        "less-plugin-clean-css": "^1.5.1"
+    }
+}

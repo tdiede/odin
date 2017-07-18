@@ -1,0 +1,23 @@
+{:webserver {:port            #or [#env MAPP_PORT 8082]
+             :cookie-name     "starcity-session"
+             :secure-sessions #profile {:prod    true
+                                        :default false}}
+
+ :datomic {:uri #or [#env DATOMIC_URI
+                     ^:ref [:secrets :datomic :uri]
+                     "datomic:mem://localhost:4334/starcity"]}
+
+ :root-domain #profile {:dev   "http://localhost:8080"
+                        :stage "https://staging.joinstarcity.com"
+                        :prod  "https://joinstarcity.com"}
+
+ :log {:level    #profile {:dev     :trace
+                           :default :info}
+       :appender #profile {:dev     :spit
+                           :default :rolling}
+       :file     #profile {:dev     "logs/server.log"
+                           :default "/var/log/admin/server.log"}}
+
+ :nrepl {:port #or [#env NREPL_PORT 7890]}
+
+ :secrets #include #env STARCITY_SECRETS}
