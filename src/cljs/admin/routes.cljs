@@ -7,17 +7,42 @@
 
 (def app-routes
   ["/"
-   [["/accounts"
-     [["" :accounts]
+   [
+    ["/accounts" [["" :accounts]]]
 
-      [["/" :account-id] [["" :account]
-                          ["/application" :account/application]
-                          ["/licenses" :account/licenses]
-                          ["/notes" :account/notes]]]]]
-    ["/properties"
-     [["" :properties]
-      [["/" :property-id] [["" :property]
-                           ["/units"
-                            [[["/" :unit-id] :unit]]]]]]]
+    ["/properties" [["" :properties]]]
 
-    [true :home]]])
+    ["/services" [["" :services]]]
+
+    [true :home]
+
+    ]])
+
+
+(defn hook-browser-navigation!
+  "Wire up the bidi routes to the browser HTML5 navigation."
+  []
+  (accountant/configure-navigation!
+   {:nav-handler  (fn [path]
+                    (let [match  (bidi/match-route app-routes path)
+                          page   (:handler match)
+                          params (:route-params match)]
+                      (dispatch [:route/change page params])))
+    :path-exists? (fn [path]
+                    (boolean (bidi/match-route app-routes path)))})
+  (accountant/dispatch-current!))
+
+
+
+(def path-for
+  "Produce the path (URI) for `key`."
+  (partial bidi/path-for app-routes))
+
+
+(reg-fx
+ :route
+ (fn [new-route]
+   (if (vector? new-route)
+     (let [[route query] new-route]
+       (accountant/navigate! route query))
+     (accountant/navigate! new-route))))

@@ -1,6 +1,8 @@
 (ns admin.core
   (:require [admin.events]
+            [admin.routes :as routes]
             [admin.subs]
+            [admin.views.content :as content]
             [antizer.reagent :as ant]
             [cljsjs.moment]
             [goog.dom :as gdom]
@@ -87,20 +89,16 @@
          [ant/avatar]]]]]]))
 
 
-(defn content []
-  [:div
-   [ant/card "Here's where the content will go."]])
-
-
 (defn layout []
-  [:div.container
-   [navbar]
-   [:section.section
-    [:div.columns
-     [:div.column.is-one-quarter.is-hidden-touch
-      [side-menu]]
-     [:div.column
-      [content]]]]])
+  (let [curr-route (subscribe [:route/current])]
+    [:div.container
+     [navbar]
+     [:section.section
+      [:div.columns
+       [:div.column.is-one-quarter.is-hidden-touch
+        [side-menu]]
+       [:div.column
+        [content/view @curr-route]]]]]))
 
 
 ;; =============================================================================
@@ -116,6 +114,6 @@
 
 
 (defn ^:export run []
-  ;; (routes/hook-browser-navigation!)
+  (routes/hook-browser-navigation!)
   (rf/dispatch-sync [:app/init])
   (render))

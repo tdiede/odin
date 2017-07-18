@@ -2,7 +2,7 @@
        :plugins      [[lein-figwheel "0.5.11" :exclusions [org.clojure/clojure org.clojure/core.async]]
                       [lein-cooper "1.2.2" :exclusions [org.clojure/clojure]]]
        :dependencies [[figwheel-sidecar "0.5.11" :exclusions [ring/ring-core com.google.guava/guava]]
-                      [binaryage/devtools "0.9.2"]
+                      [binaryage/devtools "0.9.4"]
                       [com.datomic/datomic-free "0.9.5544"]]
        :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}
 

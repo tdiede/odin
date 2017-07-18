@@ -12,3 +12,9 @@
  :menu/items
  (fn [db _]
    (get-in db [:menu :items])))
+
+
+(reg-sub
+ :route/current
+ (fn [db _]
+   (:route db)))
