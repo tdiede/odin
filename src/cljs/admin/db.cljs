@@ -16,4 +16,6 @@
 (def default-value
   {:menu  {:showing false
            :items   menu-items}
-   :route {:current :home}})
+   :route {:current :home
+           :root    :home
+           :params  {}}})
