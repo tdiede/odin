@@ -3,7 +3,7 @@
   :url "http://admin.joinstarcity.com"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.671"]
                  [org.clojure/core.async "0.3.443"]
                  [org.clojure/tools.nrepl "0.2.13"]
@@ -26,7 +26,8 @@
                  [cljsjs/react-dom "15.6.1-0"]
                  [venantius/accountant "0.2.0" :exclusions [org.clojure/clojurescript
                                                             org.clojure/core.async]]
-                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava]]
+                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
+                                                             org.apache.httpcomponents/httpclient]]
                  [cljsjs/moment "2.17.1-1"]
                  ;; DB
                  [starcity/blueprints "1.9.0" :exclusions [com.datomic/datomic-free
@@ -35,10 +36,11 @@
                  ;; Util
                  [mount "0.1.11"]
                  [aero "1.1.2"]
-                 [starcity/drawknife "0.1.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
+                 [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
                  [starcity/toolbelt "0.1.7" :exclusions [com.datomic/datomic-free
                                                          com.andrewmcveigh/cljs-time
+                                                         org.apache.httpcomponents/httpclient
                                                          com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]]
