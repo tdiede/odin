@@ -1,4 +1,4 @@
-{:webserver {:port            #or [#env MAPP_PORT 8082]
+{:webserver {:port            #or [#env ADMIN_PORT 8082]
              :cookie-name     "starcity-session"
              :secure-sessions #profile {:prod    true
                                         :default false}}

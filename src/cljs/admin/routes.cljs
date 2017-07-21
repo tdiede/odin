@@ -6,7 +6,7 @@
 
 
 (def app-routes
-  ["/"
+  [""
    [
     ["/accounts" [["" :accounts]]]
 
@@ -17,6 +17,14 @@
     [true :home]
 
     ]])
+
+
+(defmulti dispatches (fn [route] (:root route)))
+
+
+(defmethod dispatches :default [route]
+  [])
+
 
 
 (defn hook-browser-navigation!
@@ -31,7 +39,6 @@
     :path-exists? (fn [path]
                     (boolean (bidi/match-route app-routes path)))})
   (accountant/dispatch-current!))
-
 
 
 (def path-for

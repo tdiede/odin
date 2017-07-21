@@ -1,4 +1,5 @@
-(ns admin.db)
+(ns admin.db
+  (:require [admin.accounts.db :as accounts]))
 
 
 (def menu-items
@@ -14,8 +15,10 @@
 
 
 (def default-value
-  {:menu  {:showing false
-           :items   menu-items}
-   :route {:current :home
-           :root    :home
-           :params  {}}})
+  (merge
+   {:menu         {:showing false
+                   :items   menu-items}
+    :route        {:current :home
+                   :root    :home
+                   :params  {}}}
+   accounts/default-value))

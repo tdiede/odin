@@ -3,15 +3,14 @@
             [admin.routes :as routes]
             [admin.subs]
             [admin.views.content :as content]
+            [admin.accounts.views]
+            [day8.re-frame.http-fx]
             [antizer.reagent :as ant]
             [cljsjs.moment]
-            [goog.dom :as gdom]
-            [reagent.core :as r]
-            [re-frame.core :as rf :refer [dispatch
-                                          subscribe
-                                          reg-sub
-                                          reg-event-db]]
             [clojure.string :as string]
+            [goog.dom :as gdom]
+            [re-frame.core :as rf :refer [dispatch subscribe]]
+            [reagent.core :as r]
             [toolbelt.core :as tb]))
 
 
@@ -108,77 +107,6 @@
 ;; =============================================================================
 ;; App Entry
 ;; =============================================================================
-
-(reg-event-db
- :init
- (fn [_ _]
-   {:home     {:title            "Hello"
-               :selected-account "Josh"}
-    :accounts [{:name "Josh"}
-               {:name "Derryl"}]}))
-
-(reg-sub
- :accounts
- (fn [db _]
-   (:accounts db)))
-
-
-(reg-sub
- :home
- (fn [db _]
-   (:home db)))
-
-
-(reg-sub
- :home/title
- :<- [:home]
- :<- [:accounts]
- (fn [[home accounts] _]
-   (:title home)))
-
-
-(reg-event-db
- :account/select
- (fn [db [_ account]]
-   (assoc-in db [:home :title] (str "Hello, " (:name account)))))
-
-
-(reg-event-db
- :home.title/change
- (fn [db [_ new-title]]
-   (assoc-in db [:home :title] new-title)))
-
-
-(defn render-sequential
-  [c xs]
-  (map-indexed
-   #(with-meta [c %2] {:key %1})
-   xs))
-
-
-(defn my-component []
-  (let [title    (subscribe [:home/title "als"])
-        accounts (subscribe [:accounts])]
-    [:section.section
-     [:div.container
-      [:h1 @title]
-      [:br]
-      [:ul
-       (render-sequential
-        (fn [account]
-          [:li
-           [:span
-            [:span (:name account)]
-            [:button {:type     "button"
-                      :on-click #(dispatch [:account/select account])}
-             "select"]]])
-        @accounts)]
-      [:br]
-      [:input
-       {:type      "text"
-        :on-change (fn [ev]
-                     (let [v (.. ev -target -value)]
-                       (dispatch [:home.title/change v])))}]]]))
 
 
 (defn render []

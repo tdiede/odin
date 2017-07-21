@@ -61,6 +61,12 @@
   (:datomic config))
 
 
+(defn datomic-uri
+  "URI of the Datomic database connection."
+  [config]
+  (get-in config [:datomic :uri]))
+
+
 ;; =============================================================================
 ;; nrepl
 ;; =============================================================================
