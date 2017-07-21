@@ -1,6 +1,9 @@
 (ns user
   (:require [admin.core]
-            [clojure.spec.test.alpha :as stest]
+            [admin.config :as config :refer [config]]
+            [admin.datomic :refer [conn]]
+            [admin.seed :as seed]
+            [clojure.spec.test :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
             [figwheel-sidecar.repl-api :as ra]
             [mount.core :as mount :refer [defstate]]
@@ -13,6 +16,16 @@
 ;; =============================================================================
 ;; Reloaded
 ;; =============================================================================
+
+
+(defn- in-memory-db? []
+  (= "datomic:mem://localhost:4334/starcity" (config/datomic-uri config)))
+
+
+(defstate seed
+  :start (when (in-memory-db?)
+           (timbre/debug "seeding dev database...")
+           (seed/seed conn)))
 
 
 (def start #(mount/start-with-args {:env :dev}))

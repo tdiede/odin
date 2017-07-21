@@ -1,6 +1,7 @@
 (ns admin.core
   (:gen-class)
   (:require [admin.config]
+            [admin.datomic]
             [admin.log]
             [admin.server]
             [clojure.tools.cli :refer [parse-opts]]
