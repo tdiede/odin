@@ -1,0 +1,53 @@
+{:enums
+ {:role
+  {:description "Account roles."
+   :values      [:all :member :onboarding :applicant :admin]}}
+
+ :interfaces
+ {:person
+  {:fields {:first_name {:type (non-null String)}
+            :last_name  {:type (non-null String)}
+            :email      {:type (non-null String)}}}}
+
+ :objects
+ {:account
+  {:implements [:person]
+   :fields     {:id         {:type    (non-null :Long)
+                             :resolve (:get :db/id)}
+                :name       {:type    (non-null String)
+                             :resolve :person/full-name}
+                :first_name {:type    (non-null String)
+                             :resolve (:get :person/first-name)}
+                :last_name  {:type    (non-null String)
+                             :resolve (:get :person/last-name)}
+                :email      {:type    (non-null String)
+                             :resolve (:get :account/email)}
+                :phone      {:type    String
+                             :resolve (:get :account/phone-number)}
+                :role       {:type    (non-null :Keyword)
+                             :resolve (:get :account/role)}
+                :property   {:type    :property
+                             :resolve :account/property}}}
+
+  :property
+  {:fields {:id   {:type    (non-null :Long)
+                   :resolve (:get :db/id)}
+            :name {:type    (non-null String)
+                   :resolve (:get :property/name)}
+            :code {:type    (non-null String)
+                   :resolve (:get :property/internal-name)}}}}
+
+ :queries
+ {:accounts {:type    (list :account)
+             :args    {:role {:type          :role
+                              :default-value :all}}
+             :resolve :accounts/list}}
+
+ :mutations
+ {:set_phone {:type        :account
+              :description "Set an account's phone number. This is a demo mutation."
+              :args        {:id    {:type        (non-null :Long)
+                                    :description "This account's id."}
+                            :phone {:type        (non-null String)
+                                    :description "The phone number that is being set."}}
+              :resolve     :account/set-phone!}}}

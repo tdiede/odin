@@ -1,25 +1,46 @@
 (ns admin.routes.api
-  (:require [compojure.core :as compojure :refer [context defroutes GET]]
-            [ring.util.response :as response]))
+  (:require [admin.graphql :as graph]
+            [blueprints.models.account :as account]
+            [com.walmartlabs.lacinia :refer [execute]]
+            [compojure.core :as compojure :refer [defroutes GET POST]]
+            [datomic.api :as d]
+            [ring.util.response :as response]
+            [venia.core :as q]
+            [taoensso.timbre :as timbre]))
+
+;; =============================================================================
+;; Helpers
+;; =============================================================================
 
 
-(defn ok
-  [body]
-  (-> (response/response body)
-      (response/content-type "application/transit+json")))
+(defn ->conn [req]
+  (get-in req [:deps :conn]))
 
 
-(defn accounts-list-handler [req]
-  (ok {:accounts [{:account/first-name "Derryl"
-                   :account/last-name  "Carter"
-                   :account/email      "derryl@joinstarcity.com"}
-                  {:account/first-name "Josh"
-                   :account/last-name  "Lehman"
-                   :account/email      "josh@joinstarcity.com"}
-                  {:account/first-name "Meg"
-                   :account/last-name  "Bell"
-                   :account/email      "meg@joinstarcity.com"}]}))
+;; =============================================================================
+;; Routes
+;; =============================================================================
+
+
+(defn extract-graphql-expression [request]
+  (case (:request-method request)
+    :get  [:query (get-in request [:params :query] "")]
+    :post [:mutation (get-in request [:params :mutation] "")]))
+
+
+(defn graphql-handler [req]
+  (let [conn      (->conn req)
+        [op expr] (extract-graphql-expression req)
+        result    (execute graph/schema
+                           (format "%s %s" (name op) expr)
+                           nil
+                           {:db   (d/db conn)
+                            :conn conn})]
+    (-> (response/response result)
+        (response/content-type "application/transit+json")
+        (response/status (if (-> result :errors some?) 400 200)))))
 
 
 (defroutes routes
-  (GET "/accounts" [] accounts-list-handler))
+  (GET "/graphql" [] graphql-handler)
+  (POST "/graphql" [] graphql-handler))

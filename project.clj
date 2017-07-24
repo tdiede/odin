@@ -18,6 +18,9 @@
                  [http-kit "2.2.0"]
                  [compojure "1.6.0" :exclusions [ring/ring-core]]
                  [ring-middleware-format "0.7.2" :exclusions [ring/ring-core]]
+                 ;; GraphQL
+                 [com.walmartlabs/lacinia "0.19.0"]
+                 [vincit/venia "0.2.2"]
                  ;; CLJS
                  [antizer "0.2.1" :exclusions [com.google.guava/guava cljsjs/react]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
@@ -26,13 +29,14 @@
                  [cljsjs/react-dom "15.6.1-0"]
                  [venantius/accountant "0.2.0" :exclusions [org.clojure/clojurescript
                                                             org.clojure/core.async]]
-                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
-                                                             org.apache.httpcomponents/httpclient]]
+                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava]]
                  [cljsjs/moment "2.17.1-1"]
                  ;; DB
                  [starcity/blueprints "1.9.0" :exclusions [com.datomic/datomic-free
                                                            com.andrewmcveigh/cljs-time
                                                            com.google.guava/guava]]
+                 ;; dep resolution
+                 [com.google.guava/guava "21.0"]
                  ;; Util
                  [mount "0.1.11"]
                  [aero "1.1.2"]
@@ -41,9 +45,7 @@
                  [starcity/toolbelt "0.1.7" :exclusions [com.datomic/datomic-free
                                                          com.andrewmcveigh/cljs-time
                                                          org.apache.httpcomponents/httpclient
-                                                         com.google.guava/guava]]
-                 ;; dep resolution
-                 [com.google.guava/guava "21.0"]]
+                                                         com.google.guava/guava]]]
 
   :jvm-opts ["-server"
              "-Xmx2g"

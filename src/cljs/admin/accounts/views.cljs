@@ -13,14 +13,17 @@
 
 (def ^:private columns
   [{:title     "First Name"
-    :dataIndex :account/first-name
-    :sorter    (comp-alphabetical :first-name)}
+    :dataIndex :first_name
+    :sorter    (comp-alphabetical :first_name)}
    {:title     "Last Name"
-    :dataIndex :account/last-name
-    :sorter    (comp-alphabetical :last-name)}
+    :dataIndex :last_name
+    :sorter    (comp-alphabetical :last_name)}
    {:title     "Email"
-    :dataIndex :account/email
-    :sorter    (comp-alphabetical :email)}])
+    :dataIndex :email
+    :sorter    (comp-alphabetical :email)}
+   {:title     "Phone"
+    :dataIndex :phone
+    :sorter    (comp-alphabetical :phone)}])
 
 
 (defn account->column [key account]
@@ -38,4 +41,8 @@
 
 (defmethod content/view :accounts [route]
   [ant/card {:title "Accounts"}
+   [ant/button
+    {:on-click #(dispatch [:account/change-random-phone!])
+     :style    {:margin-bottom 24}}
+    "Change Random Phone"]
    [accounts-table]])

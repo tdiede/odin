@@ -1,5 +1,6 @@
 (ns admin.server
   (:require [admin.config :as config :refer [config]]
+            [admin.datomic :refer [conn]]
             [admin.routes :as routes]
             [clojure.string :as string]
             [mount.core :refer [defstate]]
@@ -27,17 +28,22 @@
 (defn wrap-logging
   "Middleware to log requests."
   [handler]
-  (fn [{:keys [uri request-method identity remote-addr] :as req}]
-    (when-not (or (= uri "/favicon.ico")
-                  (string/starts-with? uri "/assets")
-                  (string/starts-with? uri "/bundles"))
-      (timbre/info :web/request
-                   (tb/assoc-when
-                    {:uri         uri
-                     :method      request-method
-                     :remote-addr remote-addr}
-                    :user (:account/email identity))))
-    (handler req)))
+  (letfn [(-junk? [uri]
+            (or (string/starts-with? uri "/js")
+                (string/starts-with? uri "/assets")
+                (string/ends-with? uri ".png")
+                (string/ends-with? uri ".js")
+                (string/ends-with? uri ".css")
+                (string/ends-with? uri ".map")))]
+    (fn [{:keys [uri request-method identity remote-addr] :as req}]
+             (when-not (-junk? uri)
+               (timbre/info :web/request
+                            (tb/assoc-when
+                             {:uri         uri
+                              :method      request-method
+                              :remote-addr remote-addr}
+                             :user (:account/email identity))))
+             (handler req))))
 
 
 (defn wrap-deps [handler deps]
@@ -75,8 +81,8 @@
         (wrap-multipart-params)
         (wrap-resource "public")
         #_(wrap-session {:store        (datomic-store (:conn deps) :session->entity session->entity)
-                       :cookie-name  (config/cookie-name config)
-                       :cookie-attrs {:secure (config/secure-sessions? config)}})
+                         :cookie-name  (config/cookie-name config)
+                         :cookie-attrs {:secure (config/secure-sessions? config)}})
         (wrap-content-type)
         (wrap-not-modified))))
 
@@ -97,6 +103,6 @@
 
 
 (defstate web-server
-  :start (->> (app-handler {})
+  :start (->> (app-handler {:conn conn})
               (start-server (config/webserver-port config)))
   :stop (stop-server web-server))
