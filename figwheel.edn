@@ -1,15 +1,15 @@
 {:server-port     3449
  :css-dirs        ["resources/public/assets/css"]
- :builds-to-start ["admin"]
+ :builds-to-start ["odin"]
  :builds
- [{:id           "admin"
+ [{:id           "odin"
    :source-paths ["src/cljs"]
-   :figwheel     {:on-jsload admin.core/render}
-   :compiler     {:main                 admin.core
+   :figwheel     {:on-jsload odin.core/render}
+   :compiler     {:main                 odin.core
                   :preloads             [devtools.preload]
-                  :asset-path           "/js/cljs/admin/out"
-                  :output-to            "resources/public/js/cljs/admin.js"
-                  :output-dir           "resources/public/js/cljs/admin/out"
+                  :asset-path           "/js/cljs/odin/out"
+                  :output-to            "resources/public/js/cljs/odin.js"
+                  :output-dir           "resources/public/js/cljs/odin/out"
                   :verbose              false
                   :source-map           true
                   :optimizations        :none

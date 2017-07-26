@@ -7,7 +7,7 @@
        :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}
 
  :uberjar {:aot          :all
-           :main         admin.core
+           :main         odin.core
            :source-paths ["src/clj" "src/cljs"]
            :prep-tasks   ["compile" ["cljsbuild" "once"]]
 
@@ -19,17 +19,17 @@
                                             :password :env/datomic_password}}
 
            :cljsbuild
-           {:builds [{:id           "admin"
-                      :source-paths ["src/cljs/admin" "src/cljs/starcity"]
+           {:builds [{:id           "odin"
+                      :source-paths ["src/cljs/odin" "src/cljs/starcity"]
                       :jar          true
-                      :compiler     {:main             admin.core
+                      :compiler     {:main             odin.core
                                      :optimizations    :advanced
                                      :elide-asserts    true
                                      :pretty-print     false
                                      :parallel-build   true
                                      :asset-path       "/js/cljs/out"
                                      :output-dir       "resources/public/js/cljs/out"
-                                     :output-to        "resources/public/js/cljs/admin.js"
+                                     :output-to        "resources/public/js/cljs/odin.js"
                                      :externs          ["externs/stripe.ext.js"]
                                      :closure-warnings {:externs-validation :off
                                                         :non-standard-jsdoc :off}}}]}}}

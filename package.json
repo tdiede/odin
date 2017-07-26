@@ -1,5 +1,5 @@
 {
-    "name": "admin",
+    "name": "odin",
     "version": "1.0.0",
     "description": "Starcity's Member Application",
     "main": "index.js",
@@ -12,11 +12,11 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/starcity-properties/admin.git"
+        "url": "git+https://github.com/starcity-properties/odin.git"
     },
     "author": "",
     "license": "ISC",
-    "homepage": "https://admin.joinstarcity.com",
+    "homepage": "https://my.joinstarcity.com",
     "dependencies": {
         "antd": "^2.11.2",
         "bulma": "^0.4.3",

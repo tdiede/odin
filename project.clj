@@ -1,6 +1,6 @@
-(defproject admin "0.1.0-SNAPSHOT"
-  :description "Starcity's admin dashboard."
-  :url "http://admin.joinstarcity.com"
+(defproject odin "0.1.0-SNAPSHOT"
+  :description "The all-seing dashboard."
+  :url "http://my.joinstarcity.com"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
@@ -67,4 +67,4 @@
   :cooper {"main" ["sass" "--watch" "-E" "UTF-8" "style/sass/main.sass:resources/public/assets/css/styles.css"]
            "antd" ["less-watch-compiler" "style/less" "resources/public/assets/css/"]}
 
-  :main admin.core)
+  :main odin.core)

@@ -1,8 +1,8 @@
 (ns user
-  (:require [admin.core]
-            [admin.config :as config :refer [config]]
-            [admin.datomic :refer [conn]]
-            [admin.seed :as seed]
+  (:require [odin.core]
+            [odin.config :as config :refer [config]]
+            [odin.datomic :refer [conn]]
+            [odin.seed :as seed]
             [clojure.spec.test :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
             [figwheel-sidecar.repl-api :as ra]
@@ -53,8 +53,8 @@
 (defn start-figwheel! []
   (when-not (ra/figwheel-running?)
     (timbre/debug "starting figwheel server...")
-    (ra/start-figwheel! "admin")))
+    (ra/start-figwheel! "odin")))
 
 
 (defn cljs-repl []
-  (ra/cljs-repl "admin"))
+  (ra/cljs-repl "odin"))

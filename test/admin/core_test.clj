@@ -1,6 +1,6 @@
-(ns admin.core-test
+(ns odin.core-test
   (:require [clojure.test :refer :all]
-            [admin.core :refer :all]))
+            [odin.core :refer :all]))
 
 (deftest a-test
   (testing "FIXME, I fail."

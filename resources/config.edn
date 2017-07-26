@@ -1,4 +1,4 @@
-{:webserver {:port            #or [#env ADMIN_PORT 8082]
+{:webserver {:port            #or [#env ODIN_PORT 8082]
              :cookie-name     "starcity-session"
              :secure-sessions #profile {:prod    true
                                         :default false}}
@@ -16,7 +16,7 @@
        :appender #profile {:dev     :spit
                            :default :rolling}
        :file     #profile {:dev     "logs/server.log"
-                           :default "/var/log/admin/server.log"}}
+                           :default "/var/log/odin/server.log"}}
 
  :nrepl {:port #or [#env NREPL_PORT 7890]}
 
