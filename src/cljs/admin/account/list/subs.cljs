@@ -1,5 +1,5 @@
-(ns admin.accounts.subs
-  (:require [admin.accounts.db :as db]
+(ns admin.account.list.subs
+  (:require [admin.account.db :as db]
             [re-frame.core :refer [reg-sub]]))
 
 
@@ -13,7 +13,8 @@
  :accounts/list
  :<- [::accounts]
  (fn [db _]
-   (:accounts db)))
+   (let [accounts (get-in db [:accounts :list])]
+     (map #(get-in db [:accounts :norms (:id %)]) accounts))))
 
 
 (reg-sub

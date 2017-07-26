@@ -1,5 +1,5 @@
 (ns admin.db
-  (:require [admin.accounts.db :as accounts]))
+  (:require [admin.account.db :as accounts]))
 
 
 (def menu-items
@@ -8,9 +8,9 @@
    {:menu/key :accounts}
    {:menu/key :properties}
    {:menu/key :services}
-   {:menu/key        :log-out
-    :menu/uri        "/logout"
-    :menu/text       "Log Out"
+   {:menu/key         :log-out
+    :menu/uri         "/logout"
+    :menu/text        "Log Out"
     :menu.ui/excluded #{:side}}])
 
 

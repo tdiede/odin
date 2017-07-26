@@ -1,5 +1,6 @@
 (ns admin.subs
-  (:require [admin.accounts.subs]
+  (:require [admin.account.list.subs]
+            [admin.account.entry.subs]
             [re-frame.core :refer [reg-sub]]))
 
 

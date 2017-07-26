@@ -8,7 +8,8 @@
 (def app-routes
   [""
    [
-    ["/accounts" [["" :accounts]]]
+    ["/accounts" [["" :account/list]
+                  [["/" :account-id] [["" :account/entry]]]]]
 
     ["/properties" [["" :properties]]]
 
@@ -19,7 +20,7 @@
     ]])
 
 
-(defmulti dispatches (fn [route] (:root route)))
+(defmulti dispatches (fn [route] (:page route)))
 
 
 (defmethod dispatches :default [route]

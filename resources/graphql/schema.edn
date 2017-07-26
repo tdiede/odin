@@ -41,7 +41,11 @@
  {:accounts {:type    (list :account)
              :args    {:role {:type          :role
                               :default-value :all}}
-             :resolve :accounts/list}}
+             :resolve :account/list}
+
+  :account {:type    :account
+             :args    {:id {:type (non-null :Long)}}
+             :resolve :account/entry}}
 
  :mutations
  {:set_phone {:type        :account

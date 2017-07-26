@@ -1,7 +1,8 @@
 (ns admin.events
   (:require [admin.db :as db]
             [admin.routes :as routes]
-            [admin.accounts.events]
+            [admin.account.list.events]
+            [admin.account.entry.events]
             [clojure.string :as string]
             [re-frame.core :refer [reg-event-db reg-event-fx]]))
 

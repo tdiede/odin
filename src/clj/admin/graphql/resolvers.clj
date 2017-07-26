@@ -3,7 +3,8 @@
 
 
 (def ^:private account-resolvers
-  {:accounts/list      account/accounts
+  {:account/list       account/accounts
+   :account/entry      account/entry
    :account/property   account/property
    :account/set-phone! account/set-phone!
    :person/full-name   account/full-name})

@@ -41,12 +41,19 @@
     (require '[datomic.api :as d]))
 
   (execute schema
-           (str "mutation"
-                (venia.core/graphql-query
-             {:venia/queries
-              [[:set_phone {:id 285873023223058 :phone "2345678911"} [:id :name :email :role :phone]]]}))
-           nil {:db   (d/db conn)
-                :conn conn})
+           ;; "query { accounts(role: member) { id, name, property { code } }}"
+           (venia.core/graphql-query
+            {:venia/queries
+             [[:accounts {:role :member}
+               [:id :name [:property [:code]] :email]]] })
+           nil
+           {:db   (d/db conn)
+            :conn conn})
+
+
+  ;; (venia.core/graphql-query
+  ;;  {:venia/queries
+  ;;   [[:set_phone {:id 285873023223058 :phone "2345678911"} [:id :name :email :role :phone]]]})
 
 
 

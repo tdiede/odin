@@ -1,6 +1,6 @@
-(ns admin.accounts.events
+(ns admin.account.list.events
   (:require [admin.routes :as routes]
-            [admin.accounts.db :as db]
+            [admin.account.db :as db]
             [ajax.core :as ajax]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
@@ -8,18 +8,39 @@
             [toolbelt.core :as tb]))
 
 
-(defmethod routes/dispatches :accounts [_]
-  [[:accounts/list]])
+(defmethod routes/dispatches :account/list [_]
+  [[:account/fetch-list]])
 
 
 (reg-event-fx
- :accounts/list
+ :account/fetch-list
  [(path db/path)]
  (fn [{:keys [db]} _]
    {:db      (assoc-in db [:loading :accounts/list] true)
-    :graphql {:query      [[:accounts [:id :first_name :last_name :email :phone]]]
+    :graphql {:query      [[:accounts [:id :first_name :last_name :email :phone
+                                       [:property [:id :name :code]]]]]
               :on-success [:accounts.list/success]
               :on-failure [:accounts.list/failure]}}))
+
+
+(defn create-accounts-list
+  "TODO:"
+  [db accounts]
+  (assoc-in db [:accounts :list]
+            (map #(select-keys % [:id]) accounts)))
+
+
+(defn merge-account-norms
+  "TODO:"
+  [db accounts]
+  (let [existing-norms (get-in db [:accounts :norms])]
+    (->> (reduce
+          (fn [new-norms {:keys [id] :as new-account}]
+            (let [old-account (get new-norms id)]
+              (assoc new-norms id (merge old-account new-account))))
+          existing-norms
+          accounts)
+         (assoc-in db [:accounts :norms]))))
 
 
 (reg-event-db
@@ -27,8 +48,11 @@
  [(path db/path)]
  (fn [db [_ response]]
    (tb/log response)
-   (-> (assoc db :accounts (get-in response [:data :accounts]))
-       (assoc-in [:loading :accounts/list] false))))
+   (let [accounts (get-in response [:data :accounts])]
+     (-> db
+         (create-accounts-list accounts)
+         (merge-account-norms accounts)
+         (assoc-in [:loading :accounts/list] false)))))
 
 
 (reg-event-fx
@@ -50,9 +74,11 @@
  :account/change-random-phone!
  [(path db/path)]
  (fn [{:keys [db]} _]
-   (let [account (rand-nth (:accounts db))]
+   (let [account (rand-nth (get-in db [:accounts :list]))]
      {:db      (assoc-in db [:loading :accounts/list] true)
-      :graphql {:mutation [[:set_phone {:id (:id account) :phone (rand-phone)} [:id :phone]]]
+      :graphql {:mutation   [[:set_phone {:id    (:id account)
+                                          :phone (rand-phone)}
+                              [:id :phone]]]
                 :on-success [:account.change-random-number/success]
                 :on-failure [:account.change-random-number/failure]}})))
 
@@ -61,15 +87,8 @@
  :account.change-random-number/success
  [(path db/path)]
  (fn [db [_ response]]
-   (let [data (get-in response [:data :set_phone])]
-     (-> (update db :accounts
-                 (fn [accounts]
-                   (mapv
-                    (fn [account]
-                      (if (= (:id data) (:id account))
-                        (assoc account :phone (:phone data))
-                        account))
-                    accounts)))
+   (let [changed-acct (get-in response [:data :set_phone])]
+     (-> (update-in db [:accounts :norms (:id changed-acct)] merge changed-acct)
          (assoc-in [:loading :accounts/list] false)))))
 
 

@@ -1,8 +1,10 @@
-(ns admin.accounts.views
+(ns admin.account.list.views
   (:require [admin.views.content :as content]
+            [admin.routes :as routes]
             [antizer.reagent :as ant]
             [re-frame.core :refer [subscribe dispatch]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [reagent.core :as r]))
 
 
 (defn comp-alphabetical [key]
@@ -20,7 +22,12 @@
     :sorter    (comp-alphabetical :last_name)}
    {:title     "Email"
     :dataIndex :email
-    :sorter    (comp-alphabetical :email)}
+    :sorter    (comp-alphabetical :email)
+    :render    (fn [val item _]
+                 (r/as-element
+                  [:a {:href (routes/path-for :account/entry
+                                              :account-id (aget item "id"))}
+                   val]))}
    {:title     "Phone"
     :dataIndex :phone
     :sorter    (comp-alphabetical :phone)}])
@@ -39,7 +46,7 @@
       :dataSource (map-indexed account->column @accounts)}]))
 
 
-(defmethod content/view :accounts [route]
+(defmethod content/view :account/list [route]
   [ant/card {:title "Accounts"}
    [ant/button
     {:on-click #(dispatch [:account/change-random-phone!])

@@ -32,6 +32,12 @@
        (apply td/entities (:db context))))
 
 
+(defn entry
+  "Query a single account."
+  [context {id :id} _]
+  (d/entity (:db context) id))
+
+
 (defn full-name
   "Account's full name."
   [_ _ account]

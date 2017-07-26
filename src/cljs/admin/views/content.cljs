@@ -2,7 +2,7 @@
   (:require [antizer.reagent :as ant]))
 
 
-(defmulti view (fn [route] (:root route)))
+(defmulti view (fn [route] (:page route)))
 
 
 (defmethod view :default [{:keys [page root params]}]

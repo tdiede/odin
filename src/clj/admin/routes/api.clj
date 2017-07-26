@@ -1,12 +1,9 @@
 (ns admin.routes.api
   (:require [admin.graphql :as graph]
-            [blueprints.models.account :as account]
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
             [datomic.api :as d]
-            [ring.util.response :as response]
-            [venia.core :as q]
-            [taoensso.timbre :as timbre]))
+            [ring.util.response :as response]))
 
 ;; =============================================================================
 ;; Helpers
