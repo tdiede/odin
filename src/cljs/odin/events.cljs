@@ -4,12 +4,21 @@
             [odin.account.list.events]
             [odin.account.entry.events]
             [clojure.string :as string]
-            [re-frame.core :refer [reg-event-db reg-event-fx]]))
+            [re-frame.core :refer [reg-event-db reg-event-fx]]
+            [ajax.core :as ajax]
+            [toolbelt.core :as tb]))
+
 
 (reg-event-db
  :app/init
+ (fn [_ [_ config]]
+   (assoc db/default-value :config config)))
+
+
+(reg-event-db
+ :app/init-error
  (fn [_ _]
-   db/default-value))
+   {:configure/error true}))
 
 
 (reg-event-db

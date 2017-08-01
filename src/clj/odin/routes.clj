@@ -3,7 +3,10 @@
             [compojure.core :as compojure :refer [context defroutes GET]]
             [facade.core :as facade] [ring.util.response :as response]))
 
-(defn- show-odin [req]
+
+(defn show
+  "Handler to render the CLJS app."
+  [req]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
                     :stylesheets [facade/font-awesome]
@@ -12,7 +15,8 @@
         (response/response)
         (response/content-type "text/html"))))
 
+
 (defroutes routes
   (context "/api" [] api/routes)
 
-  (compojure/routes (GET "*" [] show-odin)))
+  (compojure/routes (GET "*" [] show)))

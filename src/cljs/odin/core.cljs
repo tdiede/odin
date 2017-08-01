@@ -13,6 +13,7 @@
             [goog.dom :as gdom]
             [re-frame.core :as rf :refer [dispatch subscribe]]
             [reagent.core :as r]
+            [ajax.core :refer [GET]]
             [toolbelt.core :as tb]))
 
 
@@ -24,20 +25,44 @@
 ;; =============================================================================
 
 
-(defn menu-item
-  [{:keys [menu/key menu/uri menu/text]}]
+(def ^:private menu-items
+  [{:feature :people
+    :titles  {:admin  "People"
+              :member "Neighbors"}
+    :uri     (routes/path-for :account/list)}
+   {:feature :communities
+    :titles  {:admin  "Properties"
+              :member "Communities"}
+    :uri     "/communities"}
+   {:feature :orders
+    :titles  {:admin  "Orders"
+              :member "Orders"}
+    :uri     "/orders"}
+   {:feature :services
+    :titles  {:admin  "Services"
+              :member "Services"}
+    :uri     "/services"}])
+
+
+(defn menu-item [role {:keys [feature titles uri]}]
   [ant/menu-item
-   [:a {:href (or uri (name key))}
-    (or text (-> key name string/capitalize))]])
+   [:a {:href uri}
+    (get titles role)]])
 
 
 (defn side-menu []
-  (let [menu-items (subscribe [:menu/items])
-        items      (remove #((:menu.ui/excluded % #{}) :side) @menu-items)]
+  (let [features (subscribe [:config/features])
+        role     (subscribe [:config/role])]
     [ant/menu {:style {:border-right "none"}}
-     (map-indexed
-      #(with-meta (menu-item %2) {:key %1})
-      items)]))
+     (doall
+      (->> menu-items
+           (filter (comp @features :feature))
+           (map-indexed #(with-meta (menu-item @role %2) {:key %1}))))]))
+
+
+;; =============================================================================
+;; Layout
+;; =============================================================================
 
 
 (defn burger []
@@ -52,12 +77,7 @@
    [burger]])
 
 
-;; =============================================================================
-;; Layout
-;; =============================================================================
-
-
-(defn avatar-dropdown [menu-items]
+#_(defn avatar-dropdown [menu-items]
   (let [items (filter #((:menu.ui/excluded % #{}) :side) menu-items)]
     [ant/menu
      (map-indexed
@@ -89,7 +109,7 @@
       [navbar-menu]
       [:div.navbar-end;.is-hidden-touch
        [:div.navbar-item
-        [ant/dropdown
+        #_[ant/dropdown
          {:overlay (r/as-element (avatar-dropdown @menu-items)) :trigger ["click"]}
          [:span.flexbox.has-pointer
           [ant/avatar "DC"]
@@ -98,16 +118,30 @@
 
 
 
+(defn error-view []
+  [:section.hero.is-fullheight
+   [:div.hero-body
+    [:div.container.has-text-centered
+     [:h1.is-2.title "Error!"]
+     [ant/icon {:type  "close-circle"
+                :style {:font-size 48 :color "red"}}]
+     [:div {:style {:margin-top 24}}
+      [:p.is-5.subtitle "Please check your network connection and reload this page."]]]]])
+
+
 (defn layout []
-  (let [curr-route (subscribe [:route/current])]
-    [:div.container
-     [navbar]
-     [:section.section
-      [:div.columns
-       ; [:div.column.is-one-quarter.is-hidden-touch
-       ;  [side-menu]]
-       [:div.column
-        [content/view @curr-route]]]]]))
+  (let [curr-route (subscribe [:route/current])
+        error      (subscribe [:config/error?])]
+    (if @error
+      [error-view]
+      [:div.container
+       [navbar]
+       [:section.section
+        [:div.columns
+         ; [:div.column.is-one-quarter.is-hidden-touch
+          ; [side-menu]
+         [:div.column
+          [content/view @curr-route]]]]])))
 
 
 ;; =============================================================================
@@ -123,6 +157,13 @@
 
 
 (defn ^:export run []
-  (routes/hook-browser-navigation!)
-  (rf/dispatch-sync [:app/init])
-  (render))
+  (GET "/api/config"
+       :handler (fn [config]
+                  (tb/log config)
+                  (rf/dispatch-sync [:app/init config])
+                  (routes/hook-browser-navigation! config)
+                  (render))
+       :error-handler (fn [res]
+                        (tb/error res)
+                        (rf/dispatch-sync [:app/init-error])
+                        (render))))

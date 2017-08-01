@@ -16,9 +16,28 @@
 
 (def default-value
   (merge
-   {:menu         {:showing false
-                   :items   menu-items}
-    :route        {:current :home
-                   :root    :home
-                   :params  {}}}
+   {:loading {:config true}
+    :menu    {:showing false
+              :items   menu-items}
+    :route   {:current :home
+              :root    :home
+              :params  {}}}
    accounts/default-value))
+
+
+(comment
+
+  {:role :member
+   :features
+   {:home        {}
+    :people      {}
+    :communities {}
+    :orders      {}
+    :account     {}
+    ;; admin only
+    :services    {}
+    }}
+
+
+
+  )

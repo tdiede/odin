@@ -46,10 +46,14 @@
       :dataSource (map-indexed account->column @accounts)}]))
 
 
-(defmethod content/view :account/list [route]
+(defn view []
   [ant/card {:title "Accounts"}
    [ant/button
     {:on-click #(dispatch [:account/change-random-phone!])
      :style    {:margin-bottom 24}}
     "Change Random Phone"]
    [accounts-table]])
+
+
+(defmethod content/view :account/list [route]
+  [view])

@@ -30,7 +30,7 @@
 
 (defn hook-browser-navigation!
   "Wire up the bidi routes to the browser HTML5 navigation."
-  []
+  [routes]
   (accountant/configure-navigation!
    {:nav-handler  (fn [path]
                     (let [match  (bidi/match-route app-routes path)
