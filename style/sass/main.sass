@@ -14,3 +14,28 @@ main
 
 // Vendor
 @import "../../node_modules/bulma/bulma"
+
+// Our styles (after Bulma, to override)
+@import "layout"
+@import "interaction"
+@import "navigation"
+
+// Derryl - testing for component, to be deleted or relocated
+.payment-item
+  display: flex
+  span.date
+    font-size: .8rem
+  span
+    padding: 0 .5rem
+  // span + span
+    // margin-left: 1rem
+
+.flex-right
+  margin-left: auto
+
+.has-text-grey-light
+  color: #aaa
+  text-transform: capitalize
+
+.red
+  color: red

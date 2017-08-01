@@ -14,6 +14,8 @@
                  [starcity/datomic-session-store "0.1.0"]
                  [starcity/customs "0.1.0" :exclusions [com.google.guava/guava
                                                         com.fasterxml.jackson.core/jackson-core]]
+                 ;; i18n
+                 [tongue "0.2.2"]
                  [optimus "0.19.3"]
                  [http-kit "2.2.0"]
                  [compojure "1.6.0" :exclusions [ring/ring-core]]

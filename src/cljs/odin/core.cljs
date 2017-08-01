@@ -48,7 +48,7 @@
 
 (defn brand []
   [:div.navbar-brand
-   [:a.navbar-item "Starcity"]
+   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]
    [burger]])
 
 
@@ -72,7 +72,7 @@
 
 (defn navbar-menu []
   (let [menu-items (subscribe [:menu/items])]
-    [:div.navbar-start.is-hidden-desktop
+    [:div.navbar-start;;.is-hidden-desktop
      (map-indexed
       #(with-meta (navbar-menu-item %2) {:key %1})
       @menu-items)]))
@@ -87,11 +87,15 @@
      [:div.navbar-menu
       {:class (when @menu-showing "is-active")}
       [navbar-menu]
-      [:div.navbar-end.is-hidden-touch
+      [:div.navbar-end;.is-hidden-touch
        [:div.navbar-item
         [ant/dropdown
          {:overlay (r/as-element (avatar-dropdown @menu-items)) :trigger ["click"]}
-         [ant/avatar]]]]]]))
+         [:span.flexbox.has-pointer
+          [ant/avatar "DC"]
+          [:span.valign.pad-left "Derryl Carter"]]]]]]]))
+
+
 
 
 (defn layout []
@@ -100,8 +104,8 @@
      [navbar]
      [:section.section
       [:div.columns
-       [:div.column.is-one-quarter.is-hidden-touch
-        [side-menu]]
+       ; [:div.column.is-one-quarter.is-hidden-touch
+       ;  [side-menu]]
        [:div.column
         [content/view @curr-route]]]]]))
 
