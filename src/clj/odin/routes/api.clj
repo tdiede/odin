@@ -38,6 +38,29 @@
         (response/status (if (-> result :errors some?) 400 200)))))
 
 
+(def admin
+  {:role :admin
+   :features
+   {:people      {}
+    :communities {}
+    :orders      {}
+    :services    {}}})
+
+
+(def member
+  {:role :member
+   :features
+   {:people      {}
+    :communities {}}})
+
+
+(defn config-handler [req]
+  (-> (response/response member)
+      (response/content-type "application/transit+json")
+      (response/status 200)))
+
+
 (defroutes routes
+  (GET "/config" [] config-handler)
   (GET "/graphql" [] graphql-handler)
   (POST "/graphql" [] graphql-handler))

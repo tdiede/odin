@@ -5,7 +5,8 @@
             [odin.log]
             [odin.server]
             [clojure.tools.cli :refer [parse-opts]]
-            [mount.core :as mount]))
+            [mount.core :as mount]
+            [clojure.spec.alpha :as s]))
 
 
 (def cli-options
