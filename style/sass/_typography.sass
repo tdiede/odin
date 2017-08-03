@@ -1,0 +1,42 @@
+body
+  font-size: 67.5%
+  text-rendering: optimizeLegibility
+  -webkit-font-smoothing: antialiased
+
+h1, h2, h3, h4, h5, p, ol, ul
+  margin-top: 0
+  line-height: 1.5
+
+h1
+  font-size:     2rem
+  margin-bottom: .3rem
+
+h2
+  font-size:     1.4rem
+  margin-bottom: .3rem
+
+h3
+  font-size:     1.25rem
+  margin-bottom: .2rem
+
+h4
+  font-size:     1rem
+  margin-bottom: .15rem
+
+a
+  display: inline-block
+  color: $link-color
+  &:hover
+    color: $link-hover
+  &:focus
+    text-decoration: none
+
+// For items that are links, but with a less obtrusive appearance
+a.subdued
+  color: $black
+  font-weight: bold
+  // border-bottom: 1px dashed $black
+  &:hover, &:focus
+    color: $dark-black
+    text-decoration: underline
+    // border-bottom: 1px solid $black

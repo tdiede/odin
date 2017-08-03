@@ -9,16 +9,28 @@
 
 // Spacing
 .pad-left
-  padding-left: 1rem
+  padding-left: $side-padding
+.pad-right
+  padding-right: $side-padding
 
-
+// Spacing for elements in a row. When using this class,
+// the :last-child will not have spacing. If this behavior
+// is undesired, then use the classes above.
+.space-right
+  &:not(:last-child)
+    margin-right: $side-padding
 
 // PAGE LAYOUT
 // ----------------------------
 .container
-  max-width: 999999px
+  max-width: $infinite
   width: 100%
 
   .navbar
     margin: 0
     padding: 0 $side-padding
+
+
+
+
+// COMPONENT LAYOUT

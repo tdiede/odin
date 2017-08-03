@@ -10,7 +10,7 @@
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
                     :stylesheets [facade/font-awesome]
-                    :css-bundles ["styles.css" "antd.css"])
+                    :css-bundles ["antd.css" "styles.css"])
         (render)
         (response/response)
         (response/content-type "text/html"))))

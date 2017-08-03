@@ -65,24 +65,21 @@
 ;; =============================================================================
 
 
-(defn burger []
-  [:div.navbar-burger.burger
-   {:on-click #(dispatch [:menu/toggle])}
-   [:span] [:span] [:span]])
+; (defn burger []
+;   [:div.navbar-burger.burger
+;    {:on-click #(dispatch [:menu/toggle])}
+;    [:span] [:span] [:span]])
 
 
 (defn brand []
   [:div.navbar-brand
-   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]
-   [burger]])
+   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]])
 
 
-#_(defn avatar-dropdown [menu-items]
+(defn avatar-dropdown [menu-items]
   (let [items (filter #((:menu.ui/excluded % #{}) :side) menu-items)]
-    [ant/menu
-     (map-indexed
-      #(with-meta (menu-item %2) {:key %1})
-      items)]))
+    [ant/menu]))
+
 
 
 (defn navbar-menu-item [{:keys [menu/key menu/uri menu/text]}]
@@ -98,24 +95,30 @@
       @menu-items)]))
 
 
+;; Todo: Perhaps confine search input to a global overlay that pops up (a la Notion)
+;;       with the navbar merely providing an entry point to that behavior,
+;;       rather than actually accepting input.
+(defn navbar-search []
+  [:div.navbar-item
+   [ant/input-search]])
+
+
 (defn navbar []
   (let [menu-showing (subscribe [:menu/showing?])
         menu-items   (subscribe [:menu/items])]
     [:nav.navbar.is-transparent
      [brand]
-
      [:div.navbar-menu
-      {:class (when @menu-showing "is-active")}
+      {:class "is-active"}
       [navbar-menu]
-      [:div.navbar-end;.is-hidden-touch
-       [:div.navbar-item
-        #_[ant/dropdown
+      [:div.navbar-end
+       [navbar-search]
+       [:div.navbar-item.hoverable
+        [ant/dropdown
          {:overlay (r/as-element (avatar-dropdown @menu-items)) :trigger ["click"]}
          [:span.flexbox.has-pointer
           [ant/avatar "DC"]
           [:span.valign.pad-left "Derryl Carter"]]]]]]]))
-
-
 
 
 (defn error-view []

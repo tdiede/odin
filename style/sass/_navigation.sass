@@ -1,9 +1,9 @@
-// Navigation bar (top)
+// NAV BAR (top of page)
 .navbar
   background: $black
   color: $white
 
-// "Starcity" wordmark
+// "STARCITY" BRAND LOGO
 .brand-logo
   text-indent: -99999px
   font-size: 0.00001rem
@@ -12,12 +12,30 @@
   background: url(../svg/logo-white.svg) center center no-repeat
   background-size: 60% auto
 
-// Primary nav link
+// NAV ITEM
 .navbar-item
   font-size: 0.85rem
-
-a.navbar-item, a.navbar-link
   color: $white
+
+// NAV ITEM - Links
+.navbar-item.hoverable, a.navbar-item, a.navbar-link
+  // color: $white
   &:hover
     color: $tranquil-blue
     background-color: $dark-black !important
+
+
+// NAV SEARCH
+// .navbar .ant-input-search
+  // border: 1px solid $dark-black
+  // background: #aaa
+
+  // Icon: Magnifying glass
+  // + .ant-input-suffix .anticon
+    // color: #fff
+
+  // Search field focused
+  // &:focus
+    // background: $white
+    // + .ant-input-suffix .anticon
+      // color: $black

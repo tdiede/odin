@@ -1,0 +1,75 @@
+
+// TODO: Styling for list views
+// ----------------------------
+
+$metadata-item-padding: .75rem
+
+// BASIC LIST (vertically-aligned, minimal styling)
+.metadata-list
+  // display: table
+  border-radius: $inner-component-border-radius
+  border: 1px solid $inner-component-border-color
+
+.metadata-item
+  display: table-row
+
+  &:not(:last-child)
+    .metadata-item-label, .metadata-item-value
+      border-bottom: 1px solid $inner-component-border-color
+
+.metadata-item-label, .metadata-item-value
+  display: table-cell
+  text-align: center
+  padding: .25rem $metadata-item-padding
+
+.metadata-item-label
+  font-weight: bold
+
+.metadata-item-value
+  border-left: 1px solid $inner-component-border-color
+  background-color: #f8f8f8
+
+.metadata-item:first-child .metadata-item-value
+    border-top-right-radius: $inner-component-border-radius - 1px
+.metadata-item:last-child .metadata-item-value
+    border-bottom-right-radius: $inner-component-border-radius - 1px
+
+
+
+// TABLES
+
+// SELECTOR REFERENCE FOR ANT TABLES
+// div.ant-table
+//   div.ant-table-content
+//     div.ant-table-body
+//       table
+//         thead.ant-table-thead tr th
+//           ...
+//         tbody.ant-table-body
+//           tr.ant-table-row td
+//             ...
+
+.ant-table
+  font-size: .75rem
+
+
+
+// Derryl - testing for component, to be deleted or relocated
+.payment-item
+  display: flex
+  span.date
+    font-size: .8rem
+  span
+    padding: 0 .5rem
+  // span + span
+    // margin-left: 1rem
+
+.flex-right
+  margin-left: auto
+
+.has-text-grey-light
+  color: #aaa
+  text-transform: capitalize
+
+.red
+  color: red
