@@ -21,12 +21,12 @@
                  [compojure "1.6.0" :exclusions [ring/ring-core]]
                  [ring-middleware-format "0.7.2" :exclusions [ring/ring-core]]
                  [cljsjs/libphonenumber "8.4.1-1"]
-                 
+
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.19.0"]
                  [vincit/venia "0.2.2"]
                  ;; CLJS
-                 [antizer "0.2.1" :exclusions [com.google.guava/guava cljsjs/react]]
+                 [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
                  [reagent "0.7.0"]
                  [cljsjs/react "15.6.1-0"]
