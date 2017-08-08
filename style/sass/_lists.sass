@@ -50,9 +50,27 @@ $metadata-item-padding: .75rem
 //             ...
 
 .ant-table
-  font-size: .75rem
+  font-size:     .75rem
+  border:        1px solid $inner-component-border-color
+  border-radius: $inner-component-border-radius
+  padding:       .25rem
 
+.ant-table-thead, .ant-table-tbody
+  tr
+    th
+      padding:    .8rem $side-padding
+      background: none
+      border-bottom: 1px solid $inner-component-border-color
+    td
+      padding:       .5rem $side-padding
+      border-bottom: 1px solid $inner-component-border-color
 
+    &:last-child td
+      border-bottom: none
+
+    &:hover
+      td
+        background: none
 
 // Derryl - testing for component, to be deleted or relocated
 .payment-item
