@@ -139,10 +139,10 @@
       [error-view]
       [:div.container
        [navbar]
-       [:section.section
+       [:section.section.root-section
         [:div.columns
          ; [:div.column.is-one-quarter.is-hidden-touch
-          ; [side-menu]
+          ; [side-menu]]
          [:div.column
           [content/view @curr-route]]]]])))
 

@@ -5,17 +5,7 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [reagent.core :as r]
-            [i18n.phonenumbers.PhoneNumberUtil :as pnu]
-            [i18n.phonenumbers.PhoneNumberFormat :as pnf]))
-
-
-(defn format-phone-number [number]
-  (let [pu        (pnu/getInstance)
-        num       number
-        country   "US"
-        parsed    (.parse pu num country)
-        formatted (.format pu parsed pnf/NATIONAL)]
-    (str formatted)))
+            [odin.utils.formatters :as format]))
 
 (defn progress-bar [progress-amount]
   (let [progress-class (if (> progress-amount 90) "danger" "ok")]
@@ -37,7 +27,7 @@
       [:a {:href "" } email]]
      [:h4.account-contact-item
       ; [:span.icon.is-small [:i.fa.fa-phone]]
-      (format-phone-number phone_number)]]]))
+      (format/phone-number phone_number)]]]))
 
 
 (defn metadata-item-pair [label value]
@@ -103,6 +93,10 @@
 (defmethod content/view :account/entry [route]
   (let [account-id (tb/str->int (get-in route [:params :account-id]))]
     [:div
+     [ant/breadcrumb
+      (doall
+       (for [[link label] [["Home" "Home"]]]
+        ^{:key link} [ant/breadcrumb-item [:a {:href link} label]]))]
      [ant/card
       ; {:title "Accounts Entry"
                 ; :extra (r/as-element [ant/button {:on-click #(dispatch [:account/fetch account-id])}
