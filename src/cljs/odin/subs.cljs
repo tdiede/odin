@@ -9,6 +9,13 @@
  (fn [db _]
    (:configure/error db)))
 
+; l10n - current language
+(reg-sub
+ :language
+ (fn [db _]
+   ; (tb/log (get-in db [:lang]))
+   (get-in db [:lang])))
+
 
 (reg-sub
  :menu/showing?

@@ -25,6 +25,7 @@
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.19.0"]
                  [vincit/venia "0.2.2"]
+
                  ;; CLJS
                  [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
@@ -35,6 +36,7 @@
                                                             org.clojure/core.async]]
                  [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava]]
                  [cljsjs/moment "2.17.1-1"]
+                 
                  ;; DB
                  [starcity/blueprints "1.9.0" :exclusions [com.datomic/datomic-free
                                                            com.andrewmcveigh/cljs-time

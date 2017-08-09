@@ -1,6 +1,7 @@
 (ns odin.core
   (:require [odin.events]
             [odin.routes :as routes]
+            [odin.l10n :refer [translate]]
             [odin.subs]
             [odin.graphql]
             [odin.views.content :as content]

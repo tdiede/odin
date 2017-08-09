@@ -16,7 +16,8 @@
 
 (def default-value
   (merge
-   {:loading {:config true}
+   {:lang     :en
+    :loading {:config true}
     :menu    {:showing false
               :items   menu-items}
     :route   {:current :home
@@ -35,9 +36,4 @@
     :orders      {}
     :account     {}
     ;; admin only
-    :services    {}
-    }}
-
-
-
-  )
+    :services    {}}})
