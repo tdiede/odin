@@ -9,6 +9,7 @@
   [req]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
+                    :fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
                     :stylesheets [facade/font-awesome]
                     :css-bundles ["antd.css" "styles.css"])
         (render)
