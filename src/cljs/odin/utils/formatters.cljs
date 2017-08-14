@@ -13,6 +13,7 @@
         formatted (.format pu parsed pnf/NATIONAL)]
     (str formatted)))
 
+
 (defn email-link
   "Returns an <a> element linking to the specified email address."
   [email]
@@ -20,11 +21,13 @@
    {:href (str "mailto:" email)}
    email])
 
+
 ; This pipes through Tongue, so it's automatically internationalized
 (defn number
   "Accepts a number, and returns a formatted string according to current language. e.g. [12345] -> '12,345'"
   [amount]
   (translate :tongue/format-number amount))
+
 
 (defn currency
   "Accepts a number, and returns a formatted currency amount according to current language. e.g. [1999.99] -> '$1,999.99'"

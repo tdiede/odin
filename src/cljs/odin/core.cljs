@@ -51,14 +51,14 @@
     (get titles role)]])
 
 
-(defn side-menu []
-  (let [features (subscribe [:config/features])
-        role     (subscribe [:config/role])]
-    [ant/menu {:style {:border-right "none"}}
-     (doall
-      (->> menu-items
-           (filter (comp @features :feature))
-           (map-indexed #(with-meta (menu-item @role %2) {:key %1}))))]))
+; (defn side-menu []
+;   (let [features (subscribe [:config/features])
+;         role     (subscribe [:config/role])]
+;     [ant/menu {:style {:border-right "none"}}
+;      (doall
+;       (->> menu-items
+;            (filter (comp @features :feature))
+;            (map-indexed #(with-meta (menu-item @role %2) {:key %1}))))]))
 
 
 ;; =============================================================================
@@ -74,7 +74,9 @@
 
 (defn brand []
   [:div.navbar-brand
-   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]])
+   [:a.navbar-item.brand-logo
+    {:href "/"}
+    "Starcity"]])
 
 
 (defn avatar-dropdown [menu-items]
@@ -84,7 +86,7 @@
 
 
 (defn navbar-menu-item [{:keys [menu/key menu/uri menu/text]}]
-  [:a.navbar-item {:href (or uri (name key))}
+  [:a.navbar-item {:href (or uri (str "/" (name key)))}
    (or text (-> key name string/capitalize))])
 
 

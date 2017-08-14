@@ -9,7 +9,8 @@
   [""
    [
     ["/accounts" [["" :account/list]
-                  [["/" :account-id] [["" :account/entry]]]]]
+                  [["/" :account-id]
+                   [["" :account/entry]]]]]
 
     ["/properties" [["" :properties]]]
 

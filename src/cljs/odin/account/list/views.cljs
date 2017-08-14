@@ -1,6 +1,7 @@
 (ns odin.account.list.views
   (:require [odin.views.content :as content]
             [odin.routes :as routes]
+            [odin.l10n :as l10n]
             [antizer.reagent :as ant]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
@@ -59,7 +60,9 @@
 
 (defn view []
   [:div.page
-   [:h1 "Accounts"]
+   [:div.flexrow
+    [:h1 (l10n/translate :accounts)]
+    [ant/input-search {:class "page-level-search valign flex-pin-right"}]]
    [:div.columns
     [:div.column.is-three-quarters
      [ant/card ;;{:title "Accounts"}
