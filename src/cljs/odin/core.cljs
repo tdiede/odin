@@ -22,106 +22,43 @@
 
 
 ;; =============================================================================
-;; Menu/Nav
-;; =============================================================================
-
-
-(def ^:private menu-items
-  [{:feature :people
-    :titles  {:admin  "People"
-              :member "Neighbors"}
-    :uri     (routes/path-for :account/list)}
-   {:feature :communities
-    :titles  {:admin  "Properties"
-              :member "Communities"}
-    :uri     "/communities"}
-   {:feature :orders
-    :titles  {:admin  "Orders"
-              :member "Orders"}
-    :uri     "/orders"}
-   {:feature :services
-    :titles  {:admin  "Services"
-              :member "Services"}
-    :uri     "/services"}])
-
-
-(defn menu-item [role {:keys [feature titles uri]}]
-  [ant/menu-item
-   [:a {:href uri}
-    (get titles role)]])
-
-
-; (defn side-menu []
-;   (let [features (subscribe [:config/features])
-;         role     (subscribe [:config/role])]
-;     [ant/menu {:style {:border-right "none"}}
-;      (doall
-;       (->> menu-items
-;            (filter (comp @features :feature))
-;            (map-indexed #(with-meta (menu-item @role %2) {:key %1}))))]))
-
-
-;; =============================================================================
 ;; Layout
 ;; =============================================================================
 
 
-; (defn burger []
-;   [:div.navbar-burger.burger
-;    {:on-click #(dispatch [:menu/toggle])}
-;    [:span] [:span] [:span]])
-
-
 (defn brand []
   [:div.navbar-brand
-   [:a.navbar-item.brand-logo
-    {:href "/"}
-    "Starcity"]])
+   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]])
 
 
-(defn avatar-dropdown [menu-items]
-  (let [items (filter #((:menu.ui/excluded % #{}) :side) menu-items)]
-    [ant/menu]))
-
-
-
-(defn navbar-menu-item [{:keys [menu/key menu/uri menu/text]}]
-  [:a.navbar-item {:href (or uri (str "/" (name key)))}
-   (or text (-> key name string/capitalize))])
+(defn navbar-menu-item [role {:keys [feature titles uri]}]
+  [:a.navbar-item {:href uri} (translate (keyword (name feature) role))])
 
 
 (defn navbar-menu []
-  (let [menu-items (subscribe [:menu/items])]
-    [:div.navbar-start;;.is-hidden-desktop
-     (map-indexed
-      #(with-meta (navbar-menu-item %2) {:key %1})
-      @menu-items)]))
-
-
-;; Todo: Perhaps confine search input to a global overlay that pops up (a la Notion)
-;;       with the navbar merely providing an entry point to that behavior,
-;;       rather than actually accepting input.
-(defn navbar-search []
-  [:div.navbar-item
-   [ant/input-search]])
+  (let [menu-items (subscribe [:menu/items])
+        role       (subscribe [:config/role])]
+    (tb/log @menu-items)
+    [:div.navbar-start
+     (doall
+      (map-indexed
+       #(with-meta (navbar-menu-item @role %2) {:key %1})
+       @menu-items))]))
 
 
 (defn navbar []
-  (let [menu-showing (subscribe [:menu/showing?])
-        menu-items   (subscribe [:menu/items])]
+  (let [menu-showing (subscribe [:menu/showing?])]
     [:nav.navbar.is-transparent
      [brand]
      [:div.navbar-menu
       {:class "is-active"}
       [navbar-menu]
       [:div.navbar-end
-       [navbar-search]
        [:div.navbar-item.hoverable
-        [ant/dropdown
-         {:overlay (r/as-element (avatar-dropdown @menu-items)) :trigger ["click"]}
-         [:span.flexbox.has-pointer
-          [ant/avatar "DC"]
-          [:span.valign.pad-left "Derryl Carter"]]]]]]]))
+        [:a.flexbox.has-pointer
+         {:href (routes/path-for :profile)}
+         [ant/avatar "DC"]
+         [:span.valign.pad-left "Derryl Carter"]]]]]]))
 
 
 (defn error-view []
@@ -144,8 +81,6 @@
        [navbar]
        [:section.section.root-section
         [:div.columns
-         ; [:div.column.is-one-quarter.is-hidden-touch
-          ; [side-menu]]
          [:div.column
           [content/view @curr-route]]]]])))
 

@@ -8,13 +8,16 @@
 (def app-routes
   [""
    [
-    ["/accounts" [["" :account/list]
-                  [["/" :account-id]
-                   [["" :account/entry]]]]]
 
-    ["/properties" [["" :properties]]]
+    ;; ["/people" [["" :account/list]
+    ;;               [["/" :account-id]
+    ;;                [["" :account/entry]]]]]
 
-    ["/services" [["" :services]]]
+    ;; ["/communities" [["" :properties]]]
+
+    ;; ["/services" [["" :services]]]
+
+    ["/profile" [["" :profile]]]
 
     [true :home]
 

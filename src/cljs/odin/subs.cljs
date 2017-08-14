@@ -4,36 +4,13 @@
             [re-frame.core :refer [reg-sub]]))
 
 
-(reg-sub
- :config/error?
- (fn [db _]
-   (:configure/error db)))
+;;; l10n
 
 
-; l10n - current language
 (reg-sub
  :language
  (fn [db _]
-   ; (tb/log (get-in db [:lang]))
    (get-in db [:lang])))
-
-
-(reg-sub
- :menu/showing?
- (fn [db _]
-   (get-in db [:menu :showing])))
-
-
-(reg-sub
- :menu/items
- (fn [db _]
-   (get-in db [:menu :items])))
-
-
-(reg-sub
- :route/current
- (fn [db _]
-   (:route db)))
 
 
 ;;; Config
@@ -57,3 +34,43 @@
  :<- [::config]
  (fn [config _]
    (-> config :features keys set)))
+
+
+(reg-sub
+ :config/error?
+ (fn [db _]
+   (:configure/error db)))
+
+
+;;; Menu
+
+
+(reg-sub
+ ::menu
+ (fn [db _]
+   (:menu db)))
+
+
+(reg-sub
+ :menu/items
+ :<- [::menu]
+ :<- [:config/features]
+ (fn [[menu features] _]
+   (->> (:items menu)
+        (filter (comp features :feature)))))
+
+
+(reg-sub
+ :menu/showing?
+ :<- [::menu]
+ (fn [menu _]
+   (:showing menu)))
+
+
+;;; Route
+
+
+(reg-sub
+ :route/current
+ (fn [db _]
+   (:route db)))

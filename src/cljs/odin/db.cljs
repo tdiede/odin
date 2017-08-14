@@ -1,22 +1,29 @@
 (ns odin.db
-  (:require [odin.account.db :as accounts]))
+  (:require [odin.account.db :as accounts]
+            [odin.routes :as routes]))
 
 
-(def menu-items
-  [{:menu/key :home
-    :menu/uri "/"}
-   {:menu/key :accounts}
-   {:menu/key :properties}
-   {:menu/key :services}
-   {:menu/key         :log-out
-    :menu/uri         "/logout"
-    :menu/text        "Log Out"
-    :menu.ui/excluded #{:side}}])
+
+
+(def ^:private menu-items
+  [{:feature :home
+    :uri     "/"}
+   {:feature :profile
+    :uri     "/profile"}
+   ;; {:feature :people
+   ;;  :uri     (routes/path-for :account/list)}
+   ;; {:feature :communities
+   ;;  :uri     "/communities"}
+   ;; {:feature :orders
+   ;;  :uri     "/orders"}
+   ;; {:feature :services
+   ;;  :uri     "/services"}
+   ])
 
 
 (def default-value
   (merge
-   {:lang     :en
+   {:lang    :en
     :loading {:config true}
     :menu    {:showing false
               :items   menu-items}
@@ -24,16 +31,3 @@
               :root    :home
               :params  {}}}
    accounts/default-value))
-
-
-(comment
-
-  {:role :member
-   :features
-   {:home        {}
-    :people      {}
-    :communities {}
-    :orders      {}
-    :account     {}
-    ;; admin only
-    :services    {}}})
