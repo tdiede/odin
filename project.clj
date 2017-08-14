@@ -34,13 +34,15 @@
                  [cljsjs/react-dom "15.6.1-0"]
                  [venantius/accountant "0.2.0" :exclusions [org.clojure/clojurescript
                                                             org.clojure/core.async]]
-                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava]]
+                 [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
+                                                             org.apache.httpcomponents/httpclient]]
+                 [cljs-ajax "0.6.0"]
                  [cljsjs/moment "2.17.1-1"]
-                 
+
                  ;; DB
-                 [starcity/blueprints "1.9.0" :exclusions [com.datomic/datomic-free
-                                                           com.andrewmcveigh/cljs-time
-                                                           com.google.guava/guava]]
+                 [starcity/blueprints "1.10.2" :exclusions [com.datomic/datomic-free
+                                                            com.andrewmcveigh/cljs-time
+                                                            com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
                  ;; Util
@@ -49,8 +51,8 @@
                  [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
                  [starcity/toolbelt "0.1.7" :exclusions [com.datomic/datomic-free
-                                                         com.andrewmcveigh/cljs-time
                                                          org.apache.httpcomponents/httpclient
+                                                         com.andrewmcveigh/cljs-time
                                                          com.google.guava/guava]]]
 
   :jvm-opts ["-server"

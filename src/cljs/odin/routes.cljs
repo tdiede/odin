@@ -8,9 +8,10 @@
 (def app-routes
   [""
    [
-    ["/accounts" [["" :account/list]
-                  [["/" :account-id]
-                   [["" :account/entry]]]]]
+
+    ;; ["/people" [["" :account/list]
+    ;;               [["/" :account-id]
+    ;;                [["" :account/entry]]]]]
 
     ["/profile" [["" :profile]
                  ["/membership" :profile/membership]
@@ -18,9 +19,9 @@
                                  ["/sources" :profile/payment-sources]]]
                  ["/settings"   :profile/settings]]]
 
-    ["/properties" [["" :properties]]]
+    ;; ["/communities" [["" :properties]]]
 
-    ["/services" [["" :services]]]
+    ;; ["/services" [["" :services]]]
 
     [true :home]
 
