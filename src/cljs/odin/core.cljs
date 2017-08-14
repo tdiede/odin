@@ -4,7 +4,7 @@
             [odin.l10n :refer [translate]]
             [odin.subs]
             [odin.graphql]
-            [odin.views.content :as content]
+            [odin.content :as content]
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]

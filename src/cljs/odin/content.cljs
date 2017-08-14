@@ -1,4 +1,4 @@
-(ns odin.views.content
+(ns odin.content
   (:require [antizer.reagent :as ant]))
 
 

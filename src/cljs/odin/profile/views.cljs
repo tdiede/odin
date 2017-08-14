@@ -1,5 +1,5 @@
 (ns odin.profile.views
-  (:require [odin.views.content :as content]
+  (:require [odin.content :as content]
             [odin.profile.membership.views]
             [odin.profile.payments.views]
             [odin.profile.settings.views]

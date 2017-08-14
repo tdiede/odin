@@ -1,5 +1,5 @@
 (ns odin.profile.payments.history.views
-  (:require [odin.views.content :as content]
+  (:require [odin.content :as content]
             [odin.routes :as routes]
             [odin.components.subnav :refer [subnav]]))
 

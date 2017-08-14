@@ -1,5 +1,5 @@
 (ns odin.profile.settings.views
-  (:require [odin.views.content :as content]
+  (:require [odin.content :as content]
             [antizer.reagent :as ant]
             [odin.routes :as routes]))
 
