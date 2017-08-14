@@ -120,7 +120,7 @@
        [:div.navbar-item.hoverable
         [ant/dropdown
          {:overlay (r/as-element (avatar-dropdown @menu-items)) :trigger ["click"]}
-         [:span.flexbox.has-pointer
+         [:a.flexbox.has-pointer {:href "/profile"}
           [ant/avatar "DC"]
           [:span.valign.pad-left "Derryl Carter"]]]]]]]))
 

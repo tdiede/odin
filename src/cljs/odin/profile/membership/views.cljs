@@ -3,4 +3,5 @@
             [odin.routes :as routes]))
 
 
-(defmethod content/view :profile/membership [route])
+(defmethod content/view :profile/membership [route]
+  [:h1 "Membership"])

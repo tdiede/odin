@@ -14,6 +14,8 @@
 
     ["/profile" [["" :profile]
                  ["/membership" :profile/membership]
+                 ["/payments"   [[""         :profile/payment-history]
+                                 ["/sources" :profile/payment-sources]]]
                  ["/settings"   :profile/settings]]]
 
     ["/properties" [["" :properties]]]
