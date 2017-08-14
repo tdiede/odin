@@ -13,11 +13,15 @@
     ;;               [["/" :account-id]
     ;;                [["" :account/entry]]]]]
 
+    ["/profile" [["" :profile]
+                 ["/membership" :profile/membership]
+                 ["/payments"   [[""         :profile/payment-history]
+                                 ["/sources" :profile/payment-sources]]]
+                 ["/settings"   :profile/settings]]]
+
     ;; ["/communities" [["" :properties]]]
 
     ;; ["/services" [["" :services]]]
-
-    ["/profile" [["" :profile]]]
 
     [true :home]
 

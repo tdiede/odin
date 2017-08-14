@@ -50,7 +50,7 @@
 
    :tongue/fallback :en})
 
-                                        ; This function looks up keys in the dict
+
 (def lookup-in-dict
   (tongue/build-translate dicts))
 
@@ -61,11 +61,5 @@
   @(subscribe [:language]))
 
 
-                                        ; This is the function used by other views,
-                                        ; and has the current lang partially applied to it.
 (defn translate [& args]
   (apply lookup-in-dict (locale) args))
-
-                                        ; (def translate
-                                        ;   (let [current-lang (subscribe [:language])]
-                                        ;     (partial lookup-in-dict @current-lang)))
