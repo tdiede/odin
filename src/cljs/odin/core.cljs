@@ -5,6 +5,7 @@
             [odin.subs]
             [odin.graphql]
             [odin.views.content :as content]
+            [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
             [day8.re-frame.http-fx]

@@ -12,6 +12,10 @@
                   [["/" :account-id]
                    [["" :account/entry]]]]]
 
+    ["/profile" [["" :profile]
+                 ["/membership" :profile/membership]
+                 ["/settings"   :profile/settings]]]
+
     ["/properties" [["" :properties]]]
 
     ["/services" [["" :services]]]
