@@ -41,7 +41,9 @@
 (def admin
   {:role :admin
    :features
-   {:people      {}
+   {:home        {}
+    :profile     {}
+    :people      {}
     :communities {}
     :orders      {}
     :services    {}}})
@@ -50,7 +52,9 @@
 (def member
   {:role :member
    :features
-   {:people      {}
+   {:home        {}
+    :profile     {}
+    :people      {}
     :communities {}}})
 
 
