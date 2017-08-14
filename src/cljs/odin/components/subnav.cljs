@@ -7,8 +7,10 @@
   "Renders a side-menu for navigation items within a top-level page."
   [menu-items]
   (fn []
-    [:nav.panel
-     (doall
-      (for [[text route uri] menu-items]
-        ^{:key text} [:a.panel-block {:href (routes/path-for route)}
-                      text]))]))
+    [:aside.menu
+     [:ul.menu-list
+      (doall
+       (for [[text route uri] menu-items]
+         ^{:key text} [:li
+                       [:a {:href (routes/path-for route)}
+                        text]]))]]))

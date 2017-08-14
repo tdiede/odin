@@ -13,7 +13,7 @@
              ["Payments"   :profile/payment-history]
              ["Settings"   :profile/settings]]]]
    [:div.column
-    [:h1 "Profile"]]])
+    [:p "Default profile route to be displayed here."]]])
 
 (defmethod content/view :profile [route]
   [content])
