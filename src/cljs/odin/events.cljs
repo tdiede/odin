@@ -27,12 +27,6 @@
    (update-in db [:menu :showing] not)))
 
 
-(defn- page-root [page]
-  (if-let [n (and page (namespace page))]
-    (-> (string/split n #"\.") first keyword)
-    page))
-
-
 (defn- page->path [page]
   (if-let [p (and page (namespace page))]
     (conj (->> (string/split p #"\.") (map keyword) vec) (keyword (name page)))
@@ -42,8 +36,7 @@
 (reg-event-fx
  :route/change
  (fn [{:keys [db]} [_ page params]]
-   (let [route {:root   (page-root page)
-                :page   page
+   (let [route {:page   page
                 :path   (page->path page)
                 :params params}]
      {:db         (assoc db :route route)
