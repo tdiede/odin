@@ -74,3 +74,17 @@
  :route/current
  (fn [db _]
    (:route db)))
+
+
+(reg-sub
+ :route/path
+ :<- [:route/current]
+ (fn [{path :path} _]
+   path))
+
+
+(reg-sub
+ :route/root
+ :<- [:route/path]
+ (fn [path _]
+   (first path)))
