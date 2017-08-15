@@ -27,17 +27,24 @@
    (update-in db [:menu :showing] not)))
 
 
-(defn- extract-root [page]
+(defn- page-root [page]
   (if-let [n (and page (namespace page))]
     (-> (string/split n #"\.") first keyword)
     page))
 
 
+(defn- page->path [page]
+  (if-let [p (and page (namespace page))]
+    (conj (->> (string/split p #"\.") (map keyword) vec) (keyword (name page)))
+    [page]))
+
+
 (reg-event-fx
  :route/change
  (fn [{:keys [db]} [_ page params]]
-   (let [route {:root   (extract-root page)
+   (let [route {:root   (page-root page)
                 :page   page
+                :path   (page->path page)
                 :params params}]
      {:db         (assoc db :route route)
       :dispatch-n (routes/dispatches route)})))

@@ -13,11 +13,15 @@
     ;;               [["/" :account-id]
     ;;                [["" :account/entry]]]]]
 
-    ["/profile" [["" :profile]
-                 ["/membership" :profile/membership]
-                 ["/payments"   [[""         :profile/payment-history]
-                                 ["/sources" :profile/payment-sources]]]
-                 ["/settings"   :profile/settings]]]
+    ["/profile" [["" :profile/membership]
+                 ;; NOTE: Unnecessary because this is the default
+                 ;; ["/membership" :profile/membership]
+                 ["/contact" :profile/contact]
+                 ["/payments"
+                  [[""         :profile.payment/history]
+                   ["/sources" :profile.payment/sources]]]
+                 ["/settings"
+                  [["/change-password" :profile.settings/change-password]]]]]
 
     ;; ["/communities" [["" :properties]]]
 
@@ -26,6 +30,9 @@
     [true :home]
 
     ]])
+
+
+;; :profile.payment/sources => [:profile :payment :sources]
 
 
 (defmulti dispatches (fn [route] (:page route)))

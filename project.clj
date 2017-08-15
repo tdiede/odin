@@ -7,6 +7,7 @@
                  [org.clojure/clojurescript "1.9.671"]
                  [org.clojure/core.async "0.3.443"]
                  [org.clojure/tools.nrepl "0.2.13"]
+                 [org.clojure/core.match "0.3.0-alpha5"]
                  ;; Web
                  [bidi "2.1.2"]
                  [ring "1.6.2"]

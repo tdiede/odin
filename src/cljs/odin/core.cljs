@@ -101,7 +101,7 @@
 (defn ^:export run []
   (GET "/api/config"
        :handler (fn [config]
-                  (tb/log config)
+                  (tb/log "CONFIG" config)
                   (rf/dispatch-sync [:app/init config])
                   (routes/hook-browser-navigation! config)
                   (render))
