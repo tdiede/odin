@@ -1,5 +1,5 @@
 (ns odin.profile.payments.sources.views
-  (:require [odin.views.content :as content]
+  (:require [odin.content :as content]
             [odin.l10n :as l10n]
             [antizer.reagent :as ant]
             [odin.components.subnav :refer [subnav]]
@@ -66,17 +66,13 @@
    [:button.modal-close.is-large]])
 
 
-(defmethod content/view :profile/payment-sources [route]
-  [:div.columns
-   [:div.column.is-2
-    [subnav [["History" :profile/payment-history]
-             ["Sources" :profile/payment-sources]]]]
-   [:div.column.highlight-full
-    [:h1 "Payment Sources"]
-    [:div.columns
-     [:div.column.is-4
-      [source-list payment-sources]]
-     [:div.column
-      [source-detail (first payment-sources)]
-      [source-payment-history (first payment-sources)]]]]])
-   ; [modal-confirm-disable-autopay]])
+(defn sources []
+  [:div
+   [:h1 "Payment Sources"]
+   [:div.columns
+    [:div.column.is-4
+     [source-list payment-sources]]
+    [:div.column
+     [source-detail (first payment-sources)]
+     [source-payment-history (first payment-sources)]]]])
+    ; [modal-confirm-disable-autopay]])

@@ -4,7 +4,7 @@
             [odin.l10n :refer [translate]]
             [odin.subs]
             [odin.graphql]
-            [odin.views.content :as content]
+            [odin.content :as content]
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
@@ -101,7 +101,7 @@
 (defn ^:export run []
   (GET "/api/config"
        :handler (fn [config]
-                  (tb/log config)
+                  (tb/log "CONFIG" config)
                   (rf/dispatch-sync [:app/init config])
                   (routes/hook-browser-navigation! config)
                   (render))

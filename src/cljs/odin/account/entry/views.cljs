@@ -1,5 +1,5 @@
 (ns odin.account.entry.views
-  (:require [odin.views.content :as content]
+  (:require [odin.content :as content]
             [odin.routes :as routes]
             [odin.l10n :as l10n]
             [odin.components.widgets :as widget]

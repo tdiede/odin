@@ -1,7 +1,5 @@
-(ns odin.profile.membership.views
-  (:require [odin.views.content :as content]
-            [odin.routes :as routes]))
+(ns odin.profile.membership.views)
 
 
-(defmethod content/view :profile/membership [route]
+(defn membership []
   [:h1 "Membership"])
