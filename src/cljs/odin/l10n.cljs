@@ -46,7 +46,18 @@
                :other "Notes"}
 
         ;; Payment stuff
-        :view-on-stripe "View transaction on Stripe."}
+        :view-on-stripe "View transaction on Stripe."
+
+        :sources "Sources"
+        :history "History"
+        :payment-sources     "Payment Sources"
+        :payment-history     "Payment History"
+        :transaction-history "Transaction History"
+        :btn-unlink-account  "Unlink account"
+
+        :autopay                "Autopay"
+        :use-for-autopay        "Use this account for Autopay"
+        :confirm-unlink-autopay "Are you sure you want to disable Autopay?"}
 
    :tongue/fallback :en})
 
