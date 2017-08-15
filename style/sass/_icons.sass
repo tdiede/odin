@@ -2,8 +2,23 @@
 // and providing reusable additional styles.
 
 h1,h2,h3,h4
-  .icon
+  .icon, .icon i
+    font-size: inherit !important
+    line-height: inherit !important
     display: inline-block
-    vertical-align: middle
-    margin-right: .15rem
+    vertical-align: baseline !important
     text-align: center
+
+    & + span
+      display: inline-block
+      vertical-align: baseline !important
+
+h1 .icon
+  margin-right: 1.4rem
+
+h2 .icon
+  margin-right: .7rem
+
+// h1
+//   .icon, .icon i
+//     font-size: inherit !important

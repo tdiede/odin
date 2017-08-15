@@ -6,11 +6,12 @@
 
 (defmethod content/view :profile/payment-history [route]
   [:div.columns
-   [:div.column.is-one-quarter
+   [:div.column.is-2
     [subnav [["History" :profile/payment-history]
              ["Sources" :profile/payment-sources]]]]
-   [:div.column
+   [:div.column.highlight-full
     [:h1 "Payment History"]]])
+
 
 
 ; [ant/breadcrumb {:separator "⟩"}
