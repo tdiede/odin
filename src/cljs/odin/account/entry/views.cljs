@@ -2,7 +2,7 @@
   (:require [odin.content :as content]
             [odin.routes :as routes]
             [odin.l10n :as l10n]
-            [odin.components.widgets :as widget]
+            [odin.components.payments :as payments-ui]
             [antizer.reagent :as ant]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
@@ -78,35 +78,6 @@
       [membership-quicklook @account]]]))
 
 
-(defn payment-list-item [name type amount date method]
-  [:a.panel-block.payment-item
-   [:span.icon.is-small [:i.fa.fa-university]]
-   [:span name]
-   [:span.has-text-grey-light type]
-   (case type
-     :payment [:span.flex-right amount]
-     :refund  [:span.flex-right.red amount])
-   [:span.date (.format (js/moment. (js/Date.)) "ll")]
-   (case method
-     "ACH"   [:span.tag.is-success method]
-     "Check" [:span.tag.is-info method])])
-
-
-;; TODO: Delete and replace with something useful. Just playing around with Ant
-(defn test-component [title]
-  [ant/card {:title title}
-   [:nav {:class "panel"}
-    ; [:p {:class "panel-heading"} "Recent Transactions"]
-    ; [:p {:class "panel-tabs"}
-     ; [:a {:class "is-active"} "All"]
-     ; [:a "Payments"]
-     ; [:a "Refunds"]
-    [payment-list-item "Derryl Carter"   :payment "$500"   "Aug 1"  "ACH"]
-    [payment-list-item "Josh Lehman"     :payment "$2,500" "Jul 28" "Check"]
-    [payment-list-item "Mo Sakrani"      :refund  "$2,100" "Jul 28" "ACH"]
-    [payment-list-item "Esteve Almirall" :payment "$2,200" "Jul 27" "ACH"]]])
-
-
 (defn payments-list [title]
   [ant/card {:title title
              :class "flush-body"}
@@ -127,7 +98,7 @@
       [:td "8/1/17"]
       [:td "8/5/17"]
       [:td "AUTOPAY"]
-      [:td [widget/stripe-icon-link ""]]]
+      [:td [payments-ui/stripe-icon-link ""]]]
      [:tr
       [:td (format/currency 2100)]
       [:td "8/1/17 - 8/31/17"]
@@ -135,7 +106,7 @@
       [:td "8/1/17"]
       [:td "8/5/17"]
       [:td "AUTOPAY"]
-      [:td [widget/stripe-icon-link ""]]]
+      [:td [payments-ui/stripe-icon-link ""]]]
      [:tr
       [:td (format/currency 2100)]
       [:td "8/1/17 - 8/31/17"]
@@ -143,7 +114,7 @@
       [:td "8/1/17"]
       [:td "8/5/17"]
       [:td "AUTOPAY"]
-      [:td [widget/stripe-icon-link ""]]]]]])
+      [:td [payments-ui/stripe-icon-link ""]]]]]])
 
 
 (defn fpo-note
@@ -177,8 +148,8 @@
       [:div.column
        [ant/card
         [account-view account-id]]
-       [license-display account-id]
-       [payments-list "Rent Payments"]]
+       [license-display account-id]]
+       ; [payments-list "Rent Payments"]]
       [:div.column
        [notes-list]]]]))
      ; [test-component]]))
