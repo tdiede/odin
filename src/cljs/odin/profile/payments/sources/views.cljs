@@ -1,8 +1,6 @@
 (ns odin.profile.payments.sources.views
-  (:require [odin.content :as content]
-            [odin.l10n :as l10n]
+  (:require [odin.l10n :as l10n]
             [antizer.reagent :as ant]
-            [odin.components.subnav :refer [subnav]]
             [odin.components.widgets :as widget]))
 
 
@@ -40,7 +38,7 @@
   [source]
   [ant/card
    [:div.flexrow
-    [:h3 str((get source :name) " **** " (get source :trailing-digits))]
+    [:h3 (str (get source :name) " **** " (get source :trailing-digits))]
     [:div.flex-pin-right
      [ant/button (l10n/translate :btn-unlink-account)]]]
    [:label.checkbox
