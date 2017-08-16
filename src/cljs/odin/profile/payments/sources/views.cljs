@@ -8,7 +8,7 @@
 (defn source-list
   "A vertical menu listing the linked payment sources."
   [sources]
-  [:nav.panel.space-top
+  [:nav.panel.space-top.is-rounded
    (for [source sources]
      ^{:key (get source :id)}
      [:a.panel-block
@@ -19,18 +19,43 @@
        [:span.flex-pin-right (str "**** " (get source :trailing-digits))]]])])
 
 
+(defn add-new-source-button
+  "Button for adding a new Payment Source."
+  []
+  [:nav.panel.space-top.is-rounded
+   [:a.panel-block
+    [:span.panel-icon
+     [:span.icon [:i.fa.fa-plus-square-o]]]
+    "Add new source"]])
+
+
+
 (defn source-detail
   "Display information about the currently-selected payment source."
   [source]
-  [ant/card
-   [:div.flexrow
-    [payments-ui/payment-source-icon (get source :type)]
-    [:h3 (str (get source :name) " **** " (get source :trailing-digits))]
-    [:div.flex-pin-right
-     [ant/button (l10n/translate :btn-unlink-account)]]]
-   [:label.checkbox
-    [:input {:type "checkbox" :checked "checked"}]
-    (l10n/translate :use-for-autopay)]])
+  [:div.card
+   [:div.card-content
+    [:div.flexrow
+     [payments-ui/payment-source-icon (get source :type)]
+     [:h3 (str (get source :name) " **** " (get source :trailing-digits))]
+     [:div.flex-pin-right
+      [:p "Added on June 28, 2017"]]]]
+
+   [:footer.card-footer
+    [:a.card-footer-item {:class "is-success"}
+     [:span.icon.is-small [:i.fa.fa-check-circle]]
+     [:span "Autopay On"]]
+    [:a.card-footer-item "Edit"]
+    [:a.card-footer-item.is-danger "Unlink"]]])
+
+
+  ; [ant/card
+  ;  [:div.flexrow
+  ;   [payments-ui/payment-source-icon (get source :type)]
+  ;   [:h3 (str (get source :name) " **** " (get source :trailing-digits))]
+  ;   [:div.flex-pin-right
+  ;    [ant/button (l10n/translate :btn-unlink-account)]]]
+  ;  [ant/checkbox (l10n/translate :use-for-autopay)]])
 
 
 (defn source-payment-history
@@ -62,7 +87,8 @@
    [:h1 "Payment Sources"]
    [:div.columns
     [:div.column.is-4
-     [source-list mocks/payment-sources]]
+     [source-list mocks/payment-sources]
+     [add-new-source-button]]
     [:div.column
      [source-detail (first mocks/payment-sources)]
      [source-payment-history (first mocks/payment-sources)]]]])

@@ -1,4 +1,8 @@
 
+.card, .ant-card
+  background: white
+
+
 // Fixing some Ant styles that are badly-written
 // or broken by correct baseline styles.
 .ant-card
@@ -12,22 +16,22 @@
   .ant-card-head-title
     margin: 0
 
-  // Center extras vertically in .ant-card-head
+  // Center "extras" vertically in .ant-card-head
   .ant-card-extra
     display: flex
     top: 0
     height: 48px
     align-items: center
 
-.ant-card + .ant-card
+// Sequential cards have margin between them
+.card + .card, .ant-card + .ant-card, .card + .ant-card
   margin-top: $side-padding
 
+// FLUSH (no padding)
 // Add this class to let child content fill entire card (such as for tables)
 .ant-card.flush-body, .ant-card.is-flush
-
   .ant-card-body
     padding: 0
-
   // Fix table padding to align with card header contents
   .table
     td, th
@@ -35,3 +39,10 @@
         padding-left: 25px
       &:last-child
         padding-right: 25px
+
+// Bulma card footer
+.card-footer-item
+  &.is-success
+    color: $success
+  &.is-danger
+    color: $danger

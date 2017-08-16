@@ -8,7 +8,7 @@
 (defn moment [arg] (.moment js/window arg))
 
 (defn date-short
-  "Short date (e.g. Jan 1, 2017)"
+  "Short date (e.g. 01/01/2017)"
   [thing]
   (if thing (-> (moment thing)
                 (.format (l10n/translate :tongue/format-date-short)))))
@@ -26,6 +26,12 @@
   [thing]
   (if thing (-> (moment thing)
                 (.calendar))))
+
+
+(defn str->timestamp
+  "For mocking purposes. Generates a timestamp for strings like 'Aug 1, 2017'."
+  [str] (if str (-> (moment str) (.unix) (* 1000))))
+
 
 (defn phone-number
   "Uses Google's libphonenumber to format the provided phone number."
@@ -46,7 +52,7 @@
    email])
 
 
-; This pipes through Tongue, so it's automatically internationalized
+;; This pipes through Tongue, so it's automatically internationalized
 (defn number
   "Accepts a number, and returns a formatted string according to current language. e.g. [12345] -> '12,345'"
   [amount]

@@ -38,7 +38,7 @@
     [:span]))
 
 (defn payment-for
-  "Displays payment status. If 'paid', nothing is displayed."
+  "Displays payment status in tag format."
   [status]
   (case status
     "rent"    [:span.tag
@@ -52,7 +52,21 @@
                "Service Order"]
     [:span]))
 
-(defn payment-list-item [payment]
+
+(defn render-payment-period
+  "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
+  [tx]
+  (let [start (aget tx "period-start-date")
+        end   (aget tx "period-end-date")]
+   (if (and start end)
+     (str (format/date-short start)
+          " - "
+          (format/date-short end)))))
+
+
+(defn payment-list-item
+  "DEPRECATED: use payments-list-table instead."
+  [payment]
   (let [amount  (get payment :amount)
         type    (get payment :for)
         status  (get payment :status)
@@ -74,7 +88,7 @@
 
 
 (defn payments-list
-  "Receives a vector of transactions, and displays them as a list."
+  "DEPRECATED: use payments-list-table instead."
   [txs]
   [:nav {:class "panel"}
     (for [tx txs]
@@ -85,35 +99,44 @@
 
 (def ^:private payment-table-columns
   [
-   ; {:title     ""
-   ;  :dataIndex :method
-   ;  :render    (fn [val]
-   ;               (r/as-element
-   ;                [payment-source-icon val]))}
-   {:title     "Amount"
-    :dataIndex :amount
-    :className "align-right"
-    ; :sorter    (utils/comp-alphabetical :amount)
+   ;; PAYMENT TYPE ICON
+   {:dataIndex :method
+    :className "is-narrow"
     :render    (fn [val]
-                 (format/currency val))}
-   {:title     ""
-    :dataIndex :status
-    :className "narrow"
-    :render    (fn [val]
-                 (r/as-element
-                  [payment-status val]))}
-    ;; :sorter    (utils/comp-alphabetical :last_name)}
-   {:title     "Type"
-    :dataIndex :for
-    :render    (fn [val]
-                 (r/as-element
-                  [payment-for val]))}
-    ;; :sorter    (utils/comp-alphabetical :email)
+                 (r/as-element [payment-source-icon val]))}
+
+   ;; DATE PAID
    {:title     "Date"
     :dataIndex :paid-on
     :render    (fn [val]
-                 (format/date-short val))}])
-    ;; :sorter    (utils/comp-alphabetical :phone)
+                 (format/date-short val))}
+
+   ;; AMOUNT
+   {:title     "Amount"
+    :dataIndex :amount
+    :className "td-bold"
+    :render    (fn [val]
+                 (format/currency val))}
+
+   ;; STATUS OF PAYMENT
+   {:dataIndex :status
+    :className "is-narrow"
+    :render    (fn [val]
+                 (r/as-element [payment-status val]))}
+
+   ;; REASON FOR PAYMENT
+   {:title     "Type"
+    :dataIndex :for
+    :render    (fn [val]
+                 (r/as-element [payment-for val]))}
+
+   {:title     "Period"
+    ; :dataIndex :for
+    :render    (fn [val item _]
+                 (render-payment-period item))}])
+
+
+
 
 (defn tx->column [key tx]
   (assoc tx :key key))
@@ -123,7 +146,7 @@
   "Returns a class name for highlighting pending and due payments."
   [tx]
   (case (aget tx "status")
-    "due"     "warning"
+    ;; "due"     "warning"
     "pending" "info"
     "default"))
 

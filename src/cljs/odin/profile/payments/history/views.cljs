@@ -9,16 +9,24 @@
 (defn history []
   [:div
    [:h1 "Payment History"]
+
    [notification/page-notification
-    [:p "Your rent's late, brah. It's gonna run you about 1,200 buckaroos. Want to "
-        [:a "pay that now?"]]
-    :danger]
-   [:div.columns
-    [:div.column
-     [ant/card {:title "Rent Payments"
-                :class "is-flush"}
-      [payments-ui/payments-list mocks/transaction-history]]]
-    [:div.column
-     [ant/card {:title "Service Orders"
-                :class "is-flush"}
-      [payments-ui/payments-list mocks/transaction-history]]]]])
+    [:div
+     ; [:h4 "Outstanding charges"]
+     [:p "We've encountered an issue with your primary payment method. Want to " [:a "fix that?"]]]
+    :warning false]
+
+   [notification/page-notification
+    [:div
+     ; [:h4 "Rent overdue"]
+     [:p "Your rent of $1,200 was due on August 1st. Want to " [:a "pay that now?"]]]
+    :danger false]
+
+   [notification/page-notification
+    [:div
+     [:p "Everything looks good! You paid your rent 3 days early this month. "
+      [:a {:href "https://imgur.com/a/gwpjZ" :target "_blank"}"Here's a cool meme"] " to celebrate."]]
+    :success]
+
+   [ant/card {:class "is-flush"}
+    [payments-ui/payments-table mocks/transaction-history]]])

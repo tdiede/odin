@@ -1,3 +1,5 @@
+
+
 // Fine-tuning the display of icons
 // and providing reusable additional styles.
 
@@ -33,6 +35,8 @@ h3 .icon
 //   .icon, .icon i
 //     font-size: inherit !important
 
+
+
 // Reinforcing Bulma panel icon styles, but with different selector,
 // so we can blindly use "span.icon" anywhere + get proper results.
 .panel
@@ -50,6 +54,7 @@ h3 .icon
       font-size: inherit
       line-height: inherit
 
+// Icons inside of .tag's are very small.
 span.tag
   .icon
     width: 1rem
@@ -58,3 +63,12 @@ span.tag
   .icon, .fa
     font-size:   12px
     line-height: 12px
+
+// Icons directly in a table row are slightly larger.
+td
+  & > .icon
+    width: .8rem
+    height: .8rem
+  & > .icon, & > .icon .fa
+    font-size:   11px
+    line-height: 11px

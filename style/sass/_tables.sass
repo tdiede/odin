@@ -17,7 +17,8 @@
       td, th
         border-bottom-width: 1px
 
-
+.td-bold
+  font-weight: bold
 
 
 // SELECTOR REFERENCE FOR ANT TABLES
@@ -50,6 +51,11 @@
       border-bottom: 1px solid $inner-component-border-color
       vertical-align: middle
 
+    // Reduces the width of a column by eliminating right padding.
+    // Use carefully. Works best for columns with an empty header.
+    th.is-narrow, td.is-narrow
+      padding-right: 0
+
     &:last-child td
       border-bottom: none
 
@@ -62,12 +68,13 @@
       &:last-child
         width: 100%
 
+// Colored Rows
 tr.warning, tr.warning:hover
   td
-    background:   #ffd8e0
-    border-color: #ffc1ce
+    background:   #ffebef
+    border-color: #ffd1da
 
 tr.info, tr.info:hover
   td
-    background:   #e7effd
-    border-color: #c3d2ea
+    background:   #eff4fb
+    border-color: #dce5f3
