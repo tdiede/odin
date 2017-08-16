@@ -1,7 +1,8 @@
 (ns odin.utils.formatters
   (:require [odin.l10n :refer [translate]]
             [i18n.phonenumbers.PhoneNumberUtil :as pnu]
-            [i18n.phonenumbers.PhoneNumberFormat :as pnf]))
+            [i18n.phonenumbers.PhoneNumberFormat :as pnf]
+            [clojure.string :as string]))
 
 (defn phone-number
   "Uses Google's libphonenumber to format the provided phone number."
@@ -17,19 +18,25 @@
 (defn email-link
   "Returns an <a> element linking to the specified email address."
   [email]
-  [:a
-   {:href (str "mailto:" email)}
-   email])
+  [:a {:href (str "mailto:" email)} email])
 
 
 ; This pipes through Tongue, so it's automatically internationalized
 (defn number
-  "Accepts a number, and returns a formatted string according to current language. e.g. [12345] -> '12,345'"
+  "Accepts a number, and returns a formatted string according to current
+  language. e.g. [12345] -> '12,345'"
   [amount]
   (translate :tongue/format-number amount))
 
 
 (defn currency
-  "Accepts a number, and returns a formatted currency amount according to current language. e.g. [1999.99] -> '$1,999.99'"
+  "Accepts a number, and returns a formatted currency amount according to
+  current language. e.g. [1999.99] -> '$1,999.99'"
   [amount]
   (str "$" (number amount)))
+
+
+(defn initials
+  "Given a `name`, produce the initials (first and last name)."
+  [name]
+  (->> (string/split name #" ") (map first) (apply str)))
