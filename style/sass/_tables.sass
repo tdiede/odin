@@ -48,6 +48,7 @@
     td
       padding:       .5rem $side-padding
       border-bottom: 1px solid $inner-component-border-color
+      vertical-align: middle
 
     &:last-child td
       border-bottom: none
@@ -55,3 +56,18 @@
     &:hover
       td
         background: none
+
+    th, td
+      white-space: nowrap
+      &:last-child
+        width: 100%
+
+tr.warning, tr.warning:hover
+  td
+    background:   #ffd8e0
+    border-color: #ffc1ce
+
+tr.info, tr.info:hover
+  td
+    background:   #e7effd
+    border-color: #c3d2ea

@@ -43,6 +43,16 @@
     :period-end-time   (.getTime (js/Date.))
     :due               (.getTime (js/Date.))}
 
+   {:id                20175742552222013984
+    :status            :payment.status/due
+    :for               :payment.for/rent
+    :amount            1400.00
+    :method            :payment.method/stripe-charge
+    :paid-on           (.getTime (js/Date.))
+    :period-start-time nil
+    :period-end-time   nil
+    :due               (.getTime (js/Date.))}
+
    {:id                201757425582013984
     :status            :payment.status/paid
     :for               :payment.for/deposit

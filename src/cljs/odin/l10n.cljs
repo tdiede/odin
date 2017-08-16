@@ -69,6 +69,7 @@
         :history             "History"
         :payment-sources     "Payment Sources"
         :payment-history     "Payment History"
+        :payment-history-for "Payment History for {1}"
         :transaction-history "Transaction History"
         :btn-unlink-account  "Unlink account"
 

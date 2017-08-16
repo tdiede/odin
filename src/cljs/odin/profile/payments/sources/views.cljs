@@ -36,10 +36,12 @@
 (defn source-payment-history
   "Display the transaction history for a given payment source."
   [current-source]
-  (let [txs (get current-source :tx-history)]
-   [ant/card
-    [:h4 (l10n/translate :payment-history)]
-    [payments-ui/payments-list txs]
+  (let [txs  (get current-source :tx-history)
+        name (get current-source :name)]
+   [ant/card {:title (l10n/translate :payment-history-for name)
+              :class "is-flush"}
+    ; [:h4 (l10n/translate :payment-history)]
+    ; [payments-ui/payments-list txs]
     [payments-ui/payments-table txs]]))
 
 
@@ -64,4 +66,4 @@
     [:div.column
      [source-detail (first mocks/payment-sources)]
      [source-payment-history (first mocks/payment-sources)]]]])
-    ; [modal-confirm-disable-autopay]])
+    ; [modal-confirm-disable-autopay]]])

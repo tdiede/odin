@@ -29,23 +29,27 @@
 (defn payment-status
   "Displays payment status (paid / pending / etc)."
   [status]
-  (tb/log status)
   (case status
-    "due"       [:span.tag.is-danger "Due"]
-    "canceled"  [:span.tag.is-light "Canceled"]
-    "pending"   [:span.tag.is-info "Pending"]
-    "failed"    [:span.tag.is-light "Failed"]
-    "paid"      [:span.tag.is-success "Paid"]
+    "due"       [:span.tag.is-hollow "Due"]
+    "canceled"  [:span.tag.is-hollow "Canceled"]
+    "pending"   [:span.tag.is-hollow "Pending"]
+    "failed"    [:span.tag.is-hollow "Failed"]
+    "paid"      [:span.tag.is-hollow "Paid"]
     [:span]))
 
 (defn payment-for
   "Displays payment status. If 'paid', nothing is displayed."
   [status]
   (case status
-    "due"       [ant/tag {:color "red"}"Due"]
-    "canceled"  [ant/tag "Canceled"]
-    "pending"   [ant/tag {:color "yellow"} "Pending"]
-    "failed"    [ant/tag "Failed"]
+    "rent"    [:span.tag
+               [:span.icon.extra-small [:i.fa.fa-home]]
+               "Rent Payment"]
+    "deposit" [:span.tag
+               [:span.icon.extra-small [:i.fa.fa-shield]]
+               "Security Deposit"]
+    "order"   [:span.tag
+               [:span.icon.extra-small [:i.fa.fa-smile-o]]
+               "Service Order"]
     [:span]))
 
 (defn payment-list-item [payment]
@@ -88,17 +92,22 @@
    ;                [payment-source-icon val]))}
    {:title     "Amount"
     :dataIndex :amount
+    :className "align-right"
     ; :sorter    (utils/comp-alphabetical :amount)
     :render    (fn [val]
                  (format/currency val))}
-   {:title     "Status"
+   {:title     ""
     :dataIndex :status
+    :className "narrow"
     :render    (fn [val]
                  (r/as-element
                   [payment-status val]))}
     ;; :sorter    (utils/comp-alphabetical :last_name)}
    {:title     "Type"
-    :dataIndex :for}
+    :dataIndex :for
+    :render    (fn [val]
+                 (r/as-element
+                  [payment-for val]))}
     ;; :sorter    (utils/comp-alphabetical :email)
    {:title     "Date"
     :dataIndex :paid-on
@@ -109,12 +118,23 @@
 (defn tx->column [key tx]
   (assoc tx :key key))
 
+
+(defn get-payment-row-class
+  "Returns a class name for highlighting pending and due payments."
+  [tx]
+  (case (aget tx "status")
+    "due"     "warning"
+    "pending" "info"
+    "default"))
+
+
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
   [txs]
   [ant/table
-   {:class      "payments-table"
-    :loading    false
-    :columns    payment-table-columns
-    :dataSource (map-indexed tx->column txs)
-    :pagination false}])
+   {:class        "payments-table"
+    :loading      false
+    :columns      payment-table-columns
+    :rowClassName get-payment-row-class
+    :dataSource   (map-indexed tx->column txs)
+    :pagination   false}])
