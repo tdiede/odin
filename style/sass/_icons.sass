@@ -2,8 +2,59 @@
 // and providing reusable additional styles.
 
 h1,h2,h3,h4
+  .icon, .icon i
+    font-size: inherit !important
+    line-height: inherit !important
+    display: inline-block
+    vertical-align: baseline !important
+    text-align: center
+
+    & + span
+      display: inline-block
+      vertical-align: baseline !important
+
+// Space between icons that precede (or reside in) headings
+h1 .icon
+  margin-right: 1.4rem
+.icon + h1
+  margin-left: 1.4rem
+
+h2 .icon
+  margin-right: .7rem
+.icon + h2
+  margin-left: .7rem
+
+h3 .icon
+  margin-right: .5rem
+.icon + h3
+  margin-left: .5rem
+
+// h1
+//   .icon, .icon i
+//     font-size: inherit !important
+
+// Reinforcing Bulma panel icon styles, but with different selector,
+// so we can blindly use "span.icon" anywhere + get proper results.
+.panel
   .icon
     display: inline-block
-    vertical-align: middle
-    margin-right: .15rem
+    font-size: 14px
+    height: 1em
+    line-height: 1em
     text-align: center
+    vertical-align: top
+    width: 1em
+    color: #7a7a7a
+    margin-right: 0.75em
+    .fa
+      font-size: inherit
+      line-height: inherit
+
+span.tag
+  .icon
+    width: 1rem
+    height: 1rem
+    margin-right: .2rem
+  .icon, .fa
+    font-size:   12px
+    line-height: 12px

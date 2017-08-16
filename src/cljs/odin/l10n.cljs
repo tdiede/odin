@@ -11,6 +11,9 @@
         :tongue/format-number (tongue/number-formatter {:group   ","
                                                         :decimal "."})
 
+        :tongue/format-date-short "MMM DD, YYYY"
+        :tongue/format-date-time  "MMMM DD, YYYY @ HH:mm a"
+
         ;; NOTE: Cannot nest keys indefinitely. We'll need a function if we want
         ;; to go more than one level deep.
         :people {:admin  "People"
@@ -46,7 +49,33 @@
                :other "Notes"}
 
         ;; Payment stuff
-        :view-on-stripe "View transaction on Stripe."}
+        :view-on-stripe "View transaction on Stripe."
+
+        :payment.status/due      "Due"
+        :payment.status/canceled "Canceled"
+        :payment.status/paid     "Paid"
+        :payment.status/pending  "Pending"
+        :payment.status/failed   "Failed"
+
+        :payment.method/stripe-charge  "Stripe Charge"
+        :payment.method/stripe-invoice "Stripe Invoice"
+        :payment.method/check          "Check"
+
+        :payment.for/rent    "Rent"
+        :payment.for/deposit "Security Deposit"
+        :payment.for/order   "Order"
+
+        :sources             "Sources"
+        :history             "History"
+        :payment-sources     "Payment Sources"
+        :payment-history     "Payment History"
+        :payment-history-for "Payment History for {1}"
+        :transaction-history "Transaction History"
+        :btn-unlink-account  "Unlink account"
+
+        :autopay                "Autopay"
+        :use-for-autopay        "Use this account for Autopay"
+        :confirm-unlink-autopay "Are you sure you want to disable Autopay?"}
 
    :tongue/fallback :en})
 

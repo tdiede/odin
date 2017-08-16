@@ -44,6 +44,5 @@
         [[:settings :change-password]] [settings/change-password]
         :else [:h1 "unmatched"]))]])
 
-
 (defmethod content/view :profile [route]
   [content route])

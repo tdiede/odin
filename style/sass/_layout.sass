@@ -9,6 +9,7 @@
 .flexrow
   display: flex
   flex-direction: row
+  align-items: baseline
 
 .flexcol
   display: flex
@@ -23,8 +24,12 @@
 // Spacing
 .pad-left
   padding-left: $side-padding
+
 .pad-right
   padding-right: $side-padding
+
+.full-width
+  width: 100%
 
 // Spacing for elements in a row. When using this class,
 // the :last-child will not have spacing. If this behavior
@@ -32,6 +37,9 @@
 .space-right
   &:not(:last-child)
     margin-right: $side-padding
+
+.space-top
+  margin-top: $side-padding
 
 // PAGE LAYOUT
 // ----------------------------
