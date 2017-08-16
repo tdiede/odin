@@ -27,13 +27,24 @@
 ;; =============================================================================
 
 
+(defn burger []
+  [:div.navbar-burger.burger
+   {:on-click #(dispatch [:menu/toggle])}
+   [:span] [:span] [:span]])
+
+
 (defn brand []
   [:div.navbar-brand
-   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]])
+   [:a.navbar-item.brand-logo {:href "/"} "Starcity"]
+   (burger)])
 
 
-(defn navbar-menu-item [role {:keys [feature titles uri]}]
-  [:a.navbar-item {:href uri} (translate (keyword (name feature) role))])
+(defn navbar-menu-item
+  [role {:keys [feature titles uri]}]
+  (let [root (subscribe [:route/root])]
+    [:a.navbar-item {:href  uri
+                     :class (when (= feature @root) "is-active")}
+     (translate (keyword (name feature) role))]))
 
 
 (defn navbar-menu []
@@ -43,23 +54,23 @@
     [:div.navbar-start
      (doall
       (map-indexed
-       #(with-meta (navbar-menu-item @role %2) {:key %1})
+       #(with-meta [navbar-menu-item @role %2] {:key %1})
        @menu-items))]))
 
 
 (defn navbar []
   (let [menu-showing (subscribe [:menu/showing?])]
-    [:nav.navbar.is-transparent
-     [brand]
-     [:div.navbar-menu
-      {:class "is-active"}
+    [:nav.navbar
+     (brand)
+     [:div.navbar-menu {:class (when @menu-showing "is-active")}
       [navbar-menu]
       [:div.navbar-end
-       [:div.navbar-item.hoverable
-        [:a.flexbox.has-pointer
-         {:href (routes/path-for :profile)}
+       [:a.navbar-item.hoverable
+        {:href (routes/path-for :profile/membership)}
+        [:div.flexbox.has-pointer
          [ant/avatar "DC"]
-         [:span.valign.pad-left "Derryl Carter"]]]]]]))
+         [:span.valign.pad-left
+          "Derryl Carter"]]]]]]))
 
 
 (defn error-view []

@@ -28,6 +28,6 @@
     :menu    {:showing false
               :items   menu-items}
     :route   {:current :home
-              :root    :home
+              :path    [:home]
               :params  {}}}
    accounts/default-value))

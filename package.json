@@ -18,9 +18,9 @@
     "license": "ISC",
     "homepage": "https://my.joinstarcity.com",
     "dependencies": {
-        "antd": "^2.11.2",
-        "bulma": "^0.4.3",
-        "spinkit": "^1.2.5",
-        "less-plugin-clean-css": "^1.5.1"
+        "antd": "^2.12.6",
+        "bulma": "^0.5.1",
+        "less-plugin-clean-css": "^1.5.1",
+        "spinkit": "^1.2.5"
     }
 }
