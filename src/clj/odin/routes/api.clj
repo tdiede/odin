@@ -3,7 +3,8 @@
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
             [datomic.api :as d]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+            [blueprints.models.account :as account]))
 
 ;; =============================================================================
 ;; Helpers
@@ -14,8 +15,13 @@
   (get-in req [:deps :conn]))
 
 
+;; TODO: Remove
+(defn- debug-user [db]
+  (d/entity db [:account/email "member@test.com"]))
+
+
 ;; =============================================================================
-;; Routes
+;; GraphQL
 ;; =============================================================================
 
 
@@ -31,14 +37,21 @@
         result    (execute graph/schema
                            (format "%s %s" (name op) expr)
                            nil
-                           {:db   (d/db conn)
-                            :conn conn})]
+                           {:db        (d/db conn)
+                            :conn      conn
+                            ;; TODO: Use authenticated user
+                            :requester (debug-user (d/db conn))})]
     (-> (response/response result)
         (response/content-type "application/transit+json")
         (response/status (if (-> result :errors some?) 400 200)))))
 
 
-(def admin
+;; =============================================================================
+;; Config
+;; =============================================================================
+
+
+(def ^:private admin-config
   {:role :admin
    :features
    {:home        {}
@@ -49,7 +62,7 @@
     :services    {}}})
 
 
-(def member
+(def ^:private member-config
   {:role :member
    :features
    {:home        {}
@@ -58,10 +71,26 @@
     :communities {}}})
 
 
+(defn inject-account [config account]
+  (assoc config :account {:id    (:db/id account)
+                          :name  (format "%s %s"
+                                         (account/first-name account)
+                                         (account/last-name account))
+                          :email (account/email account)}))
+
+
 (defn config-handler [req]
-  (-> (response/response member)
-      (response/content-type "application/transit+json")
-      (response/status 200)))
+  ;; TODO: Use authenticated user
+  (let [account (debug-user (d/db (->conn req)))
+        config  (inject-account member-config account)]
+    (-> (response/response config)
+        (response/content-type "application/transit+json")
+        (response/status 200))))
+
+
+;; =============================================================================
+;; Routes
+;; =============================================================================
 
 
 (defroutes routes
