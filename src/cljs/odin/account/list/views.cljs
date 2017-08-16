@@ -4,11 +4,13 @@
             [odin.l10n :as l10n]
             [antizer.reagent :as ant]
             [re-frame.core :refer [subscribe dispatch]]
+            [odin.utils.toolbelt :as utils]
             [toolbelt.core :as tb]
             [reagent.core :as r]
             [odin.utils.formatters :as format]))
 
 
+;; TODO: put into odin.utils.toolbelt
 (defn comp-alphabetical [key]
   (let [key (name key)]
     (fn [a b]
