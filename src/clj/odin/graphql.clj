@@ -22,6 +22,10 @@
     :Keyword
     {:parse     (schema/as-conformer
                  #(format "%s/%s" (namespace %) (name %)))
+     :serialize (schema/as-conformer identity)}
+
+    :Instant
+    {:parse     (schema/as-conformer identity)
      :serialize (schema/as-conformer identity)}}})
 
 
@@ -40,6 +44,34 @@
     (require '[odin.datomic :refer [conn]])
     (require '[datomic.api :as d]))
 
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (execute schema
+             (venia.core/graphql-query
+              {:venia/queries
+               [[:payment_sources {:account (:db/id account)}
+                 [:id :type :name :last4]]] })
+             nil
+             {:db        (d/db conn)
+              :conn      conn
+              :stripe    (odin.config/stripe-secret-key odin.config/config)
+              :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (->> (execute schema
+                  (venia.core/graphql-query
+                   {:venia/queries
+                    [[:payments {:account (:db/id account)}
+                      [:id :method :autopay :for [:source [:id :name :last4]]]]]})
+                  nil
+                  {:db        (d/db conn)
+                   :conn      conn
+                   :stripe    (odin.config/stripe-secret-key odin.config/config)
+                   :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
+         :data
+         :payments
+         (map (partial into {}))))
+
+
   (execute schema
            ;; "query { accounts(role: member) { id, name, property { code } }}"
            (venia.core/graphql-query
@@ -49,14 +81,6 @@
            nil
            {:db   (d/db conn)
             :conn conn})
-
-
-  ;; (venia.core/graphql-query
-  ;;  {:venia/queries
-  ;;   [[:set_phone {:id 285873023223058 :phone "2345678911"} [:id :name :email :role :phone]]]})
-
-
-
 
 
   )

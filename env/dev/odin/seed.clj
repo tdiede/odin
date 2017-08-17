@@ -6,10 +6,12 @@
             [blueprints.models.license :as license]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.onboard :as onboard]
+            [blueprints.models.order :as order]
             [blueprints.models.promote :as promote]
             [blueprints.models.property :as property]
-            [blueprints.models.rent-payment :as rp]
+            [blueprints.models.payment :as payment]
             [blueprints.models.security-deposit :as deposit]
+            [blueprints.models.service :as service]
             [blueprints.models.unit :as unit]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
@@ -149,29 +151,97 @@
 (defn- date [y m d]
   (c/to-date (t/date-time y m d)))
 
-(def check-december
-  (let [start (date 2016 12 1)
-        end   (date 2016 12 31)]
-    (rp/create 2000.0 start end :rent-payment.status/paid
-               :method rp/check
-               :check (check/create "Member" 2000.0 (java.util.Date.) 1175)
-               :due-date (date 2016 12 5)
-               :paid-on (date 2016 12 15))))
-
-(def check-november-other
-  (rp/create 1000.0 (date 2016 11 15) (date 2016 11 30) :rent-payment.status/paid
-             :method rp/other
-             :due-date (date 2016 11 20)
-             :paid-on (date 2016 11 19)
-             :desc "bill.com"))
-
 (defn- rent-payments-tx [conn]
-  (let [license (->> (d/entity (d/db conn) [:account/email "member@test.com"])
-                     (member-license/active (d/db conn)))]
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        license (member-license/active (d/db conn) account)]
     [(member-license/add-rent-payments
       license
-      check-december
-      check-november-other)]))
+      (payment/create 2000.0 account
+                      :for :payment.for/rent
+                      :method :payment.method/stripe-invoice
+                      :invoice-id "in_1Am9sNJDow24Tc1aFeswkDT1"
+                      :pstart (date 2017 7 1)
+                      :pend (date 2017 8 1))
+      (payment/create 2000.0 account
+                      :for :payment.for/rent
+                      :method :payment.method/stripe-invoice
+                      :invoice-id "in_1Aav6WJDow24Tc1aVFckJH4K"
+                      :pstart (date 2017 6 1)
+                      :pend (date 2017 7 1)))
+     {:db/id (:db/id license)
+      :member-license/subscription-id "sub_9ssx9DacEP1g4Y"}]))
+
+
+;; =============================================================================
+;; Rent Payments
+
+
+(defn- storage-bins [db account]
+  (let [service (service/by-code db "storage,bin,small")]
+    (-> (order/create account service
+                      {:quantity 4.0
+                       :status   :order.status/charged})
+        (assoc :stripe/subs-id "sub_AqocuGJcK71Uf2"
+               :order/payments (payment/create 48.0 account
+                                               :for :payment.for/order
+                                               :invoice-id "in_1ArE44IvRccmW9nOu8hqIlti"
+                                               :method :payment.method/stripe-invoice)))))
+
+
+(defn- customize-furniture [db account]
+  (let [service (service/by-code db "customize,furniture,quote")]
+    (-> (order/create account service
+                      {:price  75.0
+                       :desc   "We customized some furniture and shit."
+                       :status :order.status/charged})
+        (assoc :order/payments (payment/create 75.0 account
+                                               :for :payment.for/order
+                                               :charge-id "ch_1AV7PpIvRccmW9nOgAgD793D"
+                                               :method :payment.method/stripe-charge)))))
+
+
+(defn- kitchenette [db account]
+  (let [service (service/by-code db "kitchenette,coffee/tea,bundle")]
+    (-> (order/create account service
+                      {:variant (d/q '[:find ?e .
+                                       :where
+                                       [?e :svc-variant/name "Chemex"]]
+                                     db)
+                       :status  :order.status/charged})
+        (assoc :order/payments (payment/create 75.0 account
+                                               :for :payment.for/order
+                                               :charge-id "ch_1AV7OkIvRccmW9nOtgRbZ1WK"
+                                               :method :payment.method/stripe-charge)))))
+
+
+;; Create orders for three services backed by actual Stripe data.
+(defn orders-tx [db]
+  (let [account (d/entity db [:account/email "member@test.com"])]
+    ((juxt storage-bins customize-furniture kitchenette) db account)))
+
+
+;; =============================================================================
+;; Security Deposit
+
+
+(defn- next-week []
+  (c/to-date (t/plus (t/now) (t/weeks 1))))
+
+
+(defn- next-month []
+  (c/to-date (t/plus (t/now) (t/months 1))))
+
+
+(defn deposit-payments-tx [db]
+  (let [account (d/entity db [:account/email "member@test.com"])
+        deposit (deposit/by-account account)
+        payment (payment/create 500.0 account
+                                :status :payment.status/paid
+                                :charge-id "py_1AV6trIvRccmW9nOX14uB4hk"
+                                :for :payment.for/deposit
+                                :due (next-week))]
+    [(deposit/add-payment deposit payment) payment]))
+
 
 ;; =============================================================================
 ;; Stripe Customers
@@ -179,8 +249,13 @@
 (defn stripe-customers-tx []
   [{:db/id                              (d/tempid :db.part/starcity)
     :stripe-customer/account            [:account/email "member@test.com"]
-    :stripe-customer/customer-id        "cus_9bzpu7sapb8g7y"
-    :stripe-customer/bank-account-token "ba_19IlpVIvRccmW9nO20kCxqE5"}])
+    :stripe-customer/customer-id        "cus_AqoW7OTNg0Ld7t"
+    :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"}
+   {:db/id                              (d/tempid :db.part/starcity)
+    :stripe-customer/account            [:account/email "member@test.com"]
+    :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
+    :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
+    :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
 
 ;; =============================================================================
 ;; Avatar
@@ -199,19 +274,21 @@
   [conn]
   (cf/ensure-conforms
    conn
-   {:seed/accounts          {:txes [(accounts-tx)]}
-    :seed/applications      {:txes     [(applications-tx conn)]
-                             :requires [:seed/accounts]}
-    :seed/stripe-customers  {:txes     [(stripe-customers-tx)]
-                             :requires [:seed/accounts]}
-    :seed/avatar            {:txes [(avatar-tx)]}})
+   {:seed/accounts         {:txes [(accounts-tx)]}
+    :seed/applications     {:txes     [(applications-tx conn)]
+                            :requires [:seed/accounts]}
+    :seed/stripe-customers {:txes     [(stripe-customers-tx)]
+                            :requires [:seed/accounts]}
+    :seed/avatar           {:txes [(avatar-tx)]}})
   ;; NOTE: These need to happen in separate transactions.
   (cf/ensure-conforms
    conn
    {:seed/approval {:txes [(approval-tx conn)]}})
   (cf/ensure-conforms
    conn
-   {:seed/member-licenses {:txes [(member-licenses-tx conn)]}})
+   {:seed/memberhsip {:txes [(member-licenses-tx conn)
+                             (rent-payments-tx conn)
+                             (deposit-payments-tx (d/db conn))]}})
   (cf/ensure-conforms
    conn
-   {:seed/rent-payments {:txes [(rent-payments-tx conn)]}}) )
+   {:seed/orders {:txes [(orders-tx (d/db conn))]}}))

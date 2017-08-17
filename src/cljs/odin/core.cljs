@@ -8,6 +8,7 @@
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
+            [odin.utils.formatters :as formatters]
             [day8.re-frame.http-fx]
             [antizer.reagent :as ant]
             [cljsjs.moment]
@@ -59,7 +60,8 @@
 
 
 (defn navbar []
-  (let [menu-showing (subscribe [:menu/showing?])]
+  (let [menu-showing (subscribe [:menu/showing?])
+        account      (subscribe [:account])]
     [:nav.navbar
      (brand)
      [:div.navbar-menu {:class (when @menu-showing "is-active")}
@@ -68,9 +70,9 @@
        [:a.navbar-item.hoverable
         {:href (routes/path-for :profile/membership)}
         [:div.flexbox.has-pointer
-         [ant/avatar "DC"]
+         [ant/avatar (formatters/initials (:name @account))]
          [:span.valign.pad-left
-          "Derryl Carter"]]]]]]))
+          (:name @account)]]]]]]))
 
 
 (defn error-view []
