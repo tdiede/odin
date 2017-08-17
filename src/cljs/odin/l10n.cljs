@@ -77,7 +77,10 @@
 
         :autopay                "Autopay"
         :use-for-autopay        "Use this account for Autopay"
-        :confirm-unlink-autopay "Are you sure you want to disable Autopay?"}
+        :confirm-unlink-autopay "Are you sure you want to disable Autopay?"
+
+        :rent-overdue-notification-body     "Your rent of {1} was due on August 1st. Want to "
+        :rent-overdue-notification-body-cta "pay that now?"}
 
    :tongue/fallback :en})
 

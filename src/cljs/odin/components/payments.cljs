@@ -2,6 +2,8 @@
   (:require [odin.l10n :as l10n]
             [odin.utils.toolbelt :as utils]
             [odin.utils.formatters :as format]
+            [odin.profile.payments.sources.mocks :as mocks]
+            [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
             [toolbelt.core :as tb]
             [reagent.core :as r]))
@@ -25,6 +27,11 @@
       :amex [:i.fa.fa-cc-amex {:class icon-size}]
       :visa [:i.fa.fa-cc-visa {:class icon-size}]
       [:i.fa.fa-university {:class icon-size}])]))
+
+(defn source-name-and-numbers [source]
+  (let [{name   :name
+         digits :trailing-digits} source]
+    (str name " **** " digits)))
 
 (defn payment-status
   "Displays payment status (paid / pending / etc)."
@@ -56,12 +63,12 @@
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
-  (let [start (aget tx "period-start-date")
-        end   (aget tx "period-end-date")]
-   (if (and start end)
-     (str (format/date-short start)
-          " - "
-          (format/date-short end)))))
+  (let [start (or (aget tx "period-start-date") (get tx :period-start-date))
+        end   (or (aget tx "period-end-date")   (get tx :period-end-date))]
+    (if (and start end)
+      (str (format/date-short start)
+           " - "
+           (format/date-short end)))))
 
 
 (defn payment-list-item
@@ -161,3 +168,60 @@
     :rowClassName get-payment-row-class
     :dataSource   (map-indexed tx->column txs)
     :pagination   false}])
+
+
+(defn menu-select-source [sources]
+  [:div.select
+   [:select
+    (for [source sources]
+      (let [id (get source :id)]
+       ^{:key id}
+       [:option {:value id} (source-name-and-numbers source)]))]])
+
+
+(defn render-payment-box [tx]
+  (let [{reason :for
+         amount :amount
+         due    :due} tx]
+    [:div.box
+     [:div.columns
+      [:div.column.is-narrow
+       [:span.icon.is-large [:i.fa.fa-home]]]
+      [:div.column.is-narrow
+       [:h3 (l10n/translate reason)]]
+      [:div.column
+       [:h4 [:a "2027 Mission St"]]
+       [:p (render-payment-period tx)]]
+
+      [:div.column.align-right
+       [:h4 (format/currency amount)]
+       (if (= reason (or :payment.for/rent :payment.for/deposit))
+         [:p (str "Due on " (format/date-short due))])]]]))
+
+(defn make-payment-modal [tx is-visible]
+  (let [{reason :for
+         amount :amount
+         due    :due} tx]
+   [ant/modal {:title     "Make a payment"
+               :width     "640px"
+               :visible   @is-visible
+               :on-ok     #(reset! is-visible false)
+               :on-cancel #(reset! is-visible false)
+               :footer    [(r/as-element [menu-select-source mocks/payment-sources])
+                           ; (r/as-element [:a.button {:on-click #(reset! is-visible false)}
+                                          ; "Cancel"])
+                           (r/as-element [:a.button.is-success
+                                          (str "Confirm Payment - " (format/currency amount))])]}
+    [render-payment-box tx]]))
+
+
+(defn rent-overdue-notification
+  "Takes a tx in 'due' state, and displays a CTA notification for making payment."
+  [tx]
+  (let [modal-shown (r/atom true)]
+    (fn [tx]
+     [notification/banner-danger
+      [:div
+       [:p (l10n/translate :rent-overdue-notification-body (format/currency (get tx :amount)))
+        [:a {:on-click #(swap! modal-shown not)} (l10n/translate :rent-overdue-notification-body-cta)]
+        [make-payment-modal tx modal-shown]]]])))

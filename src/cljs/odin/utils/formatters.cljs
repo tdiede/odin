@@ -62,4 +62,4 @@
 (defn currency
   "Accepts a number, and returns a formatted currency amount according to current language. e.g. [1999.99] -> '$1,999.99'"
   [amount]
-  (str "$ " (number amount)))
+  (str "$" (number amount)))
