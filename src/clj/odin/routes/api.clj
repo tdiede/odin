@@ -4,7 +4,8 @@
             [compojure.core :as compojure :refer [defroutes GET POST]]
             [datomic.api :as d]
             [ring.util.response :as response]
-            [blueprints.models.account :as account]))
+            [blueprints.models.account :as account]
+            [odin.config :as config :refer [config]]))
 
 ;; =============================================================================
 ;; Helpers
@@ -31,16 +32,21 @@
     :post [:mutation (get-in request [:params :mutation] "")]))
 
 
+(defn context [req]
+  (let [conn (->conn req)]
+    {:db        (d/db conn)
+     :conn      conn
+     :stripe    (config/stripe-secret-key config)
+     ;; TODO: Use authenticated user
+     :requester (debug-user (d/db conn))}))
+
+
 (defn graphql-handler [req]
-  (let [conn      (->conn req)
-        [op expr] (extract-graphql-expression req)
+  (let [[op expr] (extract-graphql-expression req)
         result    (execute graph/schema
                            (format "%s %s" (name op) expr)
                            nil
-                           {:db        (d/db conn)
-                            :conn      conn
-                            ;; TODO: Use authenticated user
-                            :requester (debug-user (d/db conn))})]
+                           (context req))]
     (-> (response/response result)
         (response/content-type "application/transit+json")
         (response/status (if (-> result :errors some?) 400 200)))))

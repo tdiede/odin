@@ -1,7 +1,21 @@
 {:enums
- {:role
+ {;; accounts
+  :role
   {:description "Account roles."
-   :values      [:all :member :onboarding :applicant :admin]}}
+   :values      [:all :member :onboarding :applicant :admin]}
+
+  ;; payments
+  :payment_method
+  {:description "Methods of payment."
+   :values      [:ach :card :check :other]}
+
+  :payment_source_type
+  {:description "Types of payment source."
+   :values      [:bank :card]}
+
+  :payment_status
+  {:description "Payment status."
+   :values      [:due :canceled :paid :pending :failed :refunded]}}
 
  :interfaces
  {:person
@@ -29,6 +43,57 @@
                 :property   {:type    :property
                              :resolve :account/property}}}
 
+
+  :payment
+  {:fields {:id      {:type    (non-null :Long)
+                      :resolve (:get :db/id)}
+            :uuid    {:type    (non-null String)
+                      :resolve (:get :payment/id)}
+            :ext_id  {:type        String
+                      :description "The Stripe external id."
+                      :resolve     :payment/external-id}
+            :method  {:type    :payment_method
+                      :resolve :payment/method}
+            :for     {:type    :Keyword
+                      :resolve :payment/for}
+            :autopay {:type        Boolean
+                      :description "Is this an autopay payment?"
+                      :resolve     :payment/autopay?}
+            :amount  {:type    (non-null Float)
+                      :resolve (:get :payment/amount)}
+            :status  {:type    :payment_status
+                      :resolve :payment/status}
+            :due     {:type    :Instant
+                      :resolve (:get :payment/due)}
+            :pstart  {:type        :Instant
+                      :description "Period start."
+                      :resolve     (:get :payment/pstart)}
+            :pend    {:type        :Instant
+                      :description "Period end."
+                      :resolve     (:get :payment/pend)}
+            :account {:type    (non-null :account)
+                      :resolve (:get :payment/account)}
+            :source  {:type    :payment_source
+                      :resolve :payment/source}}}
+
+
+  :payment_source
+  {:fields {:id       {:type    (non-null String)
+                       :resolve (:get :id)}
+            :last4    {:type    (non-null String)
+                       :resolve (:get :last4)}
+            :customer {:type    String
+                       :resolve (:get :customer)}
+            :status   {:type    (non-null String)
+                       :resolve (:get :status)}
+            :type     {:type    (non-null :payment_source_type)
+                       :resolve :payment.source/type}
+            :name     {:type    (non-null String)
+                       :resolve :payment.source/name}
+            :payments {:type        (list :payment)
+                       :description "Payments associated with this source."
+                       :resolve     :payment.source/payments}}}
+
   :property
   {:fields {:id   {:type    (non-null :Long)
                    :resolve (:get :db/id)}
@@ -44,8 +109,18 @@
              :resolve :account/list}
 
   :account {:type    :account
-             :args    {:id {:type (non-null :Long)}}
-             :resolve :account/entry}}
+            :args    {:id {:type (non-null :Long)}}
+            :resolve :account/entry}
+
+  :payments {:type    (list :payment)
+             :args    {:account {:type        (non-null :Long)
+                                 :description "ID of an account to request payments for."}}
+             :resolve :payment/list}
+
+  :payment_sources {:type    (list :payment_source)
+                    :args    {:account {:type        (non-null :Long)
+                                        :description "ID of an account to request sources for."}}
+                    :resolve :payment.sources/list}}
 
  :mutations
  {:set_phone {:type        :account
