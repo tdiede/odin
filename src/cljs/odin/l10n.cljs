@@ -12,8 +12,9 @@
                                                         :decimal "."})
 
         ;;:tongue/format-date-short "MMM D, YYYY"
-        :tongue/format-date-short "MM/DD/YY"
-        :tongue/format-date-time  "MMMM DD, YYYY @ HH:mm a"
+        :tongue/format-date-short     "MMM DD, YYYY"
+        :tongue/format-date-short-num "MM/DD/YY"
+        :tongue/format-date-time      "MMMM DD, YYYY @ HH:mm a"
 
         ;; NOTE: Cannot nest keys indefinitely. We'll need a function if we want
         ;; to go more than one level deep.
@@ -49,6 +50,14 @@
         :note {:one   "Note"
                :other "Notes"}
 
+        ;; Profile section
+        :membership      "Membership"
+        :contact-info    "Contact Info"
+        :settings        "Settings"
+        :change-password "Change Password"
+        :log-out         "Log Out"
+
+
         ;; Payment stuff
         :view-on-stripe "View transaction on Stripe."
 
@@ -66,9 +75,12 @@
         :payment.for/deposit "Security Deposit"
         :payment.for/order   "Order"
 
-        :sources             "Sources"
+        :payments            "Payments"
+        ; :sources             "Sources"
+        :sources             "Linked Accounts"
         :history             "History"
-        :payment-sources     "Payment Sources"
+        ; :payment-sources     "Payment Sources"
+        :payment-sources     "Linked Accounts"
         :payment-history     "Payment History"
         :payment-history-for "Payment History for {1}"
         :transaction-history "Transaction History"

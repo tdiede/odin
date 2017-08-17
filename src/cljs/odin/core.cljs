@@ -1,7 +1,7 @@
 (ns odin.core
   (:require [odin.events]
             [odin.routes :as routes]
-            [odin.l10n :refer [translate]]
+            [odin.l10n :as l10n]
             [odin.subs]
             [odin.graphql]
             [odin.content :as content]
@@ -44,7 +44,7 @@
   (let [root (subscribe [:route/root])]
     [:a.navbar-item {:href  uri
                      :class (when (= feature @root) "is-active")}
-     (translate (keyword (name feature) role))]))
+     (l10n/translate (keyword (name feature) role))]))
 
 
 (defn navbar-menu []

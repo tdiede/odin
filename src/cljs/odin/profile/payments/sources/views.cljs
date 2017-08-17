@@ -84,12 +84,12 @@
 
 (defn sources []
   [:div
-   [:h1 "Payment Sources"]
+   [:h1 (l10n/translate :payment-sources)]
    [:div.columns
     [:div.column.is-4
      [source-list mocks/payment-sources]
      [add-new-source-button]]
-    [:div.column
+    [:div.column.is-8
      [source-detail (first mocks/payment-sources)]
      [source-payment-history (first mocks/payment-sources)]]]])
     ; [modal-confirm-disable-autopay]]])

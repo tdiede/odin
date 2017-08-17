@@ -1,5 +1,6 @@
 (ns odin.profile.views
   (:require [cljs.core.match :refer-macros [match]]
+            [odin.l10n :as l10n]
             [odin.content :as content]
             [odin.profile.membership.views :as membership]
             [odin.profile.payments.history.views :as phistory]
@@ -10,20 +11,20 @@
 
 
 (def ^:private profile-menu-spec
-  [{:label    "Profile"
-    :children [{:label "Membership"
+  [{:label    (l10n/translate :profile/member)
+    :children [{:label (l10n/translate :membership)
                 :route :profile/membership}
-               {:label "Contact Info"
+               {:label (l10n/translate :contact-info)
                 :route :profile/contact}]}
-   {:label    "Payments"
-    :children [{:label "History"
+   {:label    (l10n/translate :payments)
+    :children [{:label (l10n/translate :history)
                 :route :profile.payment/history}
-               {:label "Sources"
+               {:label (l10n/translate :sources)
                 :route :profile.payment/sources}]}
-   {:label    "Settings"
-    :children [{:label "Change Password"
+   {:label    (l10n/translate :settings)
+    :children [{:label (l10n/translate :change-password)
                 :route :profile.settings/change-password}
-               {:label "Log Out"
+               {:label (l10n/translate :log-out)
                 :route "/logout"}]}])
 
 

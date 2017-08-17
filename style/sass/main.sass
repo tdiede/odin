@@ -1,16 +1,19 @@
 @charset "UTF-8"
+@import "variables"
 
 body
-  display: flex
-  min-height: 100vh
+  display:        flex
+  min-height:     100vh
   flex-direction: column
+  background:     $off-white
+
+.root-section
+  background:     $off-white
 
 main
   flex: 1 0 auto
 
 @import "../../node_modules/spinkit/scss/spinners/2-double-bounce.scss"
-
-@import "variables"
 
 // Bulma (with our variables applied for customization)
 // --> http://bulma.io/documentation/overview/customize/

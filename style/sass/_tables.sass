@@ -2,8 +2,9 @@
 
 // Styling for basic tables (provided by Bulma)
 // <table class="table"> ... </table>
-.table
-  background: none
+table, .table
+  table-layout: fixed
+  background: white
 
   thead
     td, th
@@ -11,11 +12,26 @@
       border-bottom-width: 1px
 
   tbody
-    font-family: "Work Sans", sans-serif
-
     tr:last-child
       td, th
         border-bottom-width: 1px
+
+  th, td
+    &.align-center
+      text-align: center
+
+// Generate classes for hardcoding width of columns/cells
+// e.g. td.width-1 -- td.width-12
+$column-size-range: 12
+$column-widths: ()
+
+@for $i from 1 through $column-size-range
+  $w: #{$i}rem
+  @if not index($column-widths, $w)
+    th, td
+      &.width-#{$i}
+        width: $w
+    $column-widths: append( $column-widths, $w, comma)
 
 .td-bold
   font-weight: bold
@@ -65,8 +81,8 @@
 
     th, td
       white-space: nowrap
-      &:last-child
-        width: 100%
+      // &:last-child
+        // width: 100%
 
 // Colored Rows
 tr.warning, tr.warning:hover

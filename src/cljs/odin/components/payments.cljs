@@ -108,49 +108,46 @@
   [
    ;; PAYMENT TYPE ICON
    {:dataIndex :method
-    :className "is-narrow"
+    :className "is-narrow width-2"
     :render    (fn [val]
                  (r/as-element [payment-source-icon val]))}
 
    ;; DATE PAID
    {:title     "Date"
     :dataIndex :paid-on
+    :className "width-6"
     :render    (fn [val]
                  (format/date-short val))}
 
    ;; AMOUNT
    {:title     "Amount"
     :dataIndex :amount
-    :className "td-bold"
+    :className "td-bold width-4"
     :render    (fn [val]
                  (format/currency val))}
 
    ;; STATUS OF PAYMENT
    {:dataIndex :status
-    :className "is-narrow"
+    :className "is-narrow width-5"
     :render    (fn [val]
                  (r/as-element [payment-status val]))}
 
    ;; REASON FOR PAYMENT
    {:title     "Type"
     :dataIndex :for
+    :className "is-narrow width-8"
     :render    (fn [val]
                  (r/as-element [payment-for val]))}
 
    {:title     "Period"
     ; :dataIndex :for
+    :className "expand"
     :render    (fn [val item _]
                  (render-payment-period item))}])
 
 
-
-
-(defn tx->column [key tx]
-  (assoc tx :key key))
-
-
 (defn get-payment-row-class
-  "Returns a class name for highlighting pending and due payments."
+  "Returns a String class name for highlighting pending and due payments."
   [tx]
   (case (aget tx "status")
     ;; "due"     "warning"
@@ -166,7 +163,7 @@
     :loading      false
     :columns      payment-table-columns
     :rowClassName get-payment-row-class
-    :dataSource   (map-indexed tx->column txs)
+    :dataSource   (map-indexed utils/thing->column txs)
     :pagination   false}])
 
 
@@ -187,14 +184,15 @@
      [:div.columns
       [:div.column.is-narrow
        [:span.icon.is-large [:i.fa.fa-home]]]
-      [:div.column.is-narrow
-       [:h3 (l10n/translate reason)]]
+      ; [:div.column.is-narrow]
+       ; [:h3 (l10n/translate reason)]]
       [:div.column
-       [:h4 [:a "2027 Mission St"]]
-       [:p (render-payment-period tx)]]
+       [:h3 (l10n/translate reason)]
+       [:h3 [:a "2027 Mission St #101"]]
+       [:h4 (render-payment-period tx)]]
 
       [:div.column.align-right
-       [:h4 (format/currency amount)]
+       [:h3 (format/currency amount)]
        (if (= reason (or :payment.for/rent :payment.for/deposit))
          [:p (str "Due on " (format/date-short due))])]]]))
 
@@ -218,7 +216,7 @@
 (defn rent-overdue-notification
   "Takes a tx in 'due' state, and displays a CTA notification for making payment."
   [tx]
-  (let [modal-shown (r/atom true)]
+  (let [modal-shown (r/atom false)]
     (fn [tx]
      [notification/banner-danger
       [:div
