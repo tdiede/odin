@@ -1,6 +1,8 @@
 (ns odin.utils.formatters
   (:require [odin.l10n :as l10n]
             [toolbelt.core :as tb]
+            [goog.string :as gstring]
+            [goog.string.format]
             [i18n.phonenumbers.PhoneNumberUtil :as pnu]
             [i18n.phonenumbers.PhoneNumberFormat :as pnf]
             [clojure.string :as string]))
@@ -68,7 +70,7 @@
   "Accepts a number, and returns a formatted currency amount according to
   current language. e.g. [1999.99] -> '$1,999.99'"
   [amount]
-  (str "$" (number amount)))
+  (->> amount (gstring/format "%.2f") number (str "$")))
 
 
 (defn initials

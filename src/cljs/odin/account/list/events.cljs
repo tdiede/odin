@@ -9,11 +9,11 @@
 
 
 (defmethod routes/dispatches :account/list [_]
-  [[:account/fetch-list]])
+  [[:account.list/fetch]])
 
 
 (reg-event-fx
- :account/fetch-list
+ :account.list/fetch
  [(path db/path)]
  (fn [{:keys [db]} _]
    {:db      (assoc-in db [:loading :accounts/list] true)

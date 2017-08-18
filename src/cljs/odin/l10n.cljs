@@ -76,10 +76,10 @@
         :payment.for/order   "Order"
 
         :payments            "Payments"
-        ; :sources             "Sources"
+                                        ; :sources             "Sources"
         :sources             "Linked Accounts"
         :history             "History"
-        ; :payment-sources     "Payment Sources"
+                                        ; :payment-sources     "Payment Sources"
         :payment-sources     "Linked Accounts"
         :payment-history     "Payment History"
         :payment-history-for "Payment History for {1}"

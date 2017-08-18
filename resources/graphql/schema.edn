@@ -65,6 +65,8 @@
                       :resolve :payment/status}
             :due     {:type    :Instant
                       :resolve (:get :payment/due)}
+            :paid_on {:type    :Instant
+                      :resolve (:get :payment/paid-on)}
             :pstart  {:type        :Instant
                       :description "Period start."
                       :resolve     (:get :payment/pstart)}

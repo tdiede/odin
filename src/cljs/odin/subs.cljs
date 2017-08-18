@@ -1,6 +1,7 @@
 (ns odin.subs
   (:require [odin.account.list.subs]
             [odin.account.entry.subs]
+            [odin.profile.subs]
             [re-frame.core :refer [reg-sub]]))
 
 

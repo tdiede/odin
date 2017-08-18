@@ -129,10 +129,11 @@
 
 
 (defn- query-payments [db account]
-  (map
-   (fn [payment]
-     (assoc (into {} payment) :db/id (:db/id payment)))
-   (payment/payments db account)))
+  (->> (payment/payments db account)
+       (sort-by :payment/paid-on)
+       (map
+        (fn [payment]
+          (assoc (into {} payment) :db/id (:db/id payment))))))
 
 
 (defn payments
@@ -143,10 +144,12 @@
         result  (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (->> (query-payments db account)
+        (let [payments (->> (query-paymens db account)
                             (inject-stripe-data ctx)
                             (async/merge))]
-          (resolve/deliver! result (<!? (async/into [] payments))))
+          ;; TODO: fix sort order!
+          (resolve/deliver! result (->> (<!? (async/into [] payments))
+                                        (sort-by :payment/paid-on))))
         (catch Throwable t
           (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
                                         :err-data (ex-data t)}))))
@@ -160,9 +163,8 @@
                  :conn      conn
                  :stripe    (odin.config/stripe-secret-key odin.config/config)
                  :requester (d/entity (d/db conn) [:account/email "member@test.com"])}
-        payments (query-payments (:db context) (:requester context))
         ]
-    (map payment/autopay-payment? payments))
+    (map :payment/paid-on (query-payments (:db context) (:requester context))))
 
 
 

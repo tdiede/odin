@@ -3,6 +3,7 @@
             [odin.routes :as routes]
             [odin.account.list.events]
             [odin.account.entry.events]
+            [odin.profile.events]
             [clojure.string :as string]
             [re-frame.core :refer [reg-event-db reg-event-fx]]
             [ajax.core :as ajax]
@@ -12,7 +13,7 @@
 (reg-event-db
  :app/init
  (fn [_ [_ config]]
-   (assoc db/default-value :config config)))
+   (db/configure config)))
 
 
 (reg-event-db
@@ -36,8 +37,10 @@
 (reg-event-fx
  :route/change
  (fn [{:keys [db]} [_ page params]]
-   (let [route {:page   page
-                :path   (page->path page)
-                :params params}]
+   (let [route (merge
+                (:route db)
+                {:page   page
+                 :path   (page->path page)
+                 :params params})]
      {:db         (assoc db :route route)
       :dispatch-n (routes/dispatches route)})))
