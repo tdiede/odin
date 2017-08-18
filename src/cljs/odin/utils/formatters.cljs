@@ -77,3 +77,6 @@
   "Given a `name`, produce the initials (first and last name)."
   [name]
   (->> (string/split name #" ") (map first) (apply str)))
+
+(defn sstr [args]
+  (->> (interpose " " [args]) (apply str)))
