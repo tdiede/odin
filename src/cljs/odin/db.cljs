@@ -1,6 +1,8 @@
 (ns odin.db
   (:require [odin.account.db :as accounts]
-            [odin.routes :as routes]))
+            [odin.profile.payments.db :as payments]
+            [odin.routes :as routes]
+            [toolbelt.core :as tb]))
 
 
 
@@ -30,4 +32,10 @@
     :route   {:current :home
               :path    [:home]
               :params  {}}}
-   accounts/default-value))
+   accounts/default-value
+   payments/default-value))
+
+
+(defn configure [config]
+  (-> (assoc default-value :config config)
+      (assoc-in [:route :requester] (:account config))))
