@@ -86,7 +86,7 @@
                        :resolve (:get :last4)}
             :customer {:type    String
                        :resolve (:get :customer)}
-            :status   {:type    (non-null String)
+            :status   {:type    String
                        :resolve (:get :status)}
             :type     {:type    (non-null :payment_source_type)
                        :resolve :payment.source/type}

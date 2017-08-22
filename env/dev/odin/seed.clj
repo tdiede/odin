@@ -160,6 +160,8 @@
                       :for :payment.for/rent
                       :method :payment.method/stripe-invoice
                       :invoice-id "in_1Am9sNJDow24Tc1aFeswkDT1"
+                      :charge-id "py_1AmAozJDow24Tc1aKfpUUIe9"
+                      :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 7 1)
                       :pend (date 2017 8 1)
                       :paid-on (date 2017 7 3))
@@ -167,6 +169,8 @@
                       :for :payment.for/rent
                       :method :payment.method/stripe-invoice
                       :invoice-id "in_1Aav6WJDow24Tc1aVFckJH4K"
+                      :charge-id "py_1Aaw2eJDow24Tc1axiqIh6bK"
+                      :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 6 1)
                       :pend (date 2017 7 1)
                       :paid-on (date 2017 6 2)))
@@ -188,6 +192,8 @@
                                                :for :payment.for/order
                                                :paid-on (date 2017 6 15)
                                                :invoice-id "in_1ArE44IvRccmW9nOu8hqIlti"
+                                               :charge-id "ch_1ArF0rIvRccmW9nOZMFFadb7"
+                                               :source-id "card_1AV6tzIvRccmW9nOhQsWMTuv"
                                                :method :payment.method/stripe-invoice)))))
 
 
@@ -201,6 +207,7 @@
                                                :for :payment.for/order
                                                :paid-on (date 2017 6 19)
                                                :charge-id "ch_1AV7PpIvRccmW9nOgAgD793D"
+                                               :source-id "card_1AV6tzIvRccmW9nOhQsWMTuv"
                                                :method :payment.method/stripe-charge)))))
 
 
@@ -216,6 +223,7 @@
                                                :for :payment.for/order
                                                :paid-on (date 2017 7 5)
                                                :charge-id "ch_1AV7OkIvRccmW9nOtgRbZ1WK"
+                                               :source-id "card_1AV6tzIvRccmW9nOhQsWMTuv"
                                                :method :payment.method/stripe-charge)))))
 
 
@@ -243,6 +251,7 @@
         payment (payment/create 500.0 account
                                 :status :payment.status/paid
                                 :charge-id "py_1AV6trIvRccmW9nOX14uB4hk"
+                                :source-id "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
                                 :paid-on (date 2017 6 1)
                                 :for :payment.for/deposit
                                 :due (next-week))]

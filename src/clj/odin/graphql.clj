@@ -42,14 +42,15 @@
   (do
     (require '[com.walmartlabs.lacinia :refer [execute]])
     (require '[odin.datomic :refer [conn]])
-    (require '[datomic.api :as d]))
+    (require '[datomic.api :as d])
+    (require '[venia.core :as venia]))
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
     (execute schema
-             (venia.core/graphql-query
+             (venia/graphql-query
               {:venia/queries
                [[:payment_sources {:account (:db/id account)}
-                 [:id :type :name :last4]]] })
+                 [:id :type :status :name :last4 [:payments [:id :method :autopay [:source [:id]]]]]]] })
              nil
              {:db        (d/db conn)
               :conn      conn
@@ -58,10 +59,10 @@
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
     (->> (execute schema
-                  (venia.core/graphql-query
+                  (venia/graphql-query
                    {:venia/queries
                     [[:payments {:account (:db/id account)}
-                      [:id :method :autopay :for [:source [:id :name :last4]]]]]})
+                      [:id :method :autopay :for [:source [:id :last4]]]]]})
                   nil
                   {:db        (d/db conn)
                    :conn      conn
