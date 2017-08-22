@@ -24,7 +24,7 @@
                  [cljsjs/libphonenumber "8.4.1-1"]
 
                  ;; GraphQL
-                 [com.walmartlabs/lacinia "0.19.0"]
+                 [com.walmartlabs/lacinia "0.20.0"]
                  [vincit/venia "0.2.2"]
 
                  ;; CLJS
