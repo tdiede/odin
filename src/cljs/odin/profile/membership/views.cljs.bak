@@ -76,6 +76,7 @@
       [:p.smaller desc]]
      [:div.media-right
       [:a "Manage"]]]]))
+      ; [:p (str (format/date-short start) " - " (format/date-short end))]]]
 
 
 (defn membership []
@@ -85,16 +86,22 @@
    [:br]
 
    [:div.columns
+    [:div.column.is-4
+     [:h2 "Rental Agreement"]
+     [card-license-summary mock-member-license]]
     [:div.column
      [:h2 "Subscriptions"]
      (for [service mock-services]
        ^{:key (get service :id)}
        [card-service-summary service])
-     [:h4 [:a "View all services"]]]
+     [:h4 [:a "View all services"]]]]
 
-    [:div.column.is-4
-     [:h2 "Rental Agreement"]
-     [card-license-summary mock-member-license]]]
+   [:p.align-right "Rent plus subscriptions: $1,545 / mo."]
+   [:hr]
 
-   [:p "Rent plus subscriptions: " [:b "$1,545 / mo."]]
-   [:hr]])
+   [:div.columns
+    [:div.column
+     [:h2 "Order History"]
+     [:p "A history of all the orders you've placed. Perhaps this belongs in a new page, entitled 'Orders' or 'Services'?"]
+     [orders-ui/order-history orders-ui/mock-orders]]]])
+    ; [:div.column]]])

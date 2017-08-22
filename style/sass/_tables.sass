@@ -3,7 +3,7 @@
 // Styling for basic tables (provided by Bulma)
 // <table class="table"> ... </table>
 table, .table
-  table-layout: fixed
+  // table-layout: fixed
   background: white
 
   thead
@@ -20,18 +20,24 @@ table, .table
     &.align-center
       text-align: center
 
+    &.expand
+      width: 100%
+
+.is-flush .ant-table
+  border: none
+
 // Generate classes for hardcoding width of columns/cells
 // e.g. td.width-1 -- td.width-12
-$column-size-range: 12
-$column-widths: ()
-
-@for $i from 1 through $column-size-range
-  $w: #{$i}rem
-  @if not index($column-widths, $w)
-    th, td
-      &.width-#{$i}
-        width: $w
-    $column-widths: append( $column-widths, $w, comma)
+// $column-size-range: 12
+// $column-widths: ()
+//
+// @for $i from 1 through $column-size-range
+//   $w: #{$i}rem
+//   @if not index($column-widths, $w)
+//     th, td
+//       &.width-#{$i}
+//         width: $w
+//     $column-widths: append( $column-widths, $w, comma)
 
 .td-bold
   font-weight: bold

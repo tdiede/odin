@@ -144,7 +144,7 @@
         result  (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (->> (query-paymens db account)
+        (let [payments (->> (query-payments db account)
                             (inject-stripe-data ctx)
                             (async/merge))]
           ;; TODO: fix sort order!
