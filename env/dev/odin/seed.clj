@@ -1,15 +1,13 @@
 (ns odin.seed
-  (:require [odin.datomic :refer [conn]]
-            [blueprints.models.application :as app]
+  (:require [blueprints.models.application :as app]
             [blueprints.models.approval :as approval]
-            [blueprints.models.check :as check]
             [blueprints.models.license :as license]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.onboard :as onboard]
             [blueprints.models.order :as order]
+            [blueprints.models.payment :as payment]
             [blueprints.models.promote :as promote]
             [blueprints.models.property :as property]
-            [blueprints.models.payment :as payment]
             [blueprints.models.security-deposit :as deposit]
             [blueprints.models.service :as service]
             [blueprints.models.unit :as unit]
@@ -17,12 +15,16 @@
             [clj-time.core :as t]
             [datomic.api :as d]
             [io.rkn.conformity :as cf]
+            [mount.core :refer [defstate]]
+            [odin.datomic :refer [conn]]
+            [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]))
 
 ;; =============================================================================
 ;; TX Construction
 ;; =============================================================================
+
 
 ;; =============================================================================
 ;; Accounts
@@ -174,7 +176,7 @@
                       :pstart (date 2017 6 1)
                       :pend (date 2017 7 1)
                       :paid-on (date 2017 6 2)))
-     {:db/id (:db/id license)
+     {:db/id                          (:db/id license)
       :member-license/subscription-id "sub_9ssx9DacEP1g4Y"}]))
 
 
@@ -284,7 +286,7 @@
 ;; API
 ;; =============================================================================
 
-(defn seed
+(defn- seed
   "Seed the database with sample data."
   [conn]
   (cf/ensure-conforms
@@ -307,3 +309,9 @@
   (cf/ensure-conforms
    conn
    {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
+
+
+(defstate seeder
+  :start (do
+           (timbre/debug "seeding dev database...")
+           (seed conn)))

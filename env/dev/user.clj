@@ -18,16 +18,6 @@
 ;; =============================================================================
 
 
-(defn- in-memory-db? []
-  (= "datomic:mem://localhost:4334/starcity" (config/datomic-uri config)))
-
-
-(defstate seed
-  :start (when (in-memory-db?)
-           (timbre/debug "seeding dev database...")
-           (seed/seed conn)))
-
-
 (def start #(mount/start-with-args {:env :dev}))
 
 
