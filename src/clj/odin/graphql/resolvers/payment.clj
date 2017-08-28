@@ -96,7 +96,7 @@
 
 (defn status
   "The status of this payment."
-  [context _ payment]
+  [_ _ payment]
   (keyword (name (payment/status payment))))
 
 
@@ -131,9 +131,9 @@
 (defn- fetch-charge
   "Fetch the charge from the correct place (possibly a managed account). Returns
   a channel on which the result of the fetch operation will be put."
-  [{:keys [stripe db]} payment]
+  [{:keys [stripe conn]} payment]
   (let [charge-id (payment/charge-id payment)]
-    (if-let [managed (managed-account db payment)]
+    (if-let [managed (managed-account (d/db conn) payment)]
       (rch/fetch stripe charge-id :managed-account managed)
       (rch/fetch stripe charge-id))))
 
@@ -168,7 +168,7 @@
 (defn merge-stripe-data
   "Provided context `ctx` and `payments`, fetch all required data from Stripe
   and merge it into the payments."
-  [{:keys [db stripe] :as ctx} payments]
+  [{:keys [stripe] :as ctx} payments]
   (let [in       (chan)
         out      (chan)]
     (async/pipeline-async concurrency out (partial process-payment ctx) in)
@@ -183,8 +183,9 @@
 (defn payments
   "Asynchronously fetch payments for `account_id` or the requesting user, if
   `account_id` is not supplied."
-  [{:keys [db] :as ctx} {:keys [account]} _]
-  (let [account (d/entity db account)
+  [{:keys [conn] :as ctx} {:keys [account]} _]
+  (let [db      (d/db conn)
+        account (d/entity db account)
         result  (resolve/resolve-promise)]
     (go
       (try
@@ -199,12 +200,11 @@
 (comment
 
   (let [conn    odin.datomic/conn
-        context {:db        (d/db conn)
-                 :conn      conn
+        context {:conn      conn
                  :stripe    (odin.config/stripe-secret-key odin.config/config)
                  :requester (d/entity (d/db conn) [:account/email "member@test.com"])}
         ]
-    (map :payment/paid-on (query-payments (:db context) (:requester context))))
+    (map :payment/paid-on (query-payments (d/db conn) (:requester context))))
 
   )
 

@@ -2,19 +2,31 @@
   (:refer-clojure :exclude [type name])
   (:require [blueprints.models.customer :as customer]
             [blueprints.models.payment :as payment]
-            [clojure.core.async :as async :refer [go]]
+            [blueprints.models.property :as property]
+            [clojure.core.async :as async :refer [go <! >! chan]]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.config :as config]
             [odin.graphql.resolvers.payment :as payment-resolvers]
+            [odin.graphql.resolvers.utils :refer [context?]]
             [ribbon.charge :as rch]
             [ribbon.customer :as rcu]
-            [toolbelt.async :refer [<!?]]
             [taoensso.timbre :as timbre]
+            [toolbelt.async :refer [<!? go-try]]
             [toolbelt.core :as tb]
+            [toolbelt.predicates :as p]
             [clojure.spec.alpha :as s]
-            [blueprints.models.property :as property]
-            [toolbelt.datomic :as td]))
+            [blueprints.models.account :as account]))
+
+
+;; =============================================================================
+;; Helpers
+;; =============================================================================
+
+
+(defn- bank-account? [source]
+  (some? (#{"bank_account"} (:object source))))
+
 
 ;; =============================================================================
 ;; Fields
@@ -45,18 +57,14 @@
               :where
               [?p :stripe/source-id ?source-id]]
             db source-ids)
-
        (map (partial d/entity db))))
 
 
-(defn- bank-account? [source]
-  (some? (#{"bank_account"} (:object source))))
-
-
 (defn- merge-autopay-payments
-  [{:keys [db stripe]} source]
+  [{:keys [conn stripe]} source]
   (go
-    (let [account (customer/account (customer/by-customer-id db (:customer source)))]
+    (let [db      (d/db conn)
+          account (customer/account (customer/by-customer-id db (:customer source)))]
       (try
         (if-let [ap-cus (customer/autopay db account)] ; if there's an autopay account...
           ;; there's an autopay account...get the payments
@@ -82,9 +90,9 @@
 
 
 (defn- get-payments
-  [{:keys [db] :as ctx} source]
+  [{:keys [conn] :as ctx} source]
   (if-not (bank-account? source)
-    (go (query-payments db (:id source)))
+    (go (query-payments (d/db conn) (:id source)))
     (merge-autopay-payments ctx source)))
 
 
@@ -103,14 +111,14 @@
 
 
 ;; =============================================================================
-;; Fields
+;; Queries
 ;; =============================================================================
 
 
 (defn- sources-by-account
   "Produce all payment sources for a given `account`."
-  [{:keys [db stripe]} account]
-  (let [customer (customer/by-account db account)
+  [{:keys [conn stripe]} account]
+  (let [customer (customer/by-account (d/db conn) account)
         result   (resolve/resolve-promise)]
     (go
       (try
@@ -124,10 +132,162 @@
 
 (defn sources
   "Retrieve payment sources."
-  [{:keys [db] :as context} {:keys [account]} _]
-  (let [account (d/entity db account)]
+  [{:keys [conn] :as context} {:keys [account]} _]
+  (let [account (d/entity (d/db conn) account)]
     ;; NOTE: We may also provide the capability to supply customer-id.
     (sources-by-account context account)))
+
+
+;; =============================================================================
+;; Mutations
+;; =============================================================================
+
+
+;; =============================================================================
+;; Delete
+
+
+(defn- fetch-source
+  "Fetch the source by fetching the `requester`'s customer entity and attempting
+  to fetch the source present on it. This mandates that the `source-id` actually
+  belong to the requesting account."
+  [{:keys [requester stripe conn] :as ctx} source-id]
+  (let [customer (customer/by-account (d/db conn) requester)]
+    (rcu/fetch-source stripe (customer/id customer) source-id)))
+
+
+(defn- autopay-source
+  "Fetch the autopay source for the requesting user, if there is one."
+  [{:keys [stripe requester conn]}]
+  (when-let [customer (customer/autopay (d/db conn) requester)]
+    (let [managed (property/rent-connect-id (customer/managing-property customer))]
+      (rcu/fetch-source stripe (customer/id customer) (customer/bank-token customer)
+                        :managed-account managed))))
+
+(s/fdef autopay-source
+        :args (s/cat :ctx context?)
+        :ret (s/or :chan p/chan? :nothing nil?))
+
+
+(defn- delete-bank-source!*
+  "Attempt to delete the bank source; if successful, remove the bank token from
+  the Stripe customer. An exception will be put onto the `out` channel if
+  unsuccessful."
+  [{:keys [conn stripe]} source]
+  (go-try
+   (let [res (<!? (rcu/delete-source! stripe (:customer source) (:id source)))]
+     @(d/transact-async conn [[:db/retract
+                               [:stripe-customer/customer-id (:customer source)]
+                               :stripe-customer/bank-account-token
+                               (:id source)]])
+     res)))
+
+(s/fdef delete-bank-source!*
+        :args (s/cat :ctx context? :source map?)
+        :ret p/chan?)
+
+
+(defn delete-bank-source!
+  "Delete a bank source. Produces a channel that will contain an exception in
+  the event of failure."
+  [{:keys [requester] :as ctx} source]
+  (go-try
+   (if-let [c (autopay-source ctx)]
+     (if (= (:fingerprint source) (:fingerprint (<!? c)))
+       ;; if the fingerprints are equal, `source` is being used for autopay
+       (throw (ex-info "Cannot delete source, as it's being used for autopay!"
+                       {:source source}))
+       ;; if they're not equal, this is not the autopay source; delete
+       (<!? (delete-bank-source!* ctx)))
+     ;; no autopay account, so source can be deleted
+     (<!? (delete-bank-source!* ctx)))))
+
+
+;; TODO: Test this after I add mechanism to add sources!
+(defn delete-source!
+  "Delete the `source`. Checks if source is a bank account, and if so, checks
+  if it is also present on a connected account (autopay)."
+  [{:keys [stripe] :as ctx} source]
+  (go-try
+   (if (bank-account? source)
+     (<!? (delete-bank-source! ctx source))
+     (<!? (rcu/delete-source! stripe (:customer source) (:id source))))))
+
+
+(defn delete!
+  "Delete the payment source with `id`. If the source is a bank account, will
+  also delete it on the connected account."
+  [ctx {id :id} _]
+  (let [result (resolve/resolve-promise)]
+    (go
+      (let [source (<! (fetch-source ctx id))]
+        (if (p/throwable? source)
+          (resolve/deliver! result nil {:message  "Could not find source!"
+                                        :err-data (ex-data source)})
+          (try
+            (<!? (delete-source! ctx source))
+            (resolve/deliver! result nil id)
+            (catch Throwable t
+              (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
+                                            :err-data (ex-data t)}))))))
+    result))
+
+
+;; =============================================================================
+;; Add Bank Account
+
+
+(defn- resolve-customer!
+  "Produce the customer for `requester` if there is one; otherwise, createa a
+  new customer."
+  [{:keys [conn stripe requester]}]
+  (go-try
+   (if-let [customer (customer/by-account (d/db conn) requester)]
+     customer
+     (let [cus (<!? (rcu/create2! stripe (account/email requester)))]
+       @(d/transact-async conn [(customer/create (:id cus) requester)])
+       (customer/by-customer-id (d/db conn) (:id cus))))))
+
+
+(defn add-bank!
+  "Add a bank account source."
+  [{:keys [conn stripe requester] :as ctx} {:keys [token]} _]
+  (let [result (resolve/resolve-promise)]
+    (go
+      (try
+        (let [customer (<!? (resolve-customer! ctx))
+              source   (<!? (rcu/add-source! stripe (customer/id customer) token))]
+          @(d/transact-async conn [[:db/add (:db/id customer) :stripe-customer/bank-account-token (:id source)]])
+          (resolve/deliver! result nil source))
+        (catch Throwable t
+          (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
+                                        :err-data (ex-data t)}))))
+    result))
+
+
+(comment
+  (let [conn odin.datomic/conn
+        ctx  {:conn      conn
+              :stripe    (odin.config/stripe-secret-key odin.config/config)
+              :requester (d/entity (d/db conn) [:account/email "member@test.com"])}]
+    )
+
+
+
+  )
+
+
+
+(comment
+  (let [conn     odin.datomic/conn
+        stripe   (odin.config/stripe-secret-key odin.config/config)
+        account  (d/entity (d/db conn) [:account/email "member@test.com"])
+        customer (customer/by-account (d/db conn) account)]
+    ;; (async/<!! (rcu/fetch-source stripe (customer/id customer) "ba_1AV6tfIvRccmW9nOfjsLP6DZ"))
+    ;; (async/<!! (rcu/fetch-source stripe (customer/id customer) "card_1AV6tzIvRccmW9nOhQsWMTuv"))
+    (async/<!! (rcu/fetch-source stripe (customer/id customer) "unknown-source")))
+
+  )
 
 
 ;;; Attach a charge id to all invoices
