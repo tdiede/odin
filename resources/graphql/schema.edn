@@ -4,6 +4,14 @@
   {:description "Account roles."
    :values      [:all :member :onboarding :applicant :admin]}
 
+  :deposit_refund_status
+  {:description "Possible statuses of the security deposit refund."
+   :values      [:initiated :successful :failed]}
+
+  :license_status
+  {:description "Possible statuses of a member license."
+   :values      [:active :inactive :canceled :renewal]}
+
   ;; payments
   :payment_method
   {:description "Methods of payment."
@@ -26,22 +34,87 @@
  :objects
  {:account
   {:implements [:person]
-   :fields     {:id         {:type    (non-null :Long)
-                             :resolve (:get :db/id)}
-                :name       {:type    (non-null String)
-                             :resolve :person/full-name}
-                :first_name {:type    (non-null String)
-                             :resolve (:get :person/first-name)}
-                :last_name  {:type    (non-null String)
-                             :resolve (:get :person/last-name)}
-                :email      {:type    (non-null String)
-                             :resolve (:get :account/email)}
-                :phone      {:type    String
-                             :resolve (:get :account/phone-number)}
-                :role       {:type    (non-null :Keyword)
-                             :resolve (:get :account/role)}
-                :property   {:type    :property
-                             :resolve :account/property}}}
+   :fields     {:id             {:type    (non-null :Long)
+                                 :resolve (:get :db/id)}
+                :name           {:type    (non-null String)
+                                 :resolve :person/full-name}
+                :first_name     {:type    (non-null String)
+                                 :resolve (:get :person/first-name)}
+                :last_name      {:type    (non-null String)
+                                 :resolve (:get :person/last-name)}
+                :email          {:type    (non-null String)
+                                 :resolve (:get :account/email)}
+                :phone          {:type    String
+                                 :resolve (:get :account/phone-number)}
+                :role           {:type    (non-null :role)
+                                 :resolve :account/role}
+                :property       {:type    :property
+                                 :resolve :account/property}
+                :active_license {:type        :license
+                                 :description "The active member license for this account."
+                                 :resolve     :account/active-license}
+                :deposit        {:type        :deposit
+                                 :description "Security deposit for this account."
+                                 :resolve     :account/deposit}}}
+
+
+  :deposit
+  {:fields {:id               {:type    (non-null :Long)
+                               :resolve (:get :db/id)}
+            :amount           {:type        (non-null Float)
+                               :description "The total amount of the security deposit."
+                               :resolve     (:get :deposit/amount)}
+            :due              {:type        (non-null :Instant)
+                               :description "The due date of the entire security deposit."
+                               :resolve     (:get :deposit/due)}
+            :account          {:type    (non-null :account)
+                               :resolve (:get :deposit/account)}
+            :payments         {:type        (list :payment)
+                               :description "Payments made towards the security deposit."
+                               :resolve     (:get :deposit/payments)}
+            :amount_remaining {:type        (non-null Float)
+                               :description "The amount remaining to be paid."
+                               :resolve     :deposit/amount-remaining}
+            :amount_paid      {:type        (non-null Float)
+                               :description "The amount paid so far."
+                               :resolve     :deposit/amount-paid}
+            :amount_pending   {:type        (non-null Float)
+                               :description "The amount currently pending."
+                               :resolve     :deposit/amount-pending}
+            :refund_status    {:type        :deposit_refund_status
+                               :description "The status of the refund, if any."
+                               :resolve     :deposit/refund-status}}}
+
+
+  :license
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :rate     {:type        (non-null Float)
+                       :description "The amount paid for rent each month."
+                       :resolve     (:get :member-license/rate)}
+            :payments {:type        (list :payment)
+                       :description "The rent payments for this license."
+                       :resolve     (:get :member-license/rent-payments)}
+            :starts   {:type        (non-null :Instant)
+                       :description "Start date of the member license (commencement)."
+                       :resolve     (:get :member-license/commencement)}
+            :ends     {:type        (non-null :Instant)
+                       :description "End date of the member license."
+                       :resolve     (:get :member-license/ends)}
+            :term     {:type        (non-null Long)
+                       :description "Term in months of the license."
+                       :resolve     (:get :member-license/license :license/term)}
+            :unit     {:type        (non-null :unit)
+                       :description "The unit that htis license pertains to."
+                       :resolve     (:get :member-license/unit)}
+            :account  {:type        (non-null :account)
+                       :description "Account that owns this license."
+                       :resolve     (:get :account/_license)}
+            :status   {:type    (non-null :license_status)
+                       :resolve :member-license/status}
+            :property {:type        (non-null :property)
+                       :description "Property that this license is for."
+                       :resolve     (:get :member-license/unit :property/_units)}}}
 
 
   :payment
@@ -102,7 +175,19 @@
             :name {:type    (non-null String)
                    :resolve (:get :property/name)}
             :code {:type    (non-null String)
-                   :resolve (:get :property/internal-name)}}}}
+                   :resolve (:get :property/internal-name)}}}
+
+  :unit
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :code     {:type        (non-null String)
+                       :description "Internal unit code to identify this unit."
+                       :resolve     (:get :unit/name)}
+            :number   {:type        (non-null Int)
+                       :description "Room number."
+                       :resolve     :unit/number}
+            :property {:type    (non-null :property)
+                       :resolve (:get :property/_units)}}}}
 
  :queries
  {:accounts {:type    (list :account)
@@ -125,7 +210,22 @@
                     :resolve :payment.sources/list}}
 
  :mutations
- {:set_phone {:type        :account
+ {:delete_payment_source
+  {:type        (non-null String)
+   :description "Delete a payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe source id."}}
+   :resolve     :payment.sources/delete!}
+
+  :add_bank_source
+  {:type        :payment_source
+   :description "Add a new bank account to the requesting users's account."
+   :args        {:token {:type        (non-null String)
+                         :description "The token to create the bank account with."}}
+   :resolve     :payment.sources/add-bank!}
+
+
+  :set_phone {:type        :account
               :description "Set an account's phone number. This is a demo mutation."
               :args        {:id    {:type        (non-null :Long)
                                     :description "This account's id."}

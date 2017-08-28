@@ -5,7 +5,8 @@
             [datomic.api :as d]
             [ring.util.response :as response]
             [blueprints.models.account :as account]
-            [odin.config :as config :refer [config]]))
+            [odin.config :as config :refer [config]]
+            [odin.graphql.resolvers.utils :as gqlu]))
 
 ;; =============================================================================
 ;; Helpers
@@ -34,11 +35,10 @@
 
 (defn context [req]
   (let [conn (->conn req)]
-    {:db        (d/db conn)
-     :conn      conn
-     :stripe    (config/stripe-secret-key config)
-     ;; TODO: Use authenticated user
-     :requester (debug-user (d/db conn))}))
+    (gqlu/context
+      conn
+      (debug-user (d/db conn))
+      (config/stripe-secret-key config))))
 
 
 (defn graphql-handler [req]

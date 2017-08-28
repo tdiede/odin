@@ -6,7 +6,8 @@
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia.util :as util]
             [mount.core :refer [defstate]]
-            [datomic.api :as d]))
+            [datomic.api :as d]
+            [blueprints.models.member-license :as member-license]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
@@ -43,7 +44,34 @@
     (require '[com.walmartlabs.lacinia :refer [execute]])
     (require '[odin.datomic :refer [conn]])
     (require '[datomic.api :as d])
-    (require '[venia.core :as venia]))
+    (require '[venia.core :as venia])
+
+    (defn pretty [result]
+      (letfn [(-prettify [m]
+                (reduce
+                 (fn [acc [k v]]
+                   (assoc acc k
+                          (cond
+                            (instance? flatland.ordered.map.OrderedMap v) (into {} (-prettify v))
+                            (sequential? v)                               (map -prettify v)
+                            :otherwise                                    v)))
+                 {}
+                 m))]
+        (update result :data -prettify))))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (->> (execute schema
+                  (venia/graphql-query
+                   {:venia/queries
+                    [[:accounts {:role :member}
+                      [:id :name [:deposit [:id :amount :due [:payments [:id]] :amount_remaining :amount_paid :amount_pending :refund_status]]]]]})
+                  nil
+                  {:conn      conn
+                   :stripe    (odin.config/stripe-secret-key odin.config/config)
+                   :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
+         pretty))
+
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
     (execute schema
@@ -82,6 +110,10 @@
            nil
            {:db   (d/db conn)
             :conn conn})
+
+
+
+
 
 
   )
