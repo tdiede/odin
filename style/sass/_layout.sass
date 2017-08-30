@@ -21,15 +21,22 @@
 .flex-pin-bottom
   margin-top: auto
 
-// Spacing
-.pad-left
-  padding-left: $side-padding
-
-.pad-right
-  padding-right: $side-padding
-
+// Sizing
 .full-width
   width: 100%
+
+// Alignment
+.center, .is-centered
+  margin-left:  auto
+  margin-right: auto
+
+// Spacing
+.pad
+  padding: $side-padding
+.pad-left
+  padding-left: $side-padding
+.pad-right
+  padding-right: $side-padding
 
 // Spacing for elements in a row. When using this class,
 // the :last-child will not have spacing. If this behavior
@@ -40,6 +47,20 @@
 
 .space-top
   margin-top: $side-padding
+
+
+
+// Widths
+.width-90
+  max-width: 90%
+.width-80
+  max-width: 80%
+.width-70
+  max-width: 70%
+.width-60
+  max-width: 60%
+.width-50
+  max-width: 50%
 
 // PAGE LAYOUT
 // ----------------------------
@@ -73,3 +94,8 @@ section, .section
 
 
 // COMPONENT LAYOUT
+
+// The header for a page should be wrapped in this class.
+//  div.view-header > h1 + optional p
+.view-header
+  margin-bottom: $side-padding

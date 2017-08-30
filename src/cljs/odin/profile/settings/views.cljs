@@ -1,18 +1,33 @@
 (ns odin.profile.settings.views
-  (:require [antizer.reagent :as ant]))
+  (:require [antizer.reagent :as ant]
+            [toolbelt.core :as tb]))
 
 
 (def form-style
-  {:label-col   {:span 3}
+  {:label-col   {:span 7}
    :wrapper-col {:span 10}})
+
+(def password-placeholder "••••••••")
 
 
 (defn change-password []
   [:div
    [:h1 "Change Password"]
-   [ant/card
-    [ant/form {:layout "horizontal"}
-     [ant/form-item (merge form-style {:label "First Name"})
-      [ant/input]]
-     [ant/form-item (merge form-style {:label "Last Name"})
-      [ant/input]]]]])
+   [:div.columns
+    [:div.column.is-8
+     [ant/card
+      [ant/form
+        [ant/form-item (merge form-style {:label "Existing Password"})
+         [ant/input {:type "password"
+                     :placeholder password-placeholder}]]
+        [:hr]
+        [ant/form-item (merge form-style {:label "New Password"})
+         [ant/input {:type "password"
+                     :placeholder password-placeholder}]]
+
+        [ant/form-item (merge form-style {:label "Confirm New Password"})
+         [ant/input {:type "password"
+                     :placeholder password-placeholder}]]
+
+        [ant/form-item {:class "align-right"}
+         [:button.button {:class "is-primary"} "Update Password"]]]]]]])

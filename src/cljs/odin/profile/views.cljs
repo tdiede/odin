@@ -37,6 +37,7 @@
     [navigation/side-menu profile-menu-spec page]]
    [:div.column
     (let [path (vec (rest path))]
+      ;;(tb/log path)
       (match [path]
         [[:membership]] [membership/membership]
         [[:contact]] [:h1 "TODO: Implement Contact"]

@@ -16,7 +16,7 @@
 (defn banner
   "Renders a notification element on-screen, intended to communicate important messages."
   ([message]
-   [banner message :info true])
+   [banner message :nil true])
   ([message level]
    [banner message level true])
   ([message level is-cancelable]

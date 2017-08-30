@@ -51,7 +51,7 @@
 (defn navbar-menu []
   (let [menu-items (subscribe [:menu/items])
         role       (subscribe [:config/role])]
-    (tb/log @menu-items)
+    ;;(tb/log @menu-items)
     [:div.navbar-start
      (doall
       (map-indexed
@@ -114,7 +114,7 @@
 (defn ^:export run []
   (GET "/api/config"
        :handler (fn [config]
-                  (tb/log "CONFIG" config)
+                  ;;(tb/log "CONFIG" config)
                   (rf/dispatch-sync [:app/init config])
                   (routes/hook-browser-navigation! config)
                   (render))

@@ -1,10 +1,23 @@
 
 .button
+  display: inline-block
   background: white
   color: $black
 
   &:hover, &.is-hovered
     color: $black
 
+  .icon + .with-icon, .with-icon + .icon
+    margin-left: 1rem
+
+  &.is-wide
+    padding-left: 3rem
+    padding-right: 3rem
+
 .button + .button
   margin-left: $side-padding
+
+.button.is-primary
+  color: white
+  .icon
+    color: white

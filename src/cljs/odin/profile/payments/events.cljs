@@ -11,6 +11,12 @@
   [[:profile.payments/fetch (get-in route [:requester :id])]])
 
 
+(defmethod routes/dispatches :profile.payment/sources [route]
+  [[:profile.payment-sources/fetch (get-in route [:requester :id])]
+   [:payment.sources/set-current (get-in route [:params :source-id])]])
+
+
+
 (reg-event-fx
  :profile.payments/fetch
  [(path db/path)]
@@ -28,7 +34,7 @@
  :profile.payments.fetch/success
  [(path db/path)]
  (fn [db [_ response]]
-   (tb/log response)
+   ;;(tb/log response)
    (let [payments (get-in response [:data :payments])]
      (-> (assoc db :payments payments)
          (assoc-in [:loading :payments/list] false)))))
@@ -38,6 +44,45 @@
  :profile.payments.fetch/failure
  [(path db/path)]
  (fn [{:keys [db]} [_ response]]
-   (tb/log response)
+   ;;(tb/log response)
    {:db       (assoc-in db [:loading :payments/list] false)
+    :dispatch [:graphql/notify-errors! response]}))
+
+
+
+(reg-event-fx
+ :profile.payment-sources/fetch
+ [(path db/path)]
+ (fn [{:keys [db]} [_ account-id]]
+   {:db      (assoc-in db [:loading :payment-sources/list] true)
+    :graphql {:query
+              [[:payment_sources {:account account-id}
+                [:id :last4 :customer :type :name :status
+                 [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
+              :on-success [:profile.payment-sources.fetch/success]
+              :on-failure [:profile.payment-sources.fetch/failure]}}))
+
+
+(reg-event-fx
+ :profile.payment-sources.fetch/success
+ [(path db/path)]
+ (fn [{:keys [db]} [_ response]]
+   (let [payment-sources (get-in response [:data :payment_sources])
+         route (when (nil? (:current-source db))
+                 (routes/path-for :profile.payment/sources
+                                  :query-params {:source-id (:id (first payment-sources))}))]
+     (tb/assoc-when
+      {:db (-> (assoc db :payment-sources payment-sources)
+               (assoc-in [:loading :payment-sources/list] false))}
+      :route route))))
+
+
+
+
+(reg-event-fx
+ :profile.payment-sources.fetch/failure
+ [(path db/path)]
+ (fn [{:keys [db]} [_ response]]
+   ;;(tb/log response)
+   {:db       (assoc-in db [:loading :payment-sources/list] false)
     :dispatch [:graphql/notify-errors! response]}))

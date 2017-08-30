@@ -26,15 +26,15 @@
   ([source-type icon-size]
    [:span.icon {:class icon-size}
     (case source-type
-      :amex [:i.fa.fa-cc-amex {:class icon-size}]
-      :visa [:i.fa.fa-cc-visa {:class icon-size}]
+      :card [:i.fa.fa-credit-card {:class icon-size}]
       [:i.fa.fa-university {:class icon-size}])]))
 
 
-(defn source-name-and-numbers [source]
-  (let [{name   :name
-         digits :trailing-digits} source]
-    (str name " **** " digits)))
+(defn source-name-and-numbers
+  [source]
+  (when source (let [{name   :name
+                      last4  :last4 } source]
+                (str name " **** " last4))))
 
 
 (defn payment-status
@@ -65,6 +65,21 @@
     [:span]))
 
 
+(defn payment-for-icon
+  "Renders an icon to illustrate a given payment type (such as :rent, :deposit, :order, or :other). Defaults to :other"
+  ([reason]
+   [payment-for-icon reason ""])
+  ([reason icon-size]
+   (when reason [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
+                              :placement "right"}
+                 [:span.icon {:class icon-size}
+                  (case reason
+                    "rent"    [:i.fa.fa-home {:class icon-size}]
+                    "deposit" [:i.fa.fa-shield {:class icon-size}]
+                    "order"   [:i.fa.fa-smile-o {:class icon-size}]
+                    "")]])))
+
+
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
@@ -79,20 +94,20 @@
 (def ^:private payment-table-columns
   [
    ;; PAYMENT TYPE ICON
-   {:dataIndex :method
+   {:dataIndex :for
     :className "is-narrow width-2"
     :render    (fn [val]
-                 (r/as-element [payment-source-icon val]))}
+                 (r/as-element [payment-for-icon val]))}
 
    ;; DATE PAID
-   {:title     "Date"
+   {:title     (l10n/translate :date)
     :dataIndex :paid_on
     :className "width-6"
     :render    (fn [val]
                  (format/date-short val))}
 
    ;; AMOUNT
-   {:title     "Amount"
+   {:title     (l10n/translate :amount)
     :dataIndex :amount
     :className "td-bold width-4"
     :render    (fn [val]
@@ -100,22 +115,28 @@
 
    ;; STATUS OF PAYMENT
    {:dataIndex :status
-    :className "is-narrow width-5"
+    ;;:className "is-narrow width-5"
     :render    (fn [val]
                  (r/as-element [payment-status val]))}
 
    ;; REASON FOR PAYMENT
-   {:title     "Type"
-    :dataIndex :for
-    :className "is-narrow width-8"
-    :render    (fn [val]
-                 (r/as-element [payment-for val]))}
+   ;;{:title     "Type"
+   ;; :dataIndex :for
+   ;; :className "is-narrow width-8"
+   ;; :render    (fn [val]
+   ;;              (r/as-element [payment-for val]))}
 
-   {:title     "Period"
+   {:title     (l10n/translate :description)
                                         ; :dataIndex :for
     :className "expand"
     :render    (fn [val item _]
-                 (render-payment-period item))}])
+                 (render-payment-period item))}
+
+   {:title ""
+    :dataIndex :source
+    :className "align-right"
+    :render    (fn [val item _]
+                 (source-name-and-numbers (js->clj val :keywordize-keys true)))}])
 
 
 (defn get-payment-row-class
@@ -129,14 +150,17 @@
 
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
-  [txs]
-  [ant/table
-   {:class        "payments-table"
-    :loading      false
-    :columns      payment-table-columns
-    :rowClassName get-payment-row-class
-    :dataSource   (map-indexed utils/thing->column txs)
-    :pagination   false}])
+  [transactions loading?]
+  ;;(let [txs transactions]
+  (let [txs (filter #(not= (:status %) :due) transactions)]
+   [ant/table
+    {:class        "payments-table"
+     :loading      (or loading? false)
+     :columns      payment-table-columns
+     :rowClassName get-payment-row-class
+     :dataSource   (map-indexed utils/thing->column txs)
+     :locale       {:emptyText (l10n/translate :payment-table-no-payments)}
+     :pagination   false}]))
 
 
 (defn menu-select-source [sources]

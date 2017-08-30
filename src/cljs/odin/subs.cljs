@@ -105,6 +105,13 @@
 
 
 (reg-sub
+ :route/params
+ :<- [:route/current]
+ (fn [{params :params} _]
+   params))
+
+
+(reg-sub
  :route/root
  :<- [:route/path]
  (fn [path _]

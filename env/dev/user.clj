@@ -48,3 +48,9 @@
 
 (defn cljs-repl []
   (ra/cljs-repl "odin"))
+
+
+(defn go! []
+  (go)
+  (start-figwheel!)
+  (timbre/debug "⟡ WE ARE GO! ⟡"))
