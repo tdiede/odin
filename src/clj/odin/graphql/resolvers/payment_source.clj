@@ -47,9 +47,10 @@
   "Fetch the autopay source for the requesting user, if there is one."
   [{:keys [stripe requester conn]}]
   (when-let [customer (customer/autopay (d/db conn) requester)]
-    (let [managed (property/rent-connect-id (customer/managing-property customer))]
-      (rcu/fetch-source stripe (customer/id customer) (customer/bank-token customer)
-                        :managed-account managed))))
+    (when-some [source-id (customer/bank-token customer)]
+      (let [managed (property/rent-connect-id (customer/managing-property customer))]
+        (rcu/fetch-source stripe (customer/id customer) source-id
+                          :managed-account managed)))))
 
 (s/fdef autopay-source
         :args (s/cat :ctx context?)
@@ -69,6 +70,20 @@
         :ret p/chan?)
 
 
+(defn- is-autopay-source?
+  "Is `source` used as the autopay source?"
+  [ctx source]
+  (go-try
+   (if-let [c (autopay-source ctx)]
+     (let [autopay-source (<!? c)]
+       [(= (:fingerprint source) (:fingerprint autopay-source)) autopay-source])
+     [false nil])))
+
+(s/fdef is-autopay-source?
+        :args (s/cat :ctx context? :source map?)
+        :ret p/chan?)
+
+
 ;; =============================================================================
 ;; Fields
 ;; =============================================================================
@@ -80,10 +95,8 @@
   (let [result (resolve/resolve-promise)]
     (go
       (try
-        (->> (if-let [c (autopay-source ctx)]
-               (= (:fingerprint source) (:fingerprint (<!? c)))
-               false)
-             (resolve/deliver! result))
+        (let [[is-source _] (<!? (is-autopay-source? ctx source))]
+          (resolve/deliver! result is-source))
         (catch Throwable t
           (resolve/deliver! result nil {:message  (error-message t)
                                         :err-data (ex-data t)}))))
@@ -490,17 +503,33 @@
 (defn unset-autopay!
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
-  [{:keys [stripe requester] :as ctx} {:keys [id]} _]
+  [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
   (let [result (resolve/resolve-promise)]
-    (resolve/deliver! result nil {:message "TODO: Implement me."})
-    #_(go
+    (if-not (is-bank-id? id)
+      (resolve/deliver! result nil {:message "Only bank accounts can be used for autopay."})
+      (go
         (try
-
+          (let [license               (member-license/active (d/db conn) requester)
+                subs-id               (member-license/subscription-id license)
+                source                (<!? (fetch-source ctx id))
+                [is-source ap-source] (<!? (is-autopay-source? ctx source))]
+            ;; Remove the source from the customer
+            (if-not is-source
+              (resolve/deliver! result nil {:message "This source is not being used for autopay; cannot unset."})
+              (do
+                ;; delete the source from the managed account
+                (<!? (rcu/delete-source! stripe (:customer ap-source) (:id ap-source)
+                                         :managed-account (member-license/rent-connect-id license)))
+                (<!? (rs/cancel! stripe subs-id
+                                 :managed-account (member-license/rent-connect-id license)))
+                @(d/transact-async conn [[:db/retract (:db/id license) :member-license/subscription-id subs-id]
+                                         [:db/retract [:stripe-customer/customer-id (:customer ap-source)]
+                                          :stripe-customer/bank-account-token (:id ap-source)]])
+                (resolve/deliver! result source))))
           (catch Throwable t
             (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)}))))
+                                          :err-data (ex-data t)})))))
     result))
-
 
 
 
@@ -514,7 +543,7 @@
 
   (let [conn odin.datomic/conn
         account (d/entity (d/db conn) [:account/email "member@test.com"])]
-    (customer/autopay (d/db conn) account))
+    @(d/transact conn [[:db/retract 285873023223104 :stripe-customer/bank-account-token "ba_1Awfc7JDow24Tc1abTE5iR6q"]]))
 
 
   (do

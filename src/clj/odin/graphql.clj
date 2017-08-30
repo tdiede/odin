@@ -59,8 +59,8 @@
                  m))]
         (update result :data -prettify)))
 
-    (def token "btok_1Awf7dIvRccmW9nODQ2dSd80")
-    (def source "ba_1Awf7dIvRccmW9nO5m7xvksw")
+    (def token "btok_1AwfkJIvRccmW9nOZMX9bgQO")
+    (def source "ba_1AwfkJIvRccmW9nOoEbGvWZn")
 
     )
 
@@ -119,6 +119,20 @@
                    (venia/graphql-query
                     {:venia/queries
                      [[:set_autopay_source {:id source} [:id :type :status :autopay]]]}))
+              nil
+              ctx)))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:unset_autopay_source {:id source} [:id :type :status :autopay]]]}))
               nil
               ctx)))
 
