@@ -48,6 +48,7 @@
                  [com.google.guava/guava "21.0"]
                  ;; Util
                  [starcity/ribbon "0.7.0-SNAPSHOT"]
+                 [com.cemerick/url "0.1.1"]
                  [mount "0.1.11"]
                  [aero "1.1.2"]
                  [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
