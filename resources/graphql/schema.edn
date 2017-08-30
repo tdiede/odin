@@ -161,6 +161,8 @@
                        :resolve (:get :customer)}
             :status   {:type    String
                        :resolve (:get :status)}
+            :autopay  {:type    Boolean
+                       :resolve :payment.source/autopay?}
             :type     {:type    (non-null :payment_source_type)
                        :resolve :payment.source/type}
             :name     {:type    (non-null String)
@@ -210,20 +212,51 @@
                     :resolve :payment.sources/list}}
 
  :mutations
- {:delete_payment_source
-  {:type        (non-null String)
+ {;;; Payment Sources
+
+  :delete_payment_source
+  {:type        :payment_source
    :description "Delete a payment source."
    :args        {:id {:type        (non-null String)
                       :description "The Stripe source id."}}
    :resolve     :payment.sources/delete!}
 
-  :add_bank_source
-  {:type        :payment_source
-   :description "Add a new bank account to the requesting users's account."
-   :args        {:token {:type        (non-null String)
-                         :description "The token to create the bank account with."}}
-   :resolve     :payment.sources/add-bank!}
 
+  :add_payment_source
+  {:type        :payment_source
+   :description "Add a new source to the requesting users's account."
+   :args        {:token {:type        (non-null String)
+                         :description "The token to create the source with."}}
+   :resolve     :payment.sources/add-source!}
+
+
+  :verify_bank_source
+  {:type        :payment_source
+   :description "Verify a bank account using microdeposits."
+   :args        {:deposits {:type        (list Int)
+                            :description "The two microdeposit amounts."}
+                 :id       {:type        (non-null String)
+                            :description "The Stripe source id."}}
+   :resolve     :payment.sources/verify-bank!}
+
+
+  :set_autopay_source
+  {:type        :payment_source
+   :description "Set a payment source as the autopay source. Currently restricted to bank accounts."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use for autopay."}}
+   :resolve     :payment.sources/set-autopay!}
+
+
+  :unset_autopay_source
+  {:type        :payment_source
+   :description "Unset the source as the autopay source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source used for autopay."}}
+   :resolve     :payment.sources/unset-autopay!}
+
+
+  ;;; Account
 
   :set_phone {:type        :account
               :description "Set an account's phone number. This is a demo mutation."

@@ -1,12 +1,11 @@
 (ns odin.routes.api
-  (:require [odin.graphql :as graph]
+  (:require [blueprints.models.account :as account]
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
             [datomic.api :as d]
-            [ring.util.response :as response]
-            [blueprints.models.account :as account]
-            [odin.config :as config :refer [config]]
-            [odin.graphql.resolvers.utils :as gqlu]))
+            [odin.graphql :as graph]
+            [odin.graphql.resolvers.utils :as gqlu]
+            [ring.util.response :as response]))
 
 ;; =============================================================================
 ;; Helpers
@@ -15,6 +14,10 @@
 
 (defn ->conn [req]
   (get-in req [:deps :conn]))
+
+
+(defn ->stripe [req]
+  (get-in req [:deps :stripe]))
 
 
 ;; TODO: Remove
@@ -38,7 +41,7 @@
     (gqlu/context
       conn
       (debug-user (d/db conn))
-      (config/stripe-secret-key config))))
+      (->stripe req))))
 
 
 (defn graphql-handler [req]
@@ -101,5 +104,6 @@
 
 (defroutes routes
   (GET "/config" [] config-handler)
+
   (GET "/graphql" [] graphql-handler)
   (POST "/graphql" [] graphql-handler))
