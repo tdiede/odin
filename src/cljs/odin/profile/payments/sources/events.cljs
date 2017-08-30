@@ -3,18 +3,49 @@
             [odin.profile.payments.db :as db]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
-                                   path]]
+                                   path debug]]
             [toolbelt.core :as tb]))
 
 
 (reg-event-fx
  :payment.sources/set-current
  [(path db/path)]
- (fn [{:keys [db]} [_ selected-source]]
-   {:db (assoc-in db [:current-source] selected-source)}))
-   ;;(let [account (rand-nth (get-in db [:accounts :list]))]
-   ;;  {:db      (assoc-in db [:loading :accounts/list] true)
-   ;;   :graphql {:mutation   [[:set_phone {:id    (:id account)}
-   ;;                           [:id :phone]]]
-   ;;             :on-success [:payment.sources.load-source/success]
-   ;;             :on-failure [:payment.sources.load-source/failure]}})))
+ (fn [{:keys [db]} [_ current-source-id]]
+   {:db (assoc-in db [:current-source] current-source-id)}))
+
+
+(reg-event-db
+ :payment.sources.add-new-account/select-type
+ [(path db/path)]
+ (fn [db [_ account-type]]
+   (assoc db :new-account-type account-type)))
+
+(reg-event-db
+ :payment.sources.add-new-account/update-bank
+ [(path db/path)]
+ (fn [db [_ k v]]
+   (assoc-in db [:new-account-info-bank k] v)))
+
+(reg-event-db
+ :payment.sources.add-new-account/submit-bank!
+ [(path db/path)]
+ (fn [db [_]]
+   (tb/log "Submitting:" (:new-account-info-bank db))))
+
+(reg-event-db
+ :payment.sources.add-new-account/update-card
+ [(path db/path)]
+ (fn [db [_ k v]]
+   (assoc-in db [:new-account-info-card k] v)))
+
+(reg-event-db
+ :payment.sources.add-new-account/submit-card!
+ [(path db/path)]
+ (fn [db [_]]
+   (tb/log "Submitting:" (:new-account-info-card db))))
+
+;;(reg-event-fx
+;; :payment.sources.source/change-autopay
+;; [(path db/path)]
+;; (fn [{:keys [db]} [_ source value]]
+;;   {:db (assoc-in db [:current-source] current-source-id)}))

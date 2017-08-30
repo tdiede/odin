@@ -56,7 +56,9 @@
 (def path ::payments)
 
 (def default-value
-  {path {:payments        []
-         :payment-sources []
-         :loading         {:payments/list        false
-                           :payment-sources/list false}}})
+  {path {:payments              []
+         :payment-sources       []
+         :loading               {:payments/list        false
+                                 :payment-sources/list false}
+         :new-account-info-bank {}
+         :new-account-type      :bank}})

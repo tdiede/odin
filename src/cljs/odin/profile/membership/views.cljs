@@ -3,6 +3,7 @@
              [odin.components.membership :as member-ui]
              [odin.components.orders :as orders-ui]
              [odin.utils.formatters :as format]
+             [odin.components.notifications :as notification]
              [antizer.reagent :as ant]))
 
 
@@ -57,7 +58,9 @@
       [:h4 (str term " months • " (format/currency price) "/mo.")]
       [:p (str (format/date-short start) " - " (format/date-short end))]]]
     [:footer.card-footer
-     [:a.card-footer-item "View Agreement"]]]))
+     [:a.card-footer-item
+      [:span.icon.is-small [:i.fa.fa-file-text]]
+      [:span.with-icon "View Agreement"]]]]))
 
 
 
@@ -78,23 +81,34 @@
       [:a "Manage"]]]]))
 
 
+(defn membership-summary []
+  [:div
+   [notification/banner-success "Good news – You're all paid up! Your next rent payment of $1,400 is due on September 4th."]
+   [notification/banner "Your next payment is due "]])
+
+
+
+
 (defn membership []
   [:div
-   [:h1 (l10n/translate :membership)]
-   [:p "View and manage your rental agreement and any premium subscriptions you've signed up for."]
-   [:br]
+   [:div.view-header
+    [:h1 (l10n/translate :membership)]]
+    ;;[:p "View and manage your rental agreement and any premium subscriptions you've signed up for."]]
+   ;;[:br]
 
    [:div.columns
     [:div.column
-     [:h2 "Subscriptions"]
-     (for [service mock-services]
-       ^{:key (get service :id)}
-       [card-service-summary service])
-     [:h4 [:a "View all services"]]]
+     [:h2 "Summary"]
+     [membership-summary]]
+     ;;[:h2 "Subscriptions"]
+     ;;(for [service mock-services]
+       ;;^{:key (get service :id)}
+       ;;[card-service-summary service])
+     ;;[:h4 [:a "View all services"]]]
 
-    [:div.column.is-4
+    [:div.column.is-5
      [:h2 "Rental Agreement"]
-     [card-license-summary mock-member-license]]]
+     [card-license-summary mock-member-license]]]])
 
-   [:p "Rent plus subscriptions: " [:b "$1,545 / mo."]]
-   [:hr]])
+   ;;[:p "Rent plus subscriptions: " [:b "$1,545 / mo."]]])
+   ;;[:hr]])

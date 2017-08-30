@@ -12,6 +12,7 @@
 (defn history [param]
   (let [payments (subscribe [:payments])
         loading  (subscribe [:payments.list/loading?])]
+    ;;(tb/log (map :amount @payments))
     [:div
      [:div.view-header
       [:h1 "Payment History"]

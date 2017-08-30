@@ -151,6 +151,7 @@
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
   [transactions loading?]
+  ;;(let [txs transactions]
   (let [txs (filter #(not= (:status %) :due) transactions)]
    [ant/table
     {:class        "payments-table"
