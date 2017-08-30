@@ -78,8 +78,5 @@
   [name]
   (->> (string/split name #" ") (map first) (apply str)))
 
-
-(defn sstr
-  "A variant of `str` that inserts spaces between the arguments."
-  [args]
+(defn sstr [args]
   (->> (interpose " " [args]) (apply str)))

@@ -3,7 +3,42 @@
             [blueprints.models.member-license :as member-license]
             [datomic.api :as d]
             [toolbelt.datomic :as td]
-            [taoensso.timbre :as timbre]))
+            [taoensso.timbre :as timbre]
+            [blueprints.models.security-deposit :as deposit]))
+
+
+;; =============================================================================
+;; Fields
+;; =============================================================================
+
+
+(defn active-license
+  "Active member license for this account."
+  [{conn :conn} _ account]
+  (member-license/active (d/db conn) account))
+
+
+(defn full-name
+  "Account's full name."
+  [_ _ account]
+  (account/full-name account))
+
+
+(defn property
+  "The property that this account (member) is a part of."
+  [{conn :conn} _ account]
+  (-> (member-license/active (d/db conn) account)
+      (member-license/property)))
+
+
+(defn role
+  [_ _ account]
+  (keyword (name (account/role account))))
+
+
+(defn deposit
+  [_ _ account]
+  (deposit/by-account account))
 
 
 ;; =============================================================================
@@ -22,38 +57,20 @@
 
 (defn accounts
   "Query list of accounts."
-  [context args _]
+  [{conn :conn} args _]
   (->> (d/q '[:find [?e ...]
               :in $ [?role ...]
               :where
               [?e :account/email _]
               [?e :account/role ?role]]
-            (:db context) (arg-role->role (:role args)))
-       (apply td/entities (:db context))))
+            (d/db conn) (arg-role->role (:role args)))
+       (apply td/entities (d/db conn))))
 
 
 (defn entry
   "Query a single account."
-  [context {id :id} _]
-  (d/entity (:db context) id))
-
-
-;; =============================================================================
-;; Fields
-;; =============================================================================
-
-
-(defn full-name
-  "Account's full name."
-  [_ _ account]
-  (account/full-name account))
-
-
-(defn property
-  "The property that this account (member) is a part of."
-  [context _ account]
-  (-> (member-license/active (:db context) account)
-      (member-license/property)))
+  [{conn :conn} {id :id} _]
+  (d/entity (d/db conn) id))
 
 
 ;; =============================================================================
@@ -62,7 +79,7 @@
 
 
 (defn set-phone!
-  [context {:keys [id phone]} _]
-  (let [tx @(d/transact (:conn context) [{:db/id                id
-                                          :account/phone-number phone}])]
+  [{conn :conn} {:keys [id phone]} _]
+  (let [tx @(d/transact conn [{:db/id                id
+                               :account/phone-number phone}])]
     (d/entity (:db-after tx) id)))

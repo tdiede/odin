@@ -75,7 +75,4 @@
 
   :clean-targets ^{:protect false} ["resources/public/js/cljs" :target-path]
 
-  :cooper {"main" ["sass" "--watch" "-E" "UTF-8" "style/sass/main.sass:resources/public/assets/css/styles.css"]
-           "antd" ["less-watch-compiler" "style/less" "resources/public/assets/css/"]}
-
   :main odin.core)

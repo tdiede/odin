@@ -1,14 +1,17 @@
-{:dev {:source-paths ["src/clj" "src/cljs" "env/dev"]
+{:dev {:source-paths ["src/clj" "src/cljs" "env/dev" "env/seed"]
        :plugins      [[lein-figwheel "0.5.11" :exclusions [org.clojure/clojure org.clojure/core.async]]
                       [lein-cooper "1.2.2" :exclusions [org.clojure/clojure]]]
        :dependencies [[figwheel-sidecar "0.5.11" :exclusions [ring/ring-core com.google.guava/guava]]
                       [binaryage/devtools "0.9.4"]
                       [com.datomic/datomic-free "0.9.5544"]]
-       :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}}
+       :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+
+       :cooper {"main" ["sass" "--watch" "-E" "UTF-8" "style/sass/main.sass:resources/public/assets/css/styles.css"]
+                "antd" ["less-watch-compiler" "style/less" "resources/public/assets/css/"]}}
 
  :uberjar {:aot          :all
            :main         odin.core
-           :source-paths ["src/clj" "src/cljs"]
+           :source-paths ["src/clj" "src/cljs" "env/seed"]
            :prep-tasks   ["compile" ["cljsbuild" "once"]]
 
            :dependencies [[com.datomic/datomic-pro "0.9.5544" :exclusions [com.google.guava/guava]]
