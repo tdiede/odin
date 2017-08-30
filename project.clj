@@ -15,29 +15,25 @@
                  [starcity/datomic-session-store "0.1.0"]
                  [starcity/customs "0.1.0" :exclusions [com.google.guava/guava
                                                         com.fasterxml.jackson.core/jackson-core]]
-                 ;; i18n
-                 [tongue "0.2.2"]
                  [optimus "0.19.3"]
                  [http-kit "2.2.0"]
                  [compojure "1.6.0" :exclusions [ring/ring-core]]
                  [ring-middleware-format "0.7.2" :exclusions [ring/ring-core]]
-                 [cljsjs/libphonenumber "8.4.1-1"]
-
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.20.0"]
                  [vincit/venia "0.2.2"]
-
                  ;; CLJS
+                 [tongue "0.2.2"]       ; i18n
                  [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
                  [reagent "0.7.0"]
+                 [cljsjs/libphonenumber "8.4.1-1"]
                  [cljsjs/react "15.6.1-0"]
                  [cljsjs/react-dom "15.6.1-0"]
                  [venantius/accountant "0.2.0" :exclusions [org.clojure/clojurescript
                                                             org.clojure/core.async]]
                  [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
                                                              org.apache.httpcomponents/httpclient]]
-                 [cljs-ajax "0.6.0"]
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
@@ -46,6 +42,7 @@
                                                                      com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
+                 [cljs-ajax "0.6.0"]
                  ;; Util
                  [starcity/ribbon "0.7.0-SNAPSHOT"]
                  [com.cemerick/url "0.1.1"]

@@ -48,14 +48,18 @@
 
 (def ^:private payment-source-resolvers
   {;; fields
-   :payment.source/type       source/type
-   :payment.source/name       source/name
-   :payment.source/payments   source/payments
+   :payment.source/autopay?        source/autopay?
+   :payment.source/type            source/type
+   :payment.source/name            source/name
+   :payment.source/payments        source/payments
    ;; queries
-   :payment.sources/list      source/sources
+   :payment.sources/list           source/sources
    ;; mutations
-   :payment.sources/delete!   source/delete!
-   :payment.sources/add-bank! source/add-bank!
+   :payment.sources/delete!        source/delete!
+   :payment.sources/add-source!    source/add-source!
+   :payment.sources/verify-bank!   source/verify-bank!
+   :payment.sources/set-autopay!   source/set-autopay!
+   :payment.sources/unset-autopay! source/unset-autopay!
    })
 
 

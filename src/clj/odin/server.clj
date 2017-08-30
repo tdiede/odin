@@ -1,9 +1,9 @@
 (ns odin.server
-  (:require [odin.config :as config :refer [config]]
+  (:require [clojure.string :as string]
+            [mount.core :refer [defstate]]
+            [odin.config :as config :refer [config]]
             [odin.datomic :refer [conn]]
             [odin.routes :as routes]
-            [clojure.string :as string]
-            [mount.core :refer [defstate]]
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.prime :as optimus]
@@ -103,6 +103,8 @@
 
 
 (defstate web-server
-  :start (->> (app-handler {:conn conn})
+  :start (->> (app-handler {:conn   conn
+                            :config config
+                            :stripe (config/stripe-secret-key config)})
               (start-server (config/webserver-port config)))
   :stop (stop-server web-server))

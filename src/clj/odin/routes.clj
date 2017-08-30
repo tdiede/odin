@@ -20,4 +20,4 @@
 (defroutes routes
   (context "/api" [] api/routes)
 
-  (compojure/routes (GET "*" [] show)))
+  (GET "*" [] show))

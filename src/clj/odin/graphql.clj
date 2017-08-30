@@ -57,63 +57,88 @@
                             :otherwise                                    v)))
                  {}
                  m))]
-        (update result :data -prettify))))
+        (update result :data -prettify)))
+
+    (def token "btok_1Awf7dIvRccmW9nODQ2dSd80")
+    (def source "ba_1Awf7dIvRccmW9nO5m7xvksw")
+
+    )
 
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
-    (->> (execute schema
-                  (venia/graphql-query
-                   {:venia/queries
-                    [[:accounts {:role :member}
-                      [:id :name [:deposit [:id :amount :due [:payments [:id]] :amount_remaining :amount_paid :amount_pending :refund_status]]]]]})
-                  nil
-                  {:conn      conn
-                   :stripe    (odin.config/stripe-secret-key odin.config/config)
-                   :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
-         pretty))
+    (pretty
+     (execute schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payment_sources {:account (:db/id account)}
+                  [:id :autopay :type :status :name :customer [:payments [:id :method :autopay [:source [:id]]]]]]] })
+              nil
+              {:conn      conn
+               :stripe    (odin.config/stripe-secret-key odin.config/config)
+               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
 
 
-  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
-    (execute schema
-             (venia/graphql-query
-              {:venia/queries
-               [[:payment_sources {:account (:db/id account)}
-                 [:id :type :status :name :last4 [:payments [:id :method :autopay [:source [:id]]]]]]] })
-             nil
-             {:db        (d/db conn)
-              :conn      conn
-              :stripe    (odin.config/stripe-secret-key odin.config/config)
-              :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
-
-  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
-    (->> (execute schema
-                  (venia/graphql-query
-                   {:venia/queries
-                    [[:payments {:account (:db/id account)}
-                      [:id :method :autopay :for [:source [:id :last4]]]]]})
-                  nil
-                  {:db        (d/db conn)
-                   :conn      conn
-                   :stripe    (odin.config/stripe-secret-key odin.config/config)
-                   :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
-         :data
-         :payments
-         (map (partial into {}))))
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:add_payment_source {:token token}
+                       [:id :type]]]}))
+              nil
+              ctx)))
 
 
-  (execute schema
-           ;; "query { accounts(role: member) { id, name, property { code } }}"
-           (venia.core/graphql-query
-            {:venia/queries
-             [[:accounts {:role :member}
-               [:id :name [:property [:code]] :email]]] })
-           nil
-           {:db   (d/db conn)
-            :conn conn})
+  (let [account  (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx      {:conn      conn
+                  :stripe    (odin.config/stripe-secret-key odin.config/config)
+                  :requester account}
+        deposits [32 45]]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:verify_bank_source {:deposits deposits :id source}
+                       [:id :type :status]]]}))
+              nil
+              ctx)))
 
 
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:set_autopay_source {:id source} [:id :type :status :autopay]]]}))
+              nil
+              ctx)))
 
 
+  ;; Cannot delete, as it's being used for autopay.
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:delete_payment_source {:id source} [:id :autopay]]]}))
+              nil
+              ctx)))
+
+
+  @(d/transact conn [[:db.fn/retractEntity [:stripe-customer/customer-id "cus_B6VfcPGAbVJI3C"]]])
 
 
   )
