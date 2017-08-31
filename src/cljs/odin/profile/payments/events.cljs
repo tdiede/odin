@@ -1,5 +1,6 @@
 (ns odin.profile.payments.events
   (:require [odin.profile.payments.db :as db]
+            [odin.profile.payments.sources.events]
             [odin.routes :as routes]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
@@ -7,18 +8,22 @@
             [toolbelt.core :as tb]))
 
 
+;; =============================================================================
+;; Routing/Nav
+;; =============================================================================
+
+
 (defmethod routes/dispatches :profile.payment/history [route]
-  [[:profile.payments/fetch (get-in route [:requester :id])]])
+  [[:payments/fetch (get-in route [:requester :id])]])
 
 
-(defmethod routes/dispatches :profile.payment/sources [route]
-  [[:profile.payment-sources/fetch (get-in route [:requester :id])]
-   [:payment.sources/set-current (get-in route [:params :source-id])]])
-
+;; =============================================================================
+;; Fetch Payments
+;; =============================================================================
 
 
 (reg-event-fx
- :profile.payments/fetch
+ :payments/fetch
  [(path db/path)]
  (fn [{:keys [db]} [_ account-id]]
    {:db      (assoc-in db [:loading :payments/list] true)
@@ -26,12 +31,12 @@
               [[:payments {:account account-id}
                 [:id :method :for :autopay :amount :status
                  :pstart :pend :paid_on [:source [:id :name :type :last4]]]]]
-              :on-success [:profile.payments.fetch/success]
-              :on-failure [:profile.payments.fetch/failure]}}))
+              :on-success [:payments.fetch/success]
+              :on-failure [:payments.fetch/failure]}}))
 
 
 (reg-event-db
- :profile.payments.fetch/success
+ :payments.fetch/success
  [(path db/path)]
  (fn [db [_ response]]
    ;;(tb/log response)
@@ -41,48 +46,9 @@
 
 
 (reg-event-fx
- :profile.payments.fetch/failure
+ :payments.fetch/failure
  [(path db/path)]
  (fn [{:keys [db]} [_ response]]
    ;;(tb/log response)
    {:db       (assoc-in db [:loading :payments/list] false)
-    :dispatch [:graphql/notify-errors! response]}))
-
-
-
-(reg-event-fx
- :profile.payment-sources/fetch
- [(path db/path)]
- (fn [{:keys [db]} [_ account-id]]
-   {:db      (assoc-in db [:loading :payment-sources/list] true)
-    :graphql {:query
-              [[:payment_sources {:account account-id}
-                [:id :last4 :customer :type :name :status
-                 [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
-              :on-success [:profile.payment-sources.fetch/success]
-              :on-failure [:profile.payment-sources.fetch/failure]}}))
-
-
-(reg-event-fx
- :profile.payment-sources.fetch/success
- [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   (let [payment-sources (get-in response [:data :payment_sources])
-         route (when (nil? (:current-source db))
-                 (routes/path-for :profile.payment/sources
-                                  :query-params {:source-id (:id (first payment-sources))}))]
-     (tb/assoc-when
-      {:db (-> (assoc db :payment-sources payment-sources)
-               (assoc-in [:loading :payment-sources/list] false))}
-      :route route))))
-
-
-
-
-(reg-event-fx
- :profile.payment-sources.fetch/failure
- [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   ;;(tb/log response)
-   {:db       (assoc-in db [:loading :payment-sources/list] false)
     :dispatch [:graphql/notify-errors! response]}))

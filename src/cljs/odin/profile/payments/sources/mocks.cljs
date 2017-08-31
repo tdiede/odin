@@ -23,7 +23,7 @@
 ;; :payment.for/deposit
 ;; :payment.for/order
 
-(def transaction-history
+#_(def transaction-history
   [{:id                111498190582013984
     :status            :payment.status/pending
     :for               :payment.for/rent
@@ -78,7 +78,8 @@
 
 
 (def payment-sources
-  [{:id              193455612
+  []
+  #_[{:id              193455612
     :type            :bank
     :name            "Wells Fargo"
     :last4 1234
