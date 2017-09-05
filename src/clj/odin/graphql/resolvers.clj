@@ -42,6 +42,7 @@
    :payment/source      payment/source
    :payment/autopay?    payment/autopay?
    :payment/for         payment/payment-for
+   :payment/description payment/description
    ;; queries
    :payment/list        payment/payments
    })

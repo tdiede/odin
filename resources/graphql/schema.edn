@@ -131,38 +131,40 @@
 
 
   :payment
-  {:fields {:id      {:type    (non-null :Long)
-                      :resolve (:get :db/id)}
-            :uuid    {:type    (non-null String)
-                      :resolve (:get :payment/id)}
-            :ext_id  {:type        String
-                      :description "The Stripe external id."
-                      :resolve     :payment/external-id}
-            :method  {:type    :payment_method
-                      :resolve :payment/method}
-            :for     {:type    :Keyword
-                      :resolve :payment/for}
-            :autopay {:type        Boolean
-                      :description "Is this an autopay payment?"
-                      :resolve     :payment/autopay?}
-            :amount  {:type    (non-null Float)
-                      :resolve (:get :payment/amount)}
-            :status  {:type    :payment_status
-                      :resolve :payment/status}
-            :due     {:type    :Instant
-                      :resolve (:get :payment/due)}
-            :paid_on {:type    :Instant
-                      :resolve (:get :payment/paid-on)}
-            :pstart  {:type        :Instant
-                      :description "Period start."
-                      :resolve     (:get :payment/pstart)}
-            :pend    {:type        :Instant
-                      :description "Period end."
-                      :resolve     (:get :payment/pend)}
-            :account {:type    (non-null :account)
-                      :resolve (:get :payment/account)}
-            :source  {:type    :payment_source
-                      :resolve :payment/source}}}
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :uuid        {:type    (non-null String)
+                          :resolve (:get :payment/id)}
+            :ext_id      {:type        String
+                          :description "The Stripe external id."
+                          :resolve     :payment/external-id}
+            :method      {:type    :payment_method
+                          :resolve :payment/method}
+            :description {:type    String
+                          :resolve :payment/description}
+            :for         {:type    :Keyword
+                          :resolve :payment/for}
+            :autopay     {:type        Boolean
+                          :description "Is this an autopay payment?"
+                          :resolve     :payment/autopay?}
+            :amount      {:type    (non-null Float)
+                          :resolve (:get :payment/amount)}
+            :status      {:type    :payment_status
+                          :resolve :payment/status}
+            :due         {:type    :Instant
+                          :resolve (:get :payment/due)}
+            :paid_on     {:type    :Instant
+                          :resolve (:get :payment/paid-on)}
+            :pstart      {:type        :Instant
+                          :description "Period start."
+                          :resolve     (:get :payment/pstart)}
+            :pend        {:type        :Instant
+                          :description "Period end."
+                          :resolve     (:get :payment/pend)}
+            :account     {:type    (non-null :account)
+                          :resolve (:get :payment/account)}
+            :source      {:type    :payment_source
+                          :resolve :payment/source}}}
 
 
   :payment_source

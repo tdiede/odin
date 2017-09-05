@@ -9,7 +9,13 @@
             [ribbon.charge :as rch]
             [taoensso.timbre :as timbre]
             [toolbelt.async :refer [<!!? <!?]]
-            [toolbelt.predicates :as p]))
+            [toolbelt.predicates :as p]
+            [blueprints.models.security-deposit :as deposit]
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]
+            [toolbelt.date :as date]
+            [blueprints.models.order :as order]
+            [blueprints.models.service :as service]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -68,8 +74,42 @@
 
 (defn payment-for
   "What is this payment for?"
-  [_ _ payment]
-  (payment/payment-for payment))
+  [{conn :conn} _ payment]
+  (payment/payment-for (d/entity (d/db conn) (td/id payment))))
+
+
+(defn- deposit-desc
+  "Description for a security deposit payment."
+  [account payment]
+  (let [deposit   (deposit/by-account account)
+        first-py? (or (= (count (deposit/payments deposit)) 1)
+                      (= (td/id payment)
+                         (->> (deposit/payments deposit) (sort-by :payment/amount <) first td/id)))]
+    (cond
+      (= :deposit.type/full (deposit/type deposit)) "entire security deposit payment"
+      first-py?                                     "first security deposit installment"
+      :otherwise                                    "second security deposit installment")))
+
+
+(defn description
+  "A description of this payment. Varies based on payment type."
+  [{conn :conn} _ payment]
+  (let [payment (d/entity (d/db conn) (td/id payment))] ; ensure we're working with an entity
+    (letfn [(-rent-desc [payment]
+              (->> [(payment/period-start payment) (payment/period-end payment)]
+                   (map date/short-date)
+                   (apply format "rent for %s-%s")))
+            (-order-desc [payment]
+              (let [order        (order/by-payment (d/db conn) payment)
+                    service-desc (service/name (order/service order))]
+                (or (when-let [d (order/desc order)]
+                      (format "%s (%s)" d service-desc))
+                    service-desc)))]
+      (case (payment/payment-for payment)
+        :payment.for/deposit (deposit-desc (payment/account payment) payment)
+        :payment.for/rent    (-rent-desc payment)
+        :payment.for/order   (-order-desc payment)
+        nil))))
 
 
 (defn- charge-method

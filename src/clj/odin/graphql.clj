@@ -100,8 +100,8 @@
      (execute schema
               (venia/graphql-query
                {:venia/queries
-                [[:payment_sources {:account (:db/id account)}
-                  [:id :default :autopay :type :status :name :customer]]] })
+                [[:payments {:account (:db/id account)}
+                  [:id :autopay :for :description]]] })
               nil
               {:conn      conn
                :stripe    (odin.config/stripe-secret-key odin.config/config)
