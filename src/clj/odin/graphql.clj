@@ -70,6 +70,36 @@
      (execute schema
               (venia/graphql-query
                {:venia/queries
+                [[:account {:id (:db/id account)}
+                  [:id :name :phone [:emergency_contact [:name :phone]]]]]})
+              nil
+              {:conn      conn
+               :stripe    (odin.config/stripe-secret-key odin.config/config)
+               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:update_account {:id   (:db/id account)
+                                        :data {:emergency_contact {:first_name "Dad"
+                                                                   :last_name  "Carter"
+                                                                   :phone      "asl;dkfjas"}}}
+                       [:id :name :phone [:emergency_contact [:name :phone]]]]]}))
+              nil
+              {:conn      conn
+               :stripe    (odin.config/stripe-secret-key odin.config/config)
+               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (pretty
+     (execute schema
+              (venia/graphql-query
+               {:venia/queries
                 [[:payment_sources {:account (:db/id account)}
                   [:id :default :autopay :type :status :name :customer]]] })
               nil
@@ -166,8 +196,6 @@
               nil
               ctx)))
 
-
-  @(d/transact conn [[:db.fn/retractEntity [:stripe-customer/customer-id "cus_B6VfcPGAbVJI3C"]]])
 
 
   )

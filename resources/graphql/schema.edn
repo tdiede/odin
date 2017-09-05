@@ -28,34 +28,47 @@
  :interfaces
  {:person
   {:fields {:first_name {:type (non-null String)}
-            :last_name  {:type (non-null String)}
-            :email      {:type (non-null String)}}}}
+            :last_name  {:type (non-null String)}}}}
 
  :objects
  {:account
   {:implements [:person]
-   :fields     {:id             {:type    (non-null :Long)
-                                 :resolve (:get :db/id)}
-                :name           {:type    (non-null String)
-                                 :resolve :person/full-name}
-                :first_name     {:type    (non-null String)
-                                 :resolve (:get :person/first-name)}
-                :last_name      {:type    (non-null String)
-                                 :resolve (:get :person/last-name)}
-                :email          {:type    (non-null String)
-                                 :resolve (:get :account/email)}
-                :phone          {:type    String
-                                 :resolve (:get :account/phone-number)}
-                :role           {:type    (non-null :role)
-                                 :resolve :account/role}
-                :property       {:type    :property
-                                 :resolve :account/property}
-                :active_license {:type        :license
-                                 :description "The active member license for this account."
-                                 :resolve     :account/active-license}
-                :deposit        {:type        :deposit
-                                 :description "Security deposit for this account."
-                                 :resolve     :account/deposit}}}
+   :fields     {:id                {:type    (non-null :Long)
+                                    :resolve (:get :db/id)}
+                :name              {:type    (non-null String)
+                                    :resolve :person/full-name}
+                :first_name        {:type    (non-null String)
+                                    :resolve (:get :person/first-name)}
+                :last_name         {:type    (non-null String)
+                                    :resolve (:get :person/last-name)}
+                :email             {:type    (non-null String)
+                                    :resolve (:get :account/email)}
+                :phone             {:type    String
+                                    :resolve (:get :person/phone-number)}
+                :role              {:type    (non-null :role)
+                                    :resolve :account/role}
+                :property          {:type    :property
+                                    :resolve :account/property}
+                :emergency_contact {:type    :emergency_contact
+                                    :resolve :account/emergency-contact}
+                :active_license    {:type        :license
+                                    :description "The active member license for this account."
+                                    :resolve     :account/active-license}
+                :deposit           {:type        :deposit
+                                    :description "Security deposit for this account."
+                                    :resolve     :account/deposit}}}
+
+
+  :emergency_contact
+  {:implements [:person]
+   :fields     {:name       {:type    (non-null String)
+                             :resolve :person/full-name}
+                :first_name {:type    (non-null String)
+                             :resolve (:get :person/first-name)}
+                :last_name  {:type    (non-null String)
+                             :resolve (:get :person/last-name)}
+                :phone      {:type    (non-null String)
+                             :resolve (:get :person/phone-number)}}}
 
 
   :deposit
@@ -213,8 +226,31 @@
                                         :description "ID of an account to request sources for."}}
                     :resolve :payment.sources/list}}
 
+ :input-objects
+ {;;; Account
+
+  :update_account
+  {:description "Inputs to update an account."
+   :fields      {:first_name        {:type String}
+                 :middle_name       {:type String}
+                 :last_name         {:type String}
+                 :phone             {:type String}
+                 :emergency_contact {:type :update_account}}}}
+
  :mutations
- {;;; Payment Sources
+ {;;; Account
+
+  :update_account
+  {:type        :account
+   :description "Set an account's phone number. This is a demo mutation."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "This account's id."}
+                 :data {:type        (non-null :update_account)
+                        :description "The data to update the account with."}}
+   :resolve     :account/update!}
+
+
+   ;;; Payment Sources
 
   :delete_payment_source
   {:type        :payment_source
@@ -265,12 +301,4 @@
                       :description "The Stripe id of the source to use as the defaullt source."}}
    :resolve     :payment.sources/set-default!}
 
-  ;;; Account
-
-  :set_phone {:type        :account
-              :description "Set an account's phone number. This is a demo mutation."
-              :args        {:id    {:type        (non-null :Long)
-                                    :description "This account's id."}
-                            :phone {:type        (non-null String)
-                                    :description "The phone number that is being set."}}
-              :resolve     :account/set-phone!}}}
+  }}
