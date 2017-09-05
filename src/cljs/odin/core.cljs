@@ -8,6 +8,7 @@
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
+            [odin.components.modals]
             [odin.utils.formatters :as formatters]
             [day8.re-frame.http-fx]
             [antizer.reagent :as ant]

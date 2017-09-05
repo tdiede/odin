@@ -1,5 +1,6 @@
 (ns odin.db
   (:require [odin.account.db :as accounts]
+            [odin.components.modals :as modals]
             [odin.profile.payments.db :as payments]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
@@ -33,7 +34,8 @@
               :path    [:home]
               :params  {}}}
    accounts/default-value
-   payments/default-value))
+   payments/default-value
+   modals/default-value))
 
 
 (defn configure [config]

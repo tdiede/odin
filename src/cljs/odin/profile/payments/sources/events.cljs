@@ -70,25 +70,6 @@
 
 
 (reg-event-db
- :payment.sources.add/toggle
- [(path db/add-path)]
- (fn [db [_ visible]]
-   (assoc db :visible visible)))
-
-
-(reg-event-fx
- :payment.sources.add/show
- (fn [_ _]
-   {:dispatch [:payment.sources.add/toggle true]}))
-
-
-(reg-event-fx
- :payment.sources.add/hide
- (fn [_ _]
-   {:dispatch [:payment.sources.add/toggle false]}))
-
-
-(reg-event-db
  :payment.sources.add/select-type
  [(path db/add-path)]
  (fn [db [_ type]]

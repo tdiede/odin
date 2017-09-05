@@ -13,5 +13,4 @@
              :loading               {:list false}
              :new-account-info-bank {}}
    add-path {:type            :bank
-             :available-types [:bank :card]
-             :visible         true}})   ; TODO: DEBUG
+             :available-types [:bank :card]}})

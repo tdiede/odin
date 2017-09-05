@@ -76,9 +76,3 @@
  :<- [::add-source]
  (fn [db _]
    (:type db)))
-
-(reg-sub
- :payment.sources.add/visible?
- :<- [::add-source]
- (fn [db _]
-   (:visible db)))
