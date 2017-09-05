@@ -71,11 +71,26 @@
               (venia/graphql-query
                {:venia/queries
                 [[:payment_sources {:account (:db/id account)}
-                  [:id :autopay :type :status :name :customer [:payments [:id :method :autopay [:source [:id]]]]]]] })
+                  [:id :default :autopay :type :status :name :customer]]] })
               nil
               {:conn      conn
                :stripe    (odin.config/stripe-secret-key odin.config/config)
                :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:set_default_source {:id "card_1AV6tzIvRccmW9nOhQsWMTuv"}
+                       [:id :type :default]]]}))
+              nil
+              ctx)))
 
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])

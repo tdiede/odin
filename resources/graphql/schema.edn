@@ -157,6 +157,8 @@
                        :resolve (:get :id)}
             :last4    {:type    (non-null String)
                        :resolve (:get :last4)}
+            :default  {:type    (non-null Boolean)
+                       :resolve :payment.source/default?}
             :customer {:type    String
                        :resolve (:get :customer)}
             :status   {:type    String
@@ -255,6 +257,13 @@
                       :description "The Stripe id of the source used for autopay."}}
    :resolve     :payment.sources/unset-autopay!}
 
+
+  :set_default_source
+  {:type        :payment_source
+   :description "Set the source as the default payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use as the defaullt source."}}
+   :resolve     :payment.sources/set-default!}
 
   ;;; Account
 

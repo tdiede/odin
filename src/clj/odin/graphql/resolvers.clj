@@ -52,6 +52,7 @@
    :payment.source/type            source/type
    :payment.source/name            source/name
    :payment.source/payments        source/payments
+   :payment.source/default?        source/default?
    ;; queries
    :payment.sources/list           source/sources
    ;; mutations
@@ -60,6 +61,7 @@
    :payment.sources/verify-bank!   source/verify-bank!
    :payment.sources/set-autopay!   source/set-autopay!
    :payment.sources/unset-autopay! source/unset-autopay!
+   :payment.sources/set-default!   source/set-default!
    })
 
 
