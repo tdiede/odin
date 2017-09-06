@@ -47,7 +47,8 @@
  [(path db/path)]
  (fn [{:keys [db]} [_ response]]
    (let [payment-sources (get-in response [:data :payment_sources])
-         route           (when (nil? (:current db))
+         route           (when (and (not (empty? payment-sources))
+                                    (nil? (:current db)))
                            (routes/path-for :profile.payment/sources
                                             :query-params {:source-id (:id (first payment-sources))}))]
      (tb/assoc-when
@@ -77,30 +78,80 @@
 
 
 (reg-event-db
- :payment.sources.add-new-account/update-bank
- [(path db/path)]
+ :payment.sources.add.bank/update!
+ [(path db/add-path)]
  (fn [db [_ k v]]
-   (assoc-in db [:new-account-info-bank k] v)))
+   (assoc-in db [:bank k] v)))
 
 
 (reg-event-db
- :payment.sources.add-new-account/submit-bank!
- [(path db/path)]
+ :payment.sources.add.bank/submit!
+ [(path db/add-path)]
  (fn [db [_]]
-   (tb/log "Submitting:" (:new-account-info-bank db))
+   (tb/log "Submitting:" (:bank db))
    db))
 
 
-(reg-event-db
- :payment.sources.add-new-account/update-card
- [(path db/path)]
- (fn [db [_ k v]]
-   (assoc-in db [:new-account-info-card k] v)))
+(reg-event-fx
+ :payment.sources.add.bank/submit!
+ [(path db/add-path)]
+ (fn [{:keys [db]} [_]]
+   (let [{:keys [account-holder account-number routing-number]} (:bank db)]
+     {:dispatch [:loading :payment.sources.add/bank true]
+      :stripe.bank-account/create-token
+      {:country             "US"
+       :currency            "USD"
+       :account-holder-type "individual"
+       :key                 (.-key js/stripe)
+       :account-holder-name account-holder
+       :routing-number      routing-number
+       :account-number      account-number
+       :on-success          [::create-bank-token-success]
+       :on-failure          [::create-bank-token-failure]}})))
 
 
-(reg-event-db
- :payment.sources.add-new-account/submit-card!
- [(path db/path)]
- (fn [db [_]]
-   (tb/log "Submitting:" (:new-account-info-card db))
-   db))
+(reg-event-fx
+ ::create-bank-token-failure
+ [(path db/add-path)]
+ (fn [{:keys [db]} [_ error]]
+   (tb/error error)
+   {:dispatch [:loading :payment.sources.add/bank false]}))
+
+
+(reg-event-fx
+ ::create-bank-token-success
+ (fn [_ [_ {token :id :as result}]]
+   (tb/log result)
+   {:graphql
+    {:mutation   [[:add_payment_source {:token token} [:id]]]
+     :on-success [::create-bank-source-success]
+     :on-failure [::create-bank-source-fail]}}))
+
+
+(reg-event-fx
+ ::create-bank-source-success
+ (fn [{:keys [db]} [_ response]]
+   (let [account-id (get-in db [:config :account :id])]
+     {:dispatch-n [[:loading :payment.sources.add/bank false]
+                   [:modal/hide :payment.source/add]
+                   [:payment.sources/fetch account-id]]
+      :route      (routes/path-for :profile.payment/sources
+                                   :query-params {:source-id (get-in response [:data :add_payment_source :id])})})))
+
+(reg-event-fx
+ ::create-bank-source-fail
+ (fn [{:keys [db]} [_ response]]
+   (tb/error response)
+   {:dispatch-n [[:loading :payment.sources.add/bank false]
+                 [:graphql/notify-errors! response]]}))
+
+
+;; =============================================================================
+;; Misc
+;; =============================================================================
+
+
+(reg-event-fx
+ :stripe/load-scripts
+ (fn [_ [_ version]]
+   {:load-scripts [(str "https://js.stripe.com/" (or version "v2") "/")]}))

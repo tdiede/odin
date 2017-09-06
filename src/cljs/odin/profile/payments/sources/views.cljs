@@ -109,23 +109,30 @@
   (let [type         (subscribe [:payment.sources.add/type])
         is-visible   (subscribe [:modal/visible? :payment.source/add])
         source-types (subscribe [:payment.sources.add/available-types])]
-    [ant/modal {:title     (l10n/translate :btn-add-new-account)
-                :width     640
-                :visible   @is-visible
-                :on-ok     #(dispatch [:modal/hide :payment.source/add])
-                :on-cancel #(dispatch [:modal/hide :payment.source/add])
-                :footer    nil}
-     [:div
-      [tabs {:class "is-centered"}
-       (doall
-        (map-indexed
-         #(with-meta [form-tab %2 @type] {:key %1})
-         @source-types))]
+    (r/create-class
+     {:component-will-mount
+      (fn [_]
+        (dispatch [:stripe/load-scripts "v2"])
+        (dispatch [:stripe/load-scripts "v3"]))
+      :reagent-render
+      (fn []
+        [ant/modal {:title     (l10n/translate :btn-add-new-account)
+                    :width     640
+                    :visible   @is-visible
+                    :on-ok     #(dispatch [:modal/hide :payment.source/add])
+                    :on-cancel #(dispatch [:modal/hide :payment.source/add])
+                    :footer    nil}
+         [:div
+          [tabs {:class "is-centered"}
+           (doall
+            (map-indexed
+             #(with-meta [form-tab %2 @type] {:key %1})
+             @source-types))]
 
-      (case @type
-        :bank    (r/as-element (ant/create-form (forms/bank-account)))
-        :card    (r/as-element (ant/create-form (forms/credit-card)))
-        :bitcoin [forms/bitcoin-account])]]))
+          (case @type
+            :bank    (r/as-element (ant/create-form (forms/bank-account)))
+            :card    (r/as-element (ant/create-form (forms/credit-card)))
+            :bitcoin [forms/bitcoin-account])]])})))
 
 
 (defn add-new-source-button

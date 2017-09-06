@@ -8,9 +8,10 @@
 
 
 (def default-value
-  {path     {:sources               []
-             :current               nil
-             :loading               {:list false}
-             :new-account-info-bank {}}
+  {path     {:sources []
+             :current nil
+             :loading {:list false}}
    add-path {:type            :bank
+             :card            {}
+             :bank            {}
              :available-types [:bank :card]}})

@@ -1,6 +1,7 @@
 (ns odin.profile.payments.sources.views.forms
   (:require [antizer.reagent :as ant]
             [odin.components.validation :as validation]
+            [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]))
 
@@ -21,47 +22,50 @@
    :wrapper-col {:span 10}})
 
 
+(defn- handle-card-errors [container event]
+  (if-let [error (.-error event)]
+    (aset container "textContent" (.-message error))
+    (aset container "textContent" "")))
+
+
+(def card-style
+  {:base    {:fontFamily "'Fira Sans', Helvetica, sans-serif"}
+   :invalid {:color "#ff3860" :iconColor "#ff3860"}})
+
+
 (defn credit-card []
-  (fn [props]
-    (let [my-form         (ant/get-form)
-          submit-if-valid #(ant/validate-fields my-form submit-card-if-valid)]
-      [:div
-       [ant/form {:on-submit #(do
-                                (.preventDefault %)
-                                (submit-if-valid))}
-        ;;(ant/validate-fields my-form submit-card-if-valid))}
-        [ant/form-item (merge form-style {:label "Full Name"})
-         (ant/decorate-field my-form "Full Name" ;;{:rules [{:required true}]}
-                             [ant/input {:placeholder "Jane S. Doe"
-                                         :on-change   #(dispatch [:payment.sources.add-new-account/update-card :full-name (-> % .-target .-value)])}])]
-
-        [ant/form-item (merge form-style {:label "Card #"})
-         (ant/decorate-field my-form "Card Number" {:rules [;;{:pattern validation/credit-card-number
-                                                            ;;:message "Please enter a valid credit card number."}
-                                                            {:required true}]}
-                             [ant/input {:placeholder "1111-2222-3333-4444"
-                                         :style       {:width "150px"}
-                                         :on-change   #(dispatch [:payment.sources.add-new-account/update-card :card-number (-> % .-target .-value)])}])]
-
-        [ant/form-item (merge form-style {:label "Exp. Date"})
-         (ant/decorate-field my-form "Expiration date" {:rules [;;{:pattern validation/credit-card-exp-date
-                                                                ;;:message "Please enter a valid expiration date, such as 01/21 or 01/2021."
-                                                                {:required true}]}
-                             [ant/input {:placeholder "09/2021"
-                                         :style       {:width "90px"}
-                                         :on-change   #(dispatch [:payment.sources.add-new-account/update-card :expiration (-> % .-target .-value)])}])]
-
-        [ant/form-item (merge form-style {:label "CVV"})
-         (ant/decorate-field my-form "CVV" {:rules [{:pattern validation/credit-card-cvv
-                                                     :message "Your CVV is a 3-4 digit number located on the back of your card."}
-                                                    {:required true}]}
-                             [ant/input {:placeholder "123"
-                                         :style       {:width "50px"}
-                                         :on-change   #(dispatch [:payment.sources.add-new-account/update-card :cvv (-> % .-target .-value)])}])]]
-       [:hr]
-       [:div.align-right
-        [:a.button {:on-click #(dispatch [:payment.sources.add/hide])} "Cancel"]
-        [:a.button.is-primary {:on-click submit-if-valid} "Add Credit Card"]]])))
+  (r/create-class
+   {:component-did-mount
+    (fn [this]
+      (let [st         (js/Stripe (.-key js/stripe))
+            elements   (.elements st)
+            card       (.create elements "card" #js {:style (clj->js card-style)})
+            errors     (.querySelector (r/dom-node this) "#card-errors")
+            submit-btn (.querySelector (r/dom-node this) "#submit-btn")]
+        (.mount card "#card-element")
+        (.addEventListener card "change" (partial handle-card-errors errors))
+        (->> (fn [_]
+               (let [p (.createToken st card)]
+                 (.then p (fn [result]
+                            (if-let [error (.-error result)]
+                              (aset errors "textContent" (.-message error))
+                              (dispatch [:payment.sources.add.card/submit! (.. result -token -id)]))))))
+             (.addEventListener submit-btn "click"))))
+    :reagent-render
+    (fn []
+      (let []
+        [:div
+         [:div {:style {:background-color "#f7f8f9"
+                        :padding          24
+                        :border-radius    4
+                        :border           "1px solid #eeeeee"}}
+          [:label.label.is-small {:for "card-element"} "Credit or debit card"]
+          [:div#card-element]
+          [:p#card-errors.help.is-danger]]
+         [:hr]
+         [:div.align-right
+          [:button.button {:on-click #(dispatch [:payment.sources.add/hide])} "Cancel"]
+          [:button#submit-btn.button.is-primary {:on-click #()} "Add Credit Card"]]]))}))
 
 
 (defn bitcoin-account []
@@ -114,7 +118,7 @@
 
 (defn- bank-account-form []
   (let [form      (ant/get-form)
-        on-change (fn [k] #(dispatch [:payment.sources.add-new-account/update-bank k (.. % -target -value)]))]
+        on-change (fn [k] #(dispatch [:payment.sources.add.bank/update! k (.. % -target -value)]))]
     [ant/form
      (map-indexed
       (fn [idx {key :key :as item}]
@@ -136,16 +140,19 @@
   (let [submit* (fn [errors _] (when (nil? errors) (dispatch event)))]
     #(ant/validate-fields form submit*)))
 
+
 (defn bank-account []
-  (fn []
-    (let [form (ant/get-form)]
-      [:div
-       (bank-account-form)
-       [:p.pad bank-account-desc]
-       [:hr]
-       [:div.align-right
-        [:a.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
-        [:a.button {:on-click #(ant/reset-fields form)} "Clear Form"]
-        [:a.button.is-primary
-         {:on-click (submit-when-valid form [:payment.sources.add-new-account/submit-bank!])}
-         "Add Bank Account"]]])))
+  (let [is-submitting (subscribe [:loading? :payment.sources.add/bank])]
+    (fn []
+      (let [form (ant/get-form)]
+       [:div
+        (bank-account-form)
+        [:p.pad bank-account-desc]
+        [:hr]
+        [:div.align-right
+         [:a.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
+         [:a.button {:on-click #(ant/reset-fields form)} "Clear Form"]
+         [:a.button.is-primary
+          {:class (when @is-submitting "is-loading")
+           :on-click (submit-when-valid form [:payment.sources.add.bank/submit!])}
+          "Add Bank Account"]]]))))
