@@ -56,11 +56,11 @@
      [:div.content
       [:h3 (str community-name " " unit-number)]
       [:h4 (str term " months • " (format/currency price) "/mo.")]
-      [:p (str (format/date-short start) " - " (format/date-short end))]]]
-    [:footer.card-footer
-     [:a.card-footer-item
-      [:span.icon.is-small [:i.fa.fa-file-text]]
-      [:span.with-icon "View Agreement"]]]]))
+      [:p (str (format/date-short start) " - " (format/date-short end))]]]]))
+    ;;[:footer.card-footer
+    ;; [:a.card-footer-item
+    ;;  [:span.icon.is-small [:i.fa.fa-file-text]]
+    ;;  [:span.with-icon "View Agreement"]]]]))
 
 
 
