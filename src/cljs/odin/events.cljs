@@ -34,6 +34,12 @@
     [page]))
 
 
+(reg-event-db
+ :loading
+ (fn [db [_ k v]]
+   (assoc-in db [:loading k] v)))
+
+
 (reg-event-fx
  :route/change
  (fn [{:keys [db]} [_ page params]]

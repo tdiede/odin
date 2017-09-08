@@ -305,9 +305,9 @@
   (cf/ensure-conforms
    conn
    {:seed/membership {:txes [(member-licenses-tx conn)
-                             #_(rent-payments-tx conn)
-                             #_(deposit-payments-tx (d/db conn))]}})
-  #_(cf/ensure-conforms
+                             (rent-payments-tx conn)
+                             (deposit-payments-tx (d/db conn))]}})
+  (cf/ensure-conforms
    conn
    {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
 

@@ -103,6 +103,23 @@
     result))
 
 
+(defn default?
+  "Is this source the default source?"
+  [{:keys [conn requester stripe]} _ source]
+  (let [result (resolve/resolve-promise)]
+    (if-let [customer (::customer source)]
+      (resolve/deliver! result (= (:id source) (:default_source customer)))
+      (go
+        (try
+          (let [cus-ent  (customer/by-account (d/db conn) requester)
+                customer (<!? (rcu/fetch stripe (customer/id cus-ent)))]
+            (resolve/deliver! result (= (:id source) (:default_source customer))))
+          (catch Throwable t
+            (resolve/deliver! result nil {:message  (error-message t)
+                                          :err-data (ex-data t)})))))
+    result))
+
+
 (defn type
   "The type of source, #{:bank :card}."
   [_ _ source]
@@ -194,8 +211,11 @@
       (resolve/deliver! result [])
       (go
         (try
-          (let [customer' (<!? (rcu/fetch stripe (customer/id customer)))]
-            (resolve/deliver! result (rcu/sources customer')))
+          (let [customer' (<!? (rcu/fetch stripe (customer/id customer)))
+                sources   (->> (rcu/sources customer')
+                               ;; inject the customer for field resolvers
+                               (map #(assoc % ::customer customer')))]
+            (resolve/deliver! result sources))
           (catch Throwable t
             (resolve/deliver! result nil {:message  (error-message t)
                                           :err-data (ex-data t)})))))
@@ -532,8 +552,24 @@
     result))
 
 
+;; =============================================================================
+;; Set Default Source
 
 
+(defn set-default!
+  "Set a source as the default payment source. The default payment source will
+  be used for premium service requests."
+  [{:keys [conn requester stripe]} {:keys [id]} _]
+  (let [result (resolve/resolve-promise)]
+    (go
+      (try
+        (let [cus-ent  (customer/by-account (d/db conn) requester)
+              customer (<!? (rcu/update! stripe (customer/id cus-ent) :default-source id))]
+          (resolve/deliver! result (tb/find-by (comp (partial = id) :id) (rcu/sources customer))))
+        (catch Throwable t
+          (resolve/deliver! result nil {:message  (error-message t)
+                                        :err-data (ex-data t)}))))
+    result))
 
 
 ;;; Attach a charge id to all invoices

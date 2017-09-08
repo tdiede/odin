@@ -12,16 +12,17 @@
 
 (def ^:private account-resolvers
   {;; fields
-   :account/active-license account/active-license
-   :account/deposit        account/deposit
-   :account/property       account/property
-   :account/role           account/role
-   :person/full-name       account/full-name
+   :account/active-license    account/active-license
+   :account/deposit           account/deposit
+   :account/property          account/property
+   :account/role              account/role
+   :person/full-name          account/full-name
+   :account/emergency-contact account/emergency-contact
    ;; mutations
-   :account/set-phone!     account/set-phone!
+   :account/update!           account/update!
    ;; queries
-   :account/list           account/accounts
-   :account/entry          account/entry})
+   :account/list              account/accounts
+   :account/entry             account/entry})
 
 
 (def ^:private deposit-resolvers
@@ -41,6 +42,7 @@
    :payment/source      payment/source
    :payment/autopay?    payment/autopay?
    :payment/for         payment/payment-for
+   :payment/description payment/description
    ;; queries
    :payment/list        payment/payments
    })
@@ -52,6 +54,7 @@
    :payment.source/type            source/type
    :payment.source/name            source/name
    :payment.source/payments        source/payments
+   :payment.source/default?        source/default?
    ;; queries
    :payment.sources/list           source/sources
    ;; mutations
@@ -60,6 +63,7 @@
    :payment.sources/verify-bank!   source/verify-bank!
    :payment.sources/set-autopay!   source/set-autopay!
    :payment.sources/unset-autopay! source/unset-autopay!
+   :payment.sources/set-default!   source/set-default!
    })
 
 

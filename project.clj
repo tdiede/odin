@@ -34,6 +34,7 @@
                                                             org.clojure/core.async]]
                  [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
                                                              org.apache.httpcomponents/httpclient]]
+                 [starcity.re-frame/stripe-fx "0.1.0"]
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB

@@ -70,12 +70,57 @@
      (execute schema
               (venia/graphql-query
                {:venia/queries
-                [[:payment_sources {:account (:db/id account)}
-                  [:id :autopay :type :status :name :customer [:payments [:id :method :autopay [:source [:id]]]]]]] })
+                [[:account {:id (:db/id account)}
+                  [:id :name :phone [:emergency_contact [:name :phone]]]]]})
               nil
               {:conn      conn
                :stripe    (odin.config/stripe-secret-key odin.config/config)
                :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:update_account {:id   (:db/id account)
+                                        :data {:emergency_contact {:first_name "Dad"
+                                                                   :last_name  "Carter"
+                                                                   :phone      "asl;dkfjas"}}}
+                       [:id :name :phone [:emergency_contact [:name :phone]]]]]}))
+              nil
+              {:conn      conn
+               :stripe    (odin.config/stripe-secret-key odin.config/config)
+               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
+    (pretty
+     (execute schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payments {:account (:db/id account)}
+                  [:id :autopay :for :description]]] })
+              nil
+              {:conn      conn
+               :stripe    (odin.config/stripe-secret-key odin.config/config)
+               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+
+
+  (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
+        ctx     {:conn      conn
+                 :stripe    (odin.config/stripe-secret-key odin.config/config)
+                 :requester account}]
+    (pretty
+     (execute schema
+              (str "mutation"
+                   (venia/graphql-query
+                    {:venia/queries
+                     [[:set_default_source {:id "card_1AV6tzIvRccmW9nOhQsWMTuv"}
+                       [:id :type :default]]]}))
+              nil
+              ctx)))
 
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])
@@ -151,8 +196,6 @@
               nil
               ctx)))
 
-
-  @(d/transact conn [[:db.fn/retractEntity [:stripe-customer/customer-id "cus_B6VfcPGAbVJI3C"]]])
 
 
   )

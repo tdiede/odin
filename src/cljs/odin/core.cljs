@@ -8,8 +8,10 @@
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
+            [odin.components.modals]
             [odin.utils.formatters :as formatters]
             [day8.re-frame.http-fx]
+            [starcity.re-frame.stripe-fx]
             [antizer.reagent :as ant]
             [cljsjs.moment]
             [clojure.string :as string]
@@ -17,6 +19,7 @@
             [re-frame.core :as rf :refer [dispatch subscribe]]
             [reagent.core :as r]
             [ajax.core :refer [GET]]
+            [toolbelt.re-frame.fx]
             [toolbelt.core :as tb]))
 
 
