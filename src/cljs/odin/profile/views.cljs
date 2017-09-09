@@ -7,24 +7,30 @@
             [odin.profile.payments.sources.views :as psources]
             [odin.profile.contact.views :as contact]
             [odin.profile.settings.views :as settings]
-            [odin.components.navigation :as navigation]
-            [toolbelt.core :as tb]))
+            [iface.nav.menu :as menu]
+            [toolbelt.core :as tb]
+            [odin.routes :as routes]))
 
 
 (def ^:private profile-menu-spec
   [{:label    (l10n/translate :profile/member)
     :children [{:label (l10n/translate :membership)
-                :route :profile/membership}
+                :key   :profile/membership
+                :route (routes/path-for :profile/membership)}
                {:label (l10n/translate :contact-info)
-                :route :profile/contact}]}
+                :key   :profile/contact
+                :route (routes/path-for :profile/contact)}]}
    {:label    (l10n/translate :payments)
     :children [{:label (l10n/translate :history)
-                :route :profile.payment/history}
+                :key   :profile.payment/history
+                :route (routes/path-for :profile.payment/history)}
                {:label (l10n/translate :sources)
-                :route :profile.payment/sources}]}
+                :key   :profile.payment/sources
+                :route (routes/path-for :profile.payment/sources)}]}
    {:label    (l10n/translate :settings)
     :children [{:label (l10n/translate :change-password)
-                :route :profile.settings/change-password}
+                :key   :profile.settings/change-password
+                :route (routes/path-for :profile.settings/change-password)}
                {:label (l10n/translate :log-out)
                 :route "/logout"}]}])
 
@@ -35,7 +41,7 @@
   [{:keys [page path] :as route}]
   [:div.columns
    [:div.column.is-one-fifth
-    [navigation/side-menu profile-menu-spec page]]
+    [menu/side-menu profile-menu-spec page]]
    [:div.column
     (let [path (vec (rest path))]
       ;;(tb/log path)
