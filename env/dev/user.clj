@@ -43,11 +43,11 @@
 (defn start-figwheel! []
   (when-not (ra/figwheel-running?)
     (timbre/debug "starting figwheel server...")
-    (ra/start-figwheel! "odin")))
+    (ra/start-figwheel!)))
 
 
-(defn cljs-repl []
-  (ra/cljs-repl "odin"))
+(defn cljs-repl [& [build]]
+  (ra/cljs-repl (or build "odin")))
 
 
 (defn go! []
