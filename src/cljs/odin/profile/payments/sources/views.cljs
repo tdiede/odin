@@ -162,19 +162,19 @@
 
 (defn source-settings []
   (let [sources (subscribe [:payment/sources])
+        ;;autopay (subscribe [:payment.sources/has-autopay])
         loading (subscribe [:payment.sources/loading?])]
-   (tb/log @sources)
    [:div.columns.bg-gray.pad.rounded
     [:div.column.unpad-vert.is-one-fifth
      [:h4 "Autopay my Rent"]
      [input/ios-checkbox]]
      ;;[payments-ui/menu-select-source @sources]]
     [:div.column.unpad-vert
-     [:h4 "Rent payments use:"]
-     [payments-ui/menu-select-source @sources]]
-    [:div.column.unpad-vert
-     [:h4 "Service payments use:"]
+     [:h4 "Set default source for payments:"]
      [payments-ui/menu-select-source @sources]]]))
+    ;;[:div.column.unpad-vert
+     ;;[:h4 "Service payments use:"]
+     ;;[payments-ui/menu-select-source @sources]]]))
 
 
 
@@ -183,6 +183,7 @@
   (let [sources (subscribe [:payment/sources])
         loading (subscribe [:payment.sources/loading?])]
     [:div
+     ;;(if (= @loading true) [ant/spin])
      [modal-add-source]
      [:div.view-header
       [:h1 (l10n/translate :payment-sources)]
