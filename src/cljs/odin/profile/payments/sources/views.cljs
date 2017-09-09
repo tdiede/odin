@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
             [odin.components.ui :as ui]
+            [odin.components.input :as input]
             [odin.profile.payments.sources.views.forms :as forms]
             [odin.l10n :as l10n]
             [odin.routes :as routes]
@@ -158,18 +159,6 @@
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
-(defn ios-checkbox []
-  (let [test-checked (r/atom false)]
-   [:div.checkbox-group
-    [:input.ios-toggle {:type      "checkbox"
-                        :name      "autopay-toggle"
-                        :id        "autopay-toggle"
-                        :value     (if (= @test-checked true) "on" "off")
-                        :on-change #(swap! test-checked not)}]
-    [:label.checkbox-label {:for      "autopay-toggle"
-                            :data-off ""
-                            :data-on  ""}]]))
-
 
 (defn source-settings []
   (let [sources (subscribe [:payment/sources])
@@ -178,7 +167,7 @@
    [:div.columns.bg-gray.pad.rounded
     [:div.column.unpad-vert.is-one-fifth
      [:h4 "Autopay my Rent"]
-     [ios-checkbox]]
+     [input/ios-checkbox]]
      ;;[payments-ui/menu-select-source @sources]]
     [:div.column.unpad-vert
      [:h4 "Rent payments use:"]
