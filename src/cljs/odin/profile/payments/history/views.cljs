@@ -1,6 +1,8 @@
 (ns odin.profile.payments.history.views
   (:require [re-frame.core :refer [subscribe dispatch]]
             [antizer.reagent :as ant]
+            [odin.l10n :as l10n]
+            [odin.components.ui :as ui]
             [odin.components.payments :as payments-ui]
             [toolbelt.core :as tb]))
 
@@ -20,8 +22,6 @@
 
       ;;(when-some [py (first @payments)]
       ;;  [payments-ui/rent-overdue-notification py])]
-
-     ;;(tb/log @payments)
 
      [ant/card {:class "is-flush"}
       [payments-ui/payments-table @payments @loading]]]))

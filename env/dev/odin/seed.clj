@@ -264,16 +264,16 @@
 ;; Stripe Customers
 
 (defn stripe-customers-tx []
-  []
-  #_[{:db/id                            (d/tempid :db.part/starcity)
-      :stripe-customer/account            [:account/email "member@test.com"]
-      :stripe-customer/customer-id        "cus_AqoW7OTNg0Ld7t"
-      :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"}
-     {:db/id                              (d/tempid :db.part/starcity)
-      :stripe-customer/account            [:account/email "member@test.com"]
-      :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
-      :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
-      :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
+  ;;[]
+  [{:db/id                              (d/tempid :db.part/starcity)
+    :stripe-customer/account            [:account/email "member@test.com"]
+    :stripe-customer/customer-id        "cus_AqoW7OTNg0Ld7t"
+    :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"}
+   {:db/id                              (d/tempid :db.part/starcity)
+    :stripe-customer/account            [:account/email "member@test.com"]
+    :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
+    :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
+    :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
 
 ;; =============================================================================
 ;; Avatar

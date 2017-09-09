@@ -9,6 +9,7 @@
             [odin.account.list.views]
             [odin.account.entry.views]
             [odin.components.modals]
+            [odin.components.notifications :as notification]
             [odin.utils.formatters :as formatters]
             [day8.re-frame.http-fx]
             [starcity.re-frame.stripe-fx]
@@ -96,6 +97,7 @@
       [error-view]
       [:div.container
        [navbar]
+       ;;[notification/banner-global "This is a global notification that will remain visible as you navigate around the site." :danger]
        [:section.section.root-section
         [:div.columns
          [:div.column

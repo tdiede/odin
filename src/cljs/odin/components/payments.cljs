@@ -72,7 +72,7 @@
   ([reason icon-size]
    (when reason [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
                               :placement "right"}
-                 [:span.icon {:class icon-size}
+                 [:span.icon.has-tooltip {:class icon-size}
                   (case reason
                     "rent"    [:i.fa.fa-home {:class icon-size}]
                     "deposit" [:i.fa.fa-shield {:class icon-size}]
@@ -109,7 +109,7 @@
    ;; AMOUNT
    {:title     (l10n/translate :amount)
     :dataIndex :amount
-    :className "td-bold width-4"
+    :className "td-bold width-4 text-larger"
     :render    (fn [val]
                  (format/currency val))}
 
@@ -132,9 +132,10 @@
     :render    (fn [val item _]
                  (render-payment-period item))}
 
+   ;; PAYMENT SOURCE
    {:title ""
     :dataIndex :source
-    :className "align-right"
+    :className "align-right light"
     :render    (fn [val item _]
                  (source-name-and-numbers (js->clj val :keywordize-keys true)))}])
 

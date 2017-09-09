@@ -33,7 +33,7 @@
   sub-navigation and a container for sub-content."
   [{:keys [page path] :as route}]
   [:div.columns
-   [:div.column.is-one-quarter
+   [:div.column.is-one-fifth
     [navigation/side-menu profile-menu-spec page]]
    [:div.column
     (let [path (vec (rest path))]

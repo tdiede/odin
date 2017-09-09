@@ -25,10 +25,10 @@
 (defn source-list
   "A vertical menu listing the linked payment sources."
   []
-  (let [sources (subscribe [:payment/sources])
+  (let [sources (subscribe [:payment/sources])]
         ;; TODO: Show a loading state?
         ;; loading (subscribe [:payment.sources/loading?])
-        ]
+
     [:nav.panel.is-rounded
      (doall
       (map-indexed
@@ -45,16 +45,16 @@
       [:div.flexrow
        ;; Source Name
        [payments-ui/payment-source-icon type]
-       [:h3 (str name " **** " last4)]]]
+       [:h3 (str name " **** " last4)]]]]))
      ;; Buttons
-     [:footer.card-footer
-      [:div.card-footer-item]
-      (if autopay-on
-        [:a.card-footer-item {:class "is-success"}
-         [:span.icon.is-small [:i.fa.fa-check-circle]]
-         [:span "Autopay On"]]
-        [:a.card-footer-item [:span "Enable Autopay"]])
-      [:a.card-footer-item.is-danger "Unlink"]]]))
+     ;;[:footer.card-footer
+     ;; [:div.card-footer-item]
+     ;; (if autopay-on
+     ;;   [:a.card-footer-item {:class "is-success"}
+     ;;    [:span.icon.is-small [:i.fa.fa-check-circle]]
+     ;;    [:span "Autopay On"]]
+     ;;   [:a.card-footer-item [:span "Enable Autopay"]])
+     ;; [:a.card-footer-item.is-danger "Unlink"]]]))
 
 
 (defn source-payment-history
@@ -158,6 +158,38 @@
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
+(defn ios-checkbox []
+  (let [test-checked (r/atom false)]
+   [:div.checkbox-group
+    [:input.ios-toggle {:type      "checkbox"
+                        :name      "autopay-toggle"
+                        :id        "autopay-toggle"
+                        :value     (if (= @test-checked true) "on" "off")
+                        :on-change #(swap! test-checked not)}]
+    [:label.checkbox-label {:for      "autopay-toggle"
+                            :data-off ""
+                            :data-on  ""}]]))
+
+
+(defn source-settings []
+  (let [sources (subscribe [:payment/sources])
+        loading (subscribe [:payment.sources/loading?])]
+   (tb/log @sources)
+   [:div.columns.bg-gray.pad.rounded
+    [:div.column.unpad-vert.is-one-fifth
+     [:h4 "Autopay my Rent"]
+     [ios-checkbox]]
+     ;;[payments-ui/menu-select-source @sources]]
+    [:div.column.unpad-vert
+     [:h4 "Rent payments use:"]
+     [payments-ui/menu-select-source @sources]]
+    [:div.column.unpad-vert
+     [:h4 "Service payments use:"]
+     [payments-ui/menu-select-source @sources]]]))
+
+
+
+
 (defn sources []
   (let [sources (subscribe [:payment/sources])
         loading (subscribe [:payment.sources/loading?])]
@@ -172,11 +204,13 @@
        [no-sources]
 
        ;; Show Sources
-       [:div.columns
-        [:div.column.is-4
-         [source-list]
-         [add-new-source-button]]
+       [:div
+        [source-settings]
+        [:div.columns
+         [:div.column.is-4
+          [source-list]
+          [add-new-source-button]]
 
-        [:div.column.is-8
-         [source-detail]
-         [source-payment-history]]])]))
+         [:div.column.is-8
+          [source-detail]
+          [source-payment-history]]]])]))
