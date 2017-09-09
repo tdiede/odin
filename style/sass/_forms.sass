@@ -32,3 +32,95 @@
 
 .ant-form-explain
   display: block
+
+
+
+
+// iOS-style Checkbox
+$ios-checkbox-button-size: 26px
+$ios-checkbox-width: 3.1rem
+
+.checkbox-group
+  width: $ios-checkbox-width
+
+.checkbox-group *
+  transition: .25s ease-in-out
+.ios-toggle, .checkbox-label
+  box-sizing: border-box
+  transition: .25s ease-in-out
+
+.ios-toggle, .ios-toggle:active
+  position: absolute
+  top: -5000px
+  height: 0
+  width: 0
+  opacity: 0
+  border: none
+  outline: none
+
+.checkbox-label
+  display: block
+  position: relative
+  padding: 10px
+  margin-bottom: 20px
+  font-size: 12px
+  line-height: 16px
+  width: 100%
+  height: $ios-checkbox-button-size
+
+  border-radius: 18px
+  background: #f8f8f8
+  cursor: pointer
+
+.checkbox-label:before
+  content: ''
+  display: block
+  position: absolute
+  z-index: 1
+  line-height: 34px
+  text-indent: 40px
+  height: $ios-checkbox-button-size
+  width: $ios-checkbox-button-size
+  border-radius: 100%
+  top: 0px
+  left: 0px
+  right: auto
+  background: white
+  box-shadow: 0 3px 3px rgba(0,0,0,.2),0 0 0 2px #dddddd
+
+.checkbox-label:after
+  content: attr(data-off)
+  display: block
+  position: absolute
+  z-index: 0
+  top: 0
+  left: -300px
+  padding: 10px
+  height: 100%
+  width: 300px
+  text-align: right
+  color: #bfbfbf
+  white-space: nowrap
+
+.ios-toggle:checked + .checkbox-label
+  box-shadow: inset 0 0 0 20px rgba(19,191,17,1),0 0 0 2px rgba(19,191,17,1)
+
+.ios-toggle:checked + .checkbox-label:before
+  left: calc(100% - #{$ios-checkbox-button-size})
+  box-shadow: 0 0 0 2px transparent,0 3px 3px rgba(0,0,0,.3)
+
+.ios-toggle:checked + .checkbox-label:after
+  content: attr(data-on)
+  left: 60px
+  width: $ios-checkbox-button-size
+
+
+
+.ios-toggle + .checkbox-label
+  box-shadow: inset 0 0 0 0px rgba(19,191,17,1),0 0 0 2px #dddddd
+
+.ios-toggle:checked + .checkbox-label
+  box-shadow: inset 0 0 0 18px rgba(19,191,17,1),0 0 0 2px rgba(19,191,17,1)
+
+.ios-toggle:checked + .checkbox-label:after
+  color: rgba(19,191,17,1)

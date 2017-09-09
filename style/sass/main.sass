@@ -1,14 +1,17 @@
 @charset "UTF-8"
 @import "variables"
+@import "colors"
 
 body
   display:        flex
   min-height:     100vh
   flex-direction: column
-  background:     $off-white
+  // background: $off-white
+  background: $white
 
 .root-section
-  background:     $off-white
+  // background: $off-white
+  background: $white
 
 main
   flex: 1 0 auto
@@ -22,6 +25,7 @@ main
 // Our styles (after Bulma, to override)
 @import "mixins"
 @import "layout"
+@import "columns"
 @import "typography"
 @import "elements"
 @import "buttons"

@@ -10,7 +10,8 @@
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
-                    :fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
+                    ;;:fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
+                    :fonts ["https://fonts.googleapis.com/css?family=Work+Sans|Fira+Sans"]
                     :json [["stripe" {:key (config/stripe-public-key (:config deps))}]]
                     :stylesheets [facade/font-awesome]
                     :css-bundles ["antd.css" "styles.css"])

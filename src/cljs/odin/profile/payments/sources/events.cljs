@@ -36,7 +36,7 @@
    {:db      (assoc-in db [:loading :list] true)
     :graphql {:query
               [[:payment_sources {:account account-id}
-                [:id :last4 :customer :type :name :status
+                [:id :last4 :customer :type :name :status :autopay
                  [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
               :on-success [:payment.sources.fetch/success]
               :on-failure [:payment.sources.fetch/failure]}}))

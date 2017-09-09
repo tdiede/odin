@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
             [odin.components.ui :as ui]
+            [odin.components.input :as input]
             [odin.profile.payments.sources.views.forms :as forms]
             [odin.l10n :as l10n]
             [odin.routes :as routes]
@@ -25,10 +26,10 @@
 (defn source-list
   "A vertical menu listing the linked payment sources."
   []
-  (let [sources (subscribe [:payment/sources])
+  (let [sources (subscribe [:payment/sources])]
         ;; TODO: Show a loading state?
         ;; loading (subscribe [:payment.sources/loading?])
-        ]
+
     [:nav.panel.is-rounded
      (doall
       (map-indexed
@@ -45,16 +46,16 @@
       [:div.flexrow
        ;; Source Name
        [payments-ui/payment-source-icon type]
-       [:h3 (str name " **** " last4)]]]
+       [:h3 (str name " **** " last4)]]]]))
      ;; Buttons
-     [:footer.card-footer
-      [:div.card-footer-item]
-      (if autopay-on
-        [:a.card-footer-item {:class "is-success"}
-         [:span.icon.is-small [:i.fa.fa-check-circle]]
-         [:span "Autopay On"]]
-        [:a.card-footer-item [:span "Enable Autopay"]])
-      [:a.card-footer-item.is-danger "Unlink"]]]))
+     ;;[:footer.card-footer
+     ;; [:div.card-footer-item]
+     ;; (if autopay-on
+     ;;   [:a.card-footer-item {:class "is-success"}
+     ;;    [:span.icon.is-small [:i.fa.fa-check-circle]]
+     ;;    [:span "Autopay On"]]
+     ;;   [:a.card-footer-item [:span "Enable Autopay"]])
+     ;; [:a.card-footer-item.is-danger "Unlink"]]]))
 
 
 (defn source-payment-history
@@ -158,10 +159,31 @@
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
+
+(defn source-settings []
+  (let [sources (subscribe [:payment/sources])
+        ;;autopay (subscribe [:payment.sources/has-autopay])
+        loading (subscribe [:payment.sources/loading?])]
+   [:div.columns.bg-gray.pad.rounded
+    [:div.column.unpad-vert.is-one-fifth
+     [:h4 "Autopay my Rent"]
+     [input/ios-checkbox]]
+     ;;[payments-ui/menu-select-source @sources]]
+    [:div.column.unpad-vert
+     [:h4 "Set default source for payments:"]
+     [payments-ui/menu-select-source @sources]]]))
+    ;;[:div.column.unpad-vert
+     ;;[:h4 "Service payments use:"]
+     ;;[payments-ui/menu-select-source @sources]]]))
+
+
+
+
 (defn sources []
   (let [sources (subscribe [:payment/sources])
         loading (subscribe [:payment.sources/loading?])]
     [:div
+     ;;(if (= @loading true) [ant/spin])
      [modal-add-source]
      [:div.view-header
       [:h1 (l10n/translate :payment-sources)]
@@ -172,11 +194,13 @@
        [no-sources]
 
        ;; Show Sources
-       [:div.columns
-        [:div.column.is-4
-         [source-list]
-         [add-new-source-button]]
+       [:div
+        [source-settings]
+        [:div.columns
+         [:div.column.is-4
+          [source-list]
+          [add-new-source-button]]
 
-        [:div.column.is-8
-         [source-detail]
-         [source-payment-history]]])]))
+         [:div.column.is-8
+          [source-detail]
+          [source-payment-history]]]])]))

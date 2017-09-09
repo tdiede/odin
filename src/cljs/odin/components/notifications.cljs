@@ -41,3 +41,13 @@
    [banner-success message true])
   ([message cancelable]
    [banner message :success cancelable]))
+
+
+
+(defn banner-global
+  ([message]
+   [:div.global-notification {:class (level->class-name :info)}
+    message])
+  ([message level]
+   [:div.global-notification {:class (level->class-name level)}
+    message]))
