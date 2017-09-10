@@ -1,12 +1,13 @@
 (ns odin.content
   (:require [antizer.reagent :as ant]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [reagent.core :as r]))
 
 
 (defn- role-path [{:keys [requester path] :as route}]
   (let [role (-> requester :role name)
         path (first path)]
-    (if-let [ns (namespace path)]
+    (if-let [ns (and path (namespace path))]
       (keyword (str role  "." ns) path)
       (keyword role path))))
 
@@ -27,7 +28,18 @@
    [:p [:b "Params:"] params]])
 
 
-(comment
-  (methods view)
+;; This component is rendered when the user navigations to the /logout entpoint.
+;; Because we need a catch-all route in `odin.routes` to prevent from hitting
+;; the server on un-implemented routes, this component is rendered and
+;; /immediately/ reloads the window, causing a forced server request.
+(defn- logout! []
+  (r/create-class
+   {:component-will-mount
+    (fn [_]
+      (.reload js/window.location))
+    :reagent-render
+    (fn []
+      [:div])}))
 
-  )
+
+(defmethod view :logout [_] [logout!])
