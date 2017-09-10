@@ -2,7 +2,8 @@
   (:require [odin.account.list.subs]
             [odin.account.entry.subs]
             [odin.profile.subs]
-            [re-frame.core :refer [reg-sub]]))
+            [re-frame.core :refer [reg-sub]]
+            [toolbelt.core :as tb]))
 
 
 ;; =============================================================================

@@ -5,6 +5,7 @@
             [odin.subs]
             [odin.graphql]
             [odin.content :as content]
+            [odin.home.views]
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
@@ -55,7 +56,6 @@
 (defn navbar-menu []
   (let [menu-items (subscribe [:menu/items])
         role       (subscribe [:config/role])]
-    ;;(tb/log @menu-items)
     [:div.navbar-start
      (doall
       (map-indexed

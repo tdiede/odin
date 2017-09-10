@@ -1,13 +1,12 @@
 (ns odin.profile.views
   (:require [cljs.core.match :refer-macros [match]]
-            [odin.l10n :as l10n]
+            [iface.nav.menu :as menu]
             [odin.content :as content]
+            [odin.l10n :as l10n]
             [odin.profile.membership.views :as membership]
             [odin.profile.payments.history.views :as phistory]
             [odin.profile.payments.sources.views :as psources]
             [odin.profile.settings.views :as settings]
-            [iface.nav.menu :as menu]
-            [toolbelt.core :as tb]
             [odin.routes :as routes]))
 
 
@@ -43,7 +42,6 @@
     [menu/side-menu profile-menu-spec page]]
    [:div.column
     (let [path (vec (rest path))]
-      ;;(tb/log path)
       (match [path]
         [[:membership]] [membership/membership]
         [[:contact]] [:h1 "TODO: Implement Contact"]
@@ -51,6 +49,7 @@
         [[:payment :sources]] [psources/sources]
         [[:settings :change-password]] [settings/change-password]
         :else [:h1 "unmatched"]))]])
+
 
 (defmethod content/view :profile [route]
   [content route])
