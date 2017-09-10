@@ -32,6 +32,8 @@
 
     ;; ["/services" [["" :services]]]
 
+    ["/logout" :logout]
+
     [true :home]
 
     ]])
