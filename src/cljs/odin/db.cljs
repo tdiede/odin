@@ -15,8 +15,8 @@
     :uri     "/profile"}
    ;; {:feature :people
    ;;  :uri     (routes/path-for :account/list)}
-   ;; {:feature :communities
-   ;;  :uri     "/communities"}
+   {:feature :communities
+    :uri     "/communities"}
    ;; {:feature :orders
    ;;  :uri     "/orders"}
    ;; {:feature :services
