@@ -10,36 +10,25 @@
 
 (def app-routes
   [""
-   [
+   [["/metrics" :metrics]
 
-    ;; ["/people" [["" :account/list]
-    ;;               [["/" :account-id]
-    ;;                [["" :account/entry]]]]]
+    ["/orders" :orders]
 
     ["/profile" [["" :profile/membership]
                  ;; NOTE: Unnecessary because this is the default
                  ;; ["/membership" :profile/membership]
                  ["/contact" :profile/contact]
+
                  ["/payments"
                   [[""         :profile.payment/history]
                    ["/sources" :profile.payment/sources]]]
-                   ;;["/sources" [["" :profile.payment/sources]
-                                ;;[["/" :source-id] :profile.payment.sources/entry]]]]]
+
                  ["/settings"
                   [["/change-password" :profile.settings/change-password]]]]]
 
-    ;; ["/communities" [["" :properties]]]
-
-    ;; ["/services" [["" :services]]]
-
     ["/logout" :logout]
 
-    [true :home]
-
-    ]])
-
-
-;; :profile.payment/sources => [:profile :payment :sources]
+    [true :home]]])
 
 
 (defmulti dispatches (fn [route] (:page route)))
@@ -51,6 +40,7 @@
 
 (def ^:private dummy-base
   "http://foo.com")
+
 
 (defn baseify-uri
   "Adds a fake protocol and domain to URI string,
@@ -84,24 +74,12 @@
                     (let [match  (bidi/match-route app-routes path)
                           page   (:handler match)
                           params (merge (parse-query-params path)
-                                        (:route-params match))]
+                                   (:route-params match))]
                       (dispatch [:route/change page params])))
     :path-exists? (fn [path]
                     (boolean (bidi/match-route app-routes path)))})
   (accountant/dispatch-current!))
 
-
-;;(def path-for
-;;  "Produce the path (URI) for `key`."
-;;  (partial bidi/path-for app-routes))
-
-
-;; (routes/path-for :profile/membership)
-;; (routes/path-for :profile/membership :account-id 1232455)
-;; (routes/path-for :profile/membership :account-id 1234566 :query-params {:something "foo"})
-
-;; /profile/membership/12345666
-;; /profile/membership/12345666?something=foo
 
 (defn append-query-params
   [path params]
@@ -126,13 +104,11 @@
        (append-query-params params)
        unbaseify-uri)))
 
-  ;;(partial bidi/path-for app-routes))
-
 
 (reg-fx
  :route
  (fn [new-route]
-   (if (vector? new-route)
-     (let [[route query] new-route]
-       (accountant/navigate! route query))
-     (accountant/navigate! new-route))))
+   (let [parsed (uri new-route)]
+     (if-let [query (:query parsed)]
+       (accountant/navigate! (:path parsed) query)
+       (accountant/navigate! new-route)))))

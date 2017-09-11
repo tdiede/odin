@@ -7,6 +7,7 @@
             [odin.content :as content]
             [odin.home.views]
             [odin.profile.views]
+            [odin.metrics.views]
             [odin.account.list.views]
             [odin.account.entry.views]
             [odin.components.modals]

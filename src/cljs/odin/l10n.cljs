@@ -24,6 +24,10 @@
         :communities {:admin  "Communities"
                       :member "Community"}
 
+        :metrics {:admin "Metrics"}
+
+        :orders {:admin "Orders"}
+
         :home {:admin  "Home"
                :member "Activity"}
 
@@ -87,9 +91,9 @@
         :btn-add-new-account "Link a new account"
 
         :payment-table-no-payments "No payments to show."
-        :amount      "Amount"
-        :date        "Date"
-        :description "Description"
+        :amount                    "Amount"
+        :date                      "Date"
+        :description               "Description"
 
         :autopay                "Autopay"
         :use-for-autopay        "Use this account for Autopay"

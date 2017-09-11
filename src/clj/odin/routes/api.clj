@@ -69,6 +69,7 @@
    {:home        {}
     :profile     {}
     :people      {}
+    :metrics     {}
     :communities {}
     :orders      {}
     :services    {}}})

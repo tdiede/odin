@@ -30,10 +30,14 @@
      :serialize (schema/as-conformer identity)}}})
 
 
+(defn- read-resource [path]
+  (-> (io/resource path)
+      slurp
+      edn/read-string))
+
+
 (defstate schema
-  :start (-> (io/resource "graphql/schema.edn")
-             slurp
-             edn/read-string
+  :start (-> (read-resource "graphql/schema.edn")
              (merge custom-scalars)
              (util/attach-resolvers resolvers/resolvers)
              schema/compile))

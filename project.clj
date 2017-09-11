@@ -54,7 +54,11 @@
                  [starcity/toolbelt "0.1.7" :exclusions [com.datomic/datomic-free
                                                          org.apache.httpcomponents/httpclient
                                                          com.andrewmcveigh/cljs-time
-                                                         com.google.guava/guava]]]
+                                                         com.google.guava/guava]]
+                 [cljsjs/highcharts "5.0.14-0"]
+                 [cljsjs/highcharts-css "5.0.10-0"]
+                 [cljsjs/highcharts-css "5.0.10-0"]
+                 [cljsjs/highcharts-css "5.0.10-0"]]
 
   :jvm-opts ["-server"
              "-Xmx2g"

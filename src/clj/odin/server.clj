@@ -31,6 +31,22 @@
 ;; =============================================================================
 
 
+(defn wrap-exception-handling
+  [handler]
+  (fn [{:keys [identity uri request-method remote-addr] :as req}]
+    (try
+      (handler req)
+      (catch Throwable t
+        (do
+          (timbre/error t ::error (tb/assoc-when
+                                   {:uri         uri
+                                    :method      request-method
+                                    :remote-addr remote-addr}
+                                   :user (:account/email identity)))
+          {:status 500
+           :body   "Unexpected server error!"})))))
+
+
 (defn wrap-logging
   "Middleware to log requests."
   [handler]
@@ -109,6 +125,7 @@
         (wrap-session {:store        (datomic-store (:conn deps) :session->entity session->entity)
                        :cookie-name  (config/cookie-name config)
                        :cookie-attrs {:secure (config/secure-sessions? config)}})
+        (wrap-exception-handling)
         (wrap-content-type)
         (wrap-not-modified))))
 

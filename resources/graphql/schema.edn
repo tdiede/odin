@@ -206,7 +206,15 @@
                        :description "Room number."
                        :resolve     :unit/number}
             :property {:type    (non-null :property)
-                       :resolve (:get :property/_units)}}}}
+                       :resolve (:get :property/_units)}}}
+
+  ;; =============================================================================
+  ;; Metrics
+
+  :data_point
+  {:fields {:percentage {:type Float}
+            :count      {:type Int}
+            :label      {:type String}}}}
 
  :queries
  {:accounts {:type    (list :account)
@@ -226,7 +234,13 @@
   :payment_sources {:type    (list :payment_source)
                     :args    {:account {:type        (non-null :Long)
                                         :description "ID of an account to request sources for."}}
-                    :resolve :payment.sources/list}}
+                    :resolve :payment.sources/list}
+
+  ;; =============================================================================
+  ;; Metrics
+
+  :referrals {:type    (list :data_point)
+              :resolve :metrics/referrals}}
 
  :input-objects
  {;;; Account

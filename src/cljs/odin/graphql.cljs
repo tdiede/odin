@@ -54,3 +54,19 @@
      (ant/notification-error {:message     "Unhandled Error!"
                               :description m
                               :duration    6}))))
+
+
+(rf/reg-event-fx
+ :graphql/failure
+ (fn [_ [_ k response]]
+   (tb/error k response)
+   (case (:status response)
+     401 {:route "/logout"}
+     500 (ant/notification-error {:message     "Server error!"
+                                 :description "Shit!"})
+     (do
+       (doseq [{m :message} (get-in response [:response :errors])]
+         (ant/notification-error {:message     "Unhandled Error!"
+                                  :description m
+                                  :duration    6}))
+       {:dispatch [:loading k false]}))))

@@ -39,7 +39,6 @@
  :payments.fetch/success
  [(path db/path)]
  (fn [db [_ response]]
-   ;;(tb/log response)
    (let [payments (get-in response [:data :payments])]
      (-> (assoc db :payments payments)
          (assoc-in [:loading :payments/list] false)))))

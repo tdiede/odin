@@ -4,7 +4,8 @@
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
             [odin.graphql.resolvers.member-license :as member-license]
-            [odin.graphql.resolvers.unit :as unit]))
+            [odin.graphql.resolvers.unit :as unit]
+            [odin.graphql.resolvers.metrics :as metrics]))
 
 
 ;; TODO: Authorization middleware
@@ -85,4 +86,5 @@
    payment-source-resolvers
    member-license-resolvers
    unit-resolvers
+   metrics/resolvers
    {:get (fn [& ks] (fn [_ _ v] (get-in v ks)))}))
