@@ -1,23 +1,13 @@
 (ns odin.content
   (:require [antizer.reagent :as ant]
             [toolbelt.core :as tb]
+            [odin.utils.dispatch :as dispatch]
             [reagent.core :as r]))
 
 
-(defn- role-path [{:keys [requester path] :as route}]
-  (let [role (-> requester :role name)
-        path (first path)]
-    (if-let [ns (and path (namespace path))]
-      (keyword (str role  "." ns) path)
-      (keyword role path))))
-
-
 (defmulti view
-  (fn [{:keys [path] :as route}]
-    (let [role-path (role-path route)]
-      (if (contains? (methods view) role-path)
-       role-path
-       (first path)))))
+  (fn [{:keys [requester path]}]
+    (dispatch/role-dispatch view (:role requester) (first path))))
 
 
 (defmethod view :default [{:keys [page path root params]}]
@@ -39,6 +29,8 @@
       (.reload js/window.location))
     :reagent-render
     (fn []
+      ;; TODO: Show some sort of indication that we're logging out (e.g.
+      ;; spinner) for instances where it hangs a bit
       [:div])}))
 
 

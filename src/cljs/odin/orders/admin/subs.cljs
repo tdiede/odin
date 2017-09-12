@@ -13,59 +13,37 @@
 ;; Chart
 
 
-(defn- sum-by-service [orders]
-  (->> (group-by (comp :name :service) orders)
-       (reduce (fn [acc [sname orders]]
-                 (conj acc [sname (apply + (map :price orders))]))
+(defn- sum-by-service [payments]
+  (->> (group-by :service payments)
+       (reduce (fn [acc [sname payments]]
+                 (conj acc [sname (apply + (map :amount payments))]))
                [])))
 
 
-(defn- drilldown-point [name orders]
-  {:name name :id name :data (sum-by-service orders)})
-
-
-(defmulti drilldown-data (fn [orders params] (:chart-type params)))
-
-(defmethod drilldown-data "community"
-  [orders params]
-  (->> (group-by :property orders)
-       (reduce (fn [acc [pname orders]]
-                 (conj acc (drilldown-point pname orders)))
-               [])))
-
-(defmethod drilldown-data "billing"
-  [orders params]
-  (->> (group-by #(get-in % [:service :billed]) orders)
-       (reduce (fn [acc [billed orders]]
-                 (let [name (if (= billed :once) "Once" "Recurring")]
-                   (conj acc (drilldown-point name orders))))
+(defn- revenue-drilldown
+  [payments key]
+  (->> (group-by key payments)
+       (reduce (fn [acc [name payments]]
+                 (conj acc {:name name
+                            :id   name
+                            :data (sum-by-service payments)}))
                [])))
 
 
-(defn- series-point [name orders]
-  {:name name :y (apply + (map :price orders)) :drilldown name})
-
-
-(defmulti series-data (fn [orders params] (:chart-type params)))
-
-(defmethod series-data "community"
-  [orders params]
-  (->> (group-by :property orders)
-       (reduce (fn [acc [pname data]]
-                 (conj acc (series-point pname data)))
-               [])))
-
-(defmethod series-data "billing" [orders params]
-  (->> (group-by #(get-in % [:service :billed]) orders)
-       (reduce (fn [acc [billed data]]
-                 (let [name (if (= billed :once) "Once" "Recurring")]
-                   (conj acc (series-point name data))))
+(defn- revenue-series
+  [payments key]
+  (->> (group-by key payments)
+       (reduce (fn [acc [name payments]]
+                 (conj acc {:name      name
+                            :y         (apply + (map :amount payments))
+                            :drilldown name}))
                [])))
 
 
-(defn- chart-config
-  [orders {:keys [from to] :as params}]
-  (let [x-axis-title (str (.format from "l") " - " (.format to "l"))]
+(defn- revenue-chart-config
+  [payments {:keys [from to chart-type] :as params}]
+  (let [x-axis-title (str (.format from "l") " - " (.format to "l"))
+        key          (if (= "community" chart-type) :property :billed)]
     {:chart       {:type "column"}
      :title       nil
      :legend      {:enabled false}
@@ -81,8 +59,8 @@
                    :pointFormat  "<span style='color:{point.color}'>{point.name}</span>: <b>${point.y:.2f}</b> <br/>"}
      :series      [{:name         "Properties"
                     :colorByPoint true
-                    :data         (series-data orders params)}]
-     :drilldown   {:series (drilldown-data orders params)}}))
+                    :data         (revenue-series payments key)}]
+     :drilldown   {:series (revenue-drilldown payments key)}}))
 
 
 ;; =============================================================================
@@ -101,29 +79,29 @@
 
 
 (reg-sub
- ::chart
+ ::revenue
  :<- [::orders]
  (fn [db _]
-   (:chart db)))
+   (:revenue db)))
 
 
 (reg-sub
- :orders.admin.chart/orders
- :<- [::chart]
+ :orders.admin.chart.revenue/data
+ :<- [::revenue]
  (fn [chart _]
-   (:orders chart)))
+   (:data chart)))
 
 
 (reg-sub
- :orders.admin.chart/params
- :<- [::chart]
+ :orders.admin.chart.revenue/params
+ :<- [::revenue]
  (fn [chart _]
    (:params chart)))
 
 
 (reg-sub
- :orders.admin.chart/config
- :<- [:orders.admin.chart/orders]
- :<- [:orders.admin.chart/params]
+ :orders.admin.chart.revenue/config
+ :<- [:orders.admin.chart.revenue/data]
+ :<- [:orders.admin.chart.revenue/params]
  (fn [[orders params] _]
-   (chart-config orders params)))
+   (revenue-chart-config orders params)))

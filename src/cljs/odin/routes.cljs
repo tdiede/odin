@@ -5,7 +5,8 @@
             [toolbelt.core :as tb]
             [cemerick.url :as c]
             [clojure.walk :as walk]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [odin.utils.dispatch :as dispatch]))
 
 
 (def app-routes
@@ -31,11 +32,11 @@
     [true :home]]])
 
 
-(defmulti dispatches (fn [route] (:page route)))
+(defmulti dispatches
+  (fn [{:keys [requester page]}]
+    (dispatch/role-dispatch dispatches (:role requester) page)))
 
-
-(defmethod dispatches :default [route]
-  [])
+(defmethod dispatches :default [route] [])
 
 
 (def ^:private dummy-base
@@ -50,10 +51,12 @@
     (str dummy-base uri)
     uri))
 
+
 (defn unbaseify-uri
   "Remove the thing."
   [uri]
   (string/replace uri (re-pattern dummy-base) ""))
+
 
 (defn uri
   [uri]

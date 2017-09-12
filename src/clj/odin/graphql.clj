@@ -7,7 +7,9 @@
             [com.walmartlabs.lacinia.util :as util]
             [mount.core :refer [defstate]]
             [datomic.api :as d]
-            [blueprints.models.member-license :as member-license]))
+            [blueprints.models.member-license :as member-license]
+            [taoensso.timbre :as timbre]
+            [clj-time.coerce :as c]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
@@ -26,7 +28,7 @@
      :serialize (schema/as-conformer identity)}
 
     :Instant
-    {:parse     (schema/as-conformer identity)
+    {:parse     (schema/as-conformer (comp c/to-date c/from-string))
      :serialize (schema/as-conformer identity)}}})
 
 

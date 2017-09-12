@@ -1,5 +1,13 @@
 (ns odin.graphql.resolvers.order
-  (:require [blueprints.models.order :as order]))
+  (:require [blueprints.models.order :as order]
+            [toolbelt.datomic :as td]
+            [datomic.api :as d]
+            [blueprints.models.member-license :as member-license]))
+
+
+;; =============================================================================
+;; Fields
+;; =============================================================================
 
 
 (defn price
@@ -18,13 +26,43 @@
 
 
 (defn billed-on
+  "Date that `order` was billed on."
   [_ _ order]
   ;; TODO:
   (java.util.Date.))
 
 
+(defn property
+  "The property that the member that placed this order lives in."
+  [{conn :conn} _ order]
+  (let [created (td/created-at (d/db conn) order)
+        license (member-license/active (d/as-of (d/db conn) created)
+                                       (order/account order))]
+    (member-license/property license)))
+
+
+;; =============================================================================
+;; Queries
+;; =============================================================================
+
+
+(defn orders
+  [{conn :conn} {{:keys [account]} :params} _]
+  )
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
 (def resolvers
-  {:order/price     price
+  {;; fields
+   :order/price     price
    :order/name      order-name
    :order/status    status
-   :order/billed-on billed-on})
+   :order/billed-on billed-on
+   :order/property property
+   ;; queries
+   :order/list      orders
+   })

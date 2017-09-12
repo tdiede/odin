@@ -30,6 +30,7 @@
                  [reagent "0.7.0"]
                  [cljsjs/highcharts "5.0.14-0"]
                  [cljsjs/highcharts-css "5.0.10-0"]
+                 [cljsjs/filesaverjs "1.3.3-0"]
                  [cljsjs/libphonenumber "8.4.1-1"]
                  [cljsjs/react "15.6.1-0"]
                  [cljsjs/react-dom "15.6.1-0"]
@@ -54,10 +55,10 @@
                  [aero "1.1.2"]
                  [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
-                 [starcity/toolbelt "0.1.7" :exclusions [com.datomic/datomic-free
-                                                         org.apache.httpcomponents/httpclient
-                                                         com.andrewmcveigh/cljs-time
-                                                         com.google.guava/guava]]]
+                 [starcity/toolbelt "0.1.8-SNAPSHOT" :exclusions [com.datomic/datomic-free
+                                                                  org.apache.httpcomponents/httpclient
+                                                                  com.andrewmcveigh/cljs-time
+                                                                  com.google.guava/guava]]]
 
   :jvm-opts ["-server"
              "-Xmx2g"

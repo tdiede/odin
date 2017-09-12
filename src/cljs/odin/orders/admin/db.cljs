@@ -150,7 +150,9 @@
 
 
 (def default-value
-  {path {:chart {:orders (vec sample-orders)
-                 :params {:chart-type "community"
-                          :from       (.startOf (js/moment.) "month")
-                          :to         (.endOf (js/moment.) "month")}}}})
+  {path {:revenue {:data   []
+                   :params {:chart-type "community"
+                            :from       (.startOf (js/moment.) "month")
+                            :to         (.endOf (js/moment.) "month")}}
+         :orders  {:data   []
+                   :params {}}}})

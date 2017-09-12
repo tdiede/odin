@@ -9,23 +9,23 @@
 
 
 ;;; What do we want to see here?
-;; - Graph of order revenue for current month by community
+;; - Graph of order revenue for current time period by community
 ;;   + https://www.highcharts.com/demo/column-drilldown
 ;;   + top-level columns by community
 ;;   + drill-down by service
+;; - Graph of new orders placed for current time period
 ;; - "open" orders: those orders that are waiting to be charged
 
 ;; =============================================================================
-;; Chart
+;; Charts
 ;; =============================================================================
 
 
 ;; =============================================================================
-;; Views
-;; =============================================================================
+;; Revenue
 
 
-(defn- orders-chart-options [showing]
+(defn- service-revenue-chart-options [showing]
   [ant/button {:type     "dashed"
                :icon     (if @showing "up" "down")
                :on-click #(swap! showing not)}
@@ -34,21 +34,18 @@
 
 (defn- submit-form-change! [errors values]
   ;; TODO: errors?
-  (dispatch [:orders.admin.chart/params values]))
+  (dispatch [:orders.admin.chart.revenue/params values]))
 
 
-(defn- orders-chart-controls []
-  (let [params (subscribe [:orders.admin.chart/params])]
+(defn- service-revenue-chart-controls []
+  (let [params (subscribe [:orders.admin.chart.revenue/params])]
     (fn []
       (let [form (ant/get-form)]
-        [:div {:style {:padding       24
-                       :background    "#fbfbfb"
-                       :border        "1px solid #d9d9d9"
-                       :border-radius 6
-                       :margin-bottom 24}}
-         [ant/form {:on-submit (fn [event]
-                                 (.preventDefault event)
-                                 (ant/validate-fields form submit-form-change!))}
+        [:div.chart-controls
+         [ant/form
+          {:on-submit (fn [event]
+                        (.preventDefault event)
+                        (ant/validate-fields form submit-form-change!))}
           [:div.columns
            [:div.column
             [ant/form-item {:label "X Axis" :key :chart-type}
@@ -62,26 +59,36 @@
                                  [ant/date-picker-range-picker {:format "l"}])]]]
           [:div
            [ant/form-item
-            [ant/button {:type "ghost" :style {:margin-right 6}} "Download CSV"]
+            [ant/button
+             {:type     "ghost"
+              :on-click #(dispatch [:orders.admin.chart.revenue/export-csv])}
+             "Download CSV"]
             [ant/button {:type "primary" :html-type "submit"} "Update"]]]]]))))
 
 
-(defn- orders-chart [config]
-  (let [form             (ant/get-form)
+(defn- service-revenue-chart [config]
+  (let [is-loading       (subscribe [:loading? :orders.admin.chart.revenue/fetch])
+        form             (ant/get-form)
         showing-controls (r/atom false)]
     (fn [config]
-      [ant/card {:title (r/as-element [:b "Premium Service Order Revenue"])
-                 :extra (r/as-element [orders-chart-options showing-controls])}
+      [ant/card {:title   (r/as-element [:b "Premium Service Order Revenue"])
+                 :extra   (r/as-element [service-revenue-chart-options showing-controls])
+                 :loading @is-loading}
        (when @showing-controls
-         (r/as-element (ant/create-form (orders-chart-controls))))
+         (r/as-element (ant/create-form (service-revenue-chart-controls))))
        [chart/chart config]])))
 
 
+;; =============================================================================
+;; Entrypoint
+;; =============================================================================
+
+
 (defn view []
-  (let [config (subscribe [:orders.admin.chart/config])]
+  (let [config (subscribe [:orders.admin.chart.revenue/config])]
     [:div
      [:div.view-header
       [:h1 "Orders"]]
      [:div.columns
       [:div.column.is-half
-       [orders-chart @config]]]]))
+       [service-revenue-chart @config]]]]))

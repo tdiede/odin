@@ -214,10 +214,32 @@
     (async/close! out)))
 
 
+(defn- scrub-kw [k]
+  (letfn [(-scrub [s]
+            (clojure.string/replace s "_" "-"))]
+    (when (some? k)
+      (if-some [s (namespace k)]
+        (keyword (-scrub s) (-scrub (name k)))
+        (keyword (-scrub (name k)))))))
+
+
+(defn- parse-gql-params
+  [{:keys [date_key statuses types] :as params}]
+  (tb/assoc-when
+   params
+   :statuses (when-some [xs statuses]
+               (map #(keyword "payment.status" (name %)) xs))
+   :types (when-some [xs types]
+            (map #(keyword "payment.for" (name %)) xs))
+   :date-key (scrub-kw date_key)))
+
+
 (defn- query-payments
   "Query payments for `account` from `db`."
-  [db {:keys [account types from to statuses]}]
-  (->> (payment/payments db account)
+  [db params]
+  (->> (parse-gql-params params)
+       (apply concat)
+       (apply payment/payments2 db)
        (sort-by :payment/paid-on)
        (map mapify)))
 
@@ -230,8 +252,8 @@
   "Provided context `ctx` and `payments`, fetch all required data from Stripe
   and merge it into the payments."
   [{:keys [stripe] :as ctx} payments]
-  (let [in       (chan)
-        out      (chan)]
+  (let [in  (chan)
+        out (chan)]
     (async/pipeline-async concurrency out (partial process-payment ctx) in)
     (async/onto-chan in payments)
     (async/into [] out)))
@@ -242,9 +264,8 @@
 
 
 (defn payments
-  "Asynchronously fetch payments for `account_id` or the requesting user, if
-  `account_id` is not supplied."
-  [{:keys [conn] :as ctx} {{:keys [account] :as params} :data} _]
+  "Query payments based on `params`."
+  [{:keys [conn] :as ctx} {{:keys [account] :as params} :params} _]
   (let [db      (d/db conn)
         account (d/entity db account)
         result  (resolve/resolve-promise)]
@@ -253,6 +274,7 @@
         (let [payments (query-payments db params)]
           (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
         (catch Throwable t
+          (timbre/error t "error querying payments")
           (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
                                         :err-data (ex-data t)}))))
     result))
@@ -278,22 +300,6 @@
    ;; queries
    :payment/list        payments
    })
-
-
-
-
-
-
-(comment
-
-  (let [conn    odin.datomic/conn
-        context {:conn      conn
-                 :stripe    (odin.config/stripe-secret-key odin.config/config)
-                 :requester (d/entity (d/db conn) [:account/email "member@test.com"])}
-        ]
-    (map :payment/paid-on (query-payments (d/db conn) (:requester context))))
-
-  )
 
 
 ;;; Attach a charge id to all invoices
