@@ -4,7 +4,7 @@
  :builds
  [{:id           "odin"
    :source-paths ["src/cljs/odin" "src/cljs/iface"]
-   :figwheel     {:on-jsload odin.core/render}
+   :figwheel     {:on-jsload odin.core/reload!}
    :compiler     {:main                 odin.core
                   :preloads             [devtools.preload]
                   :asset-path           "/js/cljs/odin/out"

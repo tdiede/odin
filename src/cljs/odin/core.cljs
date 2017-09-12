@@ -118,6 +118,11 @@
    (gdom/getElement "odin")))
 
 
+(defn reload! []
+  (render)
+  (accountant.core/dispatch-current!))
+
+
 (defn ^:export run []
   (GET "/api/config"
        :handler (fn [config]
