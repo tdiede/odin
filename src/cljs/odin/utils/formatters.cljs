@@ -80,3 +80,5 @@
 
 (defn sstr [args]
   (->> (interpose " " [args]) (apply str)))
+
+(def string gstring/format)

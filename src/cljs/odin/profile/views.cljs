@@ -5,6 +5,7 @@
             [odin.profile.membership.views :as membership]
             [odin.profile.payments.history.views :as phistory]
             [odin.profile.payments.sources.views :as psources]
+            [odin.profile.contact.views :as contact]
             [odin.profile.settings.views :as settings]
             [odin.components.navigation :as navigation]
             [toolbelt.core :as tb]))
@@ -40,7 +41,7 @@
       ;;(tb/log path)
       (match [path]
         [[:membership]] [membership/membership]
-        [[:contact]] [:h1 "TODO: Implement Contact"]
+        [[:contact]] [contact/contact-info]
         [[:payment :history]] [phistory/history]
         [[:payment :sources]] [psources/sources]
         [[:settings :change-password]] [settings/change-password]
