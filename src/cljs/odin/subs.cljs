@@ -2,6 +2,7 @@
   (:require [odin.account.list.subs]
             [odin.account.entry.subs]
             [odin.metrics.subs]
+            [odin.orders.subs]
             [odin.profile.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))

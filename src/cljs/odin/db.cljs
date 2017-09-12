@@ -2,6 +2,7 @@
   (:require [odin.account.db :as accounts]
             [odin.components.modals :as modals]
             [odin.metrics.db :as metrics]
+            [odin.orders.db :as orders]
             [odin.profile.payments.db :as payments]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
@@ -42,6 +43,7 @@
    accounts/default-value
    payments/default-value
    modals/default-value
+   orders/default-value
    metrics/default-value))
 
 

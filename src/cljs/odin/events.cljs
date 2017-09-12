@@ -4,6 +4,7 @@
             [odin.account.list.events]
             [odin.account.entry.events]
             [odin.metrics.events]
+            [odin.orders.events]
             [odin.profile.events]
             [clojure.string :as string]
             [re-frame.core :refer [reg-event-db reg-event-fx]]

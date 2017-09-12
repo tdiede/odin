@@ -1,11 +1,13 @@
 (ns odin.graphql.resolvers
   (:require [odin.graphql.resolvers.account :as account]
             [odin.graphql.resolvers.deposit :as deposit]
+            [odin.graphql.resolvers.member-license :as member-license]
+            [odin.graphql.resolvers.metrics :as metrics]
+            [odin.graphql.resolvers.order :as order]
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
-            [odin.graphql.resolvers.member-license :as member-license]
-            [odin.graphql.resolvers.unit :as unit]
-            [odin.graphql.resolvers.metrics :as metrics]))
+            [odin.graphql.resolvers.service :as service]
+            [odin.graphql.resolvers.unit :as unit]))
 
 
 ;; TODO: Authorization middleware
@@ -32,20 +34,6 @@
    :deposit/amount-paid      deposit/amount-paid
    :deposit/amount-pending   deposit/amount-pending
    :deposit/refund-status    deposit/refund-status
-   })
-
-
-(def ^:private payment-resolvers
-  {;; fields
-   :payment/external-id payment/external-id
-   :payment/method      payment/method
-   :payment/status      payment/status
-   :payment/source      payment/source
-   :payment/autopay?    payment/autopay?
-   :payment/for         payment/payment-for
-   :payment/description payment/description
-   ;; queries
-   :payment/list        payment/payments
    })
 
 
@@ -82,9 +70,11 @@
   (merge
    account-resolvers
    deposit-resolvers
-   payment-resolvers
+   payment/resolvers
    payment-source-resolvers
    member-license-resolvers
    unit-resolvers
+   order/resolvers
+   service/resolvers
    metrics/resolvers
    {:get (fn [& ks] (fn [_ _ v] (get-in v ks)))}))

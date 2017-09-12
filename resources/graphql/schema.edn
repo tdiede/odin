@@ -12,10 +12,19 @@
   {:description "Possible statuses of a member license."
    :values      [:active :inactive :canceled :renewal]}
 
+
+  :order_status
+  {:description "Possible statuses of orders."
+   :values      [:placed :canceled :charged :pending]}
+
   ;; payments
   :payment_method
   {:description "Methods of payment."
    :values      [:ach :card :check :other]}
+
+  :payment_type
+  {:description "Different types of payment."
+   :values      [:order :rent :deposit]}
 
   :payment_source_type
   {:description "Types of payment source."
@@ -23,7 +32,11 @@
 
   :payment_status
   {:description "Payment status."
-   :values      [:due :canceled :paid :pending :failed :refunded]}}
+   :values      [:due :canceled :paid :pending :failed :refunded]}
+
+  :service_billed
+  {:description "Different ways a service can be billed."
+   :values      [:once :monthly]}}
 
  :interfaces
  {:person
@@ -130,6 +143,30 @@
                        :resolve     (:get :member-license/unit :property/_units)}}}
 
 
+  :order
+  {:fields {:id        {:type    (non-null :Long)
+                        :resolve (:get :db/id)}
+            :account   {:type    (non-null :account)
+                        :resolve (:get :order/account)}
+            :price     {:type    Float
+                        :resolve :order/price}
+            :quantity  {:type    Float
+                        :resolve (:get :order/quantity)}
+            :name      {:type    String
+                        :resolve :order/name}
+            :desc      {:type    String
+                        :resolve (:get :order/desc)}
+            :status    {:type    (non-null :order_status)
+                        :resolve :order/status}
+            :billed_on {:type    :Instant
+                        :resolve :order/billed-on}
+            :service   {:type    (non-null :service)
+                        :resolve (:get :order/service)}
+            :payments  {:type    (list :payment)
+                        :resolve (:get :order/payments)}
+            :property  {:type (non-null :property)}}}
+
+
   :payment
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
@@ -142,8 +179,11 @@
                           :resolve :payment/method}
             :description {:type    String
                           :resolve :payment/description}
-            :for         {:type    :Keyword
-                          :resolve :payment/for}
+            :type        {:type    :payment_type
+                          :resolve :payment/type}
+            :for         {:type        :Keyword
+                          :description "DEPRECATED: Use `:type` instead."
+                          :resolve     :payment/for}
             :autopay     {:type        Boolean
                           :description "Is this an autopay payment?"
                           :resolve     :payment/autopay?}
@@ -161,6 +201,11 @@
             :pend        {:type        :Instant
                           :description "Period end."
                           :resolve     (:get :payment/pend)}
+            :property    {:type        :property
+                          :description "The property that the member that made this payment is associated with."
+                          :resolve     :payment/property}
+            :order       {:type    :order
+                          :resolve :payment/order}
             :account     {:type    (non-null :account)
                           :resolve (:get :payment/account)}
             :source      {:type    :payment_source
@@ -196,6 +241,23 @@
             :code {:type    (non-null String)
                    :resolve (:get :property/internal-name)}}}
 
+
+  ;; TODO:
+  ;; :referral
+  ;; {:fields {:id {:type (non-null :Long)}}}
+
+
+  :service
+  {:fields {:id     {:type    (non-null :Long)
+                     :resolve (:get :db/id)}
+            :name   {:type    (non-null String)
+                     :resolve (:get :service/name)}
+            :price  {:type    Float
+                     :resolve (:get :service/price)}
+            :billed {:type    :service_billed
+                     :resolve :service/billed}}}
+
+
   :unit
   {:fields {:id       {:type    (non-null :Long)
                        :resolve (:get :db/id)}
@@ -208,13 +270,51 @@
             :property {:type    (non-null :property)
                        :resolve (:get :property/_units)}}}
 
-  ;; =============================================================================
-  ;; Metrics
 
+  ;; TODO: This is silly. The client should just pull the referral objects
+  ;; directly and perform the transformation to "data points" itself.
   :data_point
   {:fields {:percentage {:type Float}
             :count      {:type Int}
             :label      {:type String}}}}
+
+
+ ;; =============================================================================
+ ;; Input Objects
+ ;; =============================================================================
+
+
+ :input-objects
+ {;;; Account
+  :update_account
+  {:description "Inputs to update an account."
+   :fields      {:first_name        {:type String}
+                 :middle_name       {:type String}
+                 :last_name         {:type String}
+                 :phone             {:type String}
+                 :emergency_contact {:type :update_account}}}
+
+  ;;; Payments
+  :payments_query_inputs
+  {:description "Inputs to query for payments."
+   :fields      {:account  {:type        :Long
+                            :description "ID of an account to query payments for."}
+                 :types    {:type          (list :payment_type)
+                            :default-value [:deposit :order :rent]
+                            :description   "List of payment types to query."}
+                 :from     {:type        :Instant
+                            :description "Payments created after."}
+                 :to       {:type        :Instant
+                            :description "Payments created until."}
+                 :statuses {:type          (list :payment_status)
+                            :default-value [:due :canceled :paid :pending :failed :refunded]
+                            :description   "List of payment statuses to query."}}}}
+
+
+ ;; =============================================================================
+ ;; Queries
+ ;; =============================================================================
+
 
  :queries
  {:accounts {:type    (list :account)
@@ -227,8 +327,7 @@
             :resolve :account/entry}
 
   :payments {:type    (list :payment)
-             :args    {:account {:type        (non-null :Long)
-                                 :description "ID of an account to request payments for."}}
+             :args    {:data {:type (non-null :payments_query_inputs)}}
              :resolve :payment/list}
 
   :payment_sources {:type    (list :payment_source)
@@ -236,22 +335,16 @@
                                         :description "ID of an account to request sources for."}}
                     :resolve :payment.sources/list}
 
-  ;; =============================================================================
-  ;; Metrics
-
+  ;; TODO: This should return a list of `:referral`, not `:data_point`. See
+  ;; above.
   :referrals {:type    (list :data_point)
               :resolve :metrics/referrals}}
 
- :input-objects
- {;;; Account
 
-  :update_account
-  {:description "Inputs to update an account."
-   :fields      {:first_name        {:type String}
-                 :middle_name       {:type String}
-                 :last_name         {:type String}
-                 :phone             {:type String}
-                 :emergency_contact {:type :update_account}}}}
+ ;; =============================================================================
+ ;; Mutations
+ ;; =============================================================================
+
 
  :mutations
  {;;; Account

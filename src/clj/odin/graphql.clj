@@ -66,6 +66,10 @@
     (def token "btok_1AwfkJIvRccmW9nOZMX9bgQO")
     (def source "ba_1AwfkJIvRccmW9nOoEbGvWZn")
 
+    (def ctx {:conn      conn
+              :stripe    (odin.config/stripe-secret-key odin.config/config)
+              :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
+
     )
 
 
@@ -74,12 +78,10 @@
      (execute schema
               (venia/graphql-query
                {:venia/queries
-                [[:account {:id (:db/id account)}
-                  [:id :name :phone [:emergency_contact [:name :phone]]]]]})
+                [[:payments {:account (:db/id account)}
+                  [:id :type [:order [:id]] [:property [:name]]]]]})
               nil
-              {:conn      conn
-               :stripe    (odin.config/stripe-secret-key odin.config/config)
-               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+              ctx)))
 
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]

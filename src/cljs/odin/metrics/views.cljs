@@ -1,10 +1,9 @@
 (ns odin.metrics.views
   (:require [antizer.reagent :as ant]
+            [iface.chart :as chart]
             [odin.content :as content]
             [re-frame.core :refer [subscribe dispatch]]
-            [reagent.core :as r]
-            [cljsjs.highcharts]
-            [cljsjs.highcharts-css]))
+            [reagent.core :as r]))
 
 
 ;; What kinds of important things do we want to show here?
@@ -61,23 +60,13 @@
                   :data         series-data}]})
 
 
-(defn chart [config]
-  (r/create-class
-   {:component-did-mount
-    (fn [this]
-      (js/Highcharts.Chart. (r/dom-node this) (clj->js config)))
-    :reagent-render
-    (fn [config]
-      [:div])}))
-
-
 (defn referrals-options []
   [ant/dropdown
    {:overlay
     (r/as-element
      [ant/menu
       [ant/menu-item {:key 0}
-       "Someting"]])}
+       "Something"]])}
    [:a.ant-dropdown-link "Options"
     [ant/icon {:type "down"}]]])
 
@@ -90,7 +79,7 @@
       [ant/card {:title   "Referrals"
                  :loading @loading
                  :extra   (r/as-element [referrals-options])}
-       [chart (referrals-config @referrals)]]]]))
+       [chart/chart (referrals-config @referrals)]]]]))
 
 
 (defn financial []

@@ -78,6 +78,12 @@
   (payment/payment-for (d/entity (d/db conn) (td/id payment))))
 
 
+(defn payment-for2
+  "What is this payment for?"
+  [{conn :conn} _ payment]
+  (payment/payment-for2 (d/db conn) payment))
+
+
 (defn- deposit-desc
   "Description for a security deposit payment."
   [account payment]
@@ -150,6 +156,21 @@
                               :err-data (ex-data t)}))))
 
 
+(defn order
+  "The order associated with this payment, if any."
+  [{conn :conn} _ payment]
+  (order/by-payment (d/db conn) payment))
+
+
+(defn property
+  "The property associated with the account that made this payment, if any."
+  [{conn :conn} _ payment]
+  (let [created (td/created-at (d/db conn) payment)
+        license (member-license/active (d/as-of (d/db conn) created)
+                                       (payment/account payment))]
+    (member-license/property license)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -195,7 +216,7 @@
 
 (defn- query-payments
   "Query payments for `account` from `db`."
-  [db account]
+  [db {:keys [account types from to statuses]}]
   (->> (payment/payments db account)
        (sort-by :payment/paid-on)
        (map mapify)))
@@ -223,18 +244,44 @@
 (defn payments
   "Asynchronously fetch payments for `account_id` or the requesting user, if
   `account_id` is not supplied."
-  [{:keys [conn] :as ctx} {:keys [account]} _]
+  [{:keys [conn] :as ctx} {{:keys [account] :as params} :data} _]
   (let [db      (d/db conn)
         account (d/entity db account)
         result  (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (query-payments db account)]
+        (let [payments (query-payments db params)]
           (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
         (catch Throwable t
           (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
                                         :err-data (ex-data t)}))))
     result))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(def resolvers
+  {;; fields
+   :payment/external-id external-id
+   :payment/method      method
+   :payment/status      status
+   :payment/source      source
+   :payment/autopay?    autopay?
+   :payment/for         payment-for
+   :payment/type        payment-for2
+   :payment/description description
+   :payment/property    property
+   :payment/order       order
+   ;; queries
+   :payment/list        payments
+   })
+
+
+
+
 
 
 (comment

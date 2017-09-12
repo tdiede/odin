@@ -28,7 +28,7 @@
  (fn [{:keys [db]} [_ account-id]]
    {:db      (assoc-in db [:loading :payments/list] true)
     :graphql {:query
-              [[:payments {:account account-id}
+              [[:payments {:data {:account account-id}}
                 [:id :method :for :autopay :amount :status :description
                  :pstart :pend :paid_on [:source [:id :name :type :last4]]]]]
               :on-success [:payments.fetch/success]
