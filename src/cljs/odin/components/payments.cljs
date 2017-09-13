@@ -70,14 +70,15 @@
   ([reason]
    [payment-for-icon reason ""])
   ([reason icon-size]
-   (when reason [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
-                              :placement "right"}
-                 [:span.icon.has-tooltip {:class icon-size}
-                  (case reason
-                    "rent"    [:i.fa.fa-home {:class icon-size}]
-                    "deposit" [:i.fa.fa-shield {:class icon-size}]
-                    "order"   [:i.fa.fa-smile-o {:class icon-size}]
-                    "")]])))
+   (when reason
+     [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
+                   :placement "right"}
+      [:span.icon.has-tooltip {:class icon-size}
+       (case reason
+         "rent"    [:i.fa.fa-home    {:class icon-size}]
+         "deposit" [:i.fa.fa-shield  {:class icon-size}]
+         "order"   [:i.fa.fa-smile-o {:class icon-size}]
+         "")]])))
 
 
 (defn render-payment-period

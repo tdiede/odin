@@ -1,4 +1,5 @@
-(ns odin.profile.db)
+(ns odin.profile.db
+  (:require [odin.profile.membership.db]))
   ;;(:require [odin.profile.payments.sources.db :as sources]))
 
 

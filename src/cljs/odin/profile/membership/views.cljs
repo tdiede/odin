@@ -4,24 +4,11 @@
             [odin.components.membership :as member-ui]
             [odin.components.orders :as orders-ui]
             [odin.utils.formatters :as format]
+            [odin.utils.time :as t]
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
             [toolbelt.core :as tb]))
 
-
-(def mock-member-license
-  {:active            true
-   :term              12
-   :price             1400
-   :commencement-date (format/str->timestamp "Jun 1, 2017")
-   :end-date          (format/str->timestamp "Jul 31, 2018")
-   :unit              {:name        "#301"
-                       :description "One-bedroom unit with large windows."
-                       :floor       3
-                       :dimensions  {:height 10
-                                     :width  14
-                                     :length 14}
-                       :property    "2072 Mission"}})
 
 (def mock-services [{:id          13886565
                      :name        "Plant Service"
@@ -43,23 +30,19 @@
                      :description "Learn cool things from visitors to your community."}])
 
 
-(defn card-license-summary
-  [license]
-  (let [{term  :term
-         price :price
-         start :commencement-date
-         end   :end-date
-         {community-name :property
-          unit-number    :name} :unit} license]
-    [:div.card.align-center
+
+(defn card-license-summary []
+  (let [{:keys [term rate starts ends property unit]} @(subscribe [:member/license])]
+    [ant/card {:loading @(subscribe [:member.license/loading?])
+               :class   "is-flush"}
      [:div.card-image
       [:figure.image
        [:img {:src "/assets/images/communal-1000x500.jpg"}]]]
      [:div.card-content
       [:div.content
-       [:h3 (str community-name " " unit-number)]
-       [:h4 (str term " months • " (format/currency price) "/mo.")]
-       [:p (str (format/date-short start) " - " (format/date-short end))]]]
+       [:h3 (str (:name property) " " (:number unit))]
+       [:h4 (str term " months • " (format/currency rate) "/mo.")]
+       [:p (str (format/date-short starts) " - " (format/date-short ends))]]]
      [:footer.card-footer
       [:a.card-footer-item
        [:span.icon.is-small [:i.fa.fa-file-text]]
@@ -86,8 +69,10 @@
 
 (defn deposit-status-card
   []
-  (let [deposit (subscribe [:profile/security-deposit])]
+  (let [deposit    (subscribe [:profile/security-deposit])
+        is-overdue (t/is-before-now (:due @deposit))]
     [:div.mb2
+     ;;(tb/log (t/get-time-between (:due @deposit)))
      ;;[:h4
      ;; [:span.icon [:i.fa.fa-shield]]
      ;; [:span "Security Deposit"]]
@@ -107,17 +92,18 @@
 
 (defn rent-status-card
   []
-  [:div.mb2
-   ;;[:h4
-   ;; [:span.icon [:i.fa.fa-home]]
-   ;; [:span "Rent"]]
-   [ant/card ;;{:title "Rent Status"}
-    [:div.columns
-     [:div.column.is-2
-      [:span.icon.is-large.text-green [:i.fa.fa-home]]]
-     [:div.column
-      [:h4 "Rent is paid."]
-      [:p "Congratulations! You're paid for the month of September."]]]]])
+  (let [license (subscribe [:member/license])]
+   [:div.mb2
+    ;;[:h4
+    ;; [:span.icon [:i.fa.fa-home]]
+    ;; [:span "Rent"]]
+    [ant/card ;;{:title "Rent Status"}
+     [:div.columns
+      [:div.column.is-2
+       [:span.icon.is-large.text-green [:i.fa.fa-home]]]
+      [:div.column
+       [:h4 "Rent is paid."]
+       [:p "Congratulations! You're paid for the month of September."]]]]]))
 
 
 
@@ -125,10 +111,6 @@
   [:div
    [deposit-status-card]
    [rent-status-card]])
-   ;;[notification/banner-success "Good news – You're all paid up! Your next rent payment of $1,400 is due on September 4th."
-   ;;[notification/banner "Your next payment is due "]])
-
-
 
 
 (defn membership []
@@ -149,7 +131,7 @@
 
     [:div.column.is-5
      [:h2 "Rental Agreement"]
-     [card-license-summary mock-member-license]]]])
+     [card-license-summary]]]])
 
 ;;[:p "Rent plus subscriptions: " [:b "$1,545 / mo."]]])
 ;;[:hr]])
