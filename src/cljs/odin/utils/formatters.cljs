@@ -10,11 +10,13 @@
 ;; TIMES
 (defn moment [arg] (.moment js/window arg))
 
+
 (defn date-short-num
   "Short date numerical (e.g. 01/01/2017)"
   [thing]
   (if thing (-> (moment thing)
                 (.format (l10n/translate :tongue/format-date-short-num)))))
+
 
 (defn date-short
   "Short date (e.g. Jan 01, 2017)"
@@ -22,11 +24,19 @@
   (if thing (-> (moment thing)
                 (.format (l10n/translate :tongue/format-date-short)))))
 
+
 (defn date-time
   "Date and time (e.g. January 1, 2017 @ 12:00 pm)"
   [thing]
   (if thing (-> (moment thing)
-                (.format (l10n/translate :tongue/format-date-short)))))
+                (.format (l10n/translate :tongue/format-date-time)))))
+
+
+(defn date-time-short
+  "Date and time (e.g. Jan 1, 2017 @ 12:00 pm)"
+  [thing]
+  (if thing (-> (moment thing)
+                (.format (l10n/translate :tongue/format-date-time-short)))))
 
 
 (defn date-words

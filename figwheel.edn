@@ -1,10 +1,10 @@
 {:server-port     3449
  :css-dirs        ["resources/public/assets/css"]
- :builds-to-start ["odin"]
+ :builds-to-start ["odin" "cards"]
  :builds
  [{:id           "odin"
-   :source-paths ["src/cljs"]
-   :figwheel     {:on-jsload odin.core/render}
+   :source-paths ["src/cljs/odin" "src/cljs/iface"]
+   :figwheel     {:on-jsload odin.core/reload!}
    :compiler     {:main                 odin.core
                   :preloads             [devtools.preload]
                   :asset-path           "/js/cljs/odin/out"
@@ -14,6 +14,19 @@
                   :source-map           true
                   :optimizations        :none
                   :source-map-timestamp true
+                  :external-config
+                  {:devtools/config
+                   {:features-to-install    [:formatters :hints]
+                    :fn-symbol              "ƒ"
+                    :print-config-overrides true}}}}
+
+  {:id           "cards"
+   :source-paths ["src/cljs"]
+   :figwheel     {:devcards true}
+   :compiler     {:main       "cards.core"
+                  :asset-path "js/cljs/cards/out"
+                  :output-to  "resources/public/js/cljs/cards.js"
+                  :output-dir "resources/public/js/cljs/cards/out"
                   :external-config
                   {:devtools/config
                    {:features-to-install    [:formatters :hints]

@@ -38,8 +38,8 @@
 (defn property
   "The property that this account (member) is a part of."
   [{conn :conn} _ account]
-  (-> (member-license/active (d/db conn) account)
-      (member-license/property)))
+  (when-let [license (member-license/active (d/db conn) account)]
+    (member-license/property license)))
 
 
 (defn role

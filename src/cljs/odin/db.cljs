@@ -2,46 +2,53 @@
   (:require [odin.account.db :as accounts]
             [odin.components.modals :as modals]
             [odin.profile.db :as profile]
+            [odin.metrics.db :as metrics]
+            [odin.orders.db :as orders]
             [odin.profile.payments.db :as payments]
             [odin.profile.membership.db :as membership]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
 
 
+(def ^:private role->menu-items
+  {:account.role/member
+   [{:feature :home
+     :uri     "/"}
+    {:feature :profile
+     :uri     "/profile"}]
+   :account.role/admin
+   [{:feature :home
+     :uri     "/"}
+    {:feature :metrics
+     :uri     "/metrics"}
+    {:feature :orders
+     :uri     "/orders"}
+    {:feature :communities
+     :uri     "/communities"}]})
 
 
-(def ^:private menu-items
-  [{:feature :home
-    :uri     "/"}
-   {:feature :profile
-    :uri     "/profile"}
-   ;; {:feature :people
-   ;;  :uri     (routes/path-for :account/list)}
-   ;; {:feature :communities
-   ;;  :uri     "/communities"}
-   ;; {:feature :orders
-   ;;  :uri     "/orders"}
-   ;; {:feature :services
-   ;;  :uri     "/services"}
-   ])
+(defn- menu-items [config]
+  (let [role (get-in config [:account :role])]
+    (role->menu-items role)))
 
 
-(def default-value
+(defn bootstrap-db [config]
   (merge
    {:lang    :en
     :loading {:config true}
     :menu    {:showing false
-              :items   menu-items}
+              :items   (menu-items config)}
     :route   {:current :home
               :path    [:home]
-              :params  {}}}
-   profile/default-value
-   membership/default-value
-   accounts/default-value
-   payments/default-value
-   modals/default-value))
+              :params  {}}
+    :config  config
+    accounts/default-value
+    payments/default-value
+    modals/default-value
+    orders/default-value
+    metrics/default-value}))
 
 
 (defn configure [config]
-  (-> (assoc default-value :config config)
+  (-> (bootstrap-db config)
       (assoc-in [:route :requester] (:account config))))

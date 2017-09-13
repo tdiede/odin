@@ -7,7 +7,9 @@
             [com.walmartlabs.lacinia.util :as util]
             [mount.core :refer [defstate]]
             [datomic.api :as d]
-            [blueprints.models.member-license :as member-license]))
+            [blueprints.models.member-license :as member-license]
+            [taoensso.timbre :as timbre]
+            [clj-time.coerce :as c]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
@@ -26,14 +28,18 @@
      :serialize (schema/as-conformer identity)}
 
     :Instant
-    {:parse     (schema/as-conformer identity)
+    {:parse     (schema/as-conformer (comp c/to-date c/from-string))
      :serialize (schema/as-conformer identity)}}})
 
 
+(defn- read-resource [path]
+  (-> (io/resource path)
+      slurp
+      edn/read-string))
+
+
 (defstate schema
-  :start (-> (io/resource "graphql/schema.edn")
-             slurp
-             edn/read-string
+  :start (-> (read-resource "graphql/schema.edn")
              (merge custom-scalars)
              (util/attach-resolvers resolvers/resolvers)
              schema/compile))
@@ -62,6 +68,10 @@
     (def token "btok_1AwfkJIvRccmW9nOZMX9bgQO")
     (def source "ba_1AwfkJIvRccmW9nOoEbGvWZn")
 
+    (def ctx {:conn      conn
+              :stripe    (odin.config/stripe-secret-key odin.config/config)
+              :requester (d/entity (d/db conn) [:account/email "member@test.com"])})
+
     )
 
 
@@ -70,12 +80,10 @@
      (execute schema
               (venia/graphql-query
                {:venia/queries
-                [[:account {:id (:db/id account)}
-                  [:id :name :phone [:emergency_contact [:name :phone]]]]]})
+                [[:payments {:account (:db/id account)}
+                  [:id :type [:order [:id]] [:property [:name]]]]]})
               nil
-              {:conn      conn
-               :stripe    (odin.config/stripe-secret-key odin.config/config)
-               :requester (d/entity (d/db conn) [:account/email "member@test.com"])})))
+              ctx)))
 
 
   (let [account (d/entity (d/db conn) [:account/email "member@test.com"])]
