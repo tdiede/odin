@@ -6,6 +6,7 @@
             [odin.profile.membership.views :as membership]
             [odin.profile.payments.history.views :as phistory]
             [odin.profile.payments.sources.views :as psources]
+            [odin.profile.contact.views :as contact]
             [odin.profile.settings.views :as settings]
             [odin.routes :as routes]))
 
@@ -38,13 +39,13 @@
   sub-navigation and a container for sub-content."
   [{:keys [page path] :as route}]
   [:div.columns
-   [:div.column.is-one-quarter
+   [:div.column.is-one-fifth
     [menu/side-menu profile-menu-spec page]]
    [:div.column
     (let [path (vec (rest path))]
       (match [path]
         [[:membership]] [membership/membership]
-        [[:contact]] [:h1 "TODO: Implement Contact"]
+        [[:contact]] [contact/contact-info]
         [[:payment :history]] [phistory/history]
         [[:payment :sources]] [psources/sources]
         [[:settings :change-password]] [settings/change-password]

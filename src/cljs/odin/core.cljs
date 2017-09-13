@@ -1,11 +1,14 @@
 (ns odin.core
   (:require [odin.events]
+            [odin.fx]
             [odin.routes :as routes]
             [odin.l10n :as l10n]
             [odin.subs]
             [odin.graphql]
             [odin.content :as content]
             [odin.home.views]
+            [odin.metrics.views]
+            [odin.orders.views]
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
@@ -114,6 +117,11 @@
    [ant/locale-provider {:locale (ant/locales "en_US")}
     [layout]]
    (gdom/getElement "odin")))
+
+
+(defn reload! []
+  (render)
+  (accountant.core/dispatch-current!))
 
 
 (defn ^:export run []

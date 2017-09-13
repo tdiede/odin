@@ -83,12 +83,14 @@
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
-  (let [start (or (aget tx "pstart") (get tx :pstart))
-        end   (or (aget tx "pend")   (get tx :pend))]
-    (when (and start end)
-      (str (format/date-short start)
-           " - "
-           (format/date-short end)))))
+  (tb/log tx)
+  (:description tx))
+  ;;(let [start (or (aget tx "pstart") (get tx :pstart))
+  ;;      end   (or (aget tx "pend")   (get tx :pend))]
+  ;;  (when (and start end)
+  ;;    (str (format/date-short start)
+  ;;         " - "
+  ;;         (format/date-short end)))))
 
 
 (def ^:private payment-table-columns
@@ -127,10 +129,10 @@
    ;;              (r/as-element [payment-for val]))}
 
    {:title     (l10n/translate :description)
-                                        ; :dataIndex :for
+    :dataIndex :description
     :className "expand"
-    :render    (fn [val item _]
-                 (render-payment-period item))}
+    :render    (fn [val]
+                 (r/as-element [:span.yes-wrap.restrict-width val]))}
 
    ;; PAYMENT SOURCE
    {:title ""
@@ -154,6 +156,7 @@
   [transactions loading?]
   ;;(let [txs transactions]
   (let [txs (filter #(not= (:status %) :due) transactions)]
+   (tb/log txs)
    [ant/table
     {:class        "payments-table"
      :loading      (or loading? false)

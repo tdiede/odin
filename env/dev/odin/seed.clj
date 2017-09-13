@@ -260,9 +260,6 @@
     [(deposit/add-payment deposit payment) payment]))
 
 
-;; =============================================================================
-;; Stripe Customers
-
 (defn stripe-customers-tx []
   ;;[]
   [{:db/id                              (d/tempid :db.part/starcity)
@@ -275,13 +272,22 @@
     :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
     :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
 
-;; =============================================================================
-;; Avatar
 
 (defn avatar-tx []
   [{:db/id       (d/tempid :db.part/starcity)
     :avatar/name :system
     :avatar/url  "/assets/img/starcity-logo-black.png"}])
+
+
+(defn referrals-tx []
+  (let [sources ["craigslist" "word of mouth" "video" "starcity member" "instagram"]
+        total   (inc (rand-int 100))]
+    (mapv
+     (fn [_]
+       {:db/id           (d/tempid :db.part/starcity)
+        :referral/source (rand-nth sources)
+        :referral/from   :referral.from/tour})
+     (range total))))
 
 ;; =============================================================================
 ;; API
@@ -297,7 +303,8 @@
                             :requires [:seed/accounts]}
     :seed/stripe-customers {:txes     [(stripe-customers-tx)]
                             :requires [:seed/accounts]}
-    :seed/avatar           {:txes [(avatar-tx)]}})
+    :seed/avatar           {:txes [(avatar-tx)]}
+    :seed/referrals        {:txes [(referrals-tx)]}})
   ;; NOTE: These need to happen in separate transactions.
   (cf/ensure-conforms
    conn

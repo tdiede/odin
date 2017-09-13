@@ -1,5 +1,6 @@
 (ns odin.home.views
   (:require [odin.content :as content]
+            [odin.home.admin.views :as admin]
             [antizer.reagent :as ant]))
 
 
@@ -8,12 +9,8 @@
 ;; =============================================================================
 
 
-(defn admin [route]
-  [ant/card {:title "This is admin home."}])
-
-
 (defmethod content/view :admin/home [route]
-  [admin route])
+  [ant/card {:title "Admin Home"}])
 
 
 ;; =============================================================================

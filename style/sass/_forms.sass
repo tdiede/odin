@@ -1,4 +1,3 @@
-
 // Fixing horizontal Ant forms
 // .ant-form-horizontal
 //   .ant-row
@@ -10,25 +9,69 @@
 //     .ant-form-item-control-wrapper
 //       flex: 1 1 auto
 
+$form-label-font-size: .8rem
+$form-input-font-size: .9rem
+$form-input-padding:   6px 7px
+$form-input-height:    32px
+
+$fieldset-label-font-size: .8rem
+$fieldset-label-margin: 1rem
+
+fieldset
+  outline: none
+  border: none
+  margin-bottom: 2rem
+
+
 .select select
   background: white
 
-.ant-form
+.ant-form:not(:last-child)
   margin-bottom: $side-padding
+
+h4.fieldset-label
+  font-size: $fieldset-label-font-size
+  text-transform: uppercase
+  margin-bottom: $fieldset-label-margin
+  color: $text-gray
+  position: relative
+  height: 1.2rem
+  span
+    position: absolute
+    display: inline-block
+    padding: 0 .5rem
+    background: #fff
+    z-index: 12
+
+  &:after
+    @extend .pseudo-element
+    top: 50%
+    width: 100%
+    height: 1px
+    background: #ddd
+    z-index: 11
 
 .ant-form-item
   &:last-child
     margin-bottom: 0
+
+// .ant-form-item-control-wrapper
+  // margin-bottom: $side-padding
 
 .ant-form-item-label
   margin-right: $inner-component-padding
 
   label
     font-weight: bold
-    font-size: .8rem
+    font-size: $form-label-font-size
+    &:after
+      display: none
 
-  label:after
-    display: none
+.ant-input, .ant-input-lg
+  height:    $form-input-height
+  font-size: $form-input-font-size
+  padding:   $form-input-padding
+
 
 .ant-form-explain
   display: block

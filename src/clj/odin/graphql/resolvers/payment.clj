@@ -78,6 +78,12 @@
   (payment/payment-for (d/entity (d/db conn) (td/id payment))))
 
 
+(defn payment-for2
+  "What is this payment for?"
+  [{conn :conn} _ payment]
+  (payment/payment-for2 (d/db conn) payment))
+
+
 (defn- deposit-desc
   "Description for a security deposit payment."
   [account payment]
@@ -150,6 +156,21 @@
                               :err-data (ex-data t)}))))
 
 
+(defn order
+  "The order associated with this payment, if any."
+  [{conn :conn} _ payment]
+  (order/by-payment (d/db conn) payment))
+
+
+(defn property
+  "The property associated with the account that made this payment, if any."
+  [{conn :conn} _ payment]
+  (let [created (td/created-at (d/db conn) payment)
+        license (member-license/active (d/as-of (d/db conn) created)
+                                       (payment/account payment))]
+    (member-license/property license)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -193,10 +214,22 @@
     (async/close! out)))
 
 
+(defn- parse-gql-params
+  [{:keys [statuses types] :as params}]
+  (tb/assoc-when
+   params
+   :statuses (when-some [xs statuses]
+               (map #(keyword "payment.status" (name %)) xs))
+   :types (when-some [xs types]
+            (map #(keyword "payment.for" (name %)) xs))))
+
+
 (defn- query-payments
   "Query payments for `account` from `db`."
-  [db account]
-  (->> (payment/payments db account)
+  [db params]
+  (->> (parse-gql-params params)
+       (apply concat)
+       (apply payment/payments2 db)
        (sort-by :payment/paid-on)
        (map mapify)))
 
@@ -209,8 +242,8 @@
   "Provided context `ctx` and `payments`, fetch all required data from Stripe
   and merge it into the payments."
   [{:keys [stripe] :as ctx} payments]
-  (let [in       (chan)
-        out      (chan)]
+  (let [in  (chan)
+        out (chan)]
     (async/pipeline-async concurrency out (partial process-payment ctx) in)
     (async/onto-chan in payments)
     (async/into [] out)))
@@ -221,32 +254,40 @@
 
 
 (defn payments
-  "Asynchronously fetch payments for `account_id` or the requesting user, if
-  `account_id` is not supplied."
-  [{:keys [conn] :as ctx} {:keys [account]} _]
-  (let [db      (d/db conn)
-        account (d/entity db account)
-        result  (resolve/resolve-promise)]
+  "Query payments based on `params`."
+  [{:keys [conn] :as ctx} {params :params} _]
+  (let [result (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (query-payments db account)]
+        (let [payments (query-payments (d/db conn) params)]
           (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
         (catch Throwable t
+          (timbre/error t "error querying payments")
           (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
                                         :err-data (ex-data t)}))))
     result))
 
 
-(comment
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
 
-  (let [conn    odin.datomic/conn
-        context {:conn      conn
-                 :stripe    (odin.config/stripe-secret-key odin.config/config)
-                 :requester (d/entity (d/db conn) [:account/email "member@test.com"])}
-        ]
-    (map :payment/paid-on (query-payments (d/db conn) (:requester context))))
 
-  )
+(def resolvers
+  {;; fields
+   :payment/external-id external-id
+   :payment/method      method
+   :payment/status      status
+   :payment/source      source
+   :payment/autopay?    autopay?
+   :payment/for         payment-for
+   :payment/type        payment-for2
+   :payment/description description
+   :payment/property    property
+   :payment/order       order
+   ;; queries
+   :payment/list        payments
+   })
 
 
 ;;; Attach a charge id to all invoices
