@@ -25,8 +25,12 @@
    :values      [:order :rent :deposit]}
 
   :payments_date_key
-  {:description "Allowed keys for date-based queries."
-   :values      [:created :paid_on]}
+  {:description "Allowed keys for date-based payment queries."
+   :values      [:created :paid]}
+
+  :orders_date_key
+  {:description "Allowed keys for date-based order queries."
+   :values      [:created :charged]}
 
   :payment_source_type
   {:description "Types of payment source."
@@ -148,8 +152,6 @@
   :order
   {:fields {:id        {:type    (non-null :Long)
                         :resolve (:get :db/id)}
-            :account   {:type    (non-null :account)
-                        :resolve (:get :order/account)}
             :price     {:type    Float
                         :resolve :order/price}
             :quantity  {:type    Float
@@ -162,12 +164,18 @@
                         :resolve :order/status}
             :billed_on {:type    :Instant
                         :resolve :order/billed-on}
+            :account   {:type    (non-null :account)
+                        :resolve (:get :order/account)}
             :service   {:type    (non-null :service)
                         :resolve (:get :order/service)}
             :payments  {:type    (list :payment)
                         :resolve (:get :order/payments)}
             :property  {:type    (non-null :property)
-                        :resolve :order/property}}}
+                        :resolve :order/property}
+            :created   {:type    (non-null :Instant)
+                        :resolve :entity/created}
+            :updated   {:type    (non-null :Instant)
+                        :resolve :entity/updated}}}
 
 
   :payment
@@ -255,6 +263,8 @@
                      :resolve (:get :db/id)}
             :name   {:type    (non-null String)
                      :resolve (:get :service/name)}
+            :code   {:type    (non-null String)
+                     :resolve (:get :service/code)}
             :price  {:type    Float
                      :resolve (:get :service/price)}
             :billed {:type    :service_billed
@@ -300,33 +310,41 @@
   ;;; Orders
   :orders_query_params
   {:description "Parameters to query for orders."
-   :fields      {:account {:type        :Long
-                           :description "ID of an account to query orders for."}
-                 :from    {:type        :Instant
-                           :description "Payments after."}
-                 :to      {:type        :Instant
-                           :description "Payments until."}
-                 }}
+   :fields
+   {:accounts   {:type        (list :Long)
+                 :description "ID of an account to query orders for."}
+    :billed     {:type (list :service_billed)}
+    :services   {:type (list :Long)}
+    :properties {:type (list :Long)}
+    :statuses   {:type (list :order_status)}
+    :datekey    {:type          :orders_date_key
+                 :default-value :created
+                 :description   "Specifies which date attribute to use for date params."}
+    :from       {:type        :Instant
+                 :description "Orders after."}
+    :to         {:type        :Instant
+                 :description "Orders until."}}}
 
 
   ;;; Payments
   :payments_query_params
   {:description "Parameters to query for payments."
-   :fields      {:account  {:type        :Long
-                            :description "ID of an account to query payments for."}
-                 :types    {:type          (list :payment_type)
-                            :default-value [:deposit :order :rent]
-                            :description   "List of payment types to query."}
-                 :from     {:type        :Instant
-                            :description "Payments after."}
-                 :to       {:type        :Instant
-                            :description "Payments until."}
-                 :statuses {:type          (list :payment_status)
-                            :default-value [:due :canceled :paid :pending :failed :refunded]
-                            :description   "List of payment statuses to query."}
-                 :date_key {:type          :payments_date_key
-                            :default-value :created
-                            :description   "Specifies which date attribute to use for date params."}}}}
+   :fields
+   {:account  {:type        :Long
+               :description "ID of an account to query payments for."}
+    :types    {:type          (list :payment_type)
+               :default-value [:deposit :order :rent]
+               :description   "List of payment types to query."}
+    :from     {:type        :Instant
+               :description "Payments after."}
+    :to       {:type        :Instant
+               :description "Payments until."}
+    :statuses {:type          (list :payment_status)
+               :default-value [:due :canceled :paid :pending :failed :refunded]
+               :description   "List of payment statuses to query."}
+    :datekey  {:type          :payments_date_key
+               :default-value :created
+               :description   "Specifies which date attribute to use for date params."}}}}
 
 
  ;; =============================================================================

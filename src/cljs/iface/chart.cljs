@@ -35,7 +35,8 @@
         (reset! chart (js/Highcharts.Chart. (r/dom-node this) (clj->js config))))
       :component-did-update
       (fn [this]
-        (.destroy @chart)
+        (when-let [c @chart]
+          (.destroy c))
         (reset! chart (js/Highcharts.Chart. (r/dom-node this) (clj->js (r/props this)))))
       :reagent-render
       (fn [config]

@@ -214,24 +214,14 @@
     (async/close! out)))
 
 
-(defn- scrub-kw [k]
-  (letfn [(-scrub [s]
-            (clojure.string/replace s "_" "-"))]
-    (when (some? k)
-      (if-some [s (namespace k)]
-        (keyword (-scrub s) (-scrub (name k)))
-        (keyword (-scrub (name k)))))))
-
-
 (defn- parse-gql-params
-  [{:keys [date_key statuses types] :as params}]
+  [{:keys [statuses types] :as params}]
   (tb/assoc-when
    params
    :statuses (when-some [xs statuses]
                (map #(keyword "payment.status" (name %)) xs))
    :types (when-some [xs types]
-            (map #(keyword "payment.for" (name %)) xs))
-   :date-key (scrub-kw date_key)))
+            (map #(keyword "payment.for" (name %)) xs))))
 
 
 (defn- query-payments
@@ -265,13 +255,11 @@
 
 (defn payments
   "Query payments based on `params`."
-  [{:keys [conn] :as ctx} {{:keys [account] :as params} :params} _]
-  (let [db      (d/db conn)
-        account (d/entity db account)
-        result  (resolve/resolve-promise)]
+  [{:keys [conn] :as ctx} {params :params} _]
+  (let [result (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (query-payments db params)]
+        (let [payments (query-payments (d/db conn) params)]
           (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
         (catch Throwable t
           (timbre/error t "error querying payments")

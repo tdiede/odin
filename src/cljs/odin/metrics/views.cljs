@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [iface.chart :as chart]
             [odin.content :as content]
+            [odin.metrics.service-revenue :as service-revenue]
             [re-frame.core :refer [subscribe dispatch]]
             [reagent.core :as r]))
 
@@ -83,7 +84,9 @@
 
 
 (defn financial []
-  )
+  [:div.columns
+   [:div.column.is-half
+    [service-revenue/chart]]])
 
 
 (def tabs
@@ -102,7 +105,8 @@
   (let [active (subscribe [:metrics.category/current])]
     [:div
      [:div.view-header
-      [:h1 "Metrics"]]
+      [:h1.is-3.title "Metrics"]
+      [:p.is-5.subtitle "Important metrics and stats about the company."]]
      [ant/tabs {:active-key @active
                 :on-change  #(dispatch [:metrics.category/nav (keyword %)])}
       (for [{:keys [label key] :as t} tabs]

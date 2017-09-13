@@ -14,7 +14,6 @@
 
 
 (defmethod routes/dispatches :profile.payment/history [route]
-  (println "HERE")
   [[:payments/fetch (get-in route [:requester :id])]])
 
 

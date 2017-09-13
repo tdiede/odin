@@ -1,5 +1,6 @@
 (ns odin.core
   (:require [odin.events]
+            [odin.fx]
             [odin.routes :as routes]
             [odin.l10n :as l10n]
             [odin.subs]

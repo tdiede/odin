@@ -7,7 +7,9 @@
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
             [odin.graphql.resolvers.service :as service]
-            [odin.graphql.resolvers.unit :as unit]))
+            [odin.graphql.resolvers.unit :as unit]
+            [toolbelt.datomic :as td]
+            [datomic.api :as d]))
 
 
 ;; TODO: Authorization middleware
@@ -65,7 +67,6 @@
   {;;fields
    :unit/number unit/number})
 
-
 (def resolvers
   (merge
    account-resolvers
@@ -77,4 +78,6 @@
    order/resolvers
    service/resolvers
    metrics/resolvers
-   {:get (fn [& ks] (fn [_ _ v] (get-in v ks)))}))
+   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
+    :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
+    :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))}))

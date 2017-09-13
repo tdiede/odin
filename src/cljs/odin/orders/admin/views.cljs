@@ -1,82 +1,114 @@
 (ns odin.orders.admin.views
   (:require [antizer.reagent :as ant]
-            [cljs.spec.alpha :as s]
-            [cljs.spec.gen.alpha :as gen]
-            [iface.chart :as chart]
+            [odin.utils.formatters :as format]
             [re-frame.core :refer [subscribe dispatch]]
-            [toolbelt.core :as tb]
             [reagent.core :as r]))
 
+;;; How might we use an orders view?
+;; - Orders begin life as "pending" (i.e. "new") -- these require attention.
+;;   - Orders that are pending that have a price already set can be processed
+;; - "Placed" orders can be considered "in-progress" and non-cancelable
+;;   - Orders that are placed can be charged.
 
-;;; What do we want to see here?
-;; - Graph of order revenue for current time period by community
-;;   + https://www.highcharts.com/demo/column-drilldown
-;;   + top-level columns by community
-;;   + drill-down by service
-;; - Graph of new orders placed for current time period
-;; - "open" orders: those orders that are waiting to be charged
-
-;; =============================================================================
-;; Charts
-;; =============================================================================
+;;; We'll want to be able to filter orders by status, sort by creation date
 
 
 ;; =============================================================================
-;; Revenue
+;; Table
+;; =============================================================================
 
 
-(defn- service-revenue-chart-options [showing]
-  [ant/button {:type     "dashed"
-               :icon     (if @showing "up" "down")
-               :on-click #(swap! showing not)}
-   "Controls"])
+(defn- wrap-cljs [f]
+  (fn [x record]
+    (f x (js->clj record :keywordize-keys true))))
 
 
-(defn- submit-form-change! [errors values]
-  ;; TODO: errors?
-  (dispatch [:orders.admin.chart.revenue/params values]))
+(defn- render-service [_ {:keys [service]}]
+  (:code service))
 
 
-(defn- service-revenue-chart-controls []
-  (let [params (subscribe [:orders.admin.chart.revenue/params])]
-    (fn []
-      (let [form (ant/get-form)]
-        [:div.chart-controls
-         [ant/form
-          {:on-submit (fn [event]
-                        (.preventDefault event)
-                        (ant/validate-fields form submit-form-change!))}
-          [:div.columns
-           [:div.column
-            [ant/form-item {:label "X Axis" :key :chart-type}
-             (ant/decorate-field form "chart-type" {:initial-value (:chart-type @params)}
-                                 [ant/select
-                                  [ant/select-option {:value "community"} "Community"]
-                                  [ant/select-option {:value "billing"} "Billing Type"]])]]
-           [:div.column
-            [ant/form-item {:label "Within Period" :key :date-range}
-             (ant/decorate-field form "date-range" {:initial-value [(:from @params) (:to @params)]}
-                                 [ant/date-picker-range-picker {:format "l"}])]]]
-          [:div
-           [ant/form-item
-            [ant/button
-             {:type     "ghost"
-              :on-click #(dispatch [:orders.admin.chart.revenue/export-csv])}
-             "Download CSV"]
-            [ant/button {:type "primary" :html-type "submit"} "Update"]]]]]))))
+(defn- render-total [_ {:keys [price quantity]}]
+  (format/currency (* price (or quantity 1))))
 
 
-(defn- service-revenue-chart [config]
-  (let [is-loading       (subscribe [:loading? :orders.admin.chart.revenue/fetch])
-        form             (ant/get-form)
-        showing-controls (r/atom false)]
-    (fn [config]
-      [ant/card {:title   (r/as-element [:b "Premium Service Order Revenue"])
-                 :extra   (r/as-element [service-revenue-chart-options showing-controls])
-                 :loading @is-loading}
-       (when @showing-controls
-         (r/as-element (ant/create-form (service-revenue-chart-controls))))
-       [chart/chart config]])))
+(defn- render-price [_ {price :price}]
+  (if (some? price) (format/currency price) "N/A"))
+
+
+(defn- render-status [_ {status :status}]
+  (case status
+    :order.status/pending "new"
+    :order.status/placed  "in-progress"
+    status))
+
+
+(def ^:private columns
+  [{:title     "Name"
+    :dataIndex :name}
+   {:title     "Service"
+    :dataIndex :service
+    :render    (wrap-cljs render-service)}
+   {:title     "Member"
+    :dataIndex :account
+    :render    #(.-name %)}
+   {:title     "Created"
+    :dataIndex :created
+    :render    format/date-time-short}
+   {:title     "Billed On"
+    :dataIndex :billed_on
+    :render    #(if (some? %) (format/date-time-short %) "N/A")}
+   {:title     "Price"
+    :dataIndex :price
+    :render    (wrap-cljs render-price)}
+   {:title     "#"
+    :dataIndex :quantity
+    :render    (fnil format/number 1)}
+   {:title     "Total"
+    :dataIndex :total
+    :render    (wrap-cljs render-total)}
+   {:title     "Status"
+    :dataIndex :status
+    :render    (wrap-cljs render-status)}
+   {:title     "Billed"
+    :dataIndex :billed
+    :render    (wrap-cljs #(get-in %2 [:service :billed]))}])
+
+
+(defn- expanded [record]
+  (or (.-desc record) "N/A"))
+
+
+(defn orders-table []
+  (let [orders     (subscribe [:admin/orders])
+        is-loading (subscribe [:loading? :admin.orders/fetch])]
+    [ant/table
+     {:loading           @is-loading
+      :columns           columns
+      :expandedRowRender (comp expanded r/as-element)
+      :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}]))
+
+
+;; =============================================================================
+;; Controls
+;; =============================================================================
+
+(defn checkable-tags []
+  (let [tags (r/atom [{:name "all" :key :all}
+                      {:name "new" :key :pending}
+                      {:name "in progress" :key :placed}
+                      {:name "canceled" :key :canceled}
+                      {:name "charged" :key :charged}])]
+    [:div
+     (doall
+      (for [{:keys [name key]} @tags]
+        ^{:key key}
+        [ant/tag-checkable-tag
+         {:on-change #(dispatch [:admin.orders.status/select key])
+          :style     {:font-size   18
+                      :line-height "26px"
+                      :height      "30px"}}
+         [:span name]]))]))
+
 
 
 ;; =============================================================================
@@ -85,10 +117,16 @@
 
 
 (defn view []
-  (let [config (subscribe [:orders.admin.chart.revenue/config])]
-    [:div
-     [:div.view-header
-      [:h1 "Orders"]]
-     [:div.columns
-      [:div.column.is-half
-       [service-revenue-chart @config]]]]))
+  [:div
+   [:div.view-header
+    [:h1.is-3.title "Orders"]
+    [:p.is-5.subtitle "Manage and view premium service orders."]]
+   ;; [:hr]
+   ;; [:div.chart-controls
+   ;;  ]
+
+   ;;; controls
+   [:div {:style {:margin-top 24 :margin-bottom 24}}
+    [checkable-tags]]
+   [:div
+    [orders-table]]])

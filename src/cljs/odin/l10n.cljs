@@ -12,9 +12,10 @@
                                                         :decimal "."})
 
         ;;:tongue/format-date-short "MMM D, YYYY"
-        :tongue/format-date-short     "MMM DD, YYYY"
-        :tongue/format-date-short-num "MM/DD/YY"
-        :tongue/format-date-time      "MMMM DD, YYYY @ HH:mm a"
+        :tongue/format-date-short      "MMM DD, YYYY"
+        :tongue/format-date-short-num  "MM/DD/YY"
+        :tongue/format-date-time       "MMMM DD, YYYY @ h:mm a"
+        :tongue/format-date-time-short "M/D/YY @ h:mm a"
 
         ;; NOTE: Cannot nest keys indefinitely. We'll need a function if we want
         ;; to go more than one level deep.
