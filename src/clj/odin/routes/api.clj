@@ -16,13 +16,17 @@
   (get-in req [:deps :conn]))
 
 
+(defn ->db [req]
+  (d/db (get-in req [:deps :conn])))
+
+
 (defn ->stripe [req]
   (get-in req [:deps :stripe]))
 
 
-;; TODO: Remove
-(defn- debug-user [db]
-  (d/entity db [:account/email "member@test.com"]))
+(defn- ->requester [req]
+  (let [id (get-in req [:identity :db/id])]
+    (d/entity (->db req) id)))
 
 
 ;; =============================================================================
@@ -37,11 +41,10 @@
 
 
 (defn context [req]
-  (let [conn (->conn req)]
-    (gqlu/context
-      conn
-      (debug-user (d/db conn))
-      (->stripe req))))
+  (gqlu/context
+    (->conn req)
+    (->requester req)
+    (->stripe req)))
 
 
 (defn graphql-handler [req]
@@ -66,6 +69,7 @@
    {:home        {}
     :profile     {}
     :people      {}
+    :metrics     {}
     :communities {}
     :orders      {}
     :services    {}}})
@@ -74,10 +78,15 @@
 (def ^:private member-config
   {:role :member
    :features
-   {:home        {}
-    :profile     {}
-    :people      {}
-    :communities {}}})
+   {:home    {}
+    :profile {}}})
+
+
+(defn make-config [req]
+  (let [account (->requester req)]
+    (case (account/role account)
+      :account.role/admin admin-config
+      :account.role/member member-config)))
 
 
 (defn inject-account [config account]
@@ -85,13 +94,13 @@
                           :name  (format "%s %s"
                                          (account/first-name account)
                                          (account/last-name account))
-                          :email (account/email account)}))
+                          :email (account/email account)
+                          :role  (account/role account)}))
 
 
 (defn config-handler [req]
-  ;; TODO: Use authenticated user
-  (let [account (debug-user (d/db (->conn req)))
-        config  (inject-account member-config account)]
+  (let [account (->requester req)
+        config  (-> (make-config req) (inject-account account))]
     (-> (response/response config)
         (response/content-type "application/transit+json")
         (response/status 200))))

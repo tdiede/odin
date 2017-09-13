@@ -23,6 +23,13 @@ table, .table
     &.expand
       width: 100%
 
+    &.yes-wrap
+      white-space: wrap !important
+      word-wrap: break-word !important
+
+    &.restrict-width
+      max-width: 300px
+
 .is-flush .ant-table
   border: none
 
@@ -63,13 +70,14 @@ table, .table
 .ant-table-thead, .ant-table-tbody
   tr
     th
-      padding:        .8rem $side-padding
+      padding:        $table-th-vertical-padding $side-padding
+      background:     $off-white
       background:     none
       border-bottom:  1px solid $inner-component-border-color
       text-transform: uppercase
-      // font-family:    "Roboto"
+      font-weight: bold
     td
-      padding:       .5rem $side-padding
+      padding:       $table-td-vertical-padding $side-padding
       border-bottom: 1px solid $inner-component-border-color
       vertical-align: middle
 

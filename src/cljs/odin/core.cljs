@@ -1,14 +1,19 @@
 (ns odin.core
   (:require [odin.events]
+            [odin.fx]
             [odin.routes :as routes]
             [odin.l10n :as l10n]
             [odin.subs]
             [odin.graphql]
             [odin.content :as content]
+            [odin.home.views]
+            [odin.metrics.views]
+            [odin.orders.views]
             [odin.profile.views]
             [odin.account.list.views]
             [odin.account.entry.views]
             [odin.components.modals]
+            [odin.components.notifications :as notification]
             [odin.utils.formatters :as formatters]
             [day8.re-frame.http-fx]
             [starcity.re-frame.stripe-fx]
@@ -54,7 +59,6 @@
 (defn navbar-menu []
   (let [menu-items (subscribe [:menu/items])
         role       (subscribe [:config/role])]
-    ;;(tb/log @menu-items)
     [:div.navbar-start
      (doall
       (map-indexed
@@ -96,6 +100,7 @@
       [error-view]
       [:div.container
        [navbar]
+       ;;[notification/banner-global "This is a global notification that will remain visible as you navigate around the site." :danger]
        [:section.section.root-section
         [:div.columns
          [:div.column
@@ -112,6 +117,11 @@
    [ant/locale-provider {:locale (ant/locales "en_US")}
     [layout]]
    (gdom/getElement "odin")))
+
+
+(defn reload! []
+  (render)
+  (accountant.core/dispatch-current!))
 
 
 (defn ^:export run []

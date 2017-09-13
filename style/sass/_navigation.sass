@@ -1,8 +1,8 @@
 // NAV BAR (top of the page)
 // ----------------------------
 .navbar
-  background: $black
-  color: $white
+  background: $white
+  color: $black
 
   .navbar-burger
     &:hover
@@ -15,24 +15,40 @@
   text-indent: -99999px
   font-size: 0.00001rem
   width: 3rem
-  background: url(../svg/logo-white.svg) center center no-repeat
+  background: url(../svg/logo-black.svg) center center no-repeat
   background-size: 60% auto
 
 // NAV ITEM
 .navbar-item
-  font-size: 0.85rem
-  color: $white
+  font-size: 1rem
+  // letter-spacing: -0.05rem
+  // font-size: 0.85rem
+  // color: $white
+  color: $blue
+  position: relative
 
   &.is-active
-    color: $tranquil-blue !important
-    background-color: $dark-black !important
+    // color: $tranquil-blue !important
+    // background-color: $dark-black !important
+    font-weight: bold
+    color: $blue !important
+    // color: $white !important
+    // background-color: $tranquil-blue !important
+
+    // &:after
+    //   @extend .pseudo-element
+    //   width: 80%
+    //   height: 1px
+    //   background: $tranquil-blue
+    //   bottom: .65rem
+    //   left: 10%
 
 // NAV ITEM - Links
 .navbar-item.hoverable, a.navbar-item, a.navbar-link
 
   &:hover
-    color: $tranquil-blue
-    background-color: $dark-black !important
+    // color: $tranquil-blue
+    // background-color: $dark-black !important
 
 
 // NAV SEARCH
@@ -58,6 +74,12 @@
   padding: .5rem 0
 
 
+// ASIDE NAV (sidebar)
+// ----------------------------
+aside.menu
+  padding-right: 1.5rem
+
+
 
 // PANELS
 // ----------------------------
@@ -70,7 +92,12 @@ nav.panel
   margin: 0
 
   &.is-active
-    background: #eff4fb
+    // background: #eff4fb
+    .panel-icon .icon
+      color: $blue
+
+  &:hover
+    color: inherit
 
 .panel.is-rounded
 

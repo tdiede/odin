@@ -1,4 +1,3 @@
-
 // Fixing horizontal Ant forms
 // .ant-form-horizontal
 //   .ant-row
@@ -10,25 +9,161 @@
 //     .ant-form-item-control-wrapper
 //       flex: 1 1 auto
 
+$form-label-font-size: .8rem
+$form-input-font-size: .9rem
+$form-input-padding:   6px 7px
+$form-input-height:    32px
+
+$fieldset-label-font-size: .8rem
+$fieldset-label-margin: 1rem
+
+fieldset
+  outline: none
+  border: none
+  margin-bottom: 2rem
+
+
 .select select
   background: white
 
-.ant-form
+.ant-form:not(:last-child)
   margin-bottom: $side-padding
+
+h4.fieldset-label
+  font-size: $fieldset-label-font-size
+  text-transform: uppercase
+  margin-bottom: $fieldset-label-margin
+  color: $text-gray
+  position: relative
+  height: 1.2rem
+  span
+    position: absolute
+    display: inline-block
+    padding: 0 .5rem
+    background: #fff
+    z-index: 12
+
+  &:after
+    @extend .pseudo-element
+    top: 50%
+    width: 100%
+    height: 1px
+    background: #ddd
+    z-index: 11
 
 .ant-form-item
   &:last-child
     margin-bottom: 0
+
+// .ant-form-item-control-wrapper
+  // margin-bottom: $side-padding
 
 .ant-form-item-label
   margin-right: $inner-component-padding
 
   label
     font-weight: bold
-    font-size: .8rem
+    font-size: $form-label-font-size
+    &:after
+      display: none
 
-  label:after
-    display: none
+.ant-input, .ant-input-lg
+  height:    $form-input-height
+  font-size: $form-input-font-size
+  padding:   $form-input-padding
+
 
 .ant-form-explain
   display: block
+
+
+
+
+// iOS-style Checkbox
+$ios-checkbox-button-size: 26px
+$ios-checkbox-width: 3.1rem
+
+.checkbox-group
+  width: $ios-checkbox-width
+
+.checkbox-group *
+  transition: .25s ease-in-out
+.ios-toggle, .checkbox-label
+  box-sizing: border-box
+  transition: .25s ease-in-out
+
+.ios-toggle, .ios-toggle:active
+  position: absolute
+  top: -5000px
+  height: 0
+  width: 0
+  opacity: 0
+  border: none
+  outline: none
+
+.checkbox-label
+  display: block
+  position: relative
+  padding: 10px
+  margin-bottom: 20px
+  font-size: 12px
+  line-height: 16px
+  width: 100%
+  height: $ios-checkbox-button-size
+
+  border-radius: 18px
+  background: #f8f8f8
+  cursor: pointer
+
+.checkbox-label:before
+  content: ''
+  display: block
+  position: absolute
+  z-index: 1
+  line-height: 34px
+  text-indent: 40px
+  height: $ios-checkbox-button-size
+  width: $ios-checkbox-button-size
+  border-radius: 100%
+  top: 0px
+  left: 0px
+  right: auto
+  background: white
+  box-shadow: 0 3px 3px rgba(0,0,0,.2),0 0 0 2px #dddddd
+
+.checkbox-label:after
+  content: attr(data-off)
+  display: block
+  position: absolute
+  z-index: 0
+  top: 0
+  left: -300px
+  padding: 10px
+  height: 100%
+  width: 300px
+  text-align: right
+  color: #bfbfbf
+  white-space: nowrap
+
+.ios-toggle:checked + .checkbox-label
+  box-shadow: inset 0 0 0 20px rgba(19,191,17,1),0 0 0 2px rgba(19,191,17,1)
+
+.ios-toggle:checked + .checkbox-label:before
+  left: calc(100% - #{$ios-checkbox-button-size})
+  box-shadow: 0 0 0 2px transparent,0 3px 3px rgba(0,0,0,.3)
+
+.ios-toggle:checked + .checkbox-label:after
+  content: attr(data-on)
+  left: 60px
+  width: $ios-checkbox-button-size
+
+
+
+.ios-toggle + .checkbox-label
+  box-shadow: inset 0 0 0 0px rgba(19,191,17,1),0 0 0 2px #dddddd
+
+.ios-toggle:checked + .checkbox-label
+  box-shadow: inset 0 0 0 18px rgba(19,191,17,1),0 0 0 2px rgba(19,191,17,1)
+
+.ios-toggle:checked + .checkbox-label:after
+  color: rgba(19,191,17,1)

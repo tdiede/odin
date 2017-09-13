@@ -1,10 +1,12 @@
 (ns odin.profile.membership.views
   (:require [odin.l10n :as l10n]
+            [re-frame.core :refer [subscribe dispatch]]
             [odin.components.membership :as member-ui]
             [odin.components.orders :as orders-ui]
             [odin.utils.formatters :as format]
             [odin.components.notifications :as notification]
-            [antizer.reagent :as ant]))
+            [antizer.reagent :as ant]
+            [toolbelt.core :as tb]))
 
 
 (def mock-member-license
@@ -82,10 +84,49 @@
        [:a "Manage"]]]]))
 
 
+(defn deposit-status-card
+  []
+  (let [deposit (subscribe [:profile/security-deposit])]
+    [:div.mb2
+     ;;[:h4
+     ;; [:span.icon [:i.fa.fa-shield]]
+     ;; [:span "Security Deposit"]]
+     [:div.card
+      [:div.card-content
+       [:div.columns
+        [:div.column.is-2
+         [:span.icon.is-large.text-yellow [:i.fa.fa-shield]]]
+        [:div.column
+         [:h4 "Security deposit partially paid."]
+         ;;[:p (format/string
+         ;;      "You owe another %s by %s."
+         ;;      (format/currency   (:amount_remaining @deposit))
+         ;;      (format/date-short (:due @deposit)))]
+         [ant/button "Pay remaining amount ($1,800)"]]]]]]))
+
+
+(defn rent-status-card
+  []
+  [:div.mb2
+   ;;[:h4
+   ;; [:span.icon [:i.fa.fa-home]]
+   ;; [:span "Rent"]]
+   [ant/card ;;{:title "Rent Status"}
+    [:div.columns
+     [:div.column.is-2
+      [:span.icon.is-large.text-green [:i.fa.fa-home]]]
+     [:div.column
+      [:h4 "Rent is paid."]
+      [:p "Congratulations! You're paid for the month of September."]]]]])
+
+
+
 (defn membership-summary []
   [:div
-   [notification/banner-success "Good news – You're all paid up! Your next rent payment of $1,400 is due on September 4th."]
-   [notification/banner "Your next payment is due "]])
+   [deposit-status-card]
+   [rent-status-card]])
+   ;;[notification/banner-success "Good news – You're all paid up! Your next rent payment of $1,400 is due on September 4th."
+   ;;[notification/banner "Your next payment is due "]])
 
 
 
@@ -99,7 +140,6 @@
 
    [:div.columns
     [:div.column
-     [:h2 "Summary"]
      [membership-summary]]
     ;;[:h2 "Subscriptions"]
     ;;(for [service mock-services]

@@ -1,8 +1,30 @@
 (ns odin.routes
-  (:require [odin.routes.api :as api]
+  (:require [buddy.auth.accessrules :refer [restrict]]
+            [odin.routes.api :as api]
             [odin.config :as config]
-            [compojure.core :as compojure :refer [context defroutes GET]]
-            [facade.core :as facade] [ring.util.response :as response]))
+            [customs.auth :as auth]
+            [customs.access :as access]
+            [customs.role :as role]
+            [compojure.core :as compojure :refer [context defroutes GET POST]]
+            [facade.core :as facade]
+            [ring.util.response :as response]
+            [datomic.api :as d]))
+
+
+;; =============================================================================
+;; Login Handler (development only)
+;; =============================================================================
+
+
+(defn- login! [{:keys [params session deps] :as req}]
+  (let [{:keys [email password]} params
+        account                  (auth/authenticate (d/db (:conn deps)) email password)]
+    (if (:account/activated account)
+      (let [session (assoc session :identity account)]
+        (-> (response/redirect "/")
+            (assoc :session session)))
+      (-> (response/response "Invalid credentials")
+          (response/status 400)))))
 
 
 (defn show
@@ -10,7 +32,8 @@
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
-                    :fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
+                    ;;:fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
+                    :fonts ["https://fonts.googleapis.com/css?family=Work+Sans|Fira+Sans"]
                     :json [["stripe" {:key (config/stripe-public-key (:config deps))}]]
                     :stylesheets [facade/font-awesome]
                     :css-bundles ["antd.css" "styles.css"])
@@ -19,7 +42,29 @@
         (response/content-type "text/html"))))
 
 
-(defroutes routes
-  (context "/api" [] api/routes)
+(def ^:private access-handler
+  {:and [access/authenticated-user
+         {:or [(access/user-isa role/admin)
+               (access/user-isa role/member)]}]})
 
-  (GET "*" [] show))
+
+(defroutes routes
+
+  (GET "/login" []
+       (fn [{:keys [deps] :as req}]
+         (let [config (:config deps)]
+           (if-not (config/development? config)
+            (response/redirect (format "%s/login" (config/root-domain config)))
+            (-> (response/resource-response "public/login.html")
+                (response/content-type "text/html"))))))
+
+  (POST "/login" [] login!)
+
+  (GET  "/logout" []
+        (fn [_]
+          (-> (response/redirect "/login")
+              (assoc :session nil))))
+
+  (context "/api" [] (restrict api/routes {:handler access-handler}))
+
+  (context "/" [] (restrict (compojure/routes (GET "*" [] show)) {:handler access-handler})))

@@ -72,7 +72,7 @@
   ([reason icon-size]
    (when reason [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
                               :placement "right"}
-                 [:span.icon {:class icon-size}
+                 [:span.icon.has-tooltip {:class icon-size}
                   (case reason
                     "rent"    [:i.fa.fa-home {:class icon-size}]
                     "deposit" [:i.fa.fa-shield {:class icon-size}]
@@ -83,12 +83,14 @@
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
-  (let [start (or (aget tx "pstart") (get tx :pstart))
-        end   (or (aget tx "pend")   (get tx :pend))]
-    (when (and start end)
-      (str (format/date-short start)
-           " - "
-           (format/date-short end)))))
+  (tb/log tx)
+  (:description tx))
+  ;;(let [start (or (aget tx "pstart") (get tx :pstart))
+  ;;      end   (or (aget tx "pend")   (get tx :pend))]
+  ;;  (when (and start end)
+  ;;    (str (format/date-short start)
+  ;;         " - "
+  ;;         (format/date-short end)))))
 
 
 (def ^:private payment-table-columns
@@ -109,7 +111,7 @@
    ;; AMOUNT
    {:title     (l10n/translate :amount)
     :dataIndex :amount
-    :className "td-bold width-4"
+    :className "td-bold width-4 text-larger"
     :render    (fn [val]
                  (format/currency val))}
 
@@ -127,14 +129,15 @@
    ;;              (r/as-element [payment-for val]))}
 
    {:title     (l10n/translate :description)
-                                        ; :dataIndex :for
+    :dataIndex :description
     :className "expand"
-    :render    (fn [val item _]
-                 (render-payment-period item))}
+    :render    (fn [val]
+                 (r/as-element [:span.yes-wrap.restrict-width val]))}
 
+   ;; PAYMENT SOURCE
    {:title ""
     :dataIndex :source
-    :className "align-right"
+    :className "align-right light"
     :render    (fn [val item _]
                  (source-name-and-numbers (js->clj val :keywordize-keys true)))}])
 
@@ -153,6 +156,7 @@
   [transactions loading?]
   ;;(let [txs transactions]
   (let [txs (filter #(not= (:status %) :due) transactions)]
+   (tb/log txs)
    [ant/table
     {:class        "payments-table"
      :loading      (or loading? false)

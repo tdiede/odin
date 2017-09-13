@@ -1,73 +1,14 @@
-// Flexbox
-.flexbox
-  display: flex
-  flex-direction: row
-
-.valign
-  align-self: center
-
-.flexrow
-  display: flex
-  flex-direction: row
-  align-items: baseline
-
-.flexcol
-  display: flex
-  flex-direction: column
-
-.flex-pin-right
-  margin-left: auto
-
-.flex-pin-bottom
-  margin-top: auto
-
-// Sizing
-.full-width
-  width: 100%
-
-// Alignment
-.center, .is-centered
-  margin-left:  auto
-  margin-right: auto
-
-// Spacing
-.pad
-  padding: $side-padding
-.pad-left
-  padding-left: $side-padding
-.pad-right
-  padding-right: $side-padding
-
-// Spacing for elements in a row. When using this class,
-// the :last-child will not have spacing. If this behavior
-// is undesired, then use the classes above.
-.space-right
-  &:not(:last-child)
-    margin-right: $side-padding
-
-.space-top
-  margin-top: $side-padding
-
-
-
-// Widths
-.width-90
-  max-width: 90%
-.width-80
-  max-width: 80%
-.width-70
-  max-width: 70%
-.width-60
-  max-width: 60%
-.width-50
-  max-width: 50%
-
 // PAGE LAYOUT
 // ----------------------------
 #odin
   display: flex
+  /* margin-left: auto
+  /* margin-right: auto
   flex-direction: column
   height: 100%
+  max-width: $max-site-width
+  padding: 1rem
+  // @extend .is-centered
 
 .container
   display: flex
@@ -80,7 +21,7 @@
 
   // Navbar (sized to fit contents)
   .navbar
-    margin: 0
+    margin: 0 0 .5rem
     padding: 0 $side-padding
     flex: 0 0 auto
 
@@ -98,4 +39,15 @@ section, .section
 // The header for a page should be wrapped in this class.
 //  div.view-header > h1 + optional p
 .view-header
-  margin-bottom: $side-padding
+  margin-bottom: 2rem
+  h1
+    margin: 0
+
+
+
+.mb1
+  margin-bottom: .5rem
+.mb2
+  margin-bottom: 1rem
+.mb3
+  margin-bottom: 1.5rem
