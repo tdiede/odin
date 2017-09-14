@@ -25,10 +25,11 @@
   (merge form-style {:label label}))
 
 
-(defn- form-item [{:keys [key label ant-id input-props rules]}]
+(defn- form-item [{:keys [key label ant-id input-props rules initial-value]}]
   (let [form (ant/get-form)]
     [ant/form-item (form-item-props label)
-     (ant/decorate-field form ant-id {:rules rules} [ant/input input-props])]))
+      (ant/decorate-field form ant-id {:rules rules
+                                       :initial-value initial-value} [ant/input input-props])]))
 
 
 (def ^:private contact-info-form-items
@@ -50,102 +51,65 @@
    {:key         :email
     :label       "Email Adress"
     :ant-id      "email"
+    :rules       [{:required false}]
     :input-props {:placeholder (placeholder :email)
-                  :disabled    true}}
-   {:key         :bio
-    :label       "Short Bio"
-    :ant-id      "bio"
-    :rules       [{:required true}]
-    :input-props {:placeholder (placeholder :bio)
-                  :type        "textarea"
-                  :style       {:min-height "100px"}}}])
+                  :disabled    true}}])
+   ;;{:key         :bio
+   ;; :label       "Short Bio"
+   ;; :ant-id      "bio"
+   ;; :rules       [{:required true}]
+   ;; :input-props {:placeholder (placeholder :bio)
+   ;;               :type        "textarea"
+   ;;               :style       {:min-height "100px"}}}])
 
 
 
 (defn- contact-info-form []
   (let [form      (ant/get-form)
+        account   @(subscribe [:profile/account-mutable])
         on-change (fn [k] #(dispatch [:profile.contact.info/update! k (.. % -target -value)]))]
-    [ant/form
+    [ant/form {:layout "horizontal"}
       (map-indexed
        (fn [idx {key :key :as item}]
          (-> (assoc-in item [:input-props :on-change] (on-change key))
+             (assoc-in [:initial-value] (get account key))
              (form-item)
              (with-meta {:key idx})))
        contact-info-form-items)]))
 
 
-;;(defn- contact-info-form []
-;;  (let [form      (ant/get-form)
-;;        account   (subscribe [:profile/account-mutable])]
-;;        ;;on-change (fn [k] #(dispatch [:payment.sources.add.bank/update! k (.. % -target -value)]))]
-;;
-;;    [ant/form {:layout "horizontal"}
-;;
-;;      [:fieldset
-;;       ;;[:h4.fieldset-label [:span "Personal Information"]]
-;;       [ant/form-item (merge form-style {:label "First Name"})
-;;         [ant/input {:type        "text"
-;;                     :value       (get @account :first_name)
-;;                     :placeholder (placeholder :first_name)
-;;                     :on-change   #(dispatch [:profile.contact.info/update! :first_name (.. % -target -value)])}]]
-;;
-;;       [ant/form-item (merge form-style {:label "Last Name"})
-;;         [ant/input {:type        "text"
-;;                     :value       (get @account :last_name)
-;;                     :placeholder (placeholder :last_name)}]]
-;;
-;;       [ant/form-item (merge form-style {:label "Email Address"})
-;;         [ant/input {:type     "text"
-;;                     :disabled true
-;;                     :value    (get @account :email)}]]
-;;
-;;
-;;       [ant/form-item (merge form-style {:label "Phone Number"})
-;;         [ant/input {:type        "text"
-;;                     :value       (get @account :phone)
-;;                     :placeholder (placeholder :phone)}]]
-;;
-;;       [ant/form-item (merge form-style {:label "Short Bio"
-;;                                         :wrapper-col {:span 14}})
-;;         [ant/input {:type        "textarea"
-;;                     :style       {:min-height "100px"}
-;;                     :value       (get @account :bio)
-;;                     :placeholder (placeholder :bio)}]]]
-;;
-;;      ;;[:hr]
-;;      [ant/form-item (merge form-style {:label " "})
-;;       [:button.button.is-primary {:disabled true} "Save Changes"]]]))
+(def ^:private emergency-contact-form-items
+  [{:key         :first_name
+    :label       "First Name"
+    :ant-id      "first-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :first_name)}}
+   {:key         :last_name
+    :label       "Last Name"
+    :ant-id      "last-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :last_name)}}
+   {:key         :phone
+    :label       "Phone #"
+    :ant-id      "phone"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :phone)}}])
 
 
 (defn- emergency-contact-info-form []
   (let [form      (ant/get-form)
         account   (subscribe [:profile/account-mutable])
-        emergency_contact (get @account :emergency_contact)]
-        ;;on-change (fn [k] #(dispatch [:payment.sources.add.bank/update! k (.. % -target -value)]))]
+        emergency_contact (get @account :emergency_contact)
+        on-change (fn [k] #(dispatch [:profile.contact.info/update-emergency-contact! k (.. % -target -value)]))]
 
     [ant/form {:layout "horizontal"}
-      [:fieldset
-       ;;[:h4.fieldset-label [:span "Emergency Contact"]]
-
-       [ant/form-item (merge form-style {:label "First Name"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :first_name)
-                     :placeholder (placeholder :first_name)}]]
-
-       [ant/form-item (merge form-style {:label "Last Name"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :last_name)
-                     :placeholder (placeholder :last_name)}]]
-
-       [ant/form-item (merge form-style {:label "Phone Number"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :phone)
-                     :placeholder (placeholder :phone)}]]]
-
-
-      ;;[:hr]
-      [ant/form-item (merge form-style {:label " "})
-       [:button.button.is-primary {:disabled true} "Save Changes"]]]))
+      (map-indexed
+       (fn [idx {key :key :as item}]
+         (-> (assoc-in item [:input-props :on-change] (on-change key))
+             (assoc-in [:initial-value] (get emergency_contact key))
+             (form-item)
+             (with-meta {:key idx})))
+       emergency-contact-form-items)]))
 
 
 (defn- contact-info-ui []
@@ -153,6 +117,14 @@
     (let [form (ant/get-form)]
       [:div
        (contact-info-form)
+       [ant/form-item (merge form-style {:label " "})
+        [:button.button.is-primary {:disabled true} "Save Changes"]]])))
+
+(defn- emergency-contact-ui []
+  (fn []
+    (let [form (ant/get-form)]
+      [:div
+       (emergency-contact-info-form)
        [ant/form-item (merge form-style {:label " "})
         [:button.button.is-primary {:disabled true} "Save Changes"]]])))
 
@@ -167,6 +139,7 @@
     [:div.column.is-8
 
      [ant/card {:title "Personal Info"}
-      (r/as-element (ant/create-form (contact-info-ui)))]]]])
+      (r/as-element (ant/create-form (contact-info-ui)))]
 
-     ;;[ant/card {:title "Emergency Contact"} (emergency-contact-info-form)]]]])
+     [ant/card {:title "Emergency Contact"}
+      (r/as-element (ant/create-form (emergency-contact-ui)))]]]])
