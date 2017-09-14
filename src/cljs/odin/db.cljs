@@ -41,12 +41,12 @@
     :route   {:current :home
               :path    [:home]
               :params  {}}
-    :config  config
-    accounts/default-value
-    payments/default-value
-    modals/default-value
-    orders/default-value
-    metrics/default-value}))
+    :config  config}
+   accounts/default-value
+   payments/default-value
+   modals/default-value
+   orders/default-value
+   metrics/default-value))
 
 
 (defn configure [config]

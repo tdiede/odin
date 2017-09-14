@@ -10,3 +10,9 @@
   "The status of the member license."
   [_ _ license]
   (keyword (name (member-license/status license))))
+
+
+(defn autopay-on
+  "Whether or not autopay is active for this license."
+  [_ _ license]
+  (keyword (name (member-license/autopay-on? license))))

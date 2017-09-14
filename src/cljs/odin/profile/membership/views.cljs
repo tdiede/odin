@@ -32,21 +32,26 @@
 
 
 (defn card-license-summary []
-  (let [{:keys [term rate starts ends property unit]} @(subscribe [:member/license])]
+  (let [license (subscribe [:member/license])
+        {:keys [term rate starts ends property unit]} @license]
     [ant/card {:loading @(subscribe [:member.license/loading?])
                :class   "is-flush"}
-     [:div.card-image
-      [:figure.image
-       [:img {:src "/assets/images/communal-1000x500.jpg"}]]]
-     [:div.card-content
-      [:div.content
-       [:h3 (str (:name property) " " (:number unit))]
-       [:h4 (str term " months • " (format/currency rate) "/mo.")]
-       [:p (str (format/date-short starts) " - " (format/date-short ends))]]]
-     [:footer.card-footer
-      [:a.card-footer-item
-       [:span.icon.is-small [:i.fa.fa-file-text]]
-       [:span.with-icon "View Agreement"]]]]))
+     (when-not (nil? rate)
+       [:div
+        [:div.card-image
+         [:figure.image
+          [:img {:src (:cover_image_url property)}]]]
+        [:div.card-content
+         [:div.content
+          [:h3 (str (:name property) " #" (:number unit))]
+          [:h4 (str term " months • " (str (format/date-short starts) " - " (format/date-short ends)))]
+          [:p (str (format/currency rate) "/mo.")]]]
+        ;; If a link to view PDF version of license is provided, show it here
+        (when-not (nil? (:view-link @license))
+          [:footer.card-footer
+           [:a.card-footer-item
+            [:span.icon.is-small [:i.fa.fa-file-text]]
+            [:span.with-icon "View Agreement"]]])])]))
 
 
 
@@ -72,7 +77,6 @@
   (let [deposit    (subscribe [:profile/security-deposit])
         is-overdue (t/is-before-now (:due @deposit))]
     [:div.mb2
-     ;;(tb/log (t/get-time-between (:due @deposit)))
      ;;[:h4
      ;; [:span.icon [:i.fa.fa-shield]]
      ;; [:span "Security Deposit"]]
@@ -109,6 +113,7 @@
 
 (defn membership-summary []
   [:div
+   [:h2 "Status"]
    [deposit-status-card]
    [rent-status-card]])
 
@@ -121,17 +126,9 @@
    ;;[:br]
 
    [:div.columns
-    [:div.column
-     [membership-summary]]
-    ;;[:h2 "Subscriptions"]
-    ;;(for [service mock-services]
-    ;;^{:key (get service :id)}
-    ;;[card-service-summary service])
-    ;;[:h4 [:a "View all services"]]]
-
     [:div.column.is-5
      [:h2 "Rental Agreement"]
-     [card-license-summary]]]])
+     [card-license-summary]]
 
-;;[:p "Rent plus subscriptions: " [:b "$1,545 / mo."]]])
-;;[:hr]])
+    [:div.column
+     [membership-summary]]]])

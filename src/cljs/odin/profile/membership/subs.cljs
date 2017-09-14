@@ -1,6 +1,6 @@
 (ns odin.profile.membership.subs
   (:require [odin.profile.membership.db :as db]
-            [re-frame.core :refer [reg-sub]]
+            [re-frame.core :refer [reg-sub subscribe]]
             [toolbelt.core :as tb]))
 
 (reg-sub

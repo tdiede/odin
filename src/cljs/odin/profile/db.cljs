@@ -5,7 +5,7 @@
 
 (def path ::profile)
 
-
 (def default-value
-   {path {:account nil
-          :loading {:account/info false}}})
+   {path {:account     nil
+          :new-account nil
+          :loading    {:account/info false}}})

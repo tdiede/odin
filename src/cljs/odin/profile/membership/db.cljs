@@ -5,8 +5,13 @@
 
 
 (def default-value
-   {path {:license {:term   0
-                    :rate   0
-                    :starts (js/moment.)
-                    :ends   (js/moment.)}
-          :loading {:member/license false}}})
+   {path {:license {:term     nil
+                    :rate     nil
+                    :starts   (js/moment.)
+                    :ends     (js/moment.)
+                    :property {:name            nil
+                               :code            nil
+                               :cover_image_url nil}
+                    :unit     {:number nil}
+                    :autopay  false}
+          :loading {:member/license true}}})

@@ -60,7 +60,8 @@
 
 (def ^:private member-license-resolvers
   {;;fields
-   :member-license/status member-license/status})
+   :member-license/status     member-license/status
+   :member-license/autopay-on member-license/autopay-on})
 
 
 (def ^:private unit-resolvers

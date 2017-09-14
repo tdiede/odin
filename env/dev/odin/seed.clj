@@ -289,6 +289,13 @@
         :referral/from   :referral.from/tour})
      (range total))))
 
+(defn properties-tx []
+  [{:db/id                    [:property/internal-name "52gilbert"]
+    :property/cover-image-url "/assets/images/52gilbert.jpg"}
+   {:db/id                    [:property/internal-name "2072mission"]
+    :property/cover-image-url "/assets/images/2072mission.jpg"}])
+
+
 ;; =============================================================================
 ;; API
 ;; =============================================================================
@@ -304,7 +311,8 @@
     :seed/stripe-customers {:txes     [(stripe-customers-tx)]
                             :requires [:seed/accounts]}
     :seed/avatar           {:txes [(avatar-tx)]}
-    :seed/referrals        {:txes [(referrals-tx)]}})
+    :seed/referrals        {:txes [(referrals-tx)]}
+    :seed/properties       {:txes [(properties-tx)]}})
   ;; NOTE: These need to happen in separate transactions.
   (cf/ensure-conforms
    conn
