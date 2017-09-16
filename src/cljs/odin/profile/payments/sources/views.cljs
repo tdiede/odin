@@ -1,6 +1,7 @@
 (ns odin.profile.payments.sources.views
   (:require [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
+            [odin.profile.paymens.sources.autopay :as autopay]
             [odin.components.ui :as ui]
             [odin.components.input :as input]
             [odin.profile.payments.sources.views.forms :as forms]
@@ -161,13 +162,16 @@
 
 
 (defn source-settings []
-  (let [sources (subscribe [:payment/sources])
-        ;;autopay (subscribe [:payment.sources/has-autopay])
-        loading (subscribe [:payment.sources/loading?])]
+  (let [sources    (subscribe [:payment.sources/autopay-sources])
+        autopay-on (subscribe [:payment.sources/autopay-on?])
+        autopay    (subscribe [:payment.sources/autopay-source])
+        loading    (subscribe [:payment.sources/loading?])]
    [:div.columns.bg-gray.pad.rounded
     [:div.column.unpad-vert.is-one-fifth
      [:h4 "Autopay my Rent"]
-     [input/ios-checkbox]]
+     [ant/switch
+       {:checked   @autopay-on
+        :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]]
      ;;[payments-ui/menu-select-source @sources]]
     [:div.column.unpad-vert
      [:h4 "Set default source for payments:"]
@@ -176,31 +180,31 @@
      ;;[:h4 "Service payments use:"]
      ;;[payments-ui/menu-select-source @sources]]]))
 
+(defn- source-view []
+  (let [sources (subscribe [:payment/sources])]
+    (if (empty? @sources)
+      ;; Empty State
+      [no-sources]
+      ;; Show Sources
+      [:div
+       [source-settings]
+       [:div.columns
+        [:div.column.is-4
+         [source-list]
+         [add-new-source-button]]
+        [:div.column.is-8
+         [source-detail]
+         [source-payment-history]]]])))
 
 
 
 (defn sources []
-  (let [sources (subscribe [:payment/sources])
-        loading (subscribe [:payment.sources/loading?])]
+  (let [loading (subscribe [:payment.sources/loading?])]
     [:div
-     ;;(if (= @loading true) [ant/spin])
      [modal-add-source]
      [:div.view-header
       [:h1 (l10n/translate :payment-sources)]
       [:p "View and manage your payment sources."]]
-     ;; TODO: If `@loading` is true, we shouldn't show empty components
-     (if (empty? @sources)
-       ;; Empty State
-       [no-sources]
-
-       ;; Show Sources
-       [:div
-        [source-settings]
-        [:div.columns
-         [:div.column.is-4
-          [source-list]
-          [add-new-source-button]]
-
-         [:div.column.is-8
-          [source-detail]
-          [source-payment-history]]]])]))
+     (if (= @loading true)
+       [:div.loading-box.tall [ant/spin]]
+       (source-view))]))

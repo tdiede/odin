@@ -83,11 +83,11 @@
 ;; =============================================================================
 
 
-;;(reg-sub
-;; :payment.sources/has-autopay
-;; :<- [:payment/sources]
-;; (fn [[sources] _]
-;;   (filter #(= (get % :autopay) true) sources)))
+;; (reg-sub
+;;  :payment.sources/autopay-source
+;;  :<- [:payment/sources]
+;;  (fn [[sources] _]
+;;    (filter #(= (get % :autopay) true) sources)))
 
 
 ;; =============================================================================

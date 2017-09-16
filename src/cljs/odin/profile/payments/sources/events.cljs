@@ -1,5 +1,6 @@
 (ns odin.profile.payments.sources.events
   (:require [odin.profile.payments.sources.db :as db]
+            [odin.profile.paymens.sources.autopay :as autopay]
             [odin.routes :as routes]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
@@ -121,7 +122,7 @@
 (reg-event-fx
  ::create-bank-token-success
  (fn [_ [_ {token :id :as result}]]
-   (tb/log result)
+   ;;(tb/log result)
    {:graphql
     {:mutation   [[:add_payment_source {:token token} [:id]]]
      :on-success [::create-bank-source-success]
@@ -149,7 +150,6 @@
 ;; =============================================================================
 ;; Misc
 ;; =============================================================================
-
 
 (reg-event-fx
  :stripe/load-scripts
