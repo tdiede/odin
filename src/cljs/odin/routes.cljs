@@ -7,6 +7,7 @@
             [clojure.walk :as walk]
             [clojure.string :as string]
             [odin.utils.dispatch :as dispatch]))
+            ;;[ring.middleware.params :as ring]))
 
 
 (def app-routes
@@ -53,7 +54,7 @@
 
 
 (defn unbaseify-uri
-  "Remove the thing."
+  "Remove the fake protocol / domain from URI. See above."
   [uri]
   (string/replace uri (re-pattern dummy-base) ""))
 
@@ -62,6 +63,19 @@
   [uri]
   (c/url (baseify-uri uri)))
 
+
+;;(def ^:private testpath "/profile/payments/sources?source-id=card_1B2Rq4IvRccmW9nOLsguUdpe?source-id=card_1AV6tzIvRccmW9nOhQsWMTuv")
+;;(def ^:private testpath2 "/profile/payments/sources?source-id=card_1B2Rq4IvRccmW9nOLsguUdpe&foo=bar?source-id=card_1AV6tzIvRccmW9nOhQsWMTuv&bar=baz")
+;;
+;;(defn de-duplicate-params
+;;  "Sometimes Cemerick will add multiple parameters of the same type to our URL.
+;;   This function de-duplicates the string, prioritizing LATER parameters."
+;;  [path]
+;;  (tb/log (c/url (baseify-uri path))))
+;;  ;;(tb/log (string/split path "?")))
+;;
+;;(de-duplicate-params testpath)
+;;(de-duplicate-params testpath2)
 
 (defn parse-query-params
   "Parses query parameters from a URL and yields them as a Clojure map."
@@ -80,7 +94,7 @@
                                    (:route-params match))]
                       (dispatch [:route/change page params])))
     :path-exists? (fn [path]
-                    (boolean (bidi/match-route app-routes path)))})
+                    (boolean (bidi/match-route  app-routes path)))})
   (accountant/dispatch-current!))
 
 

@@ -2,6 +2,7 @@
   (:require [odin.profile.payments.sources.db :as db]
             [odin.routes :as routes]
             [re-frame.core :refer [reg-event-db
+                                   subscribe
                                    reg-event-fx
                                    path debug]]
             [toolbelt.core :as tb]))
@@ -20,7 +21,7 @@
 (reg-event-db
  :payment.sources/set-current
  [(path db/path)]
- (fn [db [_ current-source-id]]
+ (fn [db [_ current-source-id route]]
    (assoc-in db [:current] current-source-id)))
 
 
@@ -75,6 +76,11 @@
  [(path db/add-path)]
  (fn [db [_ type]]
    (assoc db :type type)))
+
+
+;; =============================================================================
+;; Add Bank
+;; =============================================================================
 
 
 (reg-event-db
@@ -145,6 +151,76 @@
    {:dispatch-n [[:loading :payment.sources.add/bank false]
                  [:graphql/notify-errors! response]]}))
 
+
+;; =============================================================================
+;; Add Card
+;; =============================================================================
+
+;; Cards have no `submit` event, as this is handled by the Stripe JS API.
+;; We skip immediately to `success`, where we've
+;; received a token for the new card from Stripe.
+
+(reg-event-fx
+ :payment.sources.add.card/save-stripe-token!
+ (fn [{:keys [db]} [_ token]]
+   {:dispatch-n [[:loading :payment.sources.add/card true]]
+    :graphql
+    {:mutation   [[:add_payment_source {:token token} [:id]]]
+     :on-success [::create-card-source-success]
+     :on-failure [::create-card-source-fail]}}))
+
+
+(reg-event-fx
+ ::create-card-source-success
+ (fn [{:keys [db]} [_ response]]
+   (let [account-id (get-in db [:config :account :id])]
+     {:dispatch-n [[:loading :payment.sources.add/card false]
+                   [:modal/hide :payment.source/add]
+                   [:payment.sources/fetch account-id]]
+      :route      (routes/path-for :profile.payment/sources
+                                   :query-params {:source-id (get-in response [:data :add_payment_source :id])})})))
+
+(reg-event-fx
+ ::create-card-source-fail
+ (fn [{:keys [db]} [_ response]]
+   (tb/error response)
+   {:dispatch-n [[:loading :payment.sources.add/card false]
+                 [:graphql/notify-errors! response]]}))
+
+
+;; =============================================================================
+;; Delete a Source
+;; =============================================================================
+
+(reg-event-fx
+ :payment.source/delete!
+ (fn [{:keys [db]} [_ id]]
+   ;;(tb/log id)
+   {:dispatch-n [[:loading :payment.sources/deleting true]]
+    :graphql
+    {:mutation   [[:delete_payment_source {:id id} [:id]]]
+     :on-success [::delete-source-success]
+     :on-failure [::delete-source-fail]}}))
+
+(reg-event-fx
+ ::delete-source-success
+ (fn [{:keys [db]} [_ response]]
+   (let [account-id (get-in db [:config :account :id])
+         sources    (subscribe [:payment/sources])]
+     ;;(tb/log response sources)
+     {:dispatch-n [[:loading :payment.sources/deleting false]
+                   [:modal/hide :payment.source/remove]
+                   [:notify/success "Account deleted successfully."]
+                   [:payment.sources/fetch account-id]]
+      :route      (routes/path-for :profile.payment/sources
+                                   :query-params {})})))
+
+(reg-event-fx
+ ::delete-source-fail
+ (fn [{:keys [db]} [_ response]]
+   (tb/error response)
+   {:dispatch-n [[:loading :payment.sources/deleting false]
+                 [:graphql/notify-errors! response]]}))
 
 ;; =============================================================================
 ;; Misc

@@ -31,10 +31,12 @@
 
 
 (defn source-name-and-numbers
-  [source]
-  (when source (let [{name   :name
-                      last4  :last4 } source]
-                (str name " **** " last4))))
+  ([source]
+   (when source (let [{name   :name
+                       last4  :last4 } source]
+                 (str name " **** " last4))))
+  ([name last4]
+   (str name " **** " last4)))
 
 
 (defn payment-status
@@ -84,7 +86,7 @@
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
-  (tb/log tx)
+  ;;(tb/log tx)
   (:description tx))
   ;;(let [start (or (aget tx "pstart") (get tx :pstart))
   ;;      end   (or (aget tx "pend")   (get tx :pend))]
@@ -157,7 +159,7 @@
   [transactions loading?]
   ;;(let [txs transactions]
   (let [txs (filter #(not= (:status %) :due) transactions)]
-   (tb/log txs)
+   ;;(tb/log txs)
    [ant/table
     {:class        "payments-table"
      :loading      (or loading? false)

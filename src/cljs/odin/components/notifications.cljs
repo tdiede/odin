@@ -1,6 +1,9 @@
 (ns odin.components.notifications
   (:require [antizer.reagent :as ant]
-            [odin.routes :as routes]))
+            [re-frame.core :refer [reg-event-fx]]
+            [reagent.core :as r]
+            [odin.routes :as routes]
+            [toolbelt.core :as tb]))
 
 
 (defn level->class-name
@@ -51,3 +54,20 @@
   ([message level]
    [:div.global-notification {:class (level->class-name level)}
     message]))
+
+
+;; =============================================================================
+;; Events
+;; =============================================================================
+(reg-event-fx
+ :notify/success
+ (fn [_ [_ message]]
+    (ant/notification-info {:message  message
+                            :icon     (r/as-element [ant/icon {:type "check" :style {:color "#11c956"}}])
+                            :duration 6})))
+
+(reg-event-fx
+ :notify/failure
+ (fn [_ [_ message]]
+    (ant/notification-error {:message  message
+                             :duration 6})))
