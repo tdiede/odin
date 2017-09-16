@@ -146,10 +146,7 @@
                        :resolve :member-license/status}
             :property {:type        (non-null :property)
                        :description "Property that this license is for."
-                       :resolve     (:get :member-license/unit :property/_units)}
-            :autopay  {:type        Boolean
-                       :description "Whether or not this license has autopay active."
-                       :resolve     (:get :member-license/autopay-on?)}}}
+                       :resolve     (:get :member-license/unit :property/_units)}}}
 
 
   :order

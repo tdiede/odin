@@ -93,7 +93,8 @@
     :label       "Phone #"
     :ant-id      "phone"
     :rules       [{:required true}]
-    :input-props {:placeholder (placeholder :phone)}}])
+    :input-props {:placeholder (placeholder :phone)
+                  :on-blur (tb/log "pppppp")}}])
 
 
 (defn- emergency-contact-info-form []
@@ -132,8 +133,10 @@
 (defn contact-info []
   [:div
    [:div.view-header
-    [:h1 "Contact Information"]
-    [:p "Update your info in our system, including an emergency contact."]]
+    ;;[:h1 "Contact Information"]
+    ;;[:p "Update your info in our system, including an emergency contact."]
+    [:h1.title.is-3 "Contact Information"]
+    [:p.subtitle.is-6 "Update your info in our system, including an emergency contact."]]
 
    [:div.columns
     [:div.column.is-8

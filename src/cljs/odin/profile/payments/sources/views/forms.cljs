@@ -49,11 +49,11 @@
                  (.then p (fn [result]
                             (if-let [error (.-error result)]
                               (aset errors "textContent" (.-message error))
-                              (dispatch [:payment.sources.add.card/submit! (.. result -token -id)]))))))
+                              (dispatch [:payment.sources.add.card/save-stripe-token! (.. result -token -id)]))))))
              (.addEventListener submit-btn "click"))))
     :reagent-render
     (fn []
-      (let []
+      (let [is-submitting (subscribe [:loading? :payment.sources.add/card])]
         [:div
          [:div {:style {:background-color "#f7f8f9"
                         :padding          24
@@ -64,8 +64,9 @@
           [:p#card-errors.help.is-danger]]
          [:hr]
          [:div.align-right
-          [:button.button {:on-click #(dispatch [:payment.sources.add/hide])} "Cancel"]
-          [:button#submit-btn.button.is-primary {:on-click #()} "Add Credit Card"]]]))}))
+          [:button.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
+          [:button#submit-btn.button.is-primary {:class (when @is-submitting "is-loading")
+                                                 :on-click #()} "Add Credit Card"]]]))}))
 
 
 (defn bitcoin-account []

@@ -75,7 +75,7 @@ td
 
 // Provide space between icon + adjacent text (for use in buttons, etc.)
 .icon + .with-icon, .with-icon + .icon
-  margin-left: .5rem
+  margin-left: $icon-side-spacing
 
 
 // Icons with tooltips have extra padding to create a larger hover area
@@ -83,3 +83,6 @@ td
   padding: 8px
   .fa
     vertical-align: middle
+
+span+.anticon, .anticon+span
+  margin-left: $icon-side-spacing
