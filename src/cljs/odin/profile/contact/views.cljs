@@ -93,8 +93,8 @@
     :label       "Phone #"
     :ant-id      "phone"
     :rules       [{:required true}]
-    :input-props {:placeholder (placeholder :phone)
-                  :on-blur (tb/log "pppppp")}}])
+    :input-props {:placeholder (placeholder :phone)}}])
+                  ;;:on-blur (tb/log "pppppp")}}])
 
 
 (defn- emergency-contact-info-form []

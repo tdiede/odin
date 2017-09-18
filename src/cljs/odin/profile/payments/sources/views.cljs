@@ -21,7 +21,7 @@
       (payments-ui/payment-source-icon (or type :bank))]
      [:span.flexrow.full-width
       [:span name]
-      [:span.pin-right (str "**** " last4)]]]))
+      [:span.pin-right type]]])) ;;(str "**** " last4)]]]))
 
 
 (defn source-list
@@ -54,9 +54,12 @@
        ;; Source Name
        [payments-ui/payment-source-icon type]
        [:h3 (str name " **** " last4)]
-       (when (and (= type :bank))
-         (tb/log (:default source) type))
+       (when (and (= type :bank)))
+         ;;(tb/log (:default source) type))
        [:div.pin-right.pin-top
+        [ant/button {:on-click #(dispatch [:modal/show :payment.source/verify-account])} "Verify Account"]
+        ;;[ant/button {:on-click #(dispatch [:payment.sources.autopay/enable! (:id source)])}
+        ;;     "Enable for Autopay"]
         [ant/dropdown {:trigger ["click"]
                        :overlay (r/as-element [source-actions-menu])}
          [:a.ant-dropdown-link
@@ -83,17 +86,44 @@
      [payments-ui/payments-table payments @is-loading]]))
 
 
-(defn modal-confirm-disable-autopay []
-  [:div.modal.is-active
-   [:div.modal-background]
-   [:div.modal-card
-    [:header.modal-card-head
-     [:h3 (l10n/translate :confirm-unlink-autopay)]]
-    [:section.modal-card-body
-     [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]
-    [:footer.modal-card-foot]]
-   [:button.modal-close.is-large]])
+(defn modal-confirm-enable-autopay
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])]
+    (tb/log (str "is enable modal visible?" @is-visible))
+    [ant/modal {:title     "Enabling Autopay"
+                :visible   @is-visible
+                :on-ok     #(dispatch [:payment.sources.autopay/enable!])
+                :on-cancel #(dispatch [:modal/hide :payment.source/autopay-enable])}
+                ;;:footer    nil}
+     [:div
+       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
 
+
+(defn modal-confirm-disable-autopay
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-disable])]
+    (tb/log (str "is disable modal visible?" @is-visible))
+    [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
+                :visible   @is-visible
+                :on-ok     #(dispatch [:payment.sources.autopay/disable!])
+                :on-cancel #(dispatch [:modal/hide :payment.source/autopay-disable])}
+                ;;:footer    nil}
+     [:div
+       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
+
+
+(defn modal-verify-account
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])]
+    (tb/log (str "is disable modal visible?" @is-visible))
+    [ant/modal {:title     "Verify Bank Account"
+                :visible   @is-visible
+                :on-ok     #(dispatch [:modal/hide :payment.source/verify-account])
+                :on-cancel #(dispatch [:modal/hide :payment.source/verify-account])}
+                ;;:footer    nil}
+     [:div
+      [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
+      [:p "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]]]))
 
 (defn modal-confirm-remove-account []
   (let [is-visible     (subscribe [:modal/visible? :payment.source/remove])
@@ -199,15 +229,17 @@
    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb3
     [:div.flexrow.flex-center
           [ant/switch {:checked   @autopay-on
-                       :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
+                       :on-click  #(dispatch [:payment.sources.autopay/confirm-modal (-> %)])}]
+                       ;;:on-change #(dispatch [:payment.sources.autopay/confirm-modal (-> %)])}]
+                       ;;:on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
           [:h4.ml1
            [:span "Autopay"]
            [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
           ;;[input/ios-checkbox]]
     [:div [:h4 "Rent payments use:"]
-          [payments-ui/menu-select-source @banks]]
-    [:div [:h4 "Service payments use:"]
-          [payments-ui/menu-select-source @cards]]]))
+          [payments-ui/menu-select-source @banks]]]))
+    ;;[:div [:h4 "Service payments use:"]
+          ;;[payments-ui/menu-select-source @cards]]]))
 
 (defn- source-view []
   (let [sources (subscribe [:payment/sources])]
@@ -216,6 +248,7 @@
       [no-sources]
       ;; Show Sources
       [:div
+       ;;(tb/log @sources)
        [source-settings]
        [:div.columns
         [:div.column.is-4
@@ -231,6 +264,9 @@
     [:div
      [modal-add-source]
      [modal-confirm-remove-account]
+     [modal-verify-account]
+     ;;[modal-confirm-enable-autopay]
+     ;;[modal-confirm-disable-autopay]
      [:div.view-header.flexrow
       [:div
        [:h1 (l10n/translate :payment-sources)]

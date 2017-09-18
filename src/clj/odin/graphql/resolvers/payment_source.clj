@@ -43,7 +43,7 @@
         :ret string?)
 
 
-(defn- autopay-source
+(defn autopay-source
   "Fetch the autopay source for the requesting user, if there is one."
   [{:keys [stripe requester conn]}]
   (when-let [customer (customer/autopay (d/db conn) requester)]

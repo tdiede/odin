@@ -152,7 +152,6 @@
         [:hr]
         [:div.align-right
          [:a.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
-         [:a.button {:on-click #(ant/reset-fields form)} "Clear Form"]
          [:a.button.is-primary
           {:class (when @is-submitting "is-loading")
            :on-click (submit-when-valid form [:payment.sources.add.bank/submit!])}

@@ -20,6 +20,8 @@
 (reg-sub
  :payment/sources
  :<- [::sources]
+ ;;(fn [db _]
+ ;;  (:sources db)))
  (fn [db [_ type]]
    (if (nil? type)
      (:sources db)
