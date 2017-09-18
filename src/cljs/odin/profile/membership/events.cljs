@@ -20,7 +20,7 @@
     {:db      (assoc-in db [:loading :member/license] true)
      :graphql {:query [[:account {:id account-id}
                         [[:active_license
-                          [:id :rate :starts :ends :status :term :autopay
+                          [:id :rate :starts :ends :status :term
                            [:unit [:id :number]]
                            [:property [:id :name :code :cover_image_url]]
                            [:payments [:amount :status :due :paid_on :pstart :pend]]]]]]]

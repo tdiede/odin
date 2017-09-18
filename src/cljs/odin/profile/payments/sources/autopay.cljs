@@ -1,4 +1,4 @@
-(ns odin.profile.paymens.sources.autopay
+(ns odin.profile.payments.sources.autopay
   (:require [odin.profile.payments.sources.db :as db]
             [odin.routes :as routes]
             [re-frame.core :refer [reg-sub
@@ -13,12 +13,6 @@
  (fn [db _]
    (db/path db)))
 
-;; Returns list of eligible autopay sources (:type = :bank).
-(reg-sub
- :payment.sources/autopay-sources
- :<- [::sources]
- (fn [db _]
-   (filter #(= (:type %) :bank) (:sources db))))
 
 ;; Returns currently selected Autopay source, if it exists.
 (reg-sub
@@ -27,12 +21,12 @@
  (fn [db _]
    (first (filter #(true? (:autopay %)) (:sources db)))))
 
+
 (reg-sub
  :payment.sources/autopay-on?
  :<- [::sources]
  (fn [db _]
    (not (empty? (filter #(true? (:autopay %)) (:sources db))))))
-
 
 
 ; (tb/log get-autopay-source)

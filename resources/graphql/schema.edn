@@ -450,6 +450,4 @@
    :description "Set the source as the default payment source."
    :args        {:id {:type        (non-null String)
                       :description "The Stripe id of the source to use as the defaullt source."}}
-   :resolve     :payment.sources/set-default!}
-
-  }}
+   :resolve     :payment.sources/set-default!}}}

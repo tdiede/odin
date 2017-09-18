@@ -16,11 +16,14 @@
 
 
 ;; Payment Sources (Linked Accounts)
+;; - Can optionally filter by source's :type
 (reg-sub
  :payment/sources
  :<- [::sources]
- (fn [db _]
-   (:sources db)))
+ (fn [db [_ type]]
+   (if (nil? type)
+     (:sources db)
+     (filter #(= (:type %) type) (:sources db)))))
 
 
 (reg-sub

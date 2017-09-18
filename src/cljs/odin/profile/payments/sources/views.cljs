@@ -1,7 +1,7 @@
 (ns odin.profile.payments.sources.views
   (:require [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
-            [odin.profile.paymens.sources.autopay :as autopay]
+            [odin.profile.payments.sources.autopay :as autopay]
             [odin.components.ui :as ui]
             [odin.components.input :as input]
             [odin.profile.payments.sources.views.forms :as forms]
@@ -32,6 +32,7 @@
         ;; loading (subscribe [:payment.sources/loading?])
 
     [:nav.panel.is-rounded
+     [:p.panel-heading "Linked Accounts"]
      (doall
       (map-indexed
        #(with-meta [source-list-item %2] {:key %1})
@@ -40,9 +41,7 @@
 (defn- source-actions-menu []
   [ant/menu
    [ant/menu-item {:key "removeit"}
-    [:a
-     {:href "#"
-      :on-click #(dispatch [:modal/show :payment.source/remove])}
+    [:a {:href "#" :on-click #(dispatch [:modal/show :payment.source/remove])}
      "Remove this account"]]])
 
 (defn source-detail
@@ -192,23 +191,23 @@
 
 
 (defn source-settings []
-  (let [sources    (subscribe [:payment.sources/autopay-sources])
-        autopay-on (subscribe [:payment.sources/autopay-on?])
+  (let [autopay-on (subscribe [:payment.sources/autopay-on?])
         autopay    (subscribe [:payment.sources/autopay-source])
-        loading    (subscribe [:payment.sources/loading?])]
+        loading    (subscribe [:payment.sources/loading?])
+        banks      (subscribe [:payment/sources :bank])
+        cards      (subscribe [:payment/sources :card])]
    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb3
     [:div.flexrow.flex-center
-          [ant/switch
-            {:checked   @autopay-on
-             :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
+          [ant/switch {:checked   @autopay-on
+                       :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
           [:h4.ml1
            [:span "Autopay"]
            [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
           ;;[input/ios-checkbox]]
     [:div [:h4 "Rent payments use:"]
-          [payments-ui/menu-select-source @sources]]
+          [payments-ui/menu-select-source @banks]]
     [:div [:h4 "Service payments use:"]
-          [payments-ui/menu-select-source @sources]]]))
+          [payments-ui/menu-select-source @cards]]]))
 
 (defn- source-view []
   (let [sources (subscribe [:payment/sources])]
@@ -235,9 +234,9 @@
      [:div.view-header.flexrow
       [:div
        [:h1 (l10n/translate :payment-sources)]
-       [:p "View and manage your payment sources."]]
-      [:div.pin-right
-       [add-new-source-button]]]
+       [:p "Edit your payment accounts, enable Autopay, and set default payment sources."]]]
+      ;;[:div.pin-right
+       ;;[add-new-source-button]]]
      (if (= @loading true)
        [:div.loading-box.tall [ant/spin]]
        (source-view))]))
