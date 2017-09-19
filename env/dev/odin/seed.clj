@@ -165,6 +165,7 @@
                       :charge-id "py_1AmAozJDow24Tc1aKfpUUIe9"
                       :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 7 1)
+                      :due (date 2017 7 1)
                       :pend (date 2017 8 1)
                       :paid-on (date 2017 7 3))
       (payment/create 2000.0 account
@@ -174,6 +175,7 @@
                       :charge-id "py_1Aaw2eJDow24Tc1axiqIh6bK"
                       :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 6 1)
+                      :due (date 2017 6 1)
                       :pend (date 2017 7 1)
                       :paid-on (date 2017 6 2)))
      {:db/id                          (:db/id license)

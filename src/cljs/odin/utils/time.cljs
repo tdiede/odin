@@ -13,9 +13,16 @@
   (-> (js/moment time)
       (.isBefore (.now js/moment))))
 
+
 (defn get-time-between
   "Returns the duration in (milliseconds) between two provided times. `start` defaults to now."
   ([start end]
-    (-> (js/moment end) (.diff (js/moment start))))
+   (-> (js/moment end) (.diff (js/moment start))))
   ([end]
-    (get-time-between (.now js/moment) end)))
+   (get-time-between (.now js/moment) end)))
+
+
+(defn is-before [first second] (-> (js/moment first) (.isBefore (js/moment second))))
+
+
+(defn is-after [first second] (-> (js/moment second) (.isBefore (js/moment first))))

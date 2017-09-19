@@ -48,15 +48,18 @@
 (defn source-detail
   "Display information about the currently-selected payment source."
   []
-  (let [{:keys [type name last4 autopay-on ] :as source} @(subscribe [:payment.sources/current])]
+  (let [{:keys [type name last4 autopay] :as source} @(subscribe [:payment.sources/current])]
     [:div.card
      [:div.card-content
       [:div.flexrow
        ;; Source Name
+       (when (= type :bank)
+         [ant/tooltip {:title "Default source for Rent payments."}
+          [ant/icon {:type "star" :style {:color "#ffb736"}}]])
        [payments-ui/payment-source-icon type]
        [:h3 (str name " **** " last4)]
-       (when (and (= type :bank))
-         (tb/log (:default source) type))
+       (when (and (= type :bank)))
+         ;;(tb/log (:default source) type))
        [:div.pin-right.pin-top
         [ant/dropdown {:trigger ["click"]
                        :overlay (r/as-element [source-actions-menu])}
@@ -190,21 +193,26 @@
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
+(defn autopay-toggle []
+  (let [autopay-on (subscribe [:payment.sources/autopay-on?])
+        autopay    (subscribe [:payment.sources/autopay-source])
+        loading    (subscribe [:payment.sources/loading?])]
+    ;;[:div;;.flexcol.flex-auto.full-height {:style {:height "4em"}}
+     [:div.flexrow
+      [ant/switch
+        {:checked   @autopay-on
+         :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
+      [:h4.ml1
+       [:span "Autopay"]
+       [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]))
+     ;;[:p.title.is-7.flex-auto (:name @autopay)]]))
+
 
 (defn source-settings []
   (let [sources    (subscribe [:payment.sources/autopay-sources])
-        autopay-on (subscribe [:payment.sources/autopay-on?])
-        autopay    (subscribe [:payment.sources/autopay-source])
         loading    (subscribe [:payment.sources/loading?])]
    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb3
-    [:div.flexrow.flex-center
-          [ant/switch
-            {:checked   @autopay-on
-             :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
-          [:h4.ml1
-           [:span "Autopay"]
-           [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
-          ;;[input/ios-checkbox]]
+    [autopay-toggle]
     [:div [:h4 "Rent payments use:"]
           [payments-ui/menu-select-source @sources]]
     [:div [:h4 "Service payments use:"]
@@ -217,11 +225,10 @@
       [no-sources]
       ;; Show Sources
       [:div
-       [source-settings]
+       ;;[source-settings]
        [:div.columns
         [:div.column.is-4
-         [source-list]
-         [add-new-source-button]]
+         [source-list]]
         [:div.column.is-8
          [source-detail]
          [source-payment-history]]]])))
@@ -236,8 +243,10 @@
       [:div
        [:h1 (l10n/translate :payment-sources)]
        [:p "View and manage your payment sources."]]
-      [:div.pin-right
+      [:div.view-header-controls
+       [autopay-toggle]
        [add-new-source-button]]]
+     [source-settings]
      (if (= @loading true)
        [:div.loading-box.tall [ant/spin]]
        (source-view))]))

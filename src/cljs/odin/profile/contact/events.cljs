@@ -15,12 +15,12 @@
  :profile.contact.info/update!
  [(path db/path)]
  (fn [db [_ k v]]
-   (tb/log (:new-account db))
+   ;;(tb/log (:new-account db))
    (assoc-in db [:new-account k] v)))
 
 (reg-event-db
  :profile.contact.info/update-emergency-contact!
  [(path db/path)]
  (fn [db [_ k v]]
-   (tb/log (:new-account db))
+   ;;(tb/log (:new-account db))
    (assoc-in db [:new-account :emergency_contact k] v)))

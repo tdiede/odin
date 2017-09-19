@@ -34,9 +34,21 @@
    (not (empty? (filter #(true? (:autopay %)) (:sources db))))))
 
 
+;;(def people [ { :id 1 :name "Joe" } { :id 2 :name "Fred"}])
+;;
+;;(defn brian-converter [person]
+;;  (if (= 2 (:id person))
+;;      (assoc person :name "Brian")
+;;      person))
+;;
+;;(map brian-converter people)
 
-; (tb/log get-autopay-source)
-; (initialize)
+
+(defn- disable-autopay [source]
+  (update source :autopay false))
+;;
+;;(defn- enable-autopay [source]
+;;  (assoc source :autopay false))
 
 (reg-event-db
  :payment.sources.autopay/toggle!
@@ -44,6 +56,7 @@
  (fn [db [_ value]]
     (let [sources (subscribe [:payment.sources/autopay-sources])
           active  (subscribe [:payment.sources/autopay-source])]
-      (if (true? value)
-        (assoc active :autopay false)
-        (assoc (first @sources) :autopay true)))))
+        (tb/log @sources)
+      ;;(if (true? value)
+        (map disable-autopay sources))))
+        ;;(map enable-autopay sources))))
