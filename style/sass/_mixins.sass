@@ -9,21 +9,40 @@
 .flexrow
   display: flex
   flex-direction: row
-  align-items: baseline
+  align-items: center
+
+.flexcol
+  display: flex
+  flex-direction: column
+  // align-items: baseline
 
 .flexcol
   display: flex
   flex-direction: column
 
-.flex-pin-right
-  margin-left: auto
+.space-between
+  justify-content: space-between
+.space-around
+  justify-content: space-around
 
-.flex-pin-bottom
+.flex-auto
+  flex: 1 1 auto
+
+.pin-top
+  margin-bottom: auto
+.pin-right
+  margin-left: auto
+.pin-bottom
   margin-top: auto
+
+.flex-center
+  align-items: center
 
 // Sizing
 .full-width
   width: 100%
+.full-height
+  height: 100%
 
 // Alignment
 .center, .is-centered

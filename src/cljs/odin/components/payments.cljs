@@ -2,6 +2,7 @@
   (:require [odin.l10n :as l10n]
             [odin.utils.toolbelt :as utils]
             [odin.utils.formatters :as format]
+            [odin.utils.time :as time]
             [odin.profile.payments.sources.mocks :as mocks]
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
@@ -31,10 +32,12 @@
 
 
 (defn source-name-and-numbers
-  [source]
-  (when source (let [{name   :name
-                      last4  :last4 } source]
-                (str name " **** " last4))))
+  ([source]
+   (when source (let [{name   :name
+                       last4  :last4 } source]
+                 (str name " **** " last4))))
+  ([name last4]
+   (str name " **** " last4)))
 
 
 (defn payment-status
@@ -70,20 +73,21 @@
   ([reason]
    [payment-for-icon reason ""])
   ([reason icon-size]
-   (when reason [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
-                              :placement "right"}
-                 [:span.icon.has-tooltip {:class icon-size}
-                  (case reason
-                    "rent"    [:i.fa.fa-home {:class icon-size}]
-                    "deposit" [:i.fa.fa-shield {:class icon-size}]
-                    "order"   [:i.fa.fa-smile-o {:class icon-size}]
-                    "")]])))
+   (when reason
+     [ant/tooltip {:title     (l10n/translate (keyword "payment.for" reason))
+                   :placement "right"}
+      [:span.icon.has-tooltip {:class icon-size}
+       (case reason
+         "rent"    [:i.fa.fa-home    {:class icon-size}]
+         "deposit" [:i.fa.fa-shield  {:class icon-size}]
+         "order"   [:i.fa.fa-smile-o {:class icon-size}]
+         "")]])))
 
 
 (defn render-payment-period
   "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
   [tx]
-  (tb/log tx)
+  ;;(tb/log tx)
   (:description tx))
   ;;(let [start (or (aget tx "pstart") (get tx :pstart))
   ;;      end   (or (aget tx "pend")   (get tx :pend))]
@@ -92,6 +96,25 @@
   ;;         " - "
   ;;         (format/date-short end)))))
 
+(defn get-due-date
+  [payment]
+  (let [month_end (aget payment "pend")
+        due_date  (aget payment "due")]
+    (if (not (nil? due_date)) due_date month_end)))
+
+
+(defn render-payment-date
+  "Date appears red if it was overdue."
+  [paid_on due]
+  (tb/log due paid_on)
+  [:span (format/date-short paid_on)])
+
+
+(defn render-late-payment-date
+  [paid_on]
+  [:span
+   [ant/tooltip {:title "Paid after due date."}
+    [:span.text-red (format/date-short paid_on)]]])
 
 (def ^:private payment-table-columns
   [
@@ -105,8 +128,13 @@
    {:title     (l10n/translate :date)
     :dataIndex :paid_on
     :className "width-6"
-    :render    (fn [val]
-                 (format/date-short val))}
+    :render    (fn [paid item _]
+                 (if (= (aget item "for") "rent")
+                   (r/as-element [render-late-payment-date paid])
+                   (format/date-short paid)))}
+                 ;;(tb/log val "///" item)
+                 ;;(tb/log "for: " (aget item "for") "due: " (aget item "due") "/ paid: " val " / pend: " (aget item "pend"))
+                 ;;(r/as-element [render-payment-date val (get-due-date item)]))}
 
    ;; AMOUNT
    {:title     (l10n/translate :amount)
@@ -156,7 +184,7 @@
   [transactions loading?]
   ;;(let [txs transactions]
   (let [txs (filter #(not= (:status %) :due) transactions)]
-   (tb/log txs)
+   ;;(tb/log txs)
    [ant/table
     {:class        "payments-table"
      :loading      (or loading? false)

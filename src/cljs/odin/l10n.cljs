@@ -82,9 +82,9 @@
         :payment.for/other   "Uncategorized"
 
         :payments            "Payments"
-        :sources             "Linked Accounts"
+        :sources             "Payment Methods"
         :history             "History"
-        :payment-sources     "Linked Accounts"
+        :payment-sources     "Payment Methods"
         :payment-history     "Payment History"
         :payment-history-for "Payment History for {1}"
         :transaction-history "Transaction History"

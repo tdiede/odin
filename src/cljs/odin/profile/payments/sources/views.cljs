@@ -1,6 +1,7 @@
 (ns odin.profile.payments.sources.views
   (:require [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
+            [odin.profile.payments.sources.autopay :as autopay]
             [odin.components.ui :as ui]
             [odin.components.input :as input]
             [odin.profile.payments.sources.views.forms :as forms]
@@ -17,10 +18,13 @@
     [:a.panel-block {:class (when (= id (get @current :id)) "is-active")
                      :href  (routes/path-for :profile.payment/sources :query-params {:source-id id})}
      [:span.panel-icon
-      (payments-ui/payment-source-icon (or type :bank))]
+      (if (true? (:default source))
+        [ant/tooltip {:title "Default payment source"}
+         [:span.icon [:i.fa.fa-check]]]
+        (payments-ui/payment-source-icon (or type :bank)))]
      [:span.flexrow.full-width
       [:span name]
-      [:span.flex-pin-right (str "**** " last4)]]]))
+      [:span.pin-right (str "**** " last4)]]]))
 
 
 (defn source-list
@@ -31,22 +35,50 @@
         ;; loading (subscribe [:payment.sources/loading?])
 
     [:nav.panel.is-rounded
+     [:p.panel-heading "Linked Accounts"]
      (doall
       (map-indexed
        #(with-meta [source-list-item %2] {:key %1})
        @sources))]))
 
+(defn- source-actions-menu []
+  [ant/menu
+   [ant/menu-item {:key "removeit"}
+    [:a {:href "#" :on-click #(dispatch [:modal/show :payment.source/remove])}
+     "Remove this account"]]])
 
 (defn source-detail
   "Display information about the currently-selected payment source."
   []
-  (let [{:keys [type name last4 autopay-on]} @(subscribe [:payment.sources/current])]
+  (let [{:keys [id type name last4 autopay-on] :as source} @(subscribe [:payment.sources/current])
+        is-default     (and (= type :bank) (true? (:default source)))
+        can-be-default (and (= type :bank) (not (true? is-default)))]
     [:div.card
      [:div.card-content
       [:div.flexrow
-       ;; Source Name
+       ;; Source Icon
        [payments-ui/payment-source-icon type]
-       [:h3 (str name " **** " last4)]]]]))
+       [:div.ml2
+        ;; Source Name
+        [:h3 (str name " **** " last4)]
+        ;; Is default source?
+        (when is-default
+          [ant/tag {:color "blue"}
+           [ant/icon {:type "check"}]
+           [:span "Default payment source"]])]
+
+       [:div.pin-right.pin-top
+        ;;(when can-be-default
+         ;;[ant/button {:on-click #(dispatch [:payment.source/set-default! id])} "Set as default"]
+        ;;[ant/button {:on-click #(dispatch [:modal/show :payment.source/verify-account])} "Verify Account"]
+        ;;[ant/button {:on-click #(dispatch [:payment.sources.autopay/enable! (:id source)])}
+        ;;     "Enable for Autopay"]
+        [ant/dropdown {:trigger ["click"]
+                       :overlay (r/as-element [source-actions-menu])}
+         [:a.ant-dropdown-link
+          [:span "More"]
+          [ant/icon {:type "down"}]]]]]]]))
+
      ;; Buttons
      ;;[:footer.card-footer
      ;; [:div.card-footer-item]
@@ -68,16 +100,61 @@
      [payments-ui/payments-table payments @is-loading]]))
 
 
-(defn modal-confirm-disable-autopay []
-  [:div.modal.is-active
-   [:div.modal-background]
-   [:div.modal-card
-    [:header.modal-card-head
-     [:h3 (l10n/translate :confirm-unlink-autopay)]]
-    [:section.modal-card-body
-     [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]
-    [:footer.modal-card-foot]]
-   [:button.modal-close.is-large]])
+(defn modal-confirm-enable-autopay
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])]
+    ;;(tb/log (str "is enable modal visible?" @is-visible))
+    [ant/modal {:title       "Autopay your rent?"
+                :visible     @is-visible
+                :ok-text     "Great! Let's do it"
+                :cancel-text "I'd rather pay manually."
+                :on-ok       #(dispatch [:payment.sources.autopay/enable!])
+                :on-cancel   #(dispatch [:modal/hide :payment.source/autopay-enable])}
+                ;;:footer    nil}
+     [:div
+       [:p "Autopay automatically transfers your rent the day before it's due,
+            on the 1st of each month."]
+       [:p "We recommend enabling this
+            feature, so you never need to worry about making rent on time."]]]))
+
+
+(defn modal-confirm-disable-autopay
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-disable])]
+    ;;(tb/log (str "is disable modal visible?" @is-visible))
+    [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
+                :visible   @is-visible
+                :on-ok     #(dispatch [:payment.sources.autopay/disable!])
+                :on-cancel #(dispatch [:modal/hide :payment.source/autopay-disable])}
+                ;;:footer    nil}
+     [:div
+       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
+
+
+(defn modal-verify-account
+  []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])]
+    ;;(tb/log (str "is disable modal visible?" @is-visible))
+    [ant/modal {:title     "Verify Bank Account"
+                :visible   @is-visible
+                :on-ok     #(dispatch [:modal/hide :payment.source/verify-account])
+                :on-cancel #(dispatch [:modal/hide :payment.source/verify-account])}
+                ;;:footer    nil}
+     [:div
+      [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
+      [:p "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]]]))
+
+(defn modal-confirm-remove-account []
+  (let [is-visible     (subscribe [:modal/visible? :payment.source/remove])
+        current-source (subscribe [:payment.sources/current])]
+    (fn []
+      [ant/modal {:title     "Remove this account?"
+                  :width     640
+                  :visible   @is-visible
+                  :ok-text   "Yes, remove"
+                  :on-ok     #(dispatch [:payment.source/delete! (:id @current-source)])
+                  :on-cancel #(dispatch [:modal/hide :payment.source/remove])}
+       [:p "If you remove this account, it will no longer be available for settling payments."]])))
 
 
 (def ^:private tab-icon-classes
@@ -124,6 +201,7 @@
                     :on-cancel #(dispatch [:modal/hide :payment.source/add])
                     :footer    nil}
          [:div
+          (when [:div.loading-box])
           [tabs {:class "is-centered"}
            (doall
             (map-indexed
@@ -139,11 +217,11 @@
 (defn add-new-source-button
   "Button for adding a new Payment Source."
   []
-  [:nav.panel.space-top.is-rounded
-   [:a.panel-block {:on-click #(dispatch [:modal/show :payment.source/add])}
-    [:span.panel-icon
-     [:span.icon [:i.fa.fa-plus-square-o]]]
-    (l10n/translate :btn-add-new-account)]])
+  [ant/button {:type "primary"
+               :size "large"
+               :icon "plus-circle-o"
+               :on-click #(dispatch [:modal/show :payment.source/add])}
+     (l10n/translate :btn-add-new-account)])
 
 
 (defn no-sources []
@@ -154,53 +232,69 @@
     [ui/media-step "Link a payment source so you can settle your charges." "bank"]
     [ui/media-step "Turn on Autopay and never worry about a late payment again." "history"]
     [ui/media-step
-     [:a.button.is-primary {:on-click #(dispatch [:modal/show :payment.source/add])}
+     [ant/button {:type "primary"
+                  :on-click #(dispatch [:modal/show :payment.source/add])}
       [:span.icon.is-small [:i.fa.fa-plus-square-o]]
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
 
 (defn source-settings []
-  (let [sources (subscribe [:payment/sources])
-        ;;autopay (subscribe [:payment.sources/has-autopay])
-        loading (subscribe [:payment.sources/loading?])]
-   [:div.columns.bg-gray.pad.rounded
-    [:div.column.unpad-vert.is-one-fifth
-     [:h4 "Autopay my Rent"]
-     [input/ios-checkbox]]
-     ;;[payments-ui/menu-select-source @sources]]
-    [:div.column.unpad-vert
-     [:h4 "Set default source for payments:"]
-     [payments-ui/menu-select-source @sources]]]))
-    ;;[:div.column.unpad-vert
-     ;;[:h4 "Service payments use:"]
-     ;;[payments-ui/menu-select-source @sources]]]))
+  (let [autopay-on  (subscribe [:payment.sources/autopay-on?])
+        src-default (subscribe [:payment.sources/default-source])
+        ;;autopay     (subscribe [:payment.sources/autopay-source])
+        loading     (subscribe [:payment.sources/loading?])]
+        ;;banks       (subscribe [:payment/sources :bank])
+        ;;cards       (subscribe [:payment/sources :card])]
+   [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb3
+    ;;(println "AUTOPAY: " @autopay)
+    [:div.flexrow.flex-center
+          [ant/switch {:checked    @autopay-on
+                       ;;:on-change  #(dispatch [:payment.sources.autopay/confirm-modal (-> %)])
+                       :on-change #(dispatch [:payment.sources.autopay/confirm-modal (-> %)])}]
+                       ;;:on-change #(dispatch [:payment.sources.autopay/enable!])}]
+          [:h4.ml1
+           [:span "Autopay"]
+           [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
+          ;;[input/ios-checkbox]]
+    [:div.ml3
+     [:h4 "Autopay will post to your default payment account ending in " (:last4 @src-default) "."]]]))
+     ;;[:h4 "Rent payments use:"]
+     ;;[payments-ui/menu-select-source @banks]]]))
+    ;;[:div [:h4 "Service payments use:"]
+          ;;[payments-ui/menu-select-source @cards]]]))
 
-
+(defn- source-view []
+  (let [sources (subscribe [:payment/sources])]
+    (if (empty? @sources)
+      ;; Empty State
+      [no-sources]
+      ;; Show Sources
+      [:div
+       ;;(tb/log @sources)
+       [source-settings]
+       [:div.columns
+        [:div.column.is-4
+         [source-list]]
+        [:div.column.is-8
+         [source-detail]
+         [source-payment-history]]]])))
 
 
 (defn sources []
-  (let [sources (subscribe [:payment/sources])
-        loading (subscribe [:payment.sources/loading?])]
+  (let [loading (subscribe [:payment.sources/loading?])]
     [:div
-     ;;(if (= @loading true) [ant/spin])
      [modal-add-source]
-     [:div.view-header
-      [:h1 (l10n/translate :payment-sources)]
-      [:p "View and manage your payment sources."]]
-     ;; TODO: If `@loading` is true, we shouldn't show empty components
-     (if (empty? @sources)
-       ;; Empty State
-       [no-sources]
-
-       ;; Show Sources
-       [:div
-        [source-settings]
-        [:div.columns
-         [:div.column.is-4
-          [source-list]
-          [add-new-source-button]]
-
-         [:div.column.is-8
-          [source-detail]
-          [source-payment-history]]]])]))
+     [modal-confirm-remove-account]
+     [modal-verify-account]
+     [modal-confirm-enable-autopay]
+     [modal-confirm-disable-autopay]
+     [:div.view-header.flexrow
+      [:div
+       [:h1 (l10n/translate :payment-sources)]
+       [:p "Edit your payment accounts, enable Autopay, and set default payment sources."]]]
+      ;;[:div.pin-right
+       ;;[add-new-source-button]]]
+     (if (= @loading true)
+       [:div.loading-box.tall [ant/spin]]
+       (source-view))]))

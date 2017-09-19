@@ -165,6 +165,7 @@
                       :charge-id "py_1AmAozJDow24Tc1aKfpUUIe9"
                       :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 7 1)
+                      :due (date 2017 7 1)
                       :pend (date 2017 8 1)
                       :paid-on (date 2017 7 3))
       (payment/create 2000.0 account
@@ -174,6 +175,7 @@
                       :charge-id "py_1Aaw2eJDow24Tc1axiqIh6bK"
                       :source-id "ba_19Z7BcJDow24Tc1aZBrHmWB5"
                       :pstart (date 2017 6 1)
+                      :due (date 2017 6 1)
                       :pend (date 2017 7 1)
                       :paid-on (date 2017 6 2)))
      {:db/id                          (:db/id license)
@@ -269,7 +271,8 @@
    {:db/id                              (d/tempid :db.part/starcity)
     :stripe-customer/account            [:account/email "member@test.com"]
     :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
-    :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
+    ;;:stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
+    :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
     :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
 
 
@@ -289,6 +292,13 @@
         :referral/from   :referral.from/tour})
      (range total))))
 
+(defn properties-tx []
+  [{:db/id                    [:property/internal-name "52gilbert"]
+    :property/cover-image-url "/assets/images/52gilbert.jpg"}
+   {:db/id                    [:property/internal-name "2072mission"]
+    :property/cover-image-url "/assets/images/2072mission.jpg"}])
+
+
 ;; =============================================================================
 ;; API
 ;; =============================================================================
@@ -304,7 +314,8 @@
     :seed/stripe-customers {:txes     [(stripe-customers-tx)]
                             :requires [:seed/accounts]}
     :seed/avatar           {:txes [(avatar-tx)]}
-    :seed/referrals        {:txes [(referrals-tx)]}})
+    :seed/referrals        {:txes [(referrals-tx)]}
+    :seed/properties       {:txes [(properties-tx)]}})
   ;; NOTE: These need to happen in separate transactions.
   (cf/ensure-conforms
    conn

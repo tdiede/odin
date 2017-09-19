@@ -1,8 +1,9 @@
 (ns odin.profile.contact.views
   (:require [antizer.reagent :as ant]
-            [toolbelt.core :as tb]
+            [reagent.core :as r]
             [odin.routes :as routes]
-            [re-frame.core :refer [dispatch subscribe]]))
+            [re-frame.core :refer [dispatch subscribe]]
+            [toolbelt.core :as tb]))
 
 (defn- placeholder
   [field]
@@ -10,96 +11,138 @@
     :first_name "Daffy"
     :last_name  "Duck"
     :phone      "405-555-1234"
+    :email      "me@joinstarcity.com"
     :bio        "Give us a short introduction to yourself! This will help your neighbors in the community to connect with you about mutual interests, etc."))
 
 
 
-(def form-style
+(def ^:private form-style
   {:label-col   {:span 6}
    :wrapper-col {:span 10}})
 
 
+(defn- form-item-props [label]
+  (merge form-style {:label label}))
+
+
+(defn- form-item [{:keys [key label ant-id input-props rules initial-value]}]
+  (let [form (ant/get-form)]
+    [ant/form-item (form-item-props label)
+      (ant/decorate-field form ant-id {:rules rules
+                                       :initial-value initial-value} [ant/input input-props])]))
+
+
+(def ^:private contact-info-form-items
+  [{:key         :first_name
+    :label       "First Name"
+    :ant-id      "first-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :first_name)}}
+   {:key         :last_name
+    :label       "Last Name"
+    :ant-id      "last-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :last_name)}}
+   {:key         :phone
+    :label       "Phone #"
+    :ant-id      "phone"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :phone)}}
+   {:key         :email
+    :label       "Email Adress"
+    :ant-id      "email"
+    :rules       [{:required false}]
+    :input-props {:placeholder (placeholder :email)
+                  :disabled    true}}])
+   ;;{:key         :bio
+   ;; :label       "Short Bio"
+   ;; :ant-id      "bio"
+   ;; :rules       [{:required true}]
+   ;; :input-props {:placeholder (placeholder :bio)
+   ;;               :type        "textarea"
+   ;;               :style       {:min-height "100px"}}}])
+
+
+
 (defn- contact-info-form []
   (let [form      (ant/get-form)
-        account   (subscribe [:profile/account])]
-        ;;on-change (fn [k] #(dispatch [:payment.sources.add.bank/update! k (.. % -target -value)]))]
-
+        account   @(subscribe [:profile/account-mutable])
+        on-change (fn [k] #(dispatch [:profile.contact.info/update! k (.. % -target -value)]))]
     [ant/form {:layout "horizontal"}
-
-      [:fieldset
-       ;;[:h4.fieldset-label [:span "Personal Information"]]
-       [ant/form-item (merge form-style {:label "First Name"})
-         [ant/input {:type        "text"
-                     :value       (get @account :first_name)
-                     :placeholder (placeholder :first_name)}]]
-
-       [ant/form-item (merge form-style {:label "Last Name"})
-         [ant/input {:type        "text"
-                     :value       (get @account :last_name)
-                     :placeholder (placeholder :last_name)}]]
-
-       [ant/form-item (merge form-style {:label "Email Address"})
-         [ant/input {:type     "text"
-                     :disabled true
-                     :value    (get @account :email)}]]
+      (map-indexed
+       (fn [idx {key :key :as item}]
+         (-> (assoc-in item [:input-props :on-change] (on-change key))
+             (assoc-in [:initial-value] (get account key))
+             (form-item)
+             (with-meta {:key idx})))
+       contact-info-form-items)]))
 
 
-       [ant/form-item (merge form-style {:label "Phone Number"})
-         [ant/input {:type        "text"
-                     :value       (get @account :phone)
-                     :placeholder (placeholder :phone)}]]
-
-       [ant/form-item (merge form-style {:label "Short Bio"
-                                         :wrapper-col {:span 14}})
-         [ant/input {:type        "textarea"
-                     :style       {:min-height "100px"}
-                     :value       (get @account :bio)
-                     :placeholder (placeholder :bio)}]]]
-
-      ;;[:hr]
-      [ant/form-item (merge form-style {:label " "})
-       [:button.button.is-primary {:disabled true} "Save Changes"]]]))
+(def ^:private emergency-contact-form-items
+  [{:key         :first_name
+    :label       "First Name"
+    :ant-id      "first-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :first_name)}}
+   {:key         :last_name
+    :label       "Last Name"
+    :ant-id      "last-name"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :last_name)}}
+   {:key         :phone
+    :label       "Phone #"
+    :ant-id      "phone"
+    :rules       [{:required true}]
+    :input-props {:placeholder (placeholder :phone)}}])
+                  ;;:on-blur (tb/log "pppppp")}}])
 
 
 (defn- emergency-contact-info-form []
   (let [form      (ant/get-form)
-        account   (subscribe [:profile/account])
-        emergency_contact (get @account :emergency_contact)]
-        ;;on-change (fn [k] #(dispatch [:payment.sources.add.bank/update! k (.. % -target -value)]))]
+        account   (subscribe [:profile/account-mutable])
+        emergency_contact (get @account :emergency_contact)
+        on-change (fn [k] #(dispatch [:profile.contact.info/update-emergency-contact! k (.. % -target -value)]))]
 
     [ant/form {:layout "horizontal"}
-      [:fieldset
-       ;;[:h4.fieldset-label [:span "Emergency Contact"]]
-
-       [ant/form-item (merge form-style {:label "First Name"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :first_name)
-                     :placeholder (placeholder :first_name)}]]
-
-       [ant/form-item (merge form-style {:label "Last Name"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :last_name)
-                     :placeholder (placeholder :last_name)}]]
-
-       [ant/form-item (merge form-style {:label "Phone Number"})
-         [ant/input {:type        "text"
-                     :value       (get emergency_contact :phone)
-                     :placeholder (placeholder :phone)}]]]
+      (map-indexed
+       (fn [idx {key :key :as item}]
+         (-> (assoc-in item [:input-props :on-change] (on-change key))
+             (assoc-in [:initial-value] (get emergency_contact key))
+             (form-item)
+             (with-meta {:key idx})))
+       emergency-contact-form-items)]))
 
 
-      ;;[:hr]
-      [ant/form-item (merge form-style {:label " "})
-       [:button.button.is-primary {:disabled true} "Save Changes"]]]))
+(defn- contact-info-ui []
+  (fn []
+    (let [form (ant/get-form)]
+      [:div
+       (contact-info-form)
+       [ant/form-item (merge form-style {:label " "})
+        [:button.button.is-primary {:disabled true} "Save Changes"]]])))
 
+(defn- emergency-contact-ui []
+  (fn []
+    (let [form (ant/get-form)]
+      [:div
+       (emergency-contact-info-form)
+       [ant/form-item (merge form-style {:label " "})
+        [:button.button.is-primary {:disabled true} "Save Changes"]]])))
 
 
 (defn contact-info []
   [:div
    [:div.view-header
-    [:h1 "Contact Information"]
-    [:p "Update your info in our system, including an emergency contact."]]
+    ;;[:h1 "Contact Information"]
+    ;;[:p "Update your info in our system, including an emergency contact."]
+    [:h1.title.is-3 "Contact Information"]
+    [:p.subtitle.is-6 "Update your info in our system, including an emergency contact."]]
 
    [:div.columns
     [:div.column.is-8
-     [ant/card {:title "Personal Info"} (contact-info-form)]
-     [ant/card {:title "Emergency Contact"} (emergency-contact-info-form)]]]])
+
+     [ant/card {:title "Personal Info"}
+      (r/as-element (ant/create-form (contact-info-ui)))]
+
+     [ant/card {:title "Emergency Contact"}
+      (r/as-element (ant/create-form (emergency-contact-ui)))]]]])

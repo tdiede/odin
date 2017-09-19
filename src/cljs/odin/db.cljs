@@ -1,9 +1,11 @@
 (ns odin.db
   (:require [odin.account.db :as accounts]
             [odin.components.modals :as modals]
+            [odin.profile.db :as profile]
             [odin.metrics.db :as metrics]
             [odin.orders.db :as orders]
             [odin.profile.payments.db :as payments]
+            [odin.profile.membership.db :as membership]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
 

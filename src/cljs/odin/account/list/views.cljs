@@ -64,7 +64,7 @@
   [:div.page
    [:div.flexrow
     [:h1 (l10n/translate :accounts)]
-    [ant/input-search {:class "page-level-search valign flex-pin-right"}]]
+    [ant/input-search {:class "page-level-search valign pin-right"}]]
    [:div.columns
     [:div.column.is-three-quarters
      [ant/card ;;{:title "Accounts"}

@@ -245,12 +245,14 @@
                        :resolve     :payment.source/payments}}}
 
   :property
-  {:fields {:id   {:type    (non-null :Long)
-                   :resolve (:get :db/id)}
-            :name {:type    (non-null String)
-                   :resolve (:get :property/name)}
-            :code {:type    (non-null String)
-                   :resolve (:get :property/internal-name)}}}
+  {:fields {:id              {:type    (non-null :Long)
+                              :resolve (:get :db/id)}
+            :name            {:type    (non-null String)
+                              :resolve (:get :property/name)}
+            :code            {:type    (non-null String)
+                              :resolve (:get :property/internal-name)}
+            :cover_image_url {:type    (non-null String)
+                              :resolve (:get :property/cover-image-url)}}}
 
 
   ;; TODO:
@@ -383,6 +385,11 @@
                                         :description "ID of an account to request sources for."}}
                     :resolve :payment.sources/list}
 
+  :autopay_source {:type    :payment_source
+                   :args    {:account {:type        (non-null :Long)
+                                       :description "ID of an account to request the autopay source for."}}
+                   :resolve :payment.sources/autopay-source}
+
   ;; TODO: This should return a list of `:referral`, not `:data_point`. See
   ;; above.
   :referrals {:type    (list :data_point)
@@ -460,6 +467,4 @@
    :description "Set the source as the default payment source."
    :args        {:id {:type        (non-null String)
                       :description "The Stripe id of the source to use as the defaullt source."}}
-   :resolve     :payment.sources/set-default!}
-
-  }}
+   :resolve     :payment.sources/set-default!}}}

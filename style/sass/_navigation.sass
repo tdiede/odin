@@ -1,14 +1,25 @@
 // NAV BAR (top of the page)
 // ----------------------------
-.navbar
-  background: $white
-  color: $black
+.container
+  .navbar
+    @extend .flexrow
+    @extend .flex-center
+    background: none
+    color: $black
+    position: relative
 
-  .navbar-burger
-    &:hover
-      background-color: $dark-black !important
-    span
-      background-color: $white
+  .navbar-brand
+    flex: 0 0 auto
+
+  // .navbar-menu
+  //   @extend .flexrow
+  //   @extend .flex-center
+
+// .navbar-burger
+//   &:hover
+//     background-color: $dark-black !important
+//   span
+//     background-color: $white
 
 // "STARCITY" BRAND LOGO
 .brand-logo
@@ -17,6 +28,108 @@
   width: 3rem
   background: url(../svg/logo-black.svg) center center no-repeat
   background-size: 60% auto
+
+@media screen and (min-width: $tablet)
+  .navbar,
+  .navbar-menu,
+  .navbar-start,
+  .navbar-end
+    align-items: stretch
+    display: flex
+
+  .navbar-menu, .navbar-menu.is-active
+    display: flex
+    flex: 1 1 auto
+    box-shadow: none
+
+  .navbar-burger
+    display: none
+
+  .navbar-end
+    flex: 0 0 auto
+    margin-left: auto
+
+$burger-size:      3.25rem
+$burger-icon-size: 2.3rem
+// MOBILE
+@media screen and (max-width: $tablet - 1px)
+  .navbar,
+  .navbar-menu,
+  .navbar-start,
+  .navbar-end
+    align-items: stretch
+    display: flex
+
+  .navbar-brand
+    flex: 1 1 100%
+    width: 100%
+
+  .navbar-burger, .navbar-burger:hover
+    display: flex
+    background: none
+    align-items: center
+    justify-content: flex-end
+    .burger-wrap
+      display: flex
+      align-items: center
+      justify-content: center
+      height: 2.3rem
+      width: 2.3rem
+      border: 1px solid $blue
+      border-radius: 4px
+    .icon
+      color: $blue
+
+    &.is-active
+      .burger-wrap
+        background: $blue
+      .icon
+        color: $white
+
+  .navbar-menu
+    display: flex
+    position: fixed
+    z-index: 500
+    flex-direction: column
+    top: 0
+    left: -100%
+    bottom: 0
+    width: calc(100% - 80px)
+    background: $white
+    margin: 0
+    box-shadow: none
+    transition: all 0.15s ease-in-out
+
+    &.is-active
+      display: flex
+      left: 0
+      box-shadow: 3px 0 16px rgba($black, 0.08), 0 0 34px rgba($black, 0.05)
+
+  .navbar-start
+    order: 2
+    display: flex
+    flex-direction: column
+
+  .navbar-end
+    order: 1
+
+  .navbar-item
+    padding: .8rem 1.5rem
+
+
+.nav-backdrop
+  display: none
+
+.nav-backdrop.visible
+  display: block
+  position: fixed
+  z-index: 450
+  background: rgba($black, 0.25)
+  top: 0
+  left: 0
+  bottom: 0
+  right: 0
+
 
 // NAV ITEM
 .navbar-item
@@ -50,6 +163,9 @@
     // color: $tranquil-blue
     // background-color: $dark-black !important
 
+.navbar-burger
+  span
+    color: $blue
 
 // NAV SEARCH
 // .navbar .ant-input-search
@@ -98,6 +214,9 @@ nav.panel
 
   &:hover
     color: inherit
+
+.menu-list a:not(.is-active):hover
+  background: rgba(#888, 0.1)
 
 .panel.is-rounded
 

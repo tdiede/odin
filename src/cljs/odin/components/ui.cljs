@@ -14,3 +14,12 @@
     [:div.media-left
      [:span.icon.is-medium [:i.fa {:class (str "fa-" icon-type)}]]])
    [:div.media-content contents]])
+
+
+(defn info-tooltip
+  ([text] (info-tooltip text "top"))
+  ([text positioning]
+   [:span.info-tooltip
+    [ant/tooltip {:title     text
+                  :placement positioning}
+      [ant/icon {:type "question-circle-o"}]]]))

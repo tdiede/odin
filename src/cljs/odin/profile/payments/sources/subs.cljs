@@ -16,11 +16,27 @@
 
 
 ;; Payment Sources (Linked Accounts)
+;; - Can optionally filter by source's :type
 (reg-sub
  :payment/sources
  :<- [::sources]
+ ;;(fn [db _]
+ ;;  (:sources db)))
+ (fn [db [_ type]]
+   (if (nil? type)
+     (:sources db)
+     (filter #(= (:type %) type) (:sources db)))))
+
+(defn- get-default-source
+  [sources]
+  (first (filter #(= (:default %) true) sources)))
+
+(reg-sub
+ :payment.sources/default-source
+ :<- [::sources]
  (fn [db _]
-   (:sources db)))
+   (get-default-source (:sources db))))
+   ;;(first (filter #(= (:default %) true) (:sources db)))))
 
 
 (reg-sub
@@ -83,11 +99,11 @@
 ;; =============================================================================
 
 
-;;(reg-sub
-;; :payment.sources/has-autopay
-;; :<- [:payment/sources]
-;; (fn [[sources] _]
-;;   (filter #(= (get % :autopay) true) sources)))
+;; (reg-sub
+;;  :payment.sources/autopay-source
+;;  :<- [:payment/sources]
+;;  (fn [[sources] _]
+;;    (filter #(= (get % :autopay) true) sources)))
 
 
 ;; =============================================================================

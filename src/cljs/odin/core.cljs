@@ -37,10 +37,18 @@
 
 
 (defn burger []
-  [:div.navbar-burger.burger
-   {:on-click #(dispatch [:menu/toggle])}
-   [:span] [:span] [:span]])
+  (let [showing (subscribe [:menu/showing?])]
+   [:div.navbar-burger.burger
+    {:on-click #(dispatch [:menu/toggle])
+     :class    (when @showing "is-active")}
+    [:div.burger-wrap
+     [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]]]))
+    ;;[:span] [:span] [:span]])
 
+(defn- mobile-nav-backdrop []
+  (let [showing (subscribe [:menu/showing?])]
+   [:div.nav-backdrop {:on-click #(dispatch [:menu/toggle])
+                       :class (when @showing "visible")}]))
 
 (defn brand []
   [:div.navbar-brand
@@ -65,21 +73,34 @@
        #(with-meta [navbar-menu-item @role %2] {:key %1})
        @menu-items))]))
 
+(defn- nav-user-menu []
+  [ant/menu
+   [ant/menu-item {:key "profile-link"}
+    [:a {:href (routes/path-for :profile/membership)} "My Profile"]]
+   [ant/menu-item {:key "log-out"}
+    [:a {:href "/logout"} "Log Out"]]])
 
+;;{:href (routes/path-for :profile/membership)}
 (defn navbar []
   (let [menu-showing (subscribe [:menu/showing?])
         account      (subscribe [:account])]
     [:nav.navbar
      (brand)
+     [mobile-nav-backdrop]
      [:div.navbar-menu {:class (when @menu-showing "is-active")}
       [navbar-menu]
       [:div.navbar-end
-       [:a.navbar-item.hoverable
-        {:href (routes/path-for :profile/membership)}
-        [:div.flexbox.has-pointer
-         [ant/avatar (formatters/initials (:name @account))]
-         [:span.valign.pad-left
-          (:name @account)]]]]]]))
+       [:div.navbar-item.hoverable
+        [ant/dropdown {:trigger   ["click"]
+                       :placement "bottomRight"
+                       :overlay   (r/as-element [nav-user-menu])}
+         [:a.ant-dropdown-link
+          [:div.flexbox.has-pointer
+           [ant/avatar (formatters/initials (:name @account))]
+           [:span.valign.pad-left
+            (:name @account)]]]]]]]]))
+
+
 
 
 (defn error-view []
@@ -127,7 +148,7 @@
 (defn ^:export run []
   (GET "/api/config"
        :handler (fn [config]
-                  (tb/log :config config)
+                  ;;(tb/log :config config)
                   (rf/dispatch-sync [:app/init config])
                   (routes/hook-browser-navigation! config)
                   (render))

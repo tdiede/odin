@@ -8,9 +8,10 @@
 
 
 (def default-value
-  {path     {:sources []
-             :current nil
-             :loading {:list false}}
+  {path     {:sources        []
+             :current        nil
+             :autopay        {:on false :source nil}
+             :loading        {:list false}}
    add-path {:type            :bank
              :card            {}
              :bank            {}

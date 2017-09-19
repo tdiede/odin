@@ -17,6 +17,12 @@
        (into [:ul.menu-list])))
 
 
+(defn- has-active-child
+  "True if menu-label has an active child. Used for applying a CSS class, for mobile styling."
+  [active children]
+  (not (empty? (filter #(= active (:key %)) children))))
+
+
 (defn side-menu
   "Construct a side menu component given a data-based `menu-spec` and currently
   `active` item."
@@ -24,6 +30,8 @@
   (->> (mapcat
         (fn [{:keys [label children]}]
           (let [submenu (when (some? children) (submenu children active opts))]
-            (tb/conj-when [[:p.menu-label label]] submenu)))
+            (tb/conj-when [[:p.menu-label {:class (when (has-active-child active children) "has-active-child")}
+                            label]]
+                          submenu)))
         menu-spec)
        (into [:aside.menu])))

@@ -35,8 +35,8 @@
    :deposit/amount-remaining deposit/amount-remaining
    :deposit/amount-paid      deposit/amount-paid
    :deposit/amount-pending   deposit/amount-pending
-   :deposit/refund-status    deposit/refund-status
-   })
+   :deposit/refund-status    deposit/refund-status})
+
 
 
 (def ^:private payment-source-resolvers
@@ -48,19 +48,21 @@
    :payment.source/default?        source/default?
    ;; queries
    :payment.sources/list           source/sources
+   :payment.sources/autopay-source source/autopay-source
    ;; mutations
    :payment.sources/delete!        source/delete!
    :payment.sources/add-source!    source/add-source!
    :payment.sources/verify-bank!   source/verify-bank!
    :payment.sources/set-autopay!   source/set-autopay!
    :payment.sources/unset-autopay! source/unset-autopay!
-   :payment.sources/set-default!   source/set-default!
-   })
+   :payment.sources/set-default!   source/set-default!})
+
 
 
 (def ^:private member-license-resolvers
   {;;fields
-   :member-license/status member-license/status})
+   :member-license/status     member-license/status
+   :member-license/autopay-on member-license/autopay-on})
 
 
 (def ^:private unit-resolvers

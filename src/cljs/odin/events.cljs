@@ -50,5 +50,6 @@
                 {:page   page
                  :path   (page->path page)
                  :params params})]
+     ;;(tb/log route)
      {:db         (assoc db :route route)
       :dispatch-n (routes/dispatches route)})))

@@ -1,6 +1,31 @@
 
 $modal-button-spacing: .5rem
+$modal-side-padding: 2rem
+
+
+.ant-modal-header, .ant-modal-footer
+  padding: 1.2rem $modal-side-padding
+  background: $off-white
+
+.ant-modal-title
+  font-size: 1.1rem
+  font-weight: bold
+  line-height: 1
+  padding: 0
+
+.ant-modal-close-x
+  height: 52px
+  width: 52px
+  line-height: 52px
+  font-size: 1.1rem
+
+.ant-modal-body
+  padding: 2rem $modal-side-padding 3rem
+  font-size: 1rem
 
 .ant-modal-footer
   .select + .select, .select + .button, .button + .button
     margin-left: $modal-button-spacing
+
+  .ant-btn
+    font-size: 1rem

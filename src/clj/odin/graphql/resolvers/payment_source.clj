@@ -43,7 +43,7 @@
         :ret string?)
 
 
-(defn- autopay-source
+(defn autopay-source
   "Fetch the autopay source for the requesting user, if there is one."
   [{:keys [stripe requester conn]}]
   (when-let [customer (customer/autopay (d/db conn) requester)]
@@ -98,8 +98,9 @@
         (let [[is-source _] (<!? (is-autopay-source? ctx source))]
           (resolve/deliver! result is-source))
         (catch Throwable t
-          (resolve/deliver! result nil {:message  (error-message t)
-                                        :err-data (ex-data t)}))))
+          (resolve/deliver! result nil))))
+          ;;(resolve/deliver! result nil {:message  (error-message t)
+          ;;                              :err-data (ex-data t)}))))
     result))
 
 
