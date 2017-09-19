@@ -19,19 +19,23 @@
        {:class (when (= id (get @current :id)) "is-active")
         :href  (routes/path-for :profile.payment/sources
                                 :query-params {:source-id id})}
-       [:p.title.is-6 {:style {:margin-bottom "0.2rem"}} name]
+
        [:p.title.is-6.mb1
-        (case type
-          :card (str "xxxxxxxxxxxx" last4)
-          (str "xxxxxx" last4))]
+        [:span.mr1 (payments-ui/payment-source-icon (or type :bank) "is-small")]
+        [:span (case type
+                 :card (str "xxxxxxxxxxxx" last4)
+                 (str "xxxxxx" last4))]]
+       [:p.title.is-6.mb1 name]
+       ;;[:span.payment-icon-top-right
+         ;;(payments-ui/payment-source-icon (or type :bank))]
        [:div.source-list-metadata
         (when (true? (:default source))
           [ant/tooltip {:title "Default payment source"}
            [:div.default-source-indicator
             [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
-            [:span.default-source-label "Default"]]])
-        [:span.pin-right.source-list-type-icon
-         (payments-ui/payment-source-icon (or type :bank))]]]))
+            [:span.default-source-label "Default"]]])]]))
+        ;;[:span.pin-right.source-list-type-icon
+         ;;(payments-ui/payment-source-icon (or type :bank))]]]))
 
 (defn source-list
   "A vertical menu listing the linked payment sources."
@@ -47,12 +51,12 @@
       (doall
        (map-indexed
         #(with-meta [source-list-item %2] {:key %1})
-        @sources))]]))
+        @sources))
 
-     ;;[:a.source-list-item.align-center
-     ;; {:on-click #(dispatch [:modal/show :payment.source/add])}
-     ;; [ant/icon {:type "plus-circle-o" :style {:font-size "2rem"}}]
-     ;; [:p.title.is-6 "Add Payment Method"]]]]))
+      [:a.source-list-item.align-center
+       {:on-click #(dispatch [:modal/show :payment.source/add])}
+       [ant/icon {:type "plus-circle-o" :style {:font-size "2rem"}}]
+       [:p.title.is-6 "Add Payment Method"]]]]))
 
 (defn- source-actions-menu []
   [ant/menu
