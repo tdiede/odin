@@ -29,11 +29,17 @@ h2
 h3
   font-size:     1.25rem
   margin-bottom: .2rem
+  color: #4C4C4C
 
 h4
   font-size:     .9rem
   // font-weight:   bold
   margin-bottom: .15rem
+
+p
+  font-size: 1rem
+p + p
+  margin-top: 1rem
 
 // Intended to precede a card, describing its contents
 h3.caps
@@ -91,3 +97,15 @@ p.smaller, a.smaller
 
 .restrict-width
   // max-width: 300px
+
+$font-size-range: 11
+$font-size-mixins: ()
+
+@for $i from 1 through $margin-size-range
+  $base: 0.55rem
+  $step: 0.15rem
+  $w: #{$i * $step + $base}
+  @if not index($font-size-range, $w)
+    .fs#{$i}
+      font-size: $w
+  $font-size-mixins: append( $font-size-mixins, $w, comma)
