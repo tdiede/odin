@@ -60,3 +60,55 @@ table, .table
   padding: .8rem 1rem
   margin-bottom: 2rem
   @extend .rounded
+
+
+
+.source-list
+  @extend .flexrow
+  align-items: stretch
+  justify-content: flex-start
+  width: 100%
+  // overflow-x: scroll
+  // padding: .3rem
+  // border: 1px solid #aaa
+  // border-radius: 3px
+
+  a.source-list-item
+    display: block
+    flex: 0 0 auto
+    // height: 120px
+    position: relative
+    border: 1px solid $inner-component-border-color
+    padding: 1.2rem 1.2rem .75rem
+    margin-right: 1rem
+    border-radius: 3px
+
+    .ant-card
+      height: 100%
+
+    .title
+      font-weight: normal
+
+    .icon
+      color: $text-gray
+
+    &:hover
+      border-color: #bbb
+      background: $off-white
+
+    &.is-active
+      border: 1px solid $blue
+      background: $light-blue
+      .ant-card
+        background: #e7f5ff
+      .title
+        color: $blue
+
+      &:hover
+        background: $light-blue-darker
+
+  .source-list-metadata
+    @extend .flexrow
+
+  .source-list-type-icon
+    opacity: 0.7

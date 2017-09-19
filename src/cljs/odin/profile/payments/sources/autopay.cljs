@@ -102,13 +102,13 @@
 ;;unset_autopay_source
 
 
-(reg-event-db
- :payment.sources.autopay/toggle!
- [(path db/path)]
- (fn [db [_ value]]
-    (let [sources (subscribe [:payment.sources/autopay-sources])
-          active  (subscribe [:payment.sources/autopay-source])]
-        (tb/log @sources)
-      ;;(if (true? value)
-        (map disable-autopay sources))))
-        ;;(map enable-autopay sources))))
+;;(reg-event-db
+;; :payment.sources.autopay/toggle!
+;; [(path db/path)]
+;; (fn [db [_ value]]
+;;    (let [sources (subscribe [:payment.sources/autopay-sources])
+;;          active  (subscribe [:payment.sources/autopay-source])]
+;;        (tb/log @sources)
+;;      ;;(if (true? value)
+;;        (map disable-autopay sources))))
+;;        ;;(map enable-autopay sources))))

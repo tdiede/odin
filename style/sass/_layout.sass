@@ -30,6 +30,13 @@
   .root-section
     flex: 1 1 auto
 
+// Top level page layout, for pages with a sidebar
+// .page-container
+  // @extend .flexrow
+
+.column.sidebar
+  flex: 0 0 250px
+
 
 section, .section
   background: none
@@ -64,18 +71,18 @@ section, .section
     margin-left: 2rem
 
 
-$margin-size-range: 10
+$margin-size-range: 11
 $margin-mixins: ()
 
-@for $i from 1 through $margin-size-range
+@for $i from 0 through $margin-size-range
   $w: #{$i * 0.5}rem
   @if not index($margin-mixins, $w)
     .mt#{$i}
-      margin-top: $w
+      margin-top: $w !important
     .mr#{$i}
-      margin-right: $w
+      margin-right: $w !important
     .mb#{$i}
-      margin-bottom: $w
+      margin-bottom: $w !important
     .ml#{$i}
-      margin-left: $w
+      margin-left: $w !important
   $margin-mixins: append( $margin-mixins, $w, comma)

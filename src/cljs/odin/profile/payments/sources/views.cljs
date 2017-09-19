@@ -15,17 +15,23 @@
 (defn source-list-item
   [{:keys [id type name last4] :as source}]
   (let [current (subscribe [:payment.sources/current])]
-    [:a.panel-block {:class (when (= id (get @current :id)) "is-active")
-                     :href  (routes/path-for :profile.payment/sources :query-params {:source-id id})}
-     [:span.panel-icon
-      (if (true? (:default source))
-        [ant/tooltip {:title "Default payment source"}
-         [:span.icon [:i.fa.fa-check]]]
-        (payments-ui/payment-source-icon (or type :bank)))]
-     [:span.flexrow.full-width
-      [:span name]
-      [:span.pin-right (str "**** " last4)]]]))
-
+    [:a.source-list-item
+       {:class (when (= id (get @current :id)) "is-active")
+        :href  (routes/path-for :profile.payment/sources
+                                :query-params {:source-id id})}
+       [:p.title.is-6 {:style {:margin-bottom "0.2rem"}} name]
+       [:p.title.is-6.mb1
+        (case type
+          :card (str "xxxxxxxxxxxx" last4)
+          (str "xxxxxx" last4))]
+       [:div.source-list-metadata
+        (when (true? (:default source))
+          [ant/tooltip {:title "Default payment source"}
+           [:div.default-source-indicator
+            [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
+            [:span.default-source-label "Default"]]])
+        [:span.pin-right.source-list-type-icon
+         (payments-ui/payment-source-icon (or type :bank))]]]))
 
 (defn source-list
   "A vertical menu listing the linked payment sources."
@@ -33,13 +39,20 @@
   (let [sources (subscribe [:payment/sources])]
         ;; TODO: Show a loading state?
         ;; loading (subscribe [:payment.sources/loading?])
+    [:div
+     [:h3 "Payment Methods"]
+     [:div.source-list.mb3
+     ;;[:nav.panel.is-rounded
+      ;;[:p.panel-heading "Linked Accounts"]
+      (doall
+       (map-indexed
+        #(with-meta [source-list-item %2] {:key %1})
+        @sources))]]))
 
-    [:nav.panel.is-rounded
-     [:p.panel-heading "Linked Accounts"]
-     (doall
-      (map-indexed
-       #(with-meta [source-list-item %2] {:key %1})
-       @sources))]))
+     ;;[:a.source-list-item.align-center
+     ;; {:on-click #(dispatch [:modal/show :payment.source/add])}
+     ;; [ant/icon {:type "plus-circle-o" :style {:font-size "2rem"}}]
+     ;; [:p.title.is-6 "Add Payment Method"]]]]))
 
 (defn- source-actions-menu []
   [ant/menu
@@ -52,20 +65,26 @@
   []
   (let [{:keys [id type name last4 autopay-on] :as source} @(subscribe [:payment.sources/current])
         is-default     (and (= type :bank) (true? (:default source)))
-        can-be-default (and (= type :bank) (not (true? is-default)))]
-    [:div.card
-     [:div.card-content
+        can-be-default (and (= type :bank) (not (true? is-default)))
+        can-be-autopay (= type :bank)]
+    [ant/card ;;{:title "Details" :class "stripe-style"}
       [:div.flexrow
        ;; Source Icon
-       [payments-ui/payment-source-icon type]
-       [:div.ml2
+       ;;[payments-ui/payment-source-icon type]
+       [:div
         ;; Source Name
         [:h3 (str name " **** " last4)]
+         ;;[payments-ui/payment-source-icon type]
         ;; Is default source?
-        (when is-default
-          [ant/tag {:color "blue"}
-           [ant/icon {:type "check"}]
-           [:span "Default payment source"]])]
+        [:div.flexrow.mt1
+         (when is-default
+           [ant/tag {:color "blue" :class "is-medium noop"}
+            [ant/icon {:type "check-circle"}]
+            [:span.text-blue "Default method"]])
+         (when can-be-autopay
+          [ant/tag {:class "noop is-medium"}
+           [ant/icon {:type "close"}]
+           [:span "Autopay Off"]])]]
 
        [:div.pin-right.pin-top
         (when can-be-default
@@ -77,7 +96,7 @@
                        :overlay (r/as-element [source-actions-menu])}
          [:a.ant-dropdown-link
           [:span "More"]
-          [ant/icon {:type "down"}]]]]]]]))
+          [ant/icon {:type "down"}]]]]]]))
 
      ;; Buttons
      ;;[:footer.card-footer
@@ -95,8 +114,8 @@
   []
   (let [{:keys [payments name]} @(subscribe [:payment.sources/current])
         is-loading              (subscribe [:payment.sources/loading?])]
-    [ant/card {:title (l10n/translate :payment-history-for name)
-               :class "is-flush"}
+    [ant/card {:title "Transaction History";;(l10n/translate :payment-history-for name)
+               :class "is-flush stripe-style"}
      [payments-ui/payments-table payments @is-loading]]))
 
 
@@ -240,8 +259,8 @@
     ;;[:div;;.flexcol.flex-auto.full-height {:style {:height "4em"}}
      [:div.flexrow
       [ant/switch
-        {:checked   @autopay-on
-         :on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
+        {:checked   @autopay-on}]
+         ;;:on-change #(dispatch [:payment.sources.autopay/toggle! (-> %)])}]
       [:h4.ml1
        [:span "Autopay"]
        [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]))
@@ -281,10 +300,12 @@
       [:div
        (tb/log @sources)
        [source-settings]
+       [source-list]
+       [:hr]
        [:div.columns
-        [:div.column.is-4
-         [source-list]]
-        [:div.column.is-8
+        ;;[:div.column.is-4]
+         ;;[source-list]]
+        [:div.column;;.is-8
          [source-detail]
          [source-payment-history]]]])))
 

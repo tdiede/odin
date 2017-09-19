@@ -5,6 +5,7 @@
             [re-frame.core :refer [reg-event-db
                                    subscribe
                                    reg-event-fx
+                                   dispatch
                                    path debug]]
             [toolbelt.core :as tb]))
 
@@ -14,9 +15,9 @@
 ;; =============================================================================
 
 
-(defmethod routes/dispatches :profile.payment/sources [route]
+(defmethod routes/dispatches :profile.payment/sources
+  [route]
   [[:payment.sources/fetch (get-in route [:requester :id])]
-   ;;[:payment.source.autopay/fetch] ;;(get-in route [:requester :id])]
    [:payment.sources/set-current (get-in route [:params :source-id])]])
 
 
@@ -36,7 +37,8 @@
  :payment.sources/fetch
  [(path db/path)]
  (fn [{:keys [db]} [_ account-id]]
-   {:db      (assoc-in db [:loading :list] true)
+   {:db      (-> (assoc-in db [:loading :list] true)
+                 (assoc-in [:loading :source-view] true))
     :graphql {:query
               [[:payment_sources {:account account-id}
                 [:id :last4 :customer :type :name :status :default ;;:autopay
