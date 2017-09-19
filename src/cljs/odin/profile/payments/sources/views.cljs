@@ -30,10 +30,10 @@
 
        ;;[:span.payment-icon-top-right
          ;;(payments-ui/payment-source-icon (or type :bank))]
-       [:div.source-list-metadata
-        [:span.source-list-type-icon
+       [:div.source-list-metadata.flexrow
+        [:span.source-list-type-icon.flexrow
          (payments-ui/payment-source-icon (or type :bank))
-         (:expires source)]
+         [:span.ml1 (:expires source)]]
         (when (true? (:default source))
           [ant/tooltip {:title "Default payment source"}
            [:div.default-source-indicator
@@ -50,7 +50,7 @@
         ;; loading (subscribe [:payment.sources/loading?])
     [:div
      [:h3 "Linked Accounts"]
-     [:div.source-list.mb3
+     [:div.source-list.mb6
      ;;[:nav.panel.is-rounded
       ;;[:p.panel-heading "Linked Accounts"]
       (doall
@@ -277,7 +277,7 @@
         loading     (subscribe [:payment.sources/loading?])]
         ;;banks       (subscribe [:payment/sources :bank])
         ;;cards       (subscribe [:payment/sources :card])]
-   [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb3
+   [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb6
     ;;(println "AUTOPAY: " @autopay)
     [:div.flexrow.flex-center
           [ant/switch {:checked    @autopay-on
