@@ -16,7 +16,7 @@
 
 (defmethod routes/dispatches :profile.payment/sources [route]
   [[:payment.sources/fetch (get-in route [:requester :id])]
-   ;;[:payment.source.autopay/fetch] ;;(get-in route [:requester :id])]
+   ;;[:payment.source.autopay/fetch (get-in route [:requester :id])]
    [:payment.sources/set-current (get-in route [:params :source-id])]])
 
 
@@ -39,32 +39,42 @@
    {:db      (assoc-in db [:loading :list] true)
     :graphql {:query
               [[:payment_sources {:account account-id}
-                [:id :last4 :customer :type :name :status :default ;;:autopay
+                [:id :last4 :customer :type :name :status :default :autopay
                  [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
               :on-success [:payment.sources.fetch/success]
               :on-failure [:payment.sources.fetch/failure]}}))
 
-(reg-event-fx
- :payment.source.autopay/fetch
- [(path db/path)]
- (fn [{:keys [db]} _]
-   {:graphql {:query [[:autopay_source [:id]]]
-              :on-success [:payment.source.autopay.fetch/success]
-              :on-failure [:payment.source.autopay.fetch/failure]}}))
+;;(reg-event-fx
+;; :payment.source.autopay/fetch
+;; [(path db/path)]
+;; (fn [{:keys [db]} _]
+;;   {:graphql {:query [[:autopay_source [:id]]]
+;;              :on-success [:payment.source.autopay.fetch/success]
+;;              :on-failure [:payment.source.autopay.fetch/failure]}}))
+;;
+;;(reg-event-fx
+;; :payment.source.autopay.fetch/success
+;; [(path db/path)]
+;; (fn [{:keys [db]} [_ response]]
+;;   ;;(let [source (get-in response [:data :payment_sources])]
+;;     ;;(tb/log response)
+;;     {:db (assoc db :autopay-source nil)}))
+;;
+;;(reg-event-fx
+;; :payment.source.autopay.fetch/failure
+;; [(path db/path)]
+;; (fn [{:keys [db]} [_ response]]
+;;   {:dispatch [:graphql/notify-errors! response]}))
 
-(reg-event-fx
- :payment.source.autopay.fetch/success
- [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   ;;(let [source (get-in response [:data :payment_sources])]
-     (tb/log response)
-     {:db (assoc db :autopay-source nil)}))
+(defn if-bank-enable-autopay
+  [source]
+  (if (= :bank (:type source))
+    (update source :autopay true)
+    source))
 
-(reg-event-fx
- :payment.source.autopay.fetch/failure
- [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   {:dispatch [:graphql/notify-errors! response]}))
+(defn set-autopay-on-banks
+  [sources]
+  (into {} (for [[k v] sources] [k (if-bank-enable-autopay v)])))
 
 (reg-event-fx
  :payment.sources.fetch/success
@@ -75,10 +85,12 @@
                                     (nil? (:current db)))
                            (routes/path-for :profile.payment/sources
                                             :query-params {:source-id (:id (first payment-sources))}))]
+     ;;(tb/log (filter #(= (:type %) :bank) payment-sources))
      (tb/assoc-when
-      {:db (-> (assoc db :sources payment-sources)
-               (assoc-in [:loading :list] false))}
-      :route route))))
+      {:db      (-> (assoc db :sources payment-sources)
+                    (assoc-in [:loading :list] false))}
+      :route    route
+      :dispatch [:payment.sources.autopay/parse payment-sources]))))
 
 
 (reg-event-fx
@@ -88,6 +100,17 @@
    {:db       (assoc-in db [:loading :list] false)
     :dispatch [:graphql/notify-errors! response]}))
 
+
+(reg-event-fx
+ :payment.sources.autopay/parse
+ [(path db/path)]
+ (fn [{:keys [db]} [_ sources]]
+   (if-let [auto-source (autopay/get-autopay-source sources)]
+     {:db (-> (assoc-in db [:autopay :source] (:id auto-source))
+              (assoc-in [:autopay :on] true))}
+     {:db (-> (assoc-in db [:autopay :source] nil)
+              (assoc-in [:autopay :on] false))})))
+    ;;:dispatch [:graphql/notify-errors! response]}))
 
 ;; =============================================================================
 ;; Add Source

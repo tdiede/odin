@@ -98,8 +98,9 @@
         (let [[is-source _] (<!? (is-autopay-source? ctx source))]
           (resolve/deliver! result is-source))
         (catch Throwable t
-          (resolve/deliver! result nil {:message  (error-message t)
-                                        :err-data (ex-data t)}))))
+          (resolve/deliver! result nil))))
+          ;;(resolve/deliver! result nil {:message  (error-message t)
+          ;;                              :err-data (ex-data t)}))))
     result))
 
 

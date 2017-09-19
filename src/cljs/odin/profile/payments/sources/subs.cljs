@@ -27,11 +27,16 @@
      (:sources db)
      (filter #(= (:type %) type) (:sources db)))))
 
+(defn- get-default-source
+  [sources]
+  (first (filter #(= (:default %) true) sources)))
+
 (reg-sub
  :payment.sources/default-source
  :<- [::sources]
  (fn [db _]
-   (first (filter #(= (:default %) true) (:sources db)))))
+   (get-default-source (:sources db))))
+   ;;(first (filter #(= (:default %) true) (:sources db)))))
 
 
 (reg-sub

@@ -35,8 +35,8 @@
    :deposit/amount-remaining deposit/amount-remaining
    :deposit/amount-paid      deposit/amount-paid
    :deposit/amount-pending   deposit/amount-pending
-   :deposit/refund-status    deposit/refund-status
-   })
+   :deposit/refund-status    deposit/refund-status})
+
 
 
 (def ^:private payment-source-resolvers
@@ -55,8 +55,8 @@
    :payment.sources/verify-bank!   source/verify-bank!
    :payment.sources/set-autopay!   source/set-autopay!
    :payment.sources/unset-autopay! source/unset-autopay!
-   :payment.sources/set-default!   source/set-default!
-   })
+   :payment.sources/set-default!   source/set-default!})
+
 
 
 (def ^:private member-license-resolvers
