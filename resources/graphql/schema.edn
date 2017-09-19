@@ -377,6 +377,11 @@
                                         :description "ID of an account to request sources for."}}
                     :resolve :payment.sources/list}
 
+  :autopay_source {:type    :payment_source
+                   :args    {:account {:type        (non-null :Long)
+                                       :description "ID of an account to request the autopay source for."}}
+                   :resolve :payment.sources/autopay-source}
+
   ;; TODO: This should return a list of `:referral`, not `:data_point`. See
   ;; above.
   :referrals {:type    (list :data_point)

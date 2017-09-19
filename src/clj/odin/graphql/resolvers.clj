@@ -48,6 +48,7 @@
    :payment.source/default?        source/default?
    ;; queries
    :payment.sources/list           source/sources
+   :payment.sources/autopay-source source/autopay-source
    ;; mutations
    :payment.sources/delete!        source/delete!
    :payment.sources/add-source!    source/add-source!
