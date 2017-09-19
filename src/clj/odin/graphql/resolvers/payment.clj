@@ -214,6 +214,21 @@
     (async/close! out)))
 
 
+(def ^:private concurrency
+  5)
+
+
+(defn merge-stripe-data
+  "Provided context `ctx` and `payments`, fetch all required data from Stripe
+  and merge it into the payments."
+  [{:keys [stripe] :as ctx} payments]
+  (let [in  (chan)
+        out (chan)]
+    (async/pipeline-async concurrency out (partial process-payment ctx) in)
+    (async/onto-chan in payments)
+    (async/into [] out)))
+
+
 (defn- parse-gql-params
   [{:keys [statuses types] :as params}]
   (tb/assoc-when
@@ -229,24 +244,9 @@
   [db params]
   (->> (parse-gql-params params)
        (apply concat)
-       (apply payment/payments2 db)
+       (apply payment/query db)
        (sort-by :payment/paid-on)
        (map mapify)))
-
-
-(def ^:private concurrency
-  5)
-
-
-(defn merge-stripe-data
-  "Provided context `ctx` and `payments`, fetch all required data from Stripe
-  and merge it into the payments."
-  [{:keys [stripe] :as ctx} payments]
-  (let [in  (chan)
-        out (chan)]
-    (async/pipeline-async concurrency out (partial process-payment ctx) in)
-    (async/onto-chan in payments)
-    (async/into [] out)))
 
 
 ;; =============================================================================

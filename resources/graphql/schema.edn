@@ -263,6 +263,8 @@
                      :resolve (:get :db/id)}
             :name   {:type    (non-null String)
                      :resolve (:get :service/name)}
+            :desc   {:type    String
+                     :resolve (:get :service/desc)}
             :code   {:type    (non-null String)
                      :resolve (:get :service/code)}
             :price  {:type    Float
@@ -344,7 +346,13 @@
                :description   "List of payment statuses to query."}
     :datekey  {:type          :payments_date_key
                :default-value :created
-               :description   "Specifies which date attribute to use for date params."}}}}
+               :description   "Specifies which date attribute to use for date params."}}}
+
+  :services_query_params
+  {:description "Parameters to query for services."
+   :fields
+   {:q {:type        String
+        :description "Query term."}}}}
 
 
  ;; =============================================================================
@@ -378,7 +386,11 @@
   ;; TODO: This should return a list of `:referral`, not `:data_point`. See
   ;; above.
   :referrals {:type    (list :data_point)
-              :resolve :metrics/referrals}}
+              :resolve :metrics/referrals}
+
+  :services {:type    (list :service)
+             :args    {:params {:type :services_query_params}}
+             :resolve :service/query}}
 
 
  ;; =============================================================================

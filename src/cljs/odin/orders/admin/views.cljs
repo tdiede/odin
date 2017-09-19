@@ -1,5 +1,6 @@
 (ns odin.orders.admin.views
   (:require [antizer.reagent :as ant]
+            [odin.orders.admin.create :as create]
             [odin.utils.formatters :as format]
             [re-frame.core :refer [subscribe dispatch]]
             [reagent.core :as r]))
@@ -116,6 +117,16 @@
 ;; =============================================================================
 
 
+;; TODO: Wire up checkable-tags w/ actual data, drives query params
+;; TODO: Add download as csv button
+;; TODO: Create order modal
+;; TODO: Create order mutation
+;; DONE: Add services query w/ fulltext search term `q`
+;; DONE: Extend accounts query w/ fulltext search term `q`
+;; TODO: Place order mutation/action for orders
+;; TODO: Process order mutation/action for orders
+
+
 (defn view []
   [:div
    [:div.view-header
@@ -126,7 +137,10 @@
    ;;  ]
 
    ;;; controls
-   [:div {:style {:margin-top 24 :margin-bottom 24}}
-    [checkable-tags]]
+   [:div.columns {:style {:margin-top 24 :margin-bottom 24}}
+    [:div.column
+     [checkable-tags]]
+    [:div.column
+     [:div.is-pulled-right [create/button]]]]
    [:div
     [orders-table]]])

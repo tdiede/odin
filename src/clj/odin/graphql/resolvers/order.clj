@@ -67,7 +67,7 @@
   [db params]
   (->> (parse-gql-params params)
        (apply concat)
-       (apply order/orders2 db)))
+       (apply order/query db)))
 
 
 (defn orders
