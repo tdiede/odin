@@ -230,6 +230,8 @@
                        :resolve (:get :last4)}
             :default  {:type    (non-null Boolean)
                        :resolve :payment.source/default?}
+            :expires  {:type    String
+                       :resolve :payment.source/expiration}
             :customer {:type    String
                        :resolve (:get :customer)}
             :status   {:type    String
