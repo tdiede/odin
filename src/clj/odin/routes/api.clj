@@ -29,6 +29,10 @@
     (d/entity (->db req) id)))
 
 
+(defn- ->socrata [req]
+  (get-in req [:deps :socrata]))
+
+
 ;; =============================================================================
 ;; GraphQL
 ;; =============================================================================
@@ -44,18 +48,21 @@
   (gqlu/context
     (->conn req)
     (->requester req)
-    (->stripe req)))
+    (->stripe req)
+    (->socrata req)))
 
 
-(defn graphql-handler [req]
-  (let [[op expr] (extract-graphql-expression req)
-        result    (execute graph/schema
-                           (format "%s %s" (name op) expr)
-                           nil
-                           (context req))]
-    (-> (response/response result)
-        (response/content-type "application/transit+json")
-        (response/status (if (-> result :errors some?) 400 200)))))
+(defn graphql-handler
+  [schema]
+  (fn [req]
+   (let [[op expr] (extract-graphql-expression req)
+         result    (execute schema
+                            (format "%s %s" (name op) expr)
+                            nil
+                            (context req))]
+     (-> (response/response result)
+         (response/content-type "application/transit+json")
+         (response/status (if (-> result :errors some?) 400 200))))))
 
 
 ;; =============================================================================
@@ -71,6 +78,7 @@
     :people      {}
     :metrics     {}
     :communities {}
+    :kami        {}
     :orders      {}
     :services    {}}})
 
@@ -114,5 +122,9 @@
 (defroutes routes
   (GET "/config" [] config-handler)
 
-  (GET "/graphql" [] graphql-handler)
-  (POST "/graphql" [] graphql-handler))
+  (GET "/graphql" [] (graphql-handler graph/schema))
+  (POST "/graphql" [] (graphql-handler graph/schema))
+
+  (GET "/kami" [] (graphql-handler graph/kami))
+  (POST "/kami" [] (graphql-handler graph/kami))
+  )

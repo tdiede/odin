@@ -23,6 +23,8 @@
      :uri     "/metrics"}
     {:feature :orders
      :uri     "/orders"}
+    {:feature :kami
+     :uri     "/kami"}
     {:feature :communities
      :uri     "/communities"}]})
 

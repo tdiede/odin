@@ -25,6 +25,8 @@
         :communities {:admin  "Communities"
                       :member "Community"}
 
+        :kami {:admin "Kami"}
+
         :metrics {:admin "Metrics"}
 
         :orders {:admin "Orders"}

@@ -61,7 +61,7 @@
                                                                   com.google.guava/guava]]]
 
   :jvm-opts ["-server"
-             "-Xmx2g"
+             "-Xmx4g"
              "-XX:+UseCompressedOops"
              "-XX:+DoEscapeAnalysis"
              "-XX:+UseConcMarkSweepGC"]

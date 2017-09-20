@@ -16,6 +16,8 @@
 
     ["/orders" :orders]
 
+    ["/kami" :kami]
+
     ["/profile" [["" :profile/membership]
                  ;; NOTE: Unnecessary because this is the default
                  ;; ["/membership" :profile/membership]
