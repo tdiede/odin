@@ -18,27 +18,27 @@
 (defmethod routes/dispatches :profile.payment/sources
   [{:keys [params requester] :as route}]
   (if (empty? params)
-    [[:payment.sources/set-default-route (:id requester)]]
+    [[:payment.sources/set-default-route]]
     [[:payment.sources/init route]]))
 
 
 (reg-event-fx
  :payment.sources/set-default-route
  [(path db/path)]
- (fn [{{sources :sources} :db} [_ account-id]]
+ (fn [{{sources :sources} :db} _]
    (if-let [source (first sources)]
      {:route (routes/path-for :profile.payment/sources :query-params {:source-id (:id source)})}
-     {:dispatch [:payment.sources/fetch account-id]})))
+     {:dispatch [:payment.sources/fetch]})))
 
 
 (reg-event-fx
  :payment.sources/init
  [(path db/path)]
- (fn [{{sources :sources} :db} [_ {:keys [requester params]}]]
+ (fn [{{sources :sources} :db} [_ {:keys [params]}]]
    (let [source-id (:source-id params)]
      (if (empty? sources)
        {:dispatch-n [[:payment.sources/set source-id]
-                     [:payment.sources/fetch (:id requester)]]}
+                     [:payment.sources/fetch]]}
        {:dispatch [:payment.sources/set source-id]}))))
 
 
@@ -56,15 +56,15 @@
 
 (reg-event-fx
  :payment.sources/fetch
- [(path db/path)]
- (fn [{:keys [db]} [_ account-id]]
-   {:dispatch [:loading :payment.sources/fetch true]
-    :graphql  {:query
-               [[:payment_sources {:account account-id}
-                 [:id :last4 :customer :type :name :status :default :autopay :expires
-                  [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on :description]]]]]
-               :on-success [:payment.sources.fetch/success]
-               :on-failure [:payment.sources.fetch/failure]}}))
+ (fn [{:keys [db]} _]
+   (let [account-id (get-in db [:config :account :id])]
+     {:dispatch [:loading :payment.sources/fetch true]
+      :graphql  {:query
+                 [[:payment_sources {:account account-id}
+                   [:id :last4 :customer :type :name :status :default :autopay :expires
+                    [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on :description]]]]]
+                 :on-success [:payment.sources.fetch/success]
+                 :on-failure [:payment.sources.fetch/failure]}})))
 
 
 (defn- active-source-should-change? [db sources]
@@ -154,8 +154,12 @@
 
 
 ;; =============================================================================
-;; Add Bank
+;; Bank Accounts
 ;; =============================================================================
+
+
+;; =============================================================================
+;; Add
 
 
 (reg-event-db
@@ -212,12 +216,11 @@
 (reg-event-fx
  ::create-bank-source-success
  (fn [{:keys [db]} [_ response]]
-   (let [account-id (get-in db [:config :account :id])]
-     {:dispatch-n [[:loading :payment.sources.add/bank false]
-                   [:modal/hide :payment.source/add]
-                   [:payment.sources/fetch account-id]]
-      :route      (routes/path-for :profile.payment/sources
-                                   :query-params {:source-id (get-in response [:data :add_payment_source :id])})})))
+   {:dispatch-n [[:loading :payment.sources.add/bank false]
+                 [:modal/hide :payment.source/add]
+                 [:payment.sources/fetch]]
+    :route      (routes/path-for :profile.payment/sources
+                                 :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
 
 (reg-event-fx
  ::create-bank-source-fail
@@ -225,6 +228,32 @@
    (tb/error response)
    {:dispatch-n [[:loading :payment.sources.add/bank false]
                  [:graphql/notify-errors! response]]}))
+
+
+;; =============================================================================
+;; Verify
+
+
+(reg-event-fx
+ :payment.sources.bank/verify!
+ [(path db/path)]
+ (fn [_ [k source-id amount-1 amount-2]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation
+               [[:verify_bank_source {:deposits [amount-1 amount-2]
+                                      :id       source-id}
+                 [:id]]]
+               :on-success [::bank-verify-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::bank-verify-success
+ (fn [{db :db} [_ k _]]
+   (let [account-id (get-in db [:config :account :id])]
+     {:dispatch-n [[:loading k false]
+                   [:payment.sources/fetch account-id]
+                   [:modal/hide :payment.source/verify-account]]})))
 
 
 ;; =============================================================================
@@ -248,12 +277,11 @@
 (reg-event-fx
  ::create-card-source-success
  (fn [{:keys [db]} [_ response]]
-   (let [account-id (get-in db [:config :account :id])]
-     {:dispatch-n [[:loading :payment.sources.add/card false]
-                   [:modal/hide :payment.source/add]
-                   [:payment.sources/fetch account-id]]
-      :route      (routes/path-for :profile.payment/sources
-                                   :query-params {:source-id (get-in response [:data :add_payment_source :id])})})))
+   {:dispatch-n [[:loading :payment.sources.add/card false]
+                 [:modal/hide :payment.source/add]
+                 [:payment.sources/fetch]]
+    :route      (routes/path-for :profile.payment/sources
+                                 :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
 
 (reg-event-fx
  ::create-card-source-fail
@@ -286,7 +314,7 @@
      ;;(tb/log response sources)
      {:dispatch-n [[:loading :payment.sources/deleting false]
                    [:notify/success "Account was set as default payment source."]
-                   [:payment.sources/fetch account-id]]
+                   [:payment.sources/fetch]]
       :route      (routes/path-for :profile.payment/sources
                                    :query-params {})})))
 
@@ -302,6 +330,7 @@
 ;; Delete a Source
 ;; =============================================================================
 
+
 (reg-event-fx
  :payment.source/delete!
  (fn [{:keys [db]} [_ id]]
@@ -312,6 +341,7 @@
      :on-success [::delete-source-success]
      :on-failure [::delete-source-fail]}}))
 
+
 (reg-event-fx
  ::delete-source-success
  (fn [{:keys [db]} [_ response]]
@@ -321,9 +351,10 @@
      {:dispatch-n [[:loading :payment.sources/deleting false]
                    [:modal/hide :payment.source/remove]
                    [:notify/success "Account deleted successfully."]
-                   [:payment.sources/fetch account-id]]
+                   [:payment.sources/fetch]]
       :route      (routes/path-for :profile.payment/sources
                                    :query-params { :source-id (:id (first @sources))})})))
+
 
 (reg-event-fx
  ::delete-source-fail
@@ -331,6 +362,7 @@
    (tb/error response)
    {:dispatch-n [[:loading :payment.sources/deleting false]
                  [:graphql/notify-errors! response]]}))
+
 
 ;; =============================================================================
 ;; Misc

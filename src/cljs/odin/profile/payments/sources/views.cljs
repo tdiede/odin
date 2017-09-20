@@ -74,6 +74,7 @@
   "Display information about the currently-selected payment source."
   []
   (let [{:keys [id type name last4 autopay-on] :as source} @(subscribe [:payment.sources/current])
+        is-unverified (and (= type :bank) (not= (:status source) "verified"))
         is-default     (and (= type :bank) (true? (:default source)))
         can-be-default (and (= type :bank) (not (true? is-default)))
         can-be-autopay (= type :bank)]
@@ -99,7 +100,8 @@
       [:div.pin-right.pin-top
        ;;(when can-be-default
        ;;[ant/button {:on-click #(dispatch [:payment.source/set-default! id])} "Set as default"]
-       ;;[ant/button {:on-click #(dispatch [:modal/show :payment.source/verify-account])} "Verify Account"]
+       (when is-unverified
+         [ant/button {:on-click #(dispatch [:modal/show :payment.source/verify-account])} "Verify Account"])
        ;;[ant/button {:on-click #(dispatch [:payment.sources.autopay/enable! (:id source)])}
        ;;     "Enable for Autopay"]
        [ant/dropdown {:trigger ["click"]
@@ -124,31 +126,30 @@
   []
   (let [{:keys [payments name]} @(subscribe [:payment.sources/current])
         is-loading              (subscribe [:loading? :payment.sources/fetch])]
-    [ant/card {:title "Transaction History";;(l10n/translate :payment-history-for name)
+    [ant/card {:title "Transaction History" ;;(l10n/translate :payment-history-for name)
                :class "is-flush stripe-style"}
      [payments-ui/payments-table payments @is-loading]]))
 
 
-(defn modal-confirm-enable-autopay
-  []
-  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])]
-    ;;(tb/log (str "is enable modal visible?" @is-visible))
+(defn modal-confirm-enable-autopay []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])
+        banks      (subscribe [:payment/sources :bank])
+        selected   (r/atom (-> @banks first :id))]
     [ant/modal {:title       "Autopay your rent?"
                 :visible     @is-visible
                 :ok-text     "Great! Let's do it"
                 :cancel-text "I'd rather pay manually."
-                :on-ok       #(dispatch [:payment.sources.autopay/enable!])
+                :on-ok       #(dispatch [:payment.sources.autopay/enable! @selected])
                 :on-cancel   #(dispatch [:modal/hide :payment.source/autopay-enable])}
-     ;;:footer    nil}
      [:div
       [:p "Autopay automatically transfers your rent the day before it's due,
             on the 1st of each month."]
       [:p "We recommend enabling this
-            feature, so you never need to worry about making rent on time."]]]))
+            feature, so you never need to worry about making rent on time."]
+      ]]))
 
 
-(defn modal-confirm-disable-autopay
-  []
+(defn modal-confirm-disable-autopay []
   (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-disable])]
     ;;(tb/log (str "is disable modal visible?" @is-visible))
     [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
@@ -160,18 +161,28 @@
       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
 
 
-(defn modal-verify-account
-  []
-  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])]
-    ;;(tb/log (str "is disable modal visible?" @is-visible))
+(defn modal-verify-account []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
+        ;; is-submitting (subscribe [:loading? :payment.sources.bank/verify])
+        current-id (subscribe [:payment.sources/current-id])
+        amounts    (r/atom {:amount-1 nil :amount-2 nil})]
     [ant/modal {:title     "Verify Bank Account"
                 :visible   @is-visible
-                :on-ok     #(dispatch [:modal/hide :payment.source/verify-account])
+                :on-ok     #(dispatch [:payment.sources.bank/verify! @current-id 32 45])
                 :on-cancel #(dispatch [:modal/hide :payment.source/verify-account])}
-     ;;:footer    nil}
      [:div
       [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
-      [:p "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]]]))
+      [:p "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
+      [:form {:on-submit #(do
+                            (.preventDefault %)
+                            ;; TODO: Hook up form to supply `32` and `45`
+                            )}
+       [ant/input-number {:default-value (:amount-1 @amounts)
+                          :placeholder   "e.g. 32"
+                          :on-change     #(swap! amounts assoc :amount-1 %)}]
+       [ant/input-number {:default-value (:amount-2 @amounts)
+                          :placeholder   "e.g. 45"
+                          :on-change     #(swap! amounts assoc :amount-2 %)}]]]]))
 
 
 (defn modal-confirm-remove-account []
@@ -275,7 +286,7 @@
     [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb6
      [:div.flexrow.flex-center
       [ant/switch {:checked   @autopay-on
-                   :on-change #(dispatch [:payment.sources.autopay/confirm-modal (-> %)])}]
+                   :on-change #(dispatch [:payment.sources.autopay/confirm-modal])}]
       [:p.ml1
        [:span.bold "Autopay"]
        [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
@@ -309,7 +320,7 @@
      [modal-add-source]
      [modal-confirm-remove-account]
      [modal-verify-account]
-     ;;[modal-confirm-enable-autopay]
+     [modal-confirm-enable-autopay]
      [modal-confirm-disable-autopay]
      [:div.view-header.flexrow
       [:div

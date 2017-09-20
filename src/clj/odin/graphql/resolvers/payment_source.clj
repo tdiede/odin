@@ -223,8 +223,6 @@
                 sources   (->> (rcu/sources customer')
                                ;; inject the customer for field resolvers
                                (map #(assoc % ::customer customer')))]
-            ;;(println (map #(:expires %1) sources))
-            (println sources)
             (resolve/deliver! result sources))
           (catch Throwable t
             (resolve/deliver! result nil {:message  (error-message t)

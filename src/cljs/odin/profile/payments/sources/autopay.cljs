@@ -31,31 +31,25 @@
 ;; Returns currently selected Autopay source, if it exists.
 (reg-sub
  :payment.sources/autopay-source
- :<- [::sources]
- (fn [db _]
-   (get-in db [:autopay :source])))
-   ;;(get-autopay-source (:sources db))))
-   ;;(reaction (first (filter #(true? (:autopay %)) (:sources db))))))
+ :<- [:payment/sources]
+ (fn [sources _]
+   (tb/find-by :autopay sources)))
 
 
 (reg-sub
  :payment.sources/autopay-on?
- :<- [::sources]
- (fn [db _]
-   (get-in db [:autopay :on])))
-   ;;(not (empty? (filter #(true? (:autopay %)) (:sources db))))))
+ :<- [:payment.sources/autopay-source]
+ (fn [source _]
+   (:autopay source)))
 
-
-; (tb/log get-autopay-source)
-; (initialize)
 
 (reg-event-fx
  :payment.sources.autopay/confirm-modal
  [(path db/path)]
- (fn [_ [_ enabling]]
-   (if (= true enabling)
-     {:dispatch [:payment.sources.autopay/enable!]}
-     {:dispatch [:modal/show :payment.source/autopay-disable]})))
+ (fn [_ [_ is-enabled]]
+   (if is-enabled
+     {:dispatch [:modal/show :payment.source/autopay-disable]}
+     {:dispatch [:modal/show :payment.source/autopay-enable]})))
 
 
 ;;(reg-event-fx
@@ -72,33 +66,17 @@
 (defn- get-default-source [sources]
   (first (filter #(= (:default %) true) sources)))
 
+
 (reg-event-fx
  :payment.sources.autopay/enable!
  [(path db/path)]
- (fn [{:keys [db]} _]
-   (let [source (get-default-source (:sources db))
-         id     (:id source)]
-     (tb/log source)
-     #_{:graphql {:mutation   [[:set_autopay_source {:id id} [:id]]]
-                :on-success [:payment.sources/fetch]
-                :on-failure [:payment.sources/fetch]}})))
+ (fn [{:keys [db]} [_ source-id]]
+   {:graphql {:mutation   [[:set_autopay_source {:id source-id} [:id]]]
+              :on-success [:payment.sources/fetch]
+              :on-failure [:graphql/failure]}}))
 
 
 ;;[:notify/success "Great! Autopay is now enabled."]
-
-;;(reg-event-fx
-;; :account/change-random-phone!
-;; [(path db/path)]
-;; (fn [{:keys [db]} _]
-;;   (let [account (rand-nth (get-in db [:accounts :list]))]
-;;     {:db      (assoc-in db [:loading :accounts/list] true)
-;;      :graphql {:mutation   [[:set_phone {:id    (:id account)
-;;                                          :phone (rand-phone)}
-;;                              [:id :phone]]]
-;;                :on-success [:account.change-random-number/success]}})))
-
-;;unset_autopay_source
-
 
 (reg-event-db
  :payment.sources.autopay/toggle!
