@@ -57,6 +57,104 @@ table, .table
   align-items: center
 
 
-  padding: .8rem 1rem
+  padding: 1.5rem
   margin-bottom: 2rem
   @extend .rounded
+
+
+$source-list-item-padding: 1.5rem
+$source-list-padding: .75rem
+
+.source-list
+  @extend .flexrow
+  align-items: stretch
+  justify-content: flex-start
+  width: 100%
+  // border-bottom: 1px solid #dbdbdb
+  // border-top: 1px solid #dbdbdb
+  // overflow-x: scroll
+
+  // padding: $source-list-padding
+  // background: #eee
+  // box-shadow: inset 0 1px 3px rgba(0,0,0,0.15)
+  // // border: 1px solid #aaa
+  // border-radius: 6px
+
+  a.source-list-item
+    display: block
+    flex: 0 0 auto
+    // margin-bottom: -1px
+    // border-bottom: 1px solid #dbdbdb
+    // height: 120px
+    position: relative
+    box-shadow: $component-box-shadow
+    padding: $source-list-item-padding
+    margin-right: $source-list-padding
+    border: none
+    // border-radius: 3px
+    color: $black
+    background: $white
+
+    .ant-card
+      height: 100%
+
+    .icon
+      color: $text-gray
+
+    &:hover
+      box-shadow: $component-box-shadow-hover
+      // border-color: #bbb
+      // background: $off-white
+
+    &:hover:not(.is-active)
+      // color: $black
+      // border-bottom: 1px solid $black
+
+    &.is-active
+      // border: 1px solid $blue
+      // border-bottom: 1px solid $blue
+      // background: $light-blue
+      color: $blue
+      .icon
+        color: $blue
+      .ant-card
+        background: #e7f5ff
+      .title
+        color: $blue
+
+      // &:hover
+        // background: $light-blue-darker
+
+    p.source-card-name, p.source-card-digits
+      font-size: 1rem
+      line-height: 1.3
+      margin: 0 0
+
+    p.source-card-name
+      font-weight: bold
+    p.source-card-digits
+      margin-bottom: .2rem
+    // p.source-card-digits
+    //   font-weight: normal
+
+    .payment-icon-top-right
+      position: absolute
+      top:   1rem
+      right: 1rem
+      .icon, i.fa
+        font-size: 1rem
+
+    .source-list-metadata
+      @extend .flexrow
+
+    .source-list-type-icon
+      opacity: 0.7
+
+
+    &.add-new-source
+      @extend .flexcol
+      align-items: center
+      justify-content: center
+      text-align: center
+      p
+        margin-bottom: 0

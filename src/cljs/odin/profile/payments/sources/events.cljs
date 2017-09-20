@@ -5,6 +5,7 @@
             [re-frame.core :refer [reg-event-db
                                    subscribe
                                    reg-event-fx
+                                   dispatch
                                    path debug]]
             [toolbelt.core :as tb]))
 
@@ -14,7 +15,8 @@
 ;; =============================================================================
 
 
-(defmethod routes/dispatches :profile.payment/sources [route]
+(defmethod routes/dispatches :profile.payment/sources
+  [route]
   [[:payment.sources/fetch (get-in route [:requester :id])]
    ;;[:payment.source.autopay/fetch (get-in route [:requester :id])]
    [:payment.sources/set-current (get-in route [:params :source-id])]])
@@ -24,25 +26,34 @@
  :payment.sources/set-current
  [(path db/path)]
  (fn [db [_ current-source-id route]]
-   (assoc-in db [:current] current-source-id)))
+   (-> (assoc-in db [:current] current-source-id)
+       (assoc :no-refetch false))))
 
 
 ;; =============================================================================
 ;; Fetch Sources
 ;; =============================================================================
 
+(reg-event-db
+ :payments.sources/no-refetch
+ [(path db/path)]
+ (fn [db _]
+   (assoc db :no-refetch true)))
 
 (reg-event-fx
  :payment.sources/fetch
  [(path db/path)]
  (fn [{:keys [db]} [_ account-id]]
-   {:db      (assoc-in db [:loading :list] true)
-    :graphql {:query
-              [[:payment_sources {:account account-id}
-                [:id :last4 :customer :type :name :status :default :autopay
-                 [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
-              :on-success [:payment.sources.fetch/success]
-              :on-failure [:payment.sources.fetch/failure]}}))
+   (if (:no-refetch db)
+     {:db (assoc db :no-refetch true)}
+     {:db      (-> (assoc-in db [:loading :list] true)
+                   (assoc-in [:loading :source-view] true))
+      :graphql {:query
+                [[:payment_sources {:account account-id}
+                  [:id :last4 :customer :type :name :status :default :autopay :expires
+                   [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on]]]]]
+                :on-success [:payment.sources.fetch/success]
+                :on-failure [:payment.sources.fetch/failure]}})))
 
 ;;(reg-event-fx
 ;; :payment.source.autopay/fetch
@@ -294,7 +305,7 @@
                    [:notify/success "Account deleted successfully."]
                    [:payment.sources/fetch account-id]]
       :route      (routes/path-for :profile.payment/sources
-                                   :query-params {})})))
+                                   :query-params { :source-id (:id (first @sources))})})))
 
 (reg-event-fx
  ::delete-source-fail

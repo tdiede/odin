@@ -21,9 +21,7 @@
 
 
 (defn- ->graphql [x]
-  (let [q (venia/graphql-query {:venia/queries x})]
-    (println q)
-    q))
+  (venia/graphql-query {:venia/queries x}))
 
 
 (rf/reg-event-fx

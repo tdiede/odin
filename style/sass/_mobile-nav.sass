@@ -1,0 +1,49 @@
+
+$nav-border-color: #ccc
+
+
+@media screen and (max-width: $tablet - 1px)
+  section.root-section
+    padding-top: 0
+  .column.sidebar
+    display: none
+
+.mobile-nav-container
+  margin-bottom: 1.5rem
+
+ul.mobile-page-nav
+  @extend .flexrow
+  border-top: 1px solid $nav-border-color
+  border-bottom: 1px solid $nav-border-color
+  align-items: stretch
+  margin: 0 -1rem 0
+
+  li
+    margin: 0
+    padding: 0
+    flex: 1 1 auto
+
+  // li:not(:last-child)
+  //   border-right: 1px solid $nav-border-color
+
+  li.is-active a
+    color: $white
+    font-weight: bold
+    background: $blue
+
+  a
+    height: 100%
+    @extend .flexcol
+    align-items: center
+    justify-content: space-between
+    text-align: center
+    padding: .6rem 1rem
+    color: $black
+
+  .anticon
+    font-size: 1.3rem
+
+  .nav-label
+    font-size: .9rem
+    margin: .15rem 0 0
+    // text-transform: uppercase

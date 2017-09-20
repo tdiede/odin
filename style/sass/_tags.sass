@@ -1,0 +1,20 @@
+
+// Extending ant tags for more functionality
+
+.ant-tag
+
+  // Noop removes interactivity (hover, etc.)
+  &.noop
+    cursor: default
+    &:hover
+      color: inherit
+      background-color: inherit
+
+  &.is-medium
+    font-size: .8rem
+
+
+.ant-tag-blue, .ant-tag-blue.noop:hover
+  opacity: 1
+  color: $blue
+  background: $light-blue

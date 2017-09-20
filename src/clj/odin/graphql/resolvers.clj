@@ -46,6 +46,7 @@
    :payment.source/name            source/name
    :payment.source/payments        source/payments
    :payment.source/default?        source/default?
+   :payment.source/expiration      source/expiration
    ;; queries
    :payment.sources/list           source/sources
    :payment.sources/autopay-source source/autopay-source
