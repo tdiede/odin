@@ -78,8 +78,8 @@
  (fn [{:keys [db]} _]
    (let [source (get-default-source (:sources db))
          id     (:id source)]
-     {:db      (assoc-in db [:loading :list] true)
-      :graphql {:mutation   [[:set_autopay_source {:id id} [:id]]]
+     (tb/log source)
+     #_{:graphql {:mutation   [[:set_autopay_source {:id id} [:id]]]
                 :on-success [:payment.sources/fetch]
                 :on-failure [:payment.sources/fetch]}})))
 

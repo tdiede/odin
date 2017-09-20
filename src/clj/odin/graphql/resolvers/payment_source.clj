@@ -98,9 +98,9 @@
         (let [[is-source _] (<!? (is-autopay-source? ctx source))]
           (resolve/deliver! result is-source))
         (catch Throwable t
-          (resolve/deliver! result nil))))
-          ;;(resolve/deliver! result nil {:message  (error-message t)
-          ;;                              :err-data (ex-data t)}))))
+          ;; (resolve/deliver! result nil))))
+          (resolve/deliver! result nil {:message (error-message t)
+                                        :err-data (ex-data t)}))))
     result))
 
 
@@ -129,32 +129,12 @@
     "card" :card
     (resolve/resolve-as :unknown {:message (format "Unrecognized source type '%s'" (:object source))})))
 
-;;(comment
-;;
-;; (defn exp
-;;  [source]
-;;  (if-let [year (:year source)]
-;;    (println year)
-;;    (println "did not find")))
-;;
-;; (def s1 {:year 2024 :type "card"})
-;; (def s2 {:type "bank"})
-;;
-;; )
-
 
 (defn expiration
   "Returns the expiration date for a credit card. Returns nil if bank."
   [_ _ source]
-  (let [result (resolve/resolve-promise)]
-    (go
-     (try
-       (if-let [year (:exp_year source)]
-          (resolve/deliver! result (str (:exp_month source) "/" year))
-          (resolve/deliver! result nil))
-       (catch Throwable t
-          (resolve/deliver! result nil))))
-    result))
+  (when-let [year (:exp_year source)]
+    (str (:exp_month source) "/" year)))
 
 
 (defn name
