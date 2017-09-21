@@ -78,9 +78,11 @@
  :menu/items
  :<- [::menu]
  :<- [:config/features]
- (fn [[menu features] _]
-   (->> (:items menu)
-        (filter (comp features :feature)))))
+ :<- [:config/role]
+ (fn [[menu features role] _]
+   (if (= role :member)
+     []                                 ; NOTE: Only for first release
+     (->> (:items menu) (filter (comp features :feature))))))
 
 
 (reg-sub

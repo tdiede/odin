@@ -1,9 +1,7 @@
 (ns odin.profile.contact.views
   (:require [antizer.reagent :as ant]
-            [reagent.core :as r]
-            [odin.routes :as routes]
             [re-frame.core :refer [dispatch subscribe]]
-            [toolbelt.core :as tb]))
+            [reagent.core :as r]))
 
 (defn- placeholder
   [field]
@@ -13,7 +11,6 @@
     :phone      "405-555-1234"
     :email      "me@joinstarcity.com"
     :bio        "Give us a short introduction to yourself! This will help your neighbors in the community to connect with you about mutual interests, etc."))
-
 
 
 (def ^:private form-style
@@ -54,14 +51,6 @@
     :rules       [{:required false}]
     :input-props {:placeholder (placeholder :email)
                   :disabled    true}}])
-   ;;{:key         :bio
-   ;; :label       "Short Bio"
-   ;; :ant-id      "bio"
-   ;; :rules       [{:required true}]
-   ;; :input-props {:placeholder (placeholder :bio)
-   ;;               :type        "textarea"
-   ;;               :style       {:min-height "100px"}}}])
-
 
 
 (defn- contact-info-form []
@@ -94,20 +83,19 @@
     :ant-id      "phone"
     :rules       [{:required true}]
     :input-props {:placeholder (placeholder :phone)}}])
-                  ;;:on-blur (tb/log "pppppp")}}])
 
 
 (defn- emergency-contact-info-form []
   (let [form      (ant/get-form)
         account   (subscribe [:profile/account-mutable])
-        emergency_contact (get @account :emergency_contact)
+        contact   (get @account :emergency_contact)
         on-change (fn [k] #(dispatch [:profile.contact.info/update-emergency-contact! k (.. % -target -value)]))]
 
     [ant/form {:layout "horizontal"}
       (map-indexed
        (fn [idx {key :key :as item}]
          (-> (assoc-in item [:input-props :on-change] (on-change key))
-             (assoc-in [:initial-value] (get emergency_contact key))
+             (assoc-in [:initial-value] (get contact key))
              (form-item)
              (with-meta {:key idx})))
        emergency-contact-form-items)]))
@@ -119,7 +107,8 @@
       [:div
        (contact-info-form)
        [ant/form-item (merge form-style {:label " "})
-        [:button.button.is-primary {:disabled true} "Save Changes"]]])))
+        [ant/button {:disabled true} "Save Changes"]]])))
+
 
 (defn- emergency-contact-ui []
   (fn []
@@ -127,14 +116,12 @@
       [:div
        (emergency-contact-info-form)
        [ant/form-item (merge form-style {:label " "})
-        [:button.button.is-primary {:disabled true} "Save Changes"]]])))
+        [ant/button {:disabled true} "Save Changes"]]])))
 
 
 (defn contact-info []
   [:div
    [:div.view-header
-    ;;[:h1 "Contact Information"]
-    ;;[:p "Update your info in our system, including an emergency contact."]
     [:h1.title.is-3 "Contact Information"]
     [:p.subtitle.is-6 "Update your info in our system, including an emergency contact."]]
 

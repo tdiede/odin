@@ -1,5 +1,6 @@
 (ns odin.content
   (:require [antizer.reagent :as ant]
+            [iface.loading :as loading]
             [toolbelt.core :as tb]
             [odin.utils.dispatch :as dispatch]
             [reagent.core :as r]))
@@ -29,9 +30,7 @@
       (.reload js/window.location))
     :reagent-render
     (fn []
-      ;; TODO: Show some sort of indication that we're logging out (e.g.
-      ;; spinner) for instances where it hangs a bit
-      [:div])}))
+      (loading/fullpage :text "Logging out..."))}))
 
 
 (defmethod view :logout [_] [logout!])
