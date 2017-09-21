@@ -19,6 +19,15 @@
   (and (= type :card) (true? default)))
 
 
+(defn- num-bank-sources []
+  (let [bank-sources (subscribe [:payment/sources :bank])]
+    (count @bank-sources)))
+
+
+(defn- is-autopay-allowed []
+  (let [bank-sources (subscribe [:payment/sources :bank])]
+    (< 0 (count (filter #(not= (:status %) "new") @bank-sources)))))
+
 (defn account-digits
   [{:keys [type last4]}]
   (case type
@@ -47,20 +56,14 @@
      [:div.source-list-item-info
       [:p.bold name]
       [:p (account-digits source)]
-      [:p
-        [:span (:expires source)]
-        (when (is-unverified source)
-          [:span.text-yellow.fs3 "Unverified"])]
-
+      (when (= type :card) [:span (:expires source)])
 
       [:div.source-item-end
-        (payments-ui/payment-source-icon (or type :bank))]]]))
-        ;;(when (is-default source)
-        ;;  [ant/tooltip {:title "Default payment source"}
-        ;;   [:div.default-source-indicator
-        ;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
-        ;;    [:span.default-source-label "Default"]]])
-
+        (if (is-unverified source)
+          [:p.italic
+            [ant/icon {:type "exclamation-circle" :style {:font-size ".8rem"}}]
+            [:span.fs3 "Unverified"]]
+          (payments-ui/payment-source-icon (or type :bank)))]]]))
 
 
 (defn source-list
@@ -81,10 +84,16 @@
 
 
 (defn- source-actions-menu []
-  [ant/menu
+  (let [source  (subscribe [:payment.sources/current])
+        is-bank (= (:type @source) :bank)]
+   [ant/menu
    [ant/menu-item {:key "removeit"}
-    [:a.text-red {:href "#" :on-click #(dispatch [:modal/show :payment.source/remove])}
-     "Remove this account"]]])
+    [:a.text-red
+     {:href "#"
+      :on-click #(dispatch [:modal/show (if (and (< 1 (num-bank-sources)) is-bank)
+                                          :payment.source/remove
+                                          :payment.source/cannot-remove-only-bank)])}
+     "Remove this account"]]]))
 
 
 (defn source-detail
@@ -138,7 +147,19 @@
 
 (defn bank-radio-option
   [{:keys [id name last4] :as bank}]
-  [ant/radio {:value id} name (account-digits bank)])
+  [ant/radio {:value id} (str name " " (account-digits bank))])
+
+
+(defn modal-enable-autopay-footer [selected-autopay-source]
+  (let [is-submitting (subscribe [:loading? :payment.sources.autopay/enable!])]
+    [:div
+     [ant/button {:on-click #(dispatch [:modal/hide :payment.source/autopay-enable])}
+       "I'd rather pay manually."]
+     [ant/button {:type     "primary"
+                  :loading  @is-submitting
+                  :on-click #(dispatch [:payment.sources.autopay/enable! selected-autopay-source])}
+       "Great! Let's do it"]]))
+
 
 (defn modal-confirm-enable-autopay []
   (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])
@@ -146,14 +167,11 @@
         selected   (r/atom (-> @banks first :id))]
     [ant/modal {:title       "Autopay your rent?"
                 :visible     @is-visible
-                :ok-text     "Great! Let's do it"
-                :cancel-text "I'd rather pay manually."
-                :on-ok       #(dispatch [:payment.sources.autopay/enable! @selected])
-                :on-cancel   #(dispatch [:modal/hide :payment.source/autopay-enable])}
+                :footer      (r/as-element [modal-enable-autopay-footer @selected])}
      [:div
       [:p "Autopay automatically transfers your rent payment each month. We recommend enabling this
             feature, so you never need to worry about making rent on time."]
-
+      [:p.bold "Choose a bank account to use for Autopay:"]
       [ant/radio-group {:default-value @selected
                         :disabled      (< (count @banks) 2)
                         :on-change     #(reset! selected (.. % -target -value))}
@@ -165,12 +183,23 @@
       ]]))
 
 
+(defn modal-disable-autopay-footer [selected-autopay-source]
+  (let [is-submitting (subscribe [:loading? :payment.sources.autopay/disable!])]
+    [:div
+     [ant/button {:on-click #(dispatch [:modal/hide :payment.source/autopay-disable])} "Cancel"]
+     [ant/button {:type     "primary"
+                  :loading  @is-submitting
+                  :on-click #(dispatch [:payment.sources.autopay/disable! selected-autopay-source])}
+       "Disable Autopay"]]))
+
+
 (defn modal-confirm-disable-autopay []
   (let [is-visible     (subscribe [:modal/visible? :payment.source/autopay-disable])
         autopay-source (subscribe [:payment.sources/autopay-source])]
     ;;(tb/log (str "is disable modal visible?" @is-visible))
     [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
                 :visible   @is-visible
+                :footer    (r/as-element [modal-disable-autopay-footer (:id @autopay-source)])
                 :on-ok     #(dispatch [:payment.sources.autopay/disable! (:id @autopay-source)])
                 :on-cancel #(dispatch [:modal/hide :payment.source/autopay-disable])}
      ;;:footer    nil}
@@ -235,6 +264,18 @@
                   :on-cancel #(dispatch [:modal/hide :payment.source/remove])}
        [:p "If you remove this account, it will no longer be available for settling payments."]])))
 
+(defn modal-cannot-remove-only-bank []
+  (let [is-visible     (subscribe [:modal/visible? :payment.source/cannot-remove-only-bank])
+        current-source (subscribe [:payment.sources/current])]
+    (fn []
+      [ant/modal {:title     (str "Cannot remove " (:name @current-source))
+                  :width     640
+                  :visible   @is-visible
+                  :ok-text   "OK, got it."
+                  :on-ok     #(dispatch [:modal/hide :payment.source/cannot-remove-only-bank])
+                  :on-cancel #(dispatch [:modal/hide :payment.source/cannot-remove-only-bank])}
+       [:p "You must have a bank account linked in order to pay rent."]
+       [:p "If you wish to remove this bank, please link another one first."]])))
 
 (def ^:private tab-icon-classes
   {:bank    "fa-bank"
@@ -304,21 +345,22 @@
      [add-new-source-button]]]])
 
 
-
 (defn source-settings []
-  (let [autopay-on  (subscribe [:payment.sources/autopay-on?])
-        has-banks   (< 0 (count @(subscribe [:payment/sources :bank])))
-        src-default (subscribe [:payment.sources/default-source])]
+  (let [autopay-on      (subscribe [:payment.sources/autopay-on?])
+        autopay-allowed (is-autopay-allowed)
+        src-default     (subscribe [:payment.sources/default-source])]
     [:div.page-controls
      [:div.flexrow.flex-center
       [ant/switch {:checked   @autopay-on
-                   :disabled  (not has-banks)
+                   :disabled  (not autopay-allowed)
                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
       [:p.ml1
-       [:span.bold (if @autopay-on "Autopay On" "Autopay Off")]
-       (if has-banks
+       [:span.bold
+         {:class (when (not autopay-allowed) "subdued")}
+         (if @autopay-on "Autopay On" "Autopay Off")]
+       (if autopay-allowed
          [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
-         [ui/info-tooltip "To use Autopay, you must have a bank account linked."])]]]))
+         [ui/info-tooltip "To enable Autopay, you must first add and verify bank account."])]]]))
 
 
 (defn- source-view []
@@ -349,6 +391,7 @@
      [modal-verify-account]
      [modal-confirm-enable-autopay]
      [modal-confirm-disable-autopay]
+     [modal-cannot-remove-only-bank]
      [:div.view-header.flexrow
       [:div
        [:h1 (l10n/translate :payment-sources)]
