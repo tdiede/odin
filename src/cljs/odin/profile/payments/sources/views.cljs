@@ -301,10 +301,7 @@
     [ui/media-step "Link a payment source so you can settle your charges." "bank"]
     [ui/media-step "Turn on Autopay and never worry about a late payment again." "history"]
     [ui/media-step
-     [ant/button {:type "primary"
-                  :on-click #(dispatch [:modal/show :payment.source/add])}
-      [:span.icon.is-small [:i.fa.fa-plus-square-o]]
-      [:span (l10n/translate :btn-add-new-account)]]]]])
+     [add-new-source-button]]]])
 
 
 
