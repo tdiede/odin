@@ -46,7 +46,7 @@
     :rules       [{:required true}]
     :input-props {:placeholder (placeholder :phone)}}
    {:key         :email
-    :label       "Email Adress"
+    :label       "Email Address"
     :ant-id      "email"
     :rules       [{:required false}]
     :input-props {:placeholder (placeholder :email)

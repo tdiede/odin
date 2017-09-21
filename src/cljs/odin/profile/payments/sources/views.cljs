@@ -348,6 +348,7 @@
 (defn source-settings []
   (let [autopay-on      (subscribe [:payment.sources/autopay-on?])
         autopay-allowed (is-autopay-allowed)
+        card-sources    (subscribe [:payment/sources :card])
         src-default     (subscribe [:payment.sources/default-source])]
     [:div.page-controls
      [:div.flexrow.flex-center
@@ -360,7 +361,12 @@
          (if @autopay-on "Autopay On" "Autopay Off")]
        (if autopay-allowed
          [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
-         [ui/info-tooltip "To enable Autopay, you must first add and verify bank account."])]]]))
+         [ui/info-tooltip "To enable Autopay, you must first add and verify bank account."])]
+
+      [:span.page-controls-divider "•"]
+      [:div
+       [input/pretty-select @card-sources]]
+      ]]))
 
 
 (defn- source-view []
