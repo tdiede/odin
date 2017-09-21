@@ -7,6 +7,7 @@
             [odin.graphql]
             [odin.content :as content]
             [odin.home.views]
+            [odin.kami.views]
             [odin.metrics.views]
             [odin.orders.views]
             [odin.profile.views]

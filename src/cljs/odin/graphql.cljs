@@ -26,15 +26,16 @@
 
 (rf/reg-event-fx
  ::graphql
- (fn [_ [_ {:keys [query mutation on-success on-failure]
-           :or   {on-failure [:graphql/notify-errors!]}
+ (fn [_ [_ {:keys [endpoint query mutation on-success on-failure]
+           :or   {endpoint   "/api/graphql"
+                  on-failure [:graphql/notify-errors!]}
            :as   opts}]]
    (validate-opts opts)
    (let [method (if (some? query) :get :post)]
      {:http-xhrio
       (tb/assoc-when
        {:method          method
-        :uri             "/api/graphql"
+        :uri             endpoint
         :params          (tb/assoc-when
                           {}
                           :query (when-some [q query] (->graphql q))

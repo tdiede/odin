@@ -6,6 +6,7 @@
             [odin.metrics.events]
             [odin.orders.events]
             [odin.profile.events]
+            [odin.kami.events]
             [clojure.string :as string]
             [re-frame.core :refer [reg-event-db reg-event-fx]]
             [ajax.core :as ajax]

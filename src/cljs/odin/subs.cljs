@@ -4,6 +4,7 @@
             [odin.metrics.subs]
             [odin.orders.subs]
             [odin.profile.subs]
+            [odin.kami.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 

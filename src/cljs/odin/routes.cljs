@@ -16,6 +16,8 @@
 
     ["/orders" :orders]
 
+    ["/kami" :kami]
+
     ["/profile" [["" :profile/membership]
                  ;; NOTE: Unnecessary because this is the default
                  ;; ["/membership" :profile/membership]
@@ -100,7 +102,6 @@
 
 (defn append-query-params
   [path params]
-  (tb/log (:query-params params))
   (if-let [query-params (:query-params params)]
     (-> (uri path)
         (assoc :query query-params)

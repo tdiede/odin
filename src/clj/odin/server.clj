@@ -146,8 +146,8 @@
 
 
 (defstate web-server
-  :start (->> (app-handler {:conn   conn
-                            :config config
-                            :stripe (config/stripe-secret-key config)})
+  :start (->> (app-handler {:conn    conn
+                            :config  config
+                            :stripe  (config/stripe-secret-key config)})
               (start-server (config/webserver-port config)))
   :stop (stop-server web-server))

@@ -70,6 +70,12 @@
   {;;fields
    :unit/number unit/number})
 
+
+(def ^:private util-resolvers
+  {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
+   :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
+   :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))})
+
 (def resolvers
   (merge
    account-resolvers
@@ -81,6 +87,4 @@
    order/resolvers
    service/resolvers
    metrics/resolvers
-   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
-    :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
-    :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))}))
+   util-resolvers))

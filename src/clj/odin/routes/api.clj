@@ -2,32 +2,11 @@
   (:require [blueprints.models.account :as account]
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
-            [datomic.api :as d]
             [odin.graphql :as graph]
             [odin.graphql.resolvers.utils :as gqlu]
+            [odin.routes.kami :as kami]
+            [odin.routes.util :refer :all]
             [ring.util.response :as response]))
-
-;; =============================================================================
-;; Helpers
-;; =============================================================================
-
-
-(defn ->conn [req]
-  (get-in req [:deps :conn]))
-
-
-(defn ->db [req]
-  (d/db (get-in req [:deps :conn])))
-
-
-(defn ->stripe [req]
-  (get-in req [:deps :stripe]))
-
-
-(defn- ->requester [req]
-  (let [id (get-in req [:identity :db/id])]
-    (d/entity (->db req) id)))
-
 
 ;; =============================================================================
 ;; GraphQL
@@ -44,18 +23,21 @@
   (gqlu/context
     (->conn req)
     (->requester req)
-    (->stripe req)))
+    (->stripe req)
+    (->config req)))
 
 
-(defn graphql-handler [req]
-  (let [[op expr] (extract-graphql-expression req)
-        result    (execute graph/schema
-                           (format "%s %s" (name op) expr)
-                           nil
-                           (context req))]
-    (-> (response/response result)
-        (response/content-type "application/transit+json")
-        (response/status (if (-> result :errors some?) 400 200)))))
+(defn graphql-handler
+  [schema]
+  (fn [req]
+    (let [[op expr] (extract-graphql-expression req)
+          result    (execute schema
+                             (format "%s %s" (name op) expr)
+                             nil
+                             (context req))]
+     (-> (response/response result)
+         (response/content-type "application/transit+json")
+         (response/status (if (-> result :errors some?) 400 200))))))
 
 
 ;; =============================================================================
@@ -71,6 +53,7 @@
     :people      {}
     :metrics     {}
     :communities {}
+    :kami        {}
     :orders      {}
     :services    {}}})
 
@@ -114,5 +97,11 @@
 (defroutes routes
   (GET "/config" [] config-handler)
 
-  (GET "/graphql" [] graphql-handler)
-  (POST "/graphql" [] graphql-handler))
+  (GET "/graphql" [] (graphql-handler graph/schema))
+  (POST "/graphql" [] (graphql-handler graph/schema))
+
+  (compojure/context "/kami" [] kami/routes)
+
+  ;; (GET "/kami" [] (graphql-handler graph/kami))
+  ;; (POST "/kami" [] (graphql-handler graph/kami))
+  )

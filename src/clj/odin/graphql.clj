@@ -1,15 +1,13 @@
 (ns odin.graphql
-  (:require [odin.graphql.resolvers :as resolvers]
+  (:require [clj-time.coerce :as c]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia.util :as util]
-            [mount.core :refer [defstate]]
             [datomic.api :as d]
-            [blueprints.models.member-license :as member-license]
-            [taoensso.timbre :as timbre]
-            [clj-time.coerce :as c]))
+            [mount.core :refer [defstate]]
+            [odin.graphql.resolvers :as resolvers]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
