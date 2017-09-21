@@ -48,18 +48,18 @@
       [:p.bold name]
       [:p (account-digits source)]
       [:p
-        [:span (:expires source)]
-        (when (is-unverified source)
-          [:span.text-yellow.fs3 "Unverified"])]
+       [:span (:expires source)]
+       (when (is-unverified source)
+         [:span.text-yellow.fs3 "Unverified"])]
 
 
       [:div.source-item-end
-        (payments-ui/payment-source-icon (or type :bank))]]]))
-        ;;(when (is-default source)
-        ;;  [ant/tooltip {:title "Default payment source"}
-        ;;   [:div.default-source-indicator
-        ;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
-        ;;    [:span.default-source-label "Default"]]])
+       (payments-ui/payment-source-icon (or type :bank))]]]))
+;;(when (is-default source)
+;;  [ant/tooltip {:title "Default payment source"}
+;;   [:div.default-source-indicator
+;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
+;;    [:span.default-source-label "Default"]]])
 
 
 
@@ -68,16 +68,16 @@
   []
   (let [sources (subscribe [:payment/sources])]
     [:div.source-list
-      (doall
-       (map-indexed
-        #(with-meta [source-list-item %2] {:key %1})
-        @sources))
+     (doall
+      (map-indexed
+       #(with-meta [source-list-item %2] {:key %1})
+       @sources))
 
-      [add-new-source-button]]))
-      ;;[ant/button {:type "primary"
-      ;;             :on-click #(dispatch [:modal/show :payment.source/add])}
-      ;; [ant/icon {:type "plus-circle-o"}]
-      ;; [:span "Add Payment Method"]]]))
+     [add-new-source-button]]))
+;;[ant/button {:type "primary"
+;;             :on-click #(dispatch [:modal/show :payment.source/add])}
+;; [ant/icon {:type "plus-circle-o"}]
+;; [:span "Add Payment Method"]]]))
 
 
 (defn- source-actions-menu []
@@ -112,8 +112,8 @@
       (when is-unverified
         [ant/button {:type     "primary"
                      :on-click #(dispatch [:modal/show :payment.source/verify-account])}
-          [ant/icon {:type "check-circle"}]
-          [:span "Verify Account"]])]]))
+         [ant/icon {:type "check-circle"}]
+         [:span "Verify Account"]])]]))
 
 ;; Buttons
 ;;[:footer.card-footer
@@ -157,10 +157,10 @@
       [ant/radio-group {:default-value @selected
                         :disabled      (< (count @banks) 2)
                         :on-change     #(reset! selected (.. % -target -value))}
-        (map-indexed
-         (fn [idx {key :key :as item}]
-           (-> (bank-radio-option item)
-               (with-meta {:key idx})))
+       (map-indexed
+        (fn [idx {key :key :as item}]
+          (-> (bank-radio-option item)
+              (with-meta {:key idx})))
         @banks)]
       ]]))
 
@@ -189,7 +189,7 @@
      [ant/button {:type     "primary"
                   :loading  @is-submitting
                   :on-click #(dispatch [:payment.sources.bank/verify! @current-id amount-1 amount-2])}
-       "Verify Amounts"]]))
+      "Verify Amounts"]]))
 
 (defn modal-verify-account []
   (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
@@ -352,12 +352,9 @@
      [modal-verify-account]
      [modal-confirm-enable-autopay]
      [modal-confirm-disable-autopay]
-     [:div.view-header.flexrow
-      [:div
-       [:h1 (l10n/translate :payment-sources)]
-       [:p "Edit your payment accounts, enable Autopay, and set default payment sources."]]]
-     ;;[:div.pin-right
-     ;;[add-new-source-button]]]
+     [:div.view-header
+      [:h1.is-3.title (l10n/translate :payment-sources)]
+      [:p.is-6.subtitle "Edit your payment accounts, enable Autopay, and set default payment sources."]]
      (if (= @loading true)
        [:div.loading-box.tall [ant/spin]]
        (source-view))]))

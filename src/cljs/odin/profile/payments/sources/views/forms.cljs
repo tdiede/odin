@@ -10,6 +10,7 @@
   [errors _]
   (nil? errors))
 
+
 (defn submit-card-if-valid
   [errors fields]
   (if (nil? errors)
@@ -74,7 +75,6 @@
 
 (defn bitcoin-account []
   [:div
-   ;;[:p "Deposit address: 12398asdj123123az"]
    [:div.card
     [:div.card-content.align-center
      [:div.width-90.center
@@ -151,7 +151,7 @@
       (let [form (ant/get-form)]
        [:div
         (bank-account-form)
-        [:p.pad bank-account-desc]
+        [:p.pad [:small bank-account-desc]]
         [:hr]
         [:div.align-right
          [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
