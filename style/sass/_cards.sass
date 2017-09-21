@@ -5,10 +5,12 @@
   border-radius: 1px
   box-shadow: $component-box-shadow
 
+$card-padding: 1.5rem
 
 // Fixing some Ant styles that are badly-written
 // or broken by correct baseline styles.
 .ant-card
+  position: relative
 
   // Center title vertically in .ant-card-head
   .ant-card-head
@@ -25,6 +27,24 @@
     top: 0
     height: 48px
     align-items: center
+
+  .ant-card-body
+    padding: $card-padding
+
+  &.stripe-style
+    .ant-card-head
+      border: none
+      padding: 1rem 1.5rem
+
+    .ant-card-head-title
+      font-size: 1.1rem
+    .ant-card-body
+      padding-top: .5rem
+
+  .card-controls
+    position: absolute
+    top: $card-padding
+    right: $card-padding
 
 // Sequential cards have margin between them
 .card + .card, .ant-card + .ant-card, .card + .ant-card

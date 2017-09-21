@@ -15,4 +15,5 @@
    add-path {:type            :bank
              :card            {}
              :bank            {}
+             :microdeposits   {:amount-1 nil :amount-2 nil}
              :available-types [:bank :card]}})

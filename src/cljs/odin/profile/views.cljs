@@ -1,6 +1,7 @@
 (ns odin.profile.views
   (:require [cljs.core.match :refer-macros [match]]
             [iface.nav.menu :as menu]
+            [antizer.reagent :as ant]
             [odin.content :as content]
             [odin.l10n :as l10n]
             [odin.profile.membership.views :as membership]
@@ -34,22 +35,47 @@
                 :route "/logout"}]}])
 
 
+(defn mobile-nav-item
+  [icon text is-active]
+  [:li {:class (when is-active "is-active")}
+      [:a {:href "#"} [ant/icon {:type icon}] [:span.nav-label text]]])
+
+(defn mobile-nav []
+  [:div.mobile-nav-container
+   [:ul.mobile-page-nav
+    [mobile-nav-item "user" "Membership"]
+    [mobile-nav-item "credit-card" "Payments" true]
+    [mobile-nav-item "contacts" "Account"]]
+   [:div.tabs
+    [:ul
+     [:li [:a
+           [ant/icon {:type "bars"}]
+           [:span "History"]]]
+     [:li.is-active [:a
+                     [ant/icon {:type "credit-card"}]
+                     [:span "Payment Methods"]]]]]])
+
+
+
+
 (defn content
   "The top-level conrtent for all `:profile` views. Sets up a side menu for
   sub-navigation and a container for sub-content."
   [{:keys [page path] :as route}]
-  [:div.columns
-   [:div.column.is-one-fifth
-    [menu/side-menu profile-menu-spec page]]
-   [:div.column
-    (let [path (vec (rest path))]
-      (match [path]
-        [[:membership]] [membership/membership]
-        [[:contact]] [contact/contact-info]
-        [[:payment :history]] [phistory/history]
-        [[:payment :sources]] [psources/sources]
-        [[:settings :change-password]] [settings/change-password]
-        :else [:h1 "unmatched"]))]])
+  [:div
+   ;;[mobile-nav]
+   [:div.columns
+    [:div.column.sidebar ;;is-one-fifth
+     [menu/side-menu profile-menu-spec page]]
+    [:div.column
+     (let [path (vec (rest path))]
+       (match [path]
+         [[:membership]] [membership/membership]
+         [[:contact]] [contact/contact-info]
+         [[:payment :history]] [phistory/history]
+         [[:payment :sources]] [psources/sources]
+         [[:settings :change-password]] [settings/change-password]
+         :else [:h1 "unmatched"]))]]])
 
 
 (defmethod content/view :profile [route]

@@ -10,6 +10,7 @@ table, .table
     td, th
       color: $black
       border-bottom-width: 1px
+      background: $off-white
 
   tbody
     tr:last-child
@@ -72,10 +73,13 @@ table, .table
     th
       padding:        $table-th-vertical-padding $side-padding
       background:     $off-white
-      background:     none
+      // background:     none
+      border-top:     1px solid $inner-component-border-color
       border-bottom:  1px solid $inner-component-border-color
       text-transform: uppercase
       font-weight: bold
+      &:last-child
+        text-align: right
     td
       padding:       $table-td-vertical-padding $side-padding
       border-bottom: 1px solid $inner-component-border-color

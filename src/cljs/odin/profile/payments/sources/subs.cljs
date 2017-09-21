@@ -20,8 +20,6 @@
 (reg-sub
  :payment/sources
  :<- [::sources]
- ;;(fn [db _]
- ;;  (:sources db)))
  (fn [db [_ type]]
    (if (nil? type)
      (:sources db)
@@ -36,14 +34,6 @@
  :<- [::sources]
  (fn [db _]
    (get-default-source (:sources db))))
-   ;;(first (filter #(= (:default %) true) (:sources db)))))
-
-
-(reg-sub
- :payment.sources/loading?
- :<- [::sources]
- (fn [db _]
-   (get-in db [:loading :list])))
 
 
 ;; =============================================================================
@@ -92,6 +82,13 @@
  :<- [::add-source]
  (fn [db _]
    (:type db)))
+
+
+(reg-sub
+ :payment.sources.bank.verify/microdeposits
+ :<- [::add-source]
+ (fn [db _]
+   (:microdeposits db)))
 
 
 ;; =============================================================================

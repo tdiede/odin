@@ -3,7 +3,6 @@
             [odin.utils.toolbelt :as utils]
             [odin.utils.formatters :as format]
             [odin.utils.time :as time]
-            [odin.profile.payments.sources.mocks :as mocks]
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
             [toolbelt.core :as tb]
@@ -234,7 +233,7 @@
                 :visible   @is-visible
                 :on-ok     #(reset! is-visible false)
                 :on-cancel #(reset! is-visible false)
-                :footer    [(r/as-element [menu-select-source mocks/payment-sources])
+                :footer    [#_(r/as-element [menu-select-source mocks/payment-sources])
                                         ; (r/as-element [:a.button {:on-click #(reset! is-visible false)}
                                         ; "Cancel"])
                             (r/as-element [:a.button.is-success

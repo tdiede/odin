@@ -230,6 +230,8 @@
                        :resolve (:get :last4)}
             :default  {:type    (non-null Boolean)
                        :resolve :payment.source/default?}
+            :expires  {:type    String
+                       :resolve :payment.source/expiration}
             :customer {:type    String
                        :resolve (:get :customer)}
             :status   {:type    String
@@ -460,6 +462,9 @@
    :args        {:id {:type        (non-null String)
                       :description "The Stripe id of the source used for autopay."}}
    :resolve     :payment.sources/unset-autopay!}
+
+
+  ;; TODO: Write `:update_autopay_source`
 
 
   :set_default_source

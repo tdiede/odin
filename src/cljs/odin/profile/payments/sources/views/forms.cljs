@@ -29,7 +29,7 @@
 
 
 (def card-style
-  {:base    {:fontFamily "'Fira Sans', Helvetica, sans-serif"}
+  {:base    {:fontFamily "'Work Sans', Helvetica, sans-serif"}
    :invalid {:color "#ff3860" :iconColor "#ff3860"}})
 
 

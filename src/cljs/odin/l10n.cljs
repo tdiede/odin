@@ -91,7 +91,7 @@
         :payment-history-for "Payment History for {1}"
         :transaction-history "Transaction History"
         :btn-unlink-account  "Unlink this account"
-        :btn-add-new-account "Link a new account"
+        :btn-add-new-account "Add Payment Method"
 
         :payment-table-no-payments "No payments to show."
         :amount                    "Amount"

@@ -1,6 +1,7 @@
 =define-app-font()
   font-family: "Work Sans"
   // font-family: "Fira Sans", sans-serif
+  // font-family: "Interface", sans-serif
   // font-family: "Fira Sans Condensed"
   // font-family: "Roboto"
 
@@ -28,6 +29,7 @@ h2
 h3
   font-size:     1.25rem
   margin-bottom: .2rem
+  color: #4C4C4C
 
 h4
   font-size:     .9rem
@@ -68,6 +70,12 @@ p.smaller, a.smaller
 
 .lh1
   line-height: 1
+.lh11
+  line-height: 1.1
+.lh12
+  line-height: 1.2
+.lh13
+  line-height: 1.3
 
 .text-larger
   font-size: .8rem
@@ -95,3 +103,15 @@ p.smaller, a.smaller
 
 .restrict-width
   // max-width: 300px
+
+$font-size-range: 11
+$font-size-mixins: ()
+
+@for $i from 1 through $font-size-range
+  $base: 0.6rem
+  $step: 0.1rem
+  $w: #{$i * $step + $base}
+  @if not index($font-size-range, $w)
+    .fs#{$i}
+      font-size: $w
+  $font-size-mixins: append( $font-size-mixins, $w, comma)

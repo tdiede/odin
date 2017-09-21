@@ -86,3 +86,25 @@ td
 
 span+.anticon, .anticon+span
   margin-left: $icon-side-spacing
+
+
+.icon-default-source
+  color: $blue !important
+
+.default-source-indicator
+  @extend .flexrow
+  color: $blue
+  .default-source-label
+    display: none
+    font-size: .8rem
+    margin-left: .2rem
+
+
+.meta-with-icon
+  font-size: .9rem
+  &:not(:last-child)
+    margin-right: $inner-component-padding
+
+.icon-blue
+  .anticon, .icon
+    color: $blue
