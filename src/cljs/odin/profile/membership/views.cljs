@@ -88,7 +88,7 @@
          [:span.icon.is-large.text-yellow [:i.fa.fa-shield]]]
         [:div.column
          [:h4 "Security deposit partially paid."]
-         ;;[:p (format/string
+         ;;[:p (format/gstring
          ;;      "You owe another %s by %s."
          ;;      (format/currency   (:amount_remaining @deposit))
          ;;      (format/date-short (:due @deposit)))]
