@@ -11,6 +11,30 @@
             [reagent.core :as r]
             [toolbelt.core :as tb]))
 
+(defn- is-unverified [{:keys [type status] :as source}]
+  (and (= type :bank) (not= status "verified")))
+
+
+(defn- is-default [{:keys [type default]}]
+  (and (= type :card) (true? default)))
+
+
+(defn account-digits
+  [{:keys [type last4]}]
+  (case type
+    :card (str "xxxxxxxxxxxx" last4)
+    (str "xxxxxx" last4)))
+
+
+(defn add-new-source-button
+  "Button for adding a new Payment Source."
+  []
+  [ant/button {;;:type "primary"
+               :size "large"
+               :icon "plus-circle-o"
+               :on-click #(dispatch [:modal/show :payment.source/add])}
+   (l10n/translate :btn-add-new-account)])
+
 
 (defn source-list-item
   [{:keys [id type name last4] :as source}]
@@ -20,24 +44,22 @@
       :href  (routes/path-for :profile.payment/sources
                               :query-params {:source-id id})}
 
-     [:p.source-card-name name]
-     [:p.source-card-digits
-      ;;[:span.mr1 (payments-ui/payment-source-icon (or type :bank) "is-small")]
-      [:span (case type
-               :card (str "xxxxxxxxxxxx" last4)
-               (str "xxxxxx" last4))]]
+     [:div.source-list-item-info
+      [:p.bold name]
+      [:p (account-digits source)]
+      [:p
+        [:span (:expires source)]
+        (when (is-unverified source)
+          [:span.text-yellow.fs3 "Unverified"])]
 
-     ;;[:span.payment-icon-top-right
-     ;;(payments-ui/payment-source-icon (or type :bank))]
-     [:div.source-list-metadata.flexrow
-      [:span.source-list-type-icon.flexrow
-       (payments-ui/payment-source-icon (or type :bank))
-       [:span.ml1 (:expires source)]]
-      (when (true? (:default source))
-        [ant/tooltip {:title "Default payment source"}
-         [:div.default-source-indicator
-          [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
-          [:span.default-source-label "Default"]]])]]))
+
+      [:div.source-item-end
+        (payments-ui/payment-source-icon (or type :bank))]]]))
+      ;;(when (is-default source)
+      ;;  [ant/tooltip {:title "Default payment source"}
+      ;;   [:div.default-source-indicator
+      ;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
+      ;;    [:span.default-source-label "Default"]]])]]))
 
 
 
@@ -45,28 +67,23 @@
   "A vertical menu listing the linked payment sources."
   []
   (let [sources (subscribe [:payment/sources])]
-    ;; TODO: Show a loading state?
-    ;; loading (subscribe [:payment.sources/loading?])
-    [:div
-     [:h3 "Linked Accounts"]
-     [:div.source-list.mb6
-      ;;[:nav.panel.is-rounded
-      ;;[:p.panel-heading "Linked Accounts"]
+    [:div.source-list
       (doall
        (map-indexed
         #(with-meta [source-list-item %2] {:key %1})
         @sources))
 
-      [:a.source-list-item.add-new-source
-       {:on-click #(dispatch [:modal/show :payment.source/add])}
-       [ant/icon {:type "plus-circle-o" :style {:font-size "2rem"}}]
-       [:p.title.is-6 "Add Payment Method"]]]]))
+      [add-new-source-button]]))
+      ;;[ant/button {:type "primary"
+      ;;             :on-click #(dispatch [:modal/show :payment.source/add])}
+      ;; [ant/icon {:type "plus-circle-o"}]
+      ;; [:span "Add Payment Method"]]]))
 
 
 (defn- source-actions-menu []
   [ant/menu
    [ant/menu-item {:key "removeit"}
-    [:a {:href "#" :on-click #(dispatch [:modal/show :payment.source/remove])}
+    [:a.text-red {:href "#" :on-click #(dispatch [:modal/show :payment.source/remove])}
      "Remove this account"]]])
 
 
@@ -74,41 +91,29 @@
   "Display information about the currently-selected payment source."
   []
   (let [{:keys [id type name last4 autopay-on] :as source} @(subscribe [:payment.sources/current])
-        is-unverified (and (= type :bank) (not= (:status source) "verified"))
-        is-default     (and (= type :bank) (true? (:default source)))
-        can-be-default (and (= type :bank) (not (true? is-default)))
+        is-unverified  (is-unverified source)
+        is-default     (is-default source)
+        can-be-default (and (= type :card) (not is-default))
         can-be-autopay (= type :bank)]
-    [ant/card ;;{:title "Details" :class "stripe-style"}
-     [:div.flexrow
-      ;; Source Icon
-      ;;[payments-ui/payment-source-icon type]
-      [:div
-       ;; Source Name
-       [:h3 (str name " **** " last4)]
-       ;;[payments-ui/payment-source-icon type]
-       ;; Is default source?
-       [:div.flexrow.mt1
-        (when is-default
-          [ant/tag {:color "blue" :class "is-medium noop"}
-           [ant/icon {:type "check-circle"}]
-           [:span.text-blue "Default method"]])
-        (when can-be-autopay
-          [ant/tag {:class "noop is-medium"}
-           [ant/icon {:type "close"}]
-           [:span "Autopay Off"]])]]
+    [ant/card
+     [:div.flexrow.align-start
+      [payments-ui/payment-source-icon type]
+      [:div.ml1
+       [:h3.lh13 name]
+       [:p (account-digits source)]]]
 
-      [:div.pin-right.pin-top
-       ;;(when can-be-default
-       ;;[ant/button {:on-click #(dispatch [:payment.source/set-default! id])} "Set as default"]
-       (when is-unverified
-         [ant/button {:on-click #(dispatch [:modal/show :payment.source/verify-account])} "Verify Account"])
-       ;;[ant/button {:on-click #(dispatch [:payment.sources.autopay/enable! (:id source)])}
-       ;;     "Enable for Autopay"]
-       [ant/dropdown {:trigger ["click"]
-                      :overlay (r/as-element [source-actions-menu])}
-        [:a.ant-dropdown-link
-         [:span "More"]
-         [ant/icon {:type "down"}]]]]]]))
+     [:div.card-controls
+      [ant/dropdown {:trigger ["click"] :overlay (r/as-element [source-actions-menu])}
+       [:a.ant-dropdown-link
+        [:span "More"]
+        [ant/icon {:type "down"}]]]]
+
+     [:div.mt2
+      (when is-unverified
+        [ant/button {:type     "primary"
+                     :on-click #(dispatch [:modal/show :payment.source/verify-account])}
+          [ant/icon {:type "check-circle"}]
+          [:span "Verify Account"]])]]))
 
 ;; Buttons
 ;;[:footer.card-footer
@@ -161,28 +166,49 @@
       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
 
 
+(defn modal-verify-account-footer []
+  (let [current-id    (subscribe [:payment.sources/current-id])
+        is-submitting (subscribe [:loading? :payment.sources.bank/verify!])
+        amounts       (subscribe [:payment.sources.bank.verify/microdeposits])
+        amount-1      (:amount-1 @amounts)
+        amount-2      (:amount-2 @amounts)]
+    [:div
+     [ant/button {:on-click #(dispatch [:modal/hide :payment.source/verify-account])} "Cancel"]
+     [ant/button {:type     "primary"
+                  :loading  @is-submitting
+                  :on-click #(dispatch [:payment.sources.bank/verify! @current-id amount-1 amount-2])}
+       "Verify Amounts"]]))
+
 (defn modal-verify-account []
   (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
         ;; is-submitting (subscribe [:loading? :payment.sources.bank/verify])
-        current-id (subscribe [:payment.sources/current-id])
-        amounts    (r/atom {:amount-1 nil :amount-2 nil})]
-    [ant/modal {:title     "Verify Bank Account"
+        bank       (subscribe [:payment.sources/current])
+        amounts    (subscribe [:payment.sources.bank.verify/microdeposits])
+        amount-1   (:amount-1 @amounts)
+        amount-2   (:amount-2 @amounts)]
+    [ant/modal {:title     (str "Verify " (:name @bank))
                 :visible   @is-visible
-                :on-ok     #(dispatch [:payment.sources.bank/verify! @current-id 32 45])
-                :on-cancel #(dispatch [:modal/hide :payment.source/verify-account])}
+                :footer    (r/as-element [modal-verify-account-footer])}
      [:div
       [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
-      [:p "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
-      [:form {:on-submit #(do
-                            (.preventDefault %)
-                            ;; TODO: Hook up form to supply `32` and `45`
-                            )}
-       [ant/input-number {:default-value (:amount-1 @amounts)
-                          :placeholder   "e.g. 32"
-                          :on-change     #(swap! amounts assoc :amount-1 %)}]
-       [ant/input-number {:default-value (:amount-2 @amounts)
-                          :placeholder   "e.g. 45"
-                          :on-change     #(swap! amounts assoc :amount-2 %)}]]]]))
+      [:p.fs2 "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
+      [:form.form-verify-microdeposits.mt2 {:on-submit #(do
+                                                          (.preventDefault %)
+                                                          (tb/log "submitting")
+                                                          ;; TODO: Hook up form to supply `32` and `45`
+                                                          )}
+       [ant/input-number {:default-value amount-1
+                          :min           1
+                          :max           99
+                          :placeholder   "00"
+                          :size          "large"
+                          :on-change     #(dispatch [:payment.sources.bank.verify/edit-amount :amount-1 %])}]
+       [ant/input-number {:default-value amount-2
+                          :min           1
+                          :max           99
+                          :placeholder   "00"
+                          :size          "large"
+                          :on-change     #(dispatch [:payment.sources.bank.verify/edit-amount :amount-2 %])}]]]]))
 
 
 (defn modal-confirm-remove-account []
@@ -255,16 +281,6 @@
             :bitcoin [forms/bitcoin-account])]])})))
 
 
-(defn add-new-source-button
-  "Button for adding a new Payment Source."
-  []
-  [ant/button {:type "primary"
-               :size "large"
-               :icon "plus-circle-o"
-               :on-click #(dispatch [:modal/show :payment.source/add])}
-   (l10n/translate :btn-add-new-account)])
-
-
 (defn no-sources []
   [:div.box
    [:h3 "You don't have any accounts linked yet."]
@@ -283,20 +299,13 @@
 (defn source-settings []
   (let [autopay-on  (subscribe [:payment.sources/autopay-on?])
         src-default (subscribe [:payment.sources/default-source])]
-    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb6
+    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb4
      [:div.flexrow.flex-center
       [ant/switch {:checked   @autopay-on
                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal])}]
       [:p.ml1
-       [:span.bold "Autopay"]
-       [ui/info-tooltip "When you enable Autopay, rent payments will automatically be applied on the 1st of each month during your rental period."]]]
-     [:div.ml4
-      [:p
-       "Rent payments will post to your "
-       [:span.bold {:style {:margin "0 0.15rem"}}
-        [ant/icon {:type "check-circle"}]
-        [:span "Default Source"]]
-       "on the 1st of each month."]]]))
+       [:span.bold (if @autopay-on "Autopay On" "Autopay Off")]
+       [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]]]]))
 
 
 (defn- source-view []
@@ -307,9 +316,13 @@
       ;; Show Sources
       [:div
        [source-settings]
-       [source-list]
+       ;;[source-list]
        [:div.columns
+        [:div.column.fw200
+         [:h3 "Linked Accounts"]
+         [source-list]]
         [:div.column
+         [:h3 "Details"]
          [source-detail]
          [source-payment-history]]]])))
 

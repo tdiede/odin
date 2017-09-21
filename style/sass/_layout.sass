@@ -86,3 +86,17 @@ $margin-mixins: ()
     .ml#{$i}
       margin-left: $w !important
   $margin-mixins: append( $margin-mixins, $w, comma)
+
+
+$width-size-range: 11
+$width-size-mixins: ()
+
+@for $i from 1 through $width-size-range
+  $step: 50
+  $w: #{$i * $step}
+  @if not index($width-size-range, $w)
+    .w#{$w}
+      width: #{$w}px
+    .fw#{$w}
+      flex: 0 0 #{$w}px
+  $width-size-mixins: append( $width-size-mixins, $w, comma)

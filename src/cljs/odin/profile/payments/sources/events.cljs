@@ -79,12 +79,13 @@
          route   (when (active-source-should-change? db sources)
                    (routes/path-for :profile.payment/sources
                                     :query-params {:source-id (:id (first sources))}))]
+     (tb/log response)
      (tb/assoc-when
       {:db       (assoc db :sources sources)
        :dispatch [:loading :payment.sources/fetch false]}
-      :route route
+      :route route))))
       ;; :dispatch [:payment.sources.autopay/parse payment-sources]
-      ))))
+
 
 
 (reg-event-fx
@@ -233,11 +234,17 @@
 ;; =============================================================================
 ;; Verify
 
+(reg-event-db
+ :payment.sources.bank.verify/edit-amount
+ [(path db/add-path)]
+ (fn [db [_ k v]]
+   (assoc-in db [:microdeposits k] v)))
 
 (reg-event-fx
  :payment.sources.bank/verify!
  [(path db/path)]
  (fn [_ [k source-id amount-1 amount-2]]
+   (tb/log source-id amount-1 amount-2)
    {:dispatch [:loading k true]
     :graphql  {:mutation
                [[:verify_bank_source {:deposits [amount-1 amount-2]
