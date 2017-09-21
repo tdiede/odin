@@ -55,11 +55,11 @@
 
       [:div.source-item-end
         (payments-ui/payment-source-icon (or type :bank))]]]))
-      ;;(when (is-default source)
-      ;;  [ant/tooltip {:title "Default payment source"}
-      ;;   [:div.default-source-indicator
-      ;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
-      ;;    [:span.default-source-label "Default"]]])]]))
+        ;;(when (is-default source)
+        ;;  [ant/tooltip {:title "Default payment source"}
+        ;;   [:div.default-source-indicator
+        ;;    [:span.icon.icon-default-source [:i.fa.fa-check-circle]]
+        ;;    [:span.default-source-label "Default"]]])
 
 
 
@@ -95,7 +95,7 @@
         is-default     (is-default source)
         can-be-default (and (= type :card) (not is-default))
         can-be-autopay (= type :bank)]
-    [ant/card
+    [ant/card {:class "mb2"}
      [:div.flexrow.align-start
       [payments-ui/payment-source-icon type]
       [:div.ml1
@@ -131,10 +131,14 @@
   []
   (let [{:keys [payments name]} @(subscribe [:payment.sources/current])
         is-loading              (subscribe [:loading? :payment.sources/fetch])]
-    [ant/card {:title "Transaction History" ;;(l10n/translate :payment-history-for name)
+    [ant/card {;;:title "Transaction History" ;;(l10n/translate :payment-history-for name)
                :class "is-flush stripe-style"}
      [payments-ui/payments-table payments @is-loading]]))
 
+
+(defn bank-radio-option
+  [{:keys [id name last4] :as bank}]
+  [ant/radio {:value id} name (account-digits bank)])
 
 (defn modal-confirm-enable-autopay []
   (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])
@@ -147,19 +151,27 @@
                 :on-ok       #(dispatch [:payment.sources.autopay/enable! @selected])
                 :on-cancel   #(dispatch [:modal/hide :payment.source/autopay-enable])}
      [:div
-      [:p "Autopay automatically transfers your rent the day before it's due,
-            on the 1st of each month."]
-      [:p "We recommend enabling this
+      [:p "Autopay automatically transfers your rent payment each month. We recommend enabling this
             feature, so you never need to worry about making rent on time."]
+
+      [ant/radio-group {:default-value @selected
+                        :disabled      (< (count @banks) 2)
+                        :on-change     #(reset! selected (.. % -target -value))}
+        (map-indexed
+         (fn [idx {key :key :as item}]
+           (-> (bank-radio-option item)
+               (with-meta {:key idx})))
+        @banks)]
       ]]))
 
 
 (defn modal-confirm-disable-autopay []
-  (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-disable])]
+  (let [is-visible     (subscribe [:modal/visible? :payment.source/autopay-disable])
+        autopay-source (subscribe [:payment.sources/autopay-source])]
     ;;(tb/log (str "is disable modal visible?" @is-visible))
     [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
                 :visible   @is-visible
-                :on-ok     #(dispatch [:payment.sources.autopay/disable!])
+                :on-ok     #(dispatch [:payment.sources.autopay/disable! (:id @autopay-source)])
                 :on-cancel #(dispatch [:modal/hide :payment.source/autopay-disable])}
      ;;:footer    nil}
      [:div
@@ -298,14 +310,18 @@
 
 (defn source-settings []
   (let [autopay-on  (subscribe [:payment.sources/autopay-on?])
+        has-banks   (< 0 (count @(subscribe [:payment/sources :bank])))
         src-default (subscribe [:payment.sources/default-source])]
-    [:div.page-controls.flexrow.rounded.space-around.bg-gray.mb4
+    [:div.page-controls
      [:div.flexrow.flex-center
       [ant/switch {:checked   @autopay-on
-                   :on-change #(dispatch [:payment.sources.autopay/confirm-modal])}]
+                   :disabled  (not has-banks)
+                   :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
       [:p.ml1
        [:span.bold (if @autopay-on "Autopay On" "Autopay Off")]
-       [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]]]]))
+       (if has-banks
+         [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
+         [ui/info-tooltip "To use Autopay, you must have a bank account linked."])]]]))
 
 
 (defn- source-view []
@@ -319,11 +335,12 @@
        ;;[source-list]
        [:div.columns
         [:div.column.fw200
-         [:h3 "Linked Accounts"]
+         [:h2 "Accounts"]
          [source-list]]
         [:div.column
          [:h3 "Details"]
          [source-detail]
+         [:h3 "Transaction History"]
          [source-payment-history]]]])))
 
 

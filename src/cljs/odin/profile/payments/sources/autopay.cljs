@@ -47,21 +47,11 @@
  :payment.sources.autopay/confirm-modal
  [(path db/path)]
  (fn [_ [_ is-enabled]]
+   (tb/log is-enabled)
    (if is-enabled
      {:dispatch [:modal/show :payment.source/autopay-disable]}
      {:dispatch [:modal/show :payment.source/autopay-enable]})))
 
-
-;;(reg-event-fx
-;; :payment.sources.autopay/disable!
-;; [(path db/path)]
-;; (fn [{:keys [db]} _]
-;;   (let [id (:id @(subscribe [:payment.sources/autopay-source]))]
-;;     (tb/log id)
-;;     {:db      (assoc-in db [:loading :list] true)
-;;      :graphql {:mutation   [[:unset_autopay_source {:id id} [:id]]]
-;;                :on-success [:payment.sources/fetch]
-;;                :on-failure [:payment.sources/fetch]}})))
 
 (defn- get-default-source [sources]
   (first (filter #(= (:default %) true) sources)))
@@ -75,6 +65,14 @@
               :on-success [:payment.sources/fetch]
               :on-failure [:graphql/failure]}}))
 
+
+(reg-event-fx
+ :payment.sources.autopay/disable!
+ [(path db/path)]
+ (fn [{:keys [db]} [_ source-id]]
+   {:graphql {:mutation   [[:unset_autopay_source {:id source-id} [:id]]]
+              :on-success [:payment.sources/fetch]
+              :on-failure [:graphql/failure]}}))
 
 ;;[:notify/success "Great! Autopay is now enabled."]
 
