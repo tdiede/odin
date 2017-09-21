@@ -87,13 +87,13 @@
   (let [source  (subscribe [:payment.sources/current])
         is-bank (= (:type @source) :bank)]
    [ant/menu
-   [ant/menu-item {:key "removeit"}
-    [:a.text-red
-     {:href "#"
-      :on-click #(dispatch [:modal/show (if (and (< 1 (num-bank-sources)) is-bank)
-                                          :payment.source/remove
-                                          :payment.source/cannot-remove-only-bank)])}
-     "Remove this account"]]]))
+    [ant/menu-item {:key "removeit"}
+     [:a.text-red
+      {:href "#"
+       :on-click #(dispatch [:modal/show (if (and (< 1 (num-bank-sources)) is-bank)
+                                           :payment.source/remove
+                                           :payment.source/cannot-remove-only-bank)])}
+      "Remove this account"]]]))
 
 
 (defn source-detail
@@ -179,8 +179,8 @@
          (fn [idx {key :key :as item}]
            (-> (bank-radio-option item)
                (with-meta {:key idx})))
-        @banks)]
-      ]]))
+         @banks)]]]))
+
 
 
 (defn modal-disable-autopay-footer [selected-autopay-source]
@@ -235,9 +235,9 @@
       [:p.fs2 "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
       [:form.form-verify-microdeposits.mt2 {:on-submit #(do
                                                           (.preventDefault %)
-                                                          (tb/log "submitting")
+                                                          (tb/log "submitting"))}
                                                           ;; TODO: Hook up form to supply `32` and `45`
-                                                          )}
+
        [ant/input-number {:default-value amount-1
                           :min           1
                           :max           99
@@ -365,8 +365,15 @@
 
       [:span.page-controls-divider "•"]
       [:div
-       [input/pretty-select @card-sources]]
-      ]]))
+       (for [source @card-sources] (tb/log source (:id source)))
+      ;; (tb/log @card-sources)
+       [ant/select
+        (for [source @card-sources]
+          (let [id (get source :id)]
+            ^{:key id}
+            [ant/select-option {:value id} (:name source)]))]]]]))
+      ;; [input/pretty-select @card-sources]]
+
 
 
 (defn- source-view []

@@ -40,7 +40,7 @@
  :payment.sources/autopay-on?
  :<- [:payment.sources/autopay-source]
  (fn [source _]
-   (tb/log "sub: autopay source:" source)
+  ;; (tb/log "sub: autopay source:" source)
    (:autopay source)))
 
 
