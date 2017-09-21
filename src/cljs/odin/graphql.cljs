@@ -69,7 +69,7 @@
                                     :description "Something unexpected happened."})
        (do
          (doseq [{m :message} (get-in response [:response :errors])]
-           (ant/notification-error {:message     "Unhandled Error!"
+           (ant/notification-error {:message     "Error!"
                                     :description m
                                     :duration    6}))
          {:dispatch [:loading k false]})))))

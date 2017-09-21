@@ -12,7 +12,7 @@
    [[:profile/fetch-account account-id]
     [:member/fetch-license account-id]]))
 
-;; Retrieves the `active_license` for a Member.
+;; retrieves the `active_license` for a member.
 (reg-event-fx
  :member/fetch-license
  [(path db/path)]

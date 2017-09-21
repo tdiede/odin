@@ -420,6 +420,15 @@
    :resolve     :account/update!}
 
 
+  :change_password
+  {:type        :account
+   :description "Change requesting user's password."
+   :args        {:old_password   {:type (non-null String)}
+                 :new_password_1 {:type (non-null String)}
+                 :new_password_2 {:type (non-null String)}}
+   :resolve     :account/change-password!}
+
+
    ;;; Payment Sources
 
   :delete_payment_source

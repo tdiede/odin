@@ -15,21 +15,6 @@
 ;; TODO: Authorization middleware
 
 
-(def ^:private account-resolvers
-  {;; fields
-   :account/active-license    account/active-license
-   :account/deposit           account/deposit
-   :account/property          account/property
-   :account/role              account/role
-   :person/full-name          account/full-name
-   :account/emergency-contact account/emergency-contact
-   ;; mutations
-   :account/update!           account/update!
-   ;; queries
-   :account/list              account/accounts
-   :account/entry             account/entry})
-
-
 (def ^:private deposit-resolvers
   {;;fields
    :deposit/amount-remaining deposit/amount-remaining
@@ -78,7 +63,7 @@
 
 (def resolvers
   (merge
-   account-resolvers
+   account/resolvers
    deposit-resolvers
    payment/resolvers
    payment-source-resolvers

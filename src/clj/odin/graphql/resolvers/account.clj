@@ -1,12 +1,16 @@
 (ns odin.graphql.resolvers.account
-  (:require [blueprints.models.account :as account]
+  (:require [bouncer.core :as b]
+            [bouncer.validators :as v]
+            [blueprints.models.account :as account]
             [blueprints.models.member-license :as member-license]
-            [datomic.api :as d]
-            [toolbelt.datomic :as td]
-            [taoensso.timbre :as timbre]
             [blueprints.models.security-deposit :as deposit]
-            [toolbelt.core :as tb]))
-
+            [customs.auth :as auth]
+            [datomic.api :as d]
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]
+            [toolbelt.validation :as tv]
+            [clojure.string :as string]
+            [com.walmartlabs.lacinia.resolve :as resolve]))
 
 ;; =============================================================================
 ;; Fields
@@ -117,3 +121,60 @@
   [{conn :conn} {:keys [id data]} _]
   (let [tx @(d/transact conn [(gen-update (d/entity (d/db conn) id) data)])]
     (d/entity (:db-after tx) id)))
+
+
+
+(defn- validate-password-params
+  [params account]
+  (letfn [(matching-password? [password]
+            (auth/is-password? account password))
+          (same-passwords? [_]
+            (= (:new_password_1 params) (:new_password_2 params)))]
+    (b/validate
+     params
+     {:old_password   [[v/required :message "You must enter your current password."]
+                       [matching-password? :message "That is not the correct current password."]]
+      :new_password_1 [[v/required :message "You must enter a new password."]
+                       [v/min-count 8 :message "Your password should be at least 8 characters long."]
+                       [same-passwords? :message "The passwords you entered don't match."]]})))
+
+
+(defn- scrub-password-params [params]
+  (tb/transform-when-key-exists params
+    {:old_password   string/trim
+     :new_password_1 string/trim
+     :new_password_2 string/trim}))
+
+
+(defn change-password!
+  "Change the requesting user's password."
+  [{:keys [conn requester]} params _]
+  (let [params  (scrub-password-params params)
+        vresult (validate-password-params params requester)]
+    (if-not (tv/valid? vresult)
+      (resolve/resolve-as nil {:message (first (tv/errors vresult))
+                               :errors  (tv/errors vresult)})
+      (do
+        @(d/transact conn [(auth/change-password requester (:new_password_1 params))])
+        requester))))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(def resolvers
+  {;; fields
+   :account/active-license    active-license
+   :account/deposit           deposit
+   :account/property          property
+   :account/role              role
+   :person/full-name          full-name
+   :account/emergency-contact emergency-contact
+   ;; mutations
+   :account/update!           update!
+   :account/change-password!  change-password!
+   ;; queries
+   :account/list              accounts
+   :account/entry             entry})

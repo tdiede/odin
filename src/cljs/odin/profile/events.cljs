@@ -3,18 +3,12 @@
             [odin.profile.contact.events]
             [odin.profile.payments.events]
             [odin.profile.membership.events]
+            [odin.profile.settings.events]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    path]]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
-
-
-;;(defmethod routes/dispatches :profile/membership [route]
-;;  [[:profile/fetch-account (get-in route [:requester :id])]])
-
-;;(defmethod routes/dispatches :profile/contact [route]
-;;  [[:profile/fetch-account (get-in route [:requester :id])]])
 
 
 (reg-event-fx
@@ -35,7 +29,6 @@
  :profile.fetch/success
  [(path db/path)]
  (fn [db [_ response]]
-   ;;(tb/log response)
    (let [account (get-in response [:data :account])]
      (-> (assoc db :account account)
          (assoc :new-account account)
@@ -46,6 +39,5 @@
  :profile.fetch/failure
  [(path db/path)]
  (fn [{:keys [db]} [_ response]]
-   ;;(tb/log response)
    {:db       (assoc-in db [:loading :profile/account] false)
     :dispatch [:graphql/notify-errors! response]}))
