@@ -38,18 +38,24 @@
 
 
 (defn burger []
-  (let [showing (subscribe [:menu/showing?])]
-   [:div.navbar-burger.burger
-    {:on-click #(dispatch [:menu/toggle])
-     :class    (when @showing "is-active")}
-    [:div.burger-wrap
-     [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]]]))
-    ;;[:span] [:span] [:span]])
+  (let [showing (subscribe [:menu/showing?])
+        items   (subscribe [:menu/items])]
+    (if (empty? @items)
+      [:div]
+      [:div.navbar-burger.burger
+       {:on-click #(dispatch [:menu/toggle])
+        :class    (when @showing "is-active")}
+       [:div.burger-wrap
+        [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]
+        ;; [:span] [:span][:span]
+        ]])))
+
 
 (defn- mobile-nav-backdrop []
   (let [showing (subscribe [:menu/showing?])]
-   [:div.nav-backdrop {:on-click #(dispatch [:menu/toggle])
-                       :class (when @showing "visible")}]))
+    [:div.nav-backdrop {:on-click #(dispatch [:menu/toggle])
+                        :class (when @showing "visible")}]))
+
 
 (defn brand []
   [:div.navbar-brand
@@ -74,6 +80,7 @@
        #(with-meta [navbar-menu-item @role %2] {:key %1})
        @menu-items))]))
 
+
 (defn- nav-user-menu []
   [ant/menu
    [ant/menu-item {:key "profile-link"}
@@ -81,7 +88,7 @@
    [ant/menu-item {:key "log-out"}
     [:a {:href "/logout"} "Log Out"]]])
 
-;;{:href (routes/path-for :profile/membership)}
+
 (defn navbar []
   (let [menu-showing (subscribe [:menu/showing?])
         account      (subscribe [:account])]

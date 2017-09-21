@@ -1,7 +1,7 @@
 (ns odin.routes
   (:require [accountant.core :as accountant]
             [bidi.bidi :as bidi]
-            [re-frame.core :refer [dispatch reg-fx]]
+            [re-frame.core :as rf :refer [dispatch reg-fx]]
             [toolbelt.core :as tb]
             [cemerick.url :as c]
             [clojure.walk :as walk]
@@ -131,3 +131,19 @@
      (if-let [query (:query parsed)]
        (accountant/navigate! (:path parsed) query)
        (accountant/navigate! new-route)))))
+
+
+
+;; =============================================================================
+;; NOTE: Added to redirect to profile page for initial release.
+;; =============================================================================
+
+
+(defmethod dispatches :member/home [route]
+  [[::route-to-profile]])
+
+
+(rf/reg-event-fx
+ ::route-to-profile
+ (fn [_ _]
+   {:route (path-for :profile/membership)}))

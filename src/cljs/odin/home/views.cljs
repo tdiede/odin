@@ -1,5 +1,6 @@
 (ns odin.home.views
   (:require [odin.content :as content]
+            [odin.profile.views :as profile]
             [odin.home.admin.views :as admin]
             [antizer.reagent :as ant]))
 
@@ -22,5 +23,6 @@
   [ant/card {:title "This is member home."}])
 
 
+;; NOTE: Changed for purposes of initial release. Fix at future date.
 (defmethod content/view :member/home [route]
-  [member route])
+  [profile/content route])
