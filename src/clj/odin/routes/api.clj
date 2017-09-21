@@ -2,36 +2,11 @@
   (:require [blueprints.models.account :as account]
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
-            [datomic.api :as d]
             [odin.graphql :as graph]
             [odin.graphql.resolvers.utils :as gqlu]
+            [odin.routes.kami :as kami]
+            [odin.routes.util :refer :all]
             [ring.util.response :as response]))
-
-;; =============================================================================
-;; Helpers
-;; =============================================================================
-
-
-(defn ->conn [req]
-  (get-in req [:deps :conn]))
-
-
-(defn ->db [req]
-  (d/db (get-in req [:deps :conn])))
-
-
-(defn ->stripe [req]
-  (get-in req [:deps :stripe]))
-
-
-(defn- ->requester [req]
-  (let [id (get-in req [:identity :db/id])]
-    (d/entity (->db req) id)))
-
-
-(defn- ->socrata [req]
-  (get-in req [:deps :socrata]))
-
 
 ;; =============================================================================
 ;; GraphQL
@@ -49,17 +24,17 @@
     (->conn req)
     (->requester req)
     (->stripe req)
-    (->socrata req)))
+    (->config req)))
 
 
 (defn graphql-handler
   [schema]
   (fn [req]
-   (let [[op expr] (extract-graphql-expression req)
-         result    (execute schema
-                            (format "%s %s" (name op) expr)
-                            nil
-                            (context req))]
+    (let [[op expr] (extract-graphql-expression req)
+          result    (execute schema
+                             (format "%s %s" (name op) expr)
+                             nil
+                             (context req))]
      (-> (response/response result)
          (response/content-type "application/transit+json")
          (response/status (if (-> result :errors some?) 400 200))))))
@@ -125,6 +100,8 @@
   (GET "/graphql" [] (graphql-handler graph/schema))
   (POST "/graphql" [] (graphql-handler graph/schema))
 
-  (GET "/kami" [] (graphql-handler graph/kami))
-  (POST "/kami" [] (graphql-handler graph/kami))
+  (compojure/context "/kami" [] kami/routes)
+
+  ;; (GET "/kami" [] (graphql-handler graph/kami))
+  ;; (POST "/kami" [] (graphql-handler graph/kami))
   )

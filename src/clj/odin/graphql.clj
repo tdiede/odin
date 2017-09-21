@@ -7,8 +7,7 @@
             [com.walmartlabs.lacinia.util :as util]
             [datomic.api :as d]
             [mount.core :refer [defstate]]
-            [odin.graphql.resolvers :as resolvers]
-            [odin.graphql.resolvers.kami :as kami]))
+            [odin.graphql.resolvers :as resolvers]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
@@ -41,13 +40,6 @@
   :start (-> (read-resource "graphql/schema.edn")
              (merge custom-scalars)
              (util/attach-resolvers resolvers/resolvers)
-             schema/compile))
-
-
-(defstate kami
-  :start (-> (read-resource "graphql/kami.edn")
-             (merge custom-scalars)
-             (util/attach-resolvers kami/resolvers)
              schema/compile))
 
 

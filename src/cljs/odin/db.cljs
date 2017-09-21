@@ -6,6 +6,7 @@
             [odin.orders.db :as orders]
             [odin.profile.payments.db :as payments]
             [odin.profile.membership.db :as membership]
+            [odin.kami.db :as kami]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
 
@@ -48,6 +49,7 @@
    payments/default-value
    modals/default-value
    orders/default-value
+   kami/default-value
    metrics/default-value))
 
 

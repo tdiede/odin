@@ -20,6 +20,8 @@
                  [http-kit "2.2.0"]
                  [compojure "1.6.0" :exclusions [ring/ring-core]]
                  [ring-middleware-format "0.7.2" :exclusions [ring/ring-core]]
+                 ;; Other
+                 [kami "0.1.0-SNAPSHOT"]
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.20.0"]
                  [vincit/venia "0.2.2"]

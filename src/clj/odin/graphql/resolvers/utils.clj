@@ -7,11 +7,11 @@
 (s/def ::conn p/conn?)
 (s/def ::requester p/entityd?)
 (s/def ::stripe ribbon/conn?)
-(s/def ::socrata string?)
+(s/def ::config map?)
 
 
 (s/def ::ctx
-  (s/keys :req-un [::stripe ::requester ::conn ::socrata]))
+  (s/keys :req-un [::stripe ::requester ::conn ::config]))
 
 
 (defn context? [x]
@@ -20,15 +20,15 @@
 
 (defn context
   "Construct a new context map."
-  [conn requester stripe socrata]
+  [conn requester stripe config]
   {:conn      conn
    :requester requester
    :stripe    stripe
-   :socrata   socrata})
+   :config    config})
 
 (s/fdef context
         :args (s/cat :conn ::conn
                      :requester ::requester
                      :stripe ::stripe
-                     :socrata ::socrata)
+                     :config ::config)
         :ret ::ctx)

@@ -102,7 +102,6 @@
 
 (defn append-query-params
   [path params]
-  (tb/log (:query-params params))
   (if-let [query-params (:query-params params)]
     (-> (uri path)
         (assoc :query query-params)
