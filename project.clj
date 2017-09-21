@@ -34,8 +34,8 @@
                  [cljsjs/libphonenumber "8.4.1-1"]
                  [cljsjs/react "15.6.1-0"]
                  [cljsjs/react-dom "15.6.1-0"]
-                 [venantius/accountant "0.2.0" :exclusions [org.clojure/clojurescript
-                                                            org.clojure/core.async]]
+                 [starcity/accountant "0.2.0" :exclusions [org.clojure/clojurescript
+                                                           org.clojure/core.async]]
                  [day8.re-frame/http-fx "0.1.4" :exclusions [com.google.guava/guava
                                                              org.apache.httpcomponents/httpclient]]
                  [starcity.re-frame/stripe-fx "0.1.0"]
