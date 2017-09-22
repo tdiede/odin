@@ -33,7 +33,7 @@
  [(path db/path)]
  (fn [db [_ response]]
    (let [account        (get-in response [:data :account])
-         personal-info  (select-keys account [:first_name :last_name :phone])
+         personal-info  (select-keys account [:first_name :last_name :phone :email])
          emergency-info (select-keys (:emergency_contact account) [:first_name :last_name :phone])
          personal       (merge default-info personal-info)
          emergency      (merge default-info emergency-info)]
