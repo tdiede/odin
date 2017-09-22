@@ -4,7 +4,9 @@
             [odin.l10n :as l10n]
             [odin.utils.formatters :as format]
             [odin.utils.time :as t]
-            [re-frame.core :refer [dispatch subscribe]]))
+            [re-frame.core :refer [dispatch subscribe]]
+            [toolbelt.core :as tb]
+            [reagent.core :as r]))
 
 
 (defn card-license-summary []
@@ -49,41 +51,65 @@
 ;;       [:a "Manage"]]]]))
 
 
-(defn deposit-status-card
-  []
-  (let [loading    (subscribe [:member.license/loading?])
-        deposit    (subscribe [:profile/security-deposit])
-        is-overdue (t/is-before-now (:due @deposit))]
-    [:div.mb2
-     ;;[:h4
-     ;; [:span.icon [:i.fa.fa-shield]]
-     ;; [:span "Security Deposit"]]
-     [ant/card {:loading @loading}
-       [:div.columns
-        [:div.column.is-2
-         [:span.icon.is-large.text-yellow [:i.fa.fa-shield]]]
-        [:div.column
-         [:h4 "Security deposit partially paid."]
-         ;;[:p (format/string
-         ;;      "You owe another %s by %s."
-         ;;      (format/currency   (:amount_remaining @deposit))
-         ;;      (format/date-short (:due @deposit)))]
-         [ant/button "Pay remaining amount ($1,800)"]]]]]))
+(defn modal-pay-security-deposit [deposit is-visible]
+  [ant/modal
+   {:title     "Pay Your Security Deposit"
+    :visible   @is-visible
+    :on-cancel #(reset! is-visible false)
+    :footer    nil}])
+
+
+(defmulti deposit-status-content
+  (fn [{:keys [amount amount_remaining amount_paid amount_pending due]} _]
+    (let [is-overdue (t/is-before-now due)]
+      (cond
+        (= amount amount_paid)             :paid
+        (and is-overdue (= amount_paid 0)) :overdue
+        (= amount_paid 0)                  :unpaid
+        (> amount_remaining amount_paid)   :partial
+        :otherwise                         :pending))))
+
+
+(defmethod deposit-status-content :default [_ _]
+  [:div
+   [:h4 "TODO: Deposit view not implemented"]])
+
+
+(defmethod deposit-status-content :partial [{:keys [amount_remaining]} modal-shown]
+  [:div
+   [:h4 "Security deposit partially paid."]
+   [ant/button
+    {:on-click #(reset! modal-shown true)}
+    (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]])
+
+
+(defn deposit-status-card []
+  (let [loading     (subscribe [:member.license/loading?])
+        deposit     (subscribe [:profile/security-deposit])
+        modal-shown (r/atom false)]
+    (fn []
+      [:div.mb2
+       [ant/card {:loading @loading}
+        [modal-pay-security-deposit @deposit modal-shown]
+        [:div.columns
+         [:div.column.is-2
+          [:span.icon.is-large.text-yellow [:i.fa.fa-shield]]]
+         [:div.column
+          (deposit-status-content @deposit modal-shown)]]]])))
 
 
 (defn rent-status-card
   []
   (let [license (subscribe [:member/license])
         loading (subscribe [:member.license/loading?])]
-   [:div.mb2
-    [ant/card {:loading @loading}
-     [:div.columns
-      [:div.column.is-2
-       [:span.icon.is-large.text-green [:i.fa.fa-home]]]
-      [:div.column
-       [:h4 "Rent is paid."]
-       [:p "Congratulations! You're paid for the month of September."]]]]]))
-
+    [:div.mb2
+     [ant/card {:loading @loading}
+      [:div.columns
+       [:div.column.is-2
+        [:span.icon.is-large.text-green [:i.fa.fa-home]]]
+       [:div.column
+        [:h4 "Rent is paid."]
+        [:p "Congratulations! You're paid for the month of September."]]]]]))
 
 
 (defn membership-summary []
@@ -91,6 +117,7 @@
    [:h2 "Status"]
    [deposit-status-card]
    [rent-status-card]])
+
 
 (defn btn-refetch-data []
   (let [account-id (subscribe [:profile/account-id])]
