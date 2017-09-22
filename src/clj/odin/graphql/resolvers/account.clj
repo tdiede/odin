@@ -90,7 +90,6 @@
 
 (defn- gen-emergency-contact-update
   [account {:keys [first_name last_name middle_name phone] :as data}]
-  (clojure.pprint/pprint data)
   (letfn [(-tx [init]
             (tb/assoc-when
              init
