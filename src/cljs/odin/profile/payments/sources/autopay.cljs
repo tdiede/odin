@@ -40,6 +40,7 @@
  :payment.sources/autopay-on?
  :<- [:payment.sources/autopay-source]
  (fn [source _]
+  ;; (tb/log "sub: autopay source:" source)
    (:autopay source)))
 
 
@@ -61,31 +62,37 @@
  :payment.sources.autopay/enable!
  [(path db/path)]
  (fn [{:keys [db]} [_ source-id]]
-   {:graphql {:mutation   [[:set_autopay_source {:id source-id} [:id]]]
-              :on-success [:payment.sources/fetch]
-              :on-failure [:graphql/failure]}}))
+   {:dispatch-n [[:loading :payment.sources.autopay/enable! true]]
+    :graphql
+    {:mutation   [[:set_autopay_source {:id source-id} [:id]]]
+     :on-success [::autopay-enable-success]
+     :on-failure [:graphql/failure]}}))
+
+
+(reg-event-fx
+ ::autopay-enable-success
+ [(path db/path)]
+ (fn [_ [_ response]]
+   (let [source-id (get-in response [:data :set_autopay_source :id])]
+     {:dispatch-n [[:loading :payment.sources.autopay/enable! false]
+                   [:modal/hide :payment.source/autopay-enable]
+                   [:notify/success "Great! Autopay is now enabled."]]
+      :route      (routes/path-for :profile.payment/sources :query-params {:source-id source-id})})))
 
 
 (reg-event-fx
  :payment.sources.autopay/disable!
  [(path db/path)]
  (fn [{:keys [db]} [_ source-id]]
-   {:graphql {:mutation   [[:unset_autopay_source {:id source-id} [:id]]]
-              :on-success [:payment.sources/fetch]
+   {:dispatch-n [[:loading :payment.sources.autopay/disable! true]]
+    :graphql {:mutation   [[:unset_autopay_source {:id source-id} [:id]]]
+              :on-success [::autopay-disable-success]
               :on-failure [:graphql/failure]}}))
 
-;;[:notify/success "Great! Autopay is now enabled."]
 
-(reg-event-db
- :payment.sources.autopay/toggle!
+(reg-event-fx
+ ::autopay-disable-success
  [(path db/path)]
- (fn [db [_ value]]
-    ;;(let [sources (subscribe [:payment.sources/autopay-sources])
-          ;;active  (subscribe [:payment.sources/autopay-source])]
-   ;;(if (true? value))
-
-
-   db))
-      ;;(if (true? value)
-        ;;(map disable-autopay sources))))
-        ;;(map enable-autopay sources))))
+ (fn [_ _]
+   {:dispatch-n [[:loading :payment.sources.autopay/disable! false]
+                 [:modal/hide :payment.source/autopay-disable]]}))

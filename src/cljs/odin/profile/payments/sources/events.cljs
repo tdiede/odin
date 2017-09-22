@@ -17,7 +17,7 @@
 
 (defmethod routes/dispatches :profile.payment/sources
   [{:keys [params requester] :as route}]
-  (if (empty? params)
+  (if (or (empty? params) (= (:source-id params) ""))
     [[:payment.sources/set-default-route]]
     [[:payment.sources/init route]]))
 

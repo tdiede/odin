@@ -2,6 +2,7 @@
   (:require [odin.profile.db :as db]
             [odin.profile.membership.subs]
             [odin.profile.payments.subs]
+            [odin.profile.contact.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 

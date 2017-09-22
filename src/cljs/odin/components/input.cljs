@@ -16,3 +16,13 @@
     [:label.checkbox-label {:for      "autopay-toggle"
                             :data-off ""
                             :data-on  ""}]]))
+
+
+
+(defn pretty-select [options]
+  [:div.select
+   [:select
+    (for [option options]
+      (let [id (get option :id)]
+        ^{:key id}
+        [:option {:value id} (:name option)]))]])
