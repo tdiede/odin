@@ -254,8 +254,8 @@
         deposit (deposit/by-account account)
         payment (payment/create 500.0 account
                                 :status :payment.status/paid
-                                :charge-id "py_1AV6trIvRccmW9nOX14uB4hk"
-                                :source-id "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
+                                :charge-id "py_1AjwerIvRccmW9nOMZ78NJJN"
+                                :source-id "ba_1AjwecIvRccmW9nO175kwr0e"
                                 :paid-on (date 2017 6 1)
                                 :for :payment.for/deposit
                                 :due (next-week))]
@@ -263,17 +263,18 @@
 
 
 (defn stripe-customers-tx []
-  []
-  #_[{:db/id                              (d/tempid :db.part/starcity)
-      :stripe-customer/account            [:account/email "member@test.com"]
-      :stripe-customer/customer-id        "cus_AqoW7OTNg0Ld7t"
-      :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"}
-     {:db/id                              (d/tempid :db.part/starcity)
-      :stripe-customer/account            [:account/email "member@test.com"]
-      :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
-      :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
-      ;; :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
-      :stripe-customer/managed            [:property/internal-name "52gilbert"]}])
+  ;; []
+  [{:db/id                              (d/tempid :db.part/starcity)
+    :stripe-customer/account            [:account/email "member@test.com"]
+    :stripe-customer/customer-id        "cus_B68wMlijSv2U5p"
+    :stripe-customer/bank-account-token "ba_1AjwecIvRccmW9nO175kwr0e"}
+   ;; {:db/id                              (d/tempid :db.part/starcity)
+   ;;  :stripe-customer/account            [:account/email "member@test.com"]
+   ;;  :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
+   ;;  :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
+   ;;  ;; :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
+   ;;  :stripe-customer/managed            [:property/internal-name "52gilbert"]}
+   ])
 
 
 (defn avatar-tx []
@@ -324,7 +325,7 @@
    conn
    {:seed/membership {:txes [(member-licenses-tx conn)
                              ;; (rent-payments-tx conn)
-                             #_(deposit-payments-tx (d/db conn))]}})
+                             (deposit-payments-tx (d/db conn))]}})
   #_(cf/ensure-conforms
    conn
    {:seed/orders {:txes [(orders-tx (d/db conn))]}}))

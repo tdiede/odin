@@ -3,7 +3,7 @@
 
 
 (defn info
-  ([text] (info-tooltip text "top"))
+  ([text] (info text "top"))
   ([text positioning]
    [:span.info-tooltip
     [ant/tooltip {:title     text

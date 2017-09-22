@@ -1,7 +1,7 @@
 (ns iface.media)
 
 
-(defn media-step
+(defn step
   "Renders a media element with icon to the left (if provided). Use inside of a div.steps-vertical"
   [contents icon-type]
   [:article.media
