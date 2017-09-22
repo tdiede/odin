@@ -1,5 +1,6 @@
 (ns odin.db
-  (:require [odin.account.db :as accounts]
+  (:require [odin.global.db :as global]
+            [odin.account.db :as accounts]
             [odin.components.modals :as modals]
             [odin.profile.db :as profile]
             [odin.metrics.db :as metrics]
@@ -45,6 +46,7 @@
               :path    [:home]
               :params  {}}
     :config  config}
+   global/default-value
    accounts/default-value
    payments/default-value
    modals/default-value

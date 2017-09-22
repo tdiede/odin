@@ -1,6 +1,7 @@
 (ns odin.events
   (:require [odin.db :as db]
             [odin.routes :as routes]
+            [odin.global.events]
             [odin.account.list.events]
             [odin.account.entry.events]
             [odin.metrics.events]
@@ -13,10 +14,16 @@
             [toolbelt.core :as tb]))
 
 
-(reg-event-db
+;;(reg-event-db
+;; :app/init
+;; (fn [_ [_ config]]
+;;   (db/configure config)))
+
+(reg-event-fx
  :app/init
  (fn [_ [_ config]]
-   (db/configure config)))
+   {:db       (db/configure config)
+    :dispatch [:global.components/init config]}))
 
 
 (reg-event-db
