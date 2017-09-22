@@ -41,9 +41,8 @@
 
 (defn date-words
   "Verbose date (e.g. Today at 12:00pm)"
-  [thing]
-  (if thing (-> (moment thing)
-                (.calendar))))
+  [date]
+  (when (some? date) (-> (moment date) (.calendar))))
 
 
 (defn str->timestamp
@@ -76,11 +75,16 @@
   (l10n/translate :tongue/format-number amount))
 
 
+(defn- is-int [n]
+  (= (mod n 1) 0))
+
+
 (defn currency
   "Accepts a number, and returns a formatted currency amount according to
   current language. e.g. [1999.99] -> '$1,999.99'"
   [amount]
-  (->> amount (gstring/format "%.2f") number (str "$")))
+  (let [to-str (if (is-int amount) str #(.toFixed %))]
+    (->> amount to-str number (str "$"))))
 
 
 (defn initials
@@ -88,7 +92,12 @@
   [name]
   (->> (string/split name #" ") (map first) (apply str)))
 
+
 (defn sstr [args]
   (->> (interpose " " [args]) (apply str)))
 
+
 (def string gstring/format)
+
+
+(def format gstring/format)
