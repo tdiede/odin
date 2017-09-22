@@ -1,10 +1,9 @@
 (ns odin.profile.settings.views
   (:require [antizer.reagent :as ant]
-            [re-frame.core :refer [subscribe dispatch]]
             [iface.form :as form]
-            [toolbelt.core :as tb]
+            [iface.typography :as typography]
+            [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]))
-
 
 (def placeholder "••••••••")
 
@@ -97,9 +96,7 @@
 
 (defn change-password []
   [:div
-   [:div.view-header
-    [:h1.title.is-3 "Change Password"]
-    [:p.subtitle.is-6 "Change your password."]]
+   (typography/view-header "Change Password")
    [:div.columns
     [:div.column.is-8
      [ant/card

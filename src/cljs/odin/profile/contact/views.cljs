@@ -1,5 +1,6 @@
 (ns odin.profile.contact.views
   (:require [antizer.reagent :as ant]
+            [iface.typography :as typography]
             [re-frame.core :refer [dispatch subscribe]]
             [odin.utils.validators :as validate]
             [reagent.core :as r]
@@ -160,9 +161,9 @@
 
 (defn contact-info []
   [:div
-   [:div.view-header
-    [:h1.title.is-3 "Contact Information"]
-    [:p.subtitle.is-6 "Update your info in our system, including an emergency contact."]]
+   (typography/view-header
+    "Contact Information"
+    "Update your info in our system, including an emergency contact.")
 
    [:div.columns
     [:div.column.is-8

@@ -1,8 +1,9 @@
 (ns odin.orders.admin.views
   (:require [antizer.reagent :as ant]
+            [iface.typography :as typography]
             [odin.orders.admin.create :as create]
             [odin.utils.formatters :as format]
-            [re-frame.core :refer [subscribe dispatch]]
+            [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]))
 
 ;;; How might we use an orders view?
@@ -129,9 +130,7 @@
 
 (defn view []
   [:div
-   [:div.view-header
-    [:h1.is-3.title "Orders"]
-    [:p.is-5.subtitle "Manage and view premium service orders."]]
+   (typography/view-header "Orders" "Manage and view premium service orders.")
    ;; [:hr]
    ;; [:div.chart-controls
    ;;  ]

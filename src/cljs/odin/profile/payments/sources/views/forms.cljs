@@ -10,6 +10,7 @@
   [errors _]
   (nil? errors))
 
+
 (defn submit-card-if-valid
   [errors fields]
   (if (nil? errors)
@@ -64,14 +65,16 @@
           [:p#card-errors.help.is-danger]]
          [:hr]
          [:div.align-right
-          [:button.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
-          [:button#submit-btn.button.is-primary {:class (when @is-submitting "is-loading")
-                                                 :on-click #()} "Add Credit Card"]]]))}))
+          [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
+          [ant/button
+           {:type    :primary
+            :id      "submit-btn"
+            :loading @is-submitting}
+           "Add Credit Card"]]]))}))
 
 
 (defn bitcoin-account []
   [:div
-   ;;[:p "Deposit address: 12398asdj123123az"]
    [:div.card
     [:div.card-content.align-center
      [:div.width-90.center
@@ -148,11 +151,12 @@
       (let [form (ant/get-form)]
        [:div
         (bank-account-form)
-        [:p.pad bank-account-desc]
+        [:p.pad [:small bank-account-desc]]
         [:hr]
         [:div.align-right
-         [:a.button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
-         [:a.button.is-primary
-          {:class (when @is-submitting "is-loading")
+         [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
+         [ant/button
+          {:type     "primary"
+           :loading  @is-submitting
            :on-click (submit-when-valid form [:payment.sources.add.bank/submit!])}
           "Add Bank Account"]]]))))

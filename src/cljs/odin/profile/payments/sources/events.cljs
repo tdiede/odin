@@ -170,14 +170,6 @@
    (assoc-in db [:bank k] v)))
 
 
-(reg-event-db
- :payment.sources.add.bank/submit!
- [(path db/add-path)]
- (fn [db [_]]
-   (tb/log "Submitting:" (:bank db))
-   db))
-
-
 (reg-event-fx
  :payment.sources.add.bank/submit!
  [(path db/add-path)]
@@ -207,28 +199,20 @@
 (reg-event-fx
  ::create-bank-token-success
  (fn [_ [_ {token :id :as result}]]
-   ;;(tb/log result)
    {:graphql
     {:mutation   [[:add_payment_source {:token token} [:id]]]
-     :on-success [::create-bank-source-success]
-     :on-failure [::create-bank-source-fail]}}))
+     :on-success [::create-bank-source-success :payment.sources.add/bank]
+     :on-failure [:graphql/failure :payment.sources.add/bank]}}))
 
 
 (reg-event-fx
  ::create-bank-source-success
- (fn [{:keys [db]} [_ response]]
-   {:dispatch-n [[:loading :payment.sources.add/bank false]
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:loading k false]
                  [:modal/hide :payment.source/add]
                  [:payment.sources/fetch]]
     :route      (routes/path-for :profile.payment/sources
                                  :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
-
-(reg-event-fx
- ::create-bank-source-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :payment.sources.add/bank false]
-                 [:graphql/notify-errors! response]]}))
 
 
 ;; =============================================================================

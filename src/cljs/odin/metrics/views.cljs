@@ -1,11 +1,11 @@
 (ns odin.metrics.views
   (:require [antizer.reagent :as ant]
             [iface.chart :as chart]
+            [iface.typography :as typography]
             [odin.content :as content]
             [odin.metrics.service-revenue :as service-revenue]
-            [re-frame.core :refer [subscribe dispatch]]
+            [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]))
-
 
 ;; What kinds of important things do we want to show here?
 
@@ -104,9 +104,7 @@
 (defn- metrics-view []
   (let [active (subscribe [:metrics.category/current])]
     [:div
-     [:div.view-header
-      [:h1.is-3.title "Metrics"]
-      [:p.is-5.subtitle "Important metrics and stats about the company."]]
+     (typography/view-header "Metrics" "Important metrics and stats about the company.")
      [ant/tabs {:active-key @active
                 :on-change  #(dispatch [:metrics.category/nav (keyword %)])}
       (for [{:keys [label key] :as t} tabs]
