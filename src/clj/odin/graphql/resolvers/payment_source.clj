@@ -174,7 +174,7 @@
               (query-payments db (:id ap-source) (:id source))
               (query-payments db (:id source))))
           ;; no autopay account, so no autopay payments
-          [])
+          (query-payments db (:id source)))
         (catch Throwable t
           (timbre/error t ::merge-autopay-payments
                         {:source   (:id source)
