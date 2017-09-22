@@ -1,7 +1,9 @@
 (ns odin.profile.contact.views
   (:require [antizer.reagent :as ant]
             [re-frame.core :refer [dispatch subscribe]]
-            [reagent.core :as r]))
+            [odin.utils.validators :as validate]
+            [reagent.core :as r]
+            [toolbelt.core :as tb]))
 
 (defn- placeholder
   [field]
@@ -29,6 +31,19 @@
                                        :initial-value initial-value} [ant/input input-props])]))
 
 
+(defn- validate-phone-number
+  [props value cb]
+  (if (validate/phone? value)
+    (cb)
+    (cb (:message props))))
+
+
+(defn- submit-when-valid
+  [form event]
+  (let [submit* (fn [errors _] (when (nil? errors) (dispatch event)))]
+    #(ant/validate-fields form submit*)))
+
+
 (def ^:private contact-info-form-items
   [{:key         :first_name
     :label       "First Name"
@@ -43,7 +58,9 @@
    {:key         :phone
     :label       "Phone #"
     :ant-id      "phone"
-    :rules       [{:required true}]
+    :rules       [{:required true}
+                  {:validator validate-phone-number
+                   :message   "Please enter a valid U.S. phone number."}]
     :input-props {:placeholder (placeholder :phone)}}
    {:key         :email
     :label       "Email Address"
@@ -54,14 +71,14 @@
 
 
 (defn- contact-info-form []
-  (let [form      (ant/get-form)
-        account   @(subscribe [:profile/account-mutable])
-        on-change (fn [k] #(dispatch [:profile.contact.info/update! k (.. % -target -value)]))]
+  (let [form       (ant/get-form)
+        saved-info @(subscribe [:profile.contact.personal/current])
+        on-change  (fn [k] #(dispatch [:profile.contact.personal/update k (.. % -target -value)]))]
     [ant/form {:layout "horizontal"}
       (map-indexed
        (fn [idx {key :key :as item}]
          (-> (assoc-in item [:input-props :on-change] (on-change key))
-             (assoc-in [:initial-value] (get account key))
+             (assoc-in [:initial-value] (key saved-info))
              (form-item)
              (with-meta {:key idx})))
        contact-info-form-items)]))
@@ -70,32 +87,33 @@
 (def ^:private emergency-contact-form-items
   [{:key         :first_name
     :label       "First Name"
-    :ant-id      "first-name"
+    :ant-id      "A first name"
     :rules       [{:required true}]
     :input-props {:placeholder (placeholder :first_name)}}
    {:key         :last_name
     :label       "Last Name"
-    :ant-id      "last-name"
+    :ant-id      "A last name"
     :rules       [{:required true}]
     :input-props {:placeholder (placeholder :last_name)}}
    {:key         :phone
     :label       "Phone #"
-    :ant-id      "phone"
-    :rules       [{:required true}]
+    :ant-id      "Contact's phone #"
+    :rules       [{:required true}
+                  {:validator validate-phone-number
+                   :message   "Please enter a valid U.S. phone number."}]
     :input-props {:placeholder (placeholder :phone)}}])
 
 
 (defn- emergency-contact-info-form []
   (let [form      (ant/get-form)
-        account   (subscribe [:profile/account-mutable])
-        contact   (get @account :emergency_contact)
-        on-change (fn [k] #(dispatch [:profile.contact.info/update-emergency-contact! k (.. % -target -value)]))]
+        saved-info @(subscribe [:profile.contact.emergency/current])
+        on-change (fn [k] #(dispatch [:profile.contact.emergency/update k (.. % -target -value)]))]
 
     [ant/form {:layout "horizontal"}
       (map-indexed
        (fn [idx {key :key :as item}]
          (-> (assoc-in item [:input-props :on-change] (on-change key))
-             (assoc-in [:initial-value] (get contact key))
+             (assoc-in [:initial-value] (key saved-info))
              (form-item)
              (with-meta {:key idx})))
        emergency-contact-form-items)]))
@@ -103,20 +121,41 @@
 
 (defn- contact-info-ui []
   (fn []
-    (let [form (ant/get-form)]
+    (let [form        (ant/get-form)
+          new-info    @(subscribe [:profile.contact.personal/new])
+          has-changed (subscribe [:profile.contact.personal/has-changes])
+          is-saving   (subscribe [:loading? :profile.contact.personal/submitting])]
       [:div
        (contact-info-form)
        [ant/form-item (merge form-style {:label " "})
-        [ant/button {:disabled true} "Save Changes"]]])))
+        [ant/button {:disabled (not @has-changed)
+                     :loading  @is-saving
+                     :on-click (submit-when-valid form [:profile.contact.personal/submit! new-info])}
+         "Save Changes"]]])))
 
 
 (defn- emergency-contact-ui []
   (fn []
-    (let [form (ant/get-form)]
+    (let [form        (ant/get-form)
+          new-info    @(subscribe [:profile.contact.emergency/new])
+          has-changed (subscribe [:profile.contact.emergency/has-changes])
+          is-saving   (subscribe [:loading? :profile.contact.emergency/submitting])]
       [:div
        (emergency-contact-info-form)
        [ant/form-item (merge form-style {:label " "})
-        [ant/button {:disabled true} "Save Changes"]]])))
+        [ant/button {:disabled (not @has-changed)
+                     :loading  @is-saving
+                     :on-click (submit-when-valid form [:profile.contact.emergency/submit! new-info])}
+         "Save Changes"]]])))
+
+;;(defn- emergency-contact-ui []
+;;  (fn []
+;;    (let [form        (ant/get-form)
+;;          has-changed (subscribe [:profile.contact.emergency/has-changes])]
+;;      [:div
+;;       (emergency-contact-info-form)
+;;       [ant/form-item (merge form-style {:label " "})
+;;        [ant/button {:disabled (not @has-changed)} "Save Changes"]]])))
 
 
 (defn contact-info []
