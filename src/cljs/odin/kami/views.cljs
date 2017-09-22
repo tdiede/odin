@@ -1,12 +1,11 @@
 (ns odin.kami.views
-  (:require [odin.content :as content]
+  (:require [antizer.reagent :as ant]
             [iface.card :as card]
-            [re-frame.core :as rf :refer [dispatch subscribe]]
-            [antizer.reagent :as ant]
-            [toolbelt.core :as tb]
+            [iface.typography :as typography]
+            [odin.content :as content]
             [odin.routes :as routes]
+            [re-frame.core :as rf :refer [dispatch subscribe]]
             [reagent.core :as r]))
-
 
 ;; (rf/reg-event-fx
 ;;  ::init-street-view
@@ -70,24 +69,22 @@
                :loading @is-loading}
      (let [scores (:scores @report)]
        [:p [:span "Total Score: "] [:b (str (->> scores (map second) (apply +))
-                                           " / "
-                                           (* (count scores) 3))]])]))
+                                            " / "
+                                            (* (count scores) 3))]])]))
 
 
 (defn- content-view []
   (let [address-id (subscribe [:kami/address-id])]
     [:div
-    [:div.view-header
-     [:h1.title.is-3 "Kami"]
-     [:p.subtitle.is-5 "Determine a building's potential as a Starcity."]]
+     (typography/view-header "Kami" "Determine a building's potential as a Starcity.")
 
-    [:div.columns
-     [:div.column.is-half
-      [search-bar]
-      [search-results]]
-     [:div.column
-      (when (some? @address-id)
-        [report-view])]]]))
+     [:div.columns
+      [:div.column.is-half
+       [search-bar]
+       [search-results]]
+      [:div.column
+       (when (some? @address-id)
+         [report-view])]]]))
 
 
 (defmethod content/view :kami [route]

@@ -1,11 +1,11 @@
 (ns odin.profile.payments.sources.views
   (:require [antizer.reagent :as ant]
+            [iface.media :as media]
+            [iface.tooltip :as tooltip]
+            [iface.typography :as typography]
             [odin.components.payments :as payments-ui]
-            [odin.profile.payments.sources.autopay :as autopay]
-            [odin.components.ui :as ui]
-            [odin.components.input :as input]
-            [odin.profile.payments.sources.views.forms :as forms]
             [odin.l10n :as l10n]
+            [odin.profile.payments.sources.views.forms :as forms]
             [odin.routes :as routes]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]
@@ -298,9 +298,9 @@
    [:h3 "You don't have any accounts linked yet."]
 
    [:div.steps-vertical
-    [ui/media-step "Link a payment source so you can settle your charges." "bank"]
-    [ui/media-step "Turn on Autopay and never worry about a late payment again." "history"]
-    [ui/media-step
+    [media/step "Link a payment source so you can settle your charges." "bank"]
+    [media/step "Turn on Autopay and never worry about a late payment again." "history"]
+    [media/step
      [ant/button {:type "primary"
                   :on-click #(dispatch [:modal/show :payment.source/add])}
       [:span.icon.is-small [:i.fa.fa-plus-square-o]]
@@ -320,8 +320,8 @@
       [:p.ml1
        [:span.bold (if @autopay-on "Autopay On" "Autopay Off")]
        (if has-banks
-         [ui/info-tooltip "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
-         [ui/info-tooltip "To use Autopay, you must have a bank account linked."])]]]))
+         [tooltip/info "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
+         [tooltip/info "To use Autopay, you must have a bank account linked."])]]]))
 
 
 (defn- source-view []
@@ -352,9 +352,9 @@
      [modal-verify-account]
      [modal-confirm-enable-autopay]
      [modal-confirm-disable-autopay]
-     [:div.view-header
-      [:h1.is-3.title (l10n/translate :payment-sources)]
-      [:p.is-6.subtitle "Edit your payment accounts, enable Autopay, and set default payment sources."]]
+     (typography/view-header
+      (l10n/translate :payment-sources)
+      "Edit your payment accounts, enable Autopay, and set default payment sources.")
      (if (= @loading true)
        [:div.loading-box.tall [ant/spin]]
        (source-view))]))

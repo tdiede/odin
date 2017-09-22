@@ -1,34 +1,10 @@
 (ns odin.profile.membership.views
-  (:require [odin.l10n :as l10n]
-            [re-frame.core :refer [subscribe dispatch]]
-            [odin.components.membership :as member-ui]
-            [odin.components.orders :as orders-ui]
+  (:require [antizer.reagent :as ant]
+            [iface.typography :as typography]
+            [odin.l10n :as l10n]
             [odin.utils.formatters :as format]
             [odin.utils.time :as t]
-            [odin.components.notifications :as notification]
-            [antizer.reagent :as ant]
-            [toolbelt.core :as tb]))
-
-
-(def mock-services [{:id          13886565
-                     :name        "Plant Service"
-                     :icon        "fa-pagelines"
-                     :price       10
-                     :rental      true
-                     :description "Beautiful plant to keep your room happy and full of oxygen!"}
-                    {:id          87986643
-                     :name        "Deep-Tissue Massage"
-                     :icon        "fa-hand-paper-o"
-                     :price       60
-                     :rental      true
-                     :description "Align your chakras with a weekly, relaxing massage."}
-                    {:id          87982243
-                     :name        "Enigma 3-Class Package"
-                     :icon        "fa-magic"
-                     :price       75
-                     :rental      true
-                     :description "Learn cool things from visitors to your community."}])
-
+            [re-frame.core :refer [dispatch subscribe]]))
 
 
 (defn card-license-summary []
@@ -125,13 +101,8 @@
 
 (defn membership []
   [:div
-   [:div.view-header.flexrow
-    [:div
-     [:h1 (l10n/translate :membership)]]
-     ;;[:p "View and manage your rental agreement and any premium subscriptions you've signed up for."]]
-    [:div.pin-right
-     [btn-refetch-data]]]
-   ;;[:br]
+   (typography/view-header
+    (l10n/translate :membership))
 
    [:div.columns
     [:div.column.is-5
