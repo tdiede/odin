@@ -15,8 +15,6 @@
 ;; =============================================================================
 
 
-;; Payment Sources (Linked Accounts)
-;; - Can optionally filter by source's :type
 (reg-sub
  :payment/sources
  :<- [::sources]
@@ -25,23 +23,19 @@
      (:sources db)
      (filter #(= (:type %) type) (:sources db)))))
 
-(defn- get-default-source
-  [sources]
-  (first (filter #(= (:default %) true) sources)))
 
 (reg-sub
  :payment.sources/default-source
  :<- [::sources]
  (fn [db _]
-   (get-default-source (:sources db))))
+   (tb/find-by :default (:sources db))))
 
 
 ;; =============================================================================
-;; Nav
+;; Current Sources
 ;; =============================================================================
 
 
-;; Yields the ID of currently-selected Source from DB
 (reg-sub
  :payment.sources/current-id
  :<- [::sources]
@@ -49,13 +43,22 @@
    (:current db)))
 
 
-;; Yields the Source that corresponds to currently-selected Source ID
 (reg-sub
  :payment.sources/current
  :<- [:payment/sources]
  :<- [:payment.sources/current-id]
  (fn [[sources source-id] _]
    (tb/find-by (fn [source] (= source-id (:id source))) sources)))
+
+
+(reg-sub
+ :payment.sources.current/can-remove?
+ :<- [:payment/sources :bank]
+ :<- [:payment.sources/current]
+ (fn [[banks current] _]
+   (if (= :bank (:type current))
+     (< 1 (count banks))
+     true)))
 
 
 ;; =============================================================================
@@ -76,7 +79,6 @@
    (:available-types db)))
 
 
-;; Yields the ID of currently-selected Source from DB
 (reg-sub
  :payment.sources.add/type
  :<- [::add-source]
@@ -96,11 +98,25 @@
 ;; =============================================================================
 
 
-;; (reg-sub
-;;  :payment.sources/autopay-source
-;;  :<- [:payment/sources]
-;;  (fn [[sources] _]
-;;    (filter #(= (get % :autopay) true) sources)))
+(reg-sub
+ :payment.sources/can-enable-autopay?
+ :<- [:payment/sources :bank]
+ (fn [banks _]
+   (some? (tb/find-by (comp #{"verified"} :status) banks))))
+
+
+(reg-sub
+ :payment.sources/autopay-source
+ :<- [:payment/sources]
+ (fn [sources _]
+   (tb/find-by :autopay sources)))
+
+
+(reg-sub
+ :payment.sources/autopay-on?
+ :<- [:payment.sources/autopay-source]
+ (fn [source _]
+   (:autopay source)))
 
 
 ;; =============================================================================

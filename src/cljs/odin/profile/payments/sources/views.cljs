@@ -11,6 +11,7 @@
             [reagent.core :as r]
             [toolbelt.core :as tb]))
 
+
 (defn- is-unverified [{:keys [type status] :as source}]
   (and (= type :bank) (not= status "verified")))
 
@@ -18,15 +19,6 @@
 (defn- is-default [{:keys [type default]}]
   (and (= type :card) (true? default)))
 
-
-(defn- num-bank-sources []
-  (let [bank-sources (subscribe [:payment/sources :bank])]
-    (count @bank-sources)))
-
-
-(defn- is-autopay-allowed []
-  (let [bank-sources (subscribe [:payment/sources :bank])]
-    (< 0 (count (filter #(not= (:status %) "new") @bank-sources)))))
 
 (defn account-digits
   [{:keys [type last4]}]
@@ -38,9 +30,8 @@
 (defn add-new-source-button
   "Button for adding a new Payment Source."
   []
-  [ant/button {;;:type "primary"
-               :size "large"
-               :icon "plus-circle-o"
+  [ant/button {:size     :large
+               :icon     "plus-circle-o"
                :on-click #(dispatch [:modal/show :payment.source/add])}
    (l10n/translate :btn-add-new-account)])
 
@@ -49,9 +40,8 @@
   [{:keys [id type name last4] :as source}]
   (let [current (subscribe [:payment.sources/current])]
     [:a.source-list-item
-     {:class (when (= id (get @current :id)) "is-active")
-      :href  (routes/path-for :profile.payment/sources
-                              :query-params {:source-id id})}
+     {:class (when (= id (:id @current)) "is-active")
+      :href  (routes/path-for :profile.payment/sources :query-params {:source-id id})}
 
      [:div.source-list-item-info
       [:p.bold name]
@@ -75,31 +65,38 @@
       (map-indexed
        #(with-meta [source-list-item %2] {:key %1})
        @sources))
-
      [add-new-source-button]]))
 
 
+(defn- show-cannot-remove-bank [source]
+  (ant/modal-warning
+   {:title   (r/as-element
+              [:span.title.is-5 (str "Cannot remove " (:name source))])
+    :width   640
+    :ok-text "OK, got it."
+    :content (r/as-element
+              [:div
+               [:p "You must have a bank account linked in order to pay rent."]
+               [:p "If you wish to remove this bank, please link another one first."]])}))
+
+
 (defn- source-actions-menu []
-  (let [source  (subscribe [:payment.sources/current])
-        is-bank (= (:type @source) :bank)]
+  (let [source     (subscribe [:payment.sources/current])
+        can-remove (subscribe [:payment.sources.current/can-remove?])]
     [ant/menu
      [ant/menu-item {:key "removeit"}
       [:a.text-red
-       {:href "#"
-        :on-click #(dispatch [:modal/show (if (and (< 1 (num-bank-sources)) is-bank)
-                                            :payment.source/remove
-                                            :payment.source/cannot-remove-only-bank)])}
+       {:href     "#"
+        :on-click #(if @can-remove
+                     (dispatch [:modal/show :payment.source/remove])
+                     (show-cannot-remove-bank @source))}
        "Remove this account"]]]))
 
 
 (defn source-detail
   "Display information about the currently-selected payment source."
   []
-  (let [{:keys [id type name last4 autopay-on] :as source} @(subscribe [:payment.sources/current])
-        is-unverified  (is-unverified source)
-        is-default     (is-default source)
-        can-be-default (and (= type :card) (not is-default))
-        can-be-autopay (= type :bank)]
+  (let [{:keys [type name] :as source} @(subscribe [:payment.sources/current])]
     [ant/card {:class "mb2"}
      [:div.flexrow.align-start
       [payments-ui/payment-source-icon type]
@@ -115,7 +112,7 @@
         [ant/icon {:type "down"}]]]]
 
      [:div.mt2
-      (when is-unverified
+      (when (is-unverified source)
         [ant/button {:type     "primary"
                      :on-click #(dispatch [:modal/show :payment.source/verify-account])}
          [ant/icon {:type "check-circle"}]
@@ -125,11 +122,9 @@
 (defn source-payment-history
   "Display the transaction history for a given payment source."
   []
-  (let [{:keys [payments name]} @(subscribe [:payment.sources/current])
-        is-loading              (subscribe [:loading? :payment.sources/fetch])]
-    [ant/card {;;:title "Transaction History" ;;(l10n/translate :payment-history-for name)
-               :class "is-flush stripe-style"}
-     [payments-ui/payments-table payments @is-loading]]))
+  (let [{:keys [payments name]} @(subscribe [:payment.sources/current])]
+    [ant/card {:class "is-flush stripe-style"}
+     [payments-ui/payments-table payments false]]))
 
 
 (defn bank-radio-option
@@ -242,29 +237,28 @@
 
 (defn modal-confirm-remove-account []
   (let [is-visible     (subscribe [:modal/visible? :payment.source/remove])
+        removing       (subscribe [:loading? :payment.source/delete!])
         current-source (subscribe [:payment.sources/current])]
     (fn []
       [ant/modal {:title     "Remove this account?"
                   :width     640
                   :visible   @is-visible
                   :ok-text   "Yes, remove"
-                  :on-ok     #(dispatch [:payment.source/delete! (:id @current-source)])
-                  :on-cancel #(dispatch [:modal/hide :payment.source/remove])}
+                  :on-cancel #(dispatch [:modal/hide :payment.source/remove])
+                  :footer    [(r/as-element
+                               ^{:key "cancel"}
+                               [ant/button
+                                {:type     :ghost
+                                 :on-click #(dispatch [:modal/hide :payment.source/remove])}
+                                "Cancel"])
+                              (r/as-element
+                               ^{:key "delete"}
+                               [ant/button
+                                {:type     :primary
+                                 :loading  @removing
+                                 :on-click #(dispatch [:payment.source/delete! (:id @current-source)])}
+                                "Yes, remove it."])]}
        [:p "If you remove this account, it will no longer be available for settling payments."]])))
-
-
-(defn modal-cannot-remove-only-bank []
-  (let [is-visible     (subscribe [:modal/visible? :payment.source/cannot-remove-only-bank])
-        current-source (subscribe [:payment.sources/current])]
-    (fn []
-      [ant/modal {:title     (str "Cannot remove " (:name @current-source))
-                  :width     640
-                  :visible   @is-visible
-                  :ok-text   "OK, got it."
-                  :on-ok     #(dispatch [:modal/hide :payment.source/cannot-remove-only-bank])
-                  :on-cancel #(dispatch [:modal/hide :payment.source/cannot-remove-only-bank])}
-       [:p "You must have a bank account linked in order to pay rent."]
-       [:p "If you wish to remove this bank, please link another one first."]])))
 
 
 (def ^:private tab-icon-classes
@@ -340,7 +334,7 @@
 
 (defn source-settings []
   (let [autopay-on      (subscribe [:payment.sources/autopay-on?])
-        autopay-allowed (is-autopay-allowed)
+        autopay-allowed (subscribe [:payment.sources/can-enable-autopay?])
         card-sources    (subscribe [:payment/sources :card])
         src-default     (subscribe [:payment.sources/default-source])]
     [:div.page-controls
@@ -350,11 +344,11 @@
                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
       [:p.ml1
        [:span.bold
-        {:class (when (not autopay-allowed) "subdued")}
+        {:class (when-not @autopay-allowed "subdued")}
         (if @autopay-on "Autopay On" "Autopay Off")]
-       (if autopay-allowed
+       (if @autopay-allowed
          [tooltip/info "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
-         [tooltip/info "To enable Autopay, you must first add and verify bank account."])]
+         [tooltip/info "To enable Autopay, you must first add and verify a bank account."])]
 
       [:span.page-controls-divider "•"]
       [:div
@@ -367,38 +361,36 @@
 
 
 
-(defn- source-view []
-  (let [sources (subscribe [:payment/sources])]
-    (if (empty? @sources)
-      ;; Empty State
-      [no-sources]
-      ;; Show Sources
-      [:div
-       [source-settings]
-       ;;[source-list]
-       [:div.columns
-        [:div.column.fw200
-         [:h2 "Accounts"]
-         [source-list]]
-        [:div.column
-         [:h3 "Details"]
-         [source-detail]
-         [:h3 "Transaction History"]
-         [source-payment-history]]]])))
+(defn- source-view [sources]
+  (if (empty? sources)
+    ;; Empty State
+    [no-sources]
+    ;; Show Sources
+    [:div
+     [source-settings]
+     [:div.columns
+      [:div.column.fw200
+       [:h2 "Accounts"]
+       [source-list]]
+      [:div.column
+       [:h3 "Details"]
+       [source-detail]
+       [:h3 "Transaction History"]
+       [source-payment-history]]]]))
 
 
 (defn sources []
-  (let [is-loading (subscribe [:loading? :payment.sources/fetch])]
+  (let [is-loading (subscribe [:loading? :payment.sources/fetch])
+        sources    (subscribe [:payment/sources])]
     [:div
      [modal-add-source]
      [modal-confirm-remove-account]
      [modal-verify-account]
      [modal-confirm-enable-autopay]
      [modal-confirm-disable-autopay]
-     [modal-cannot-remove-only-bank]
      (typography/view-header
       (l10n/translate :payment-sources)
       "Edit your payment accounts, enable Autopay, and set default payment sources.")
-     (if @is-loading
+     (if (and (empty? @sources) @is-loading)
        [:div.loading-box.tall [ant/spin]]
-       (source-view))]))
+       (source-view @sources))]))

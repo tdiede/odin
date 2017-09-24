@@ -17,6 +17,14 @@
 
 
 (reg-sub
+ :member.license/loading?
+ :<- [:member/license]
+ :<- [:loading? :member.license/fetch]
+ (fn [[license loading]]
+   (and (empty? license) loading)))
+
+
+(reg-sub
  :member/rent-payments
  :<- [::membership]
  (fn [db [_ {:keys [status]}]]

@@ -336,10 +336,15 @@
     (go
       (try
         (let [customer (<!? (fetch-or-create-customer! ctx))
+              cus      (<!? (rcu/fetch stripe (customer/id customer)))
               source   (<!? (rcu/add-source! stripe (customer/id customer) token))]
+          ;; NOTE: Not sure that this is even necessary any longer.
           (when (= (:object source) "bank_account")
             @(d/transact-async conn [[:db/add (:db/id customer)
                                       :stripe-customer/bank-account-token (:id source)]]))
+          (when (and (= (:object source) "card")
+                     (not= (rcu/default-source-type cus) "card"))
+            (<!? (rcu/update! stripe (:id cus) :default-source (:id source))))
           (resolve/deliver! result source))
         (catch Throwable t
           (resolve/deliver! result nil {:message  (error-message t)

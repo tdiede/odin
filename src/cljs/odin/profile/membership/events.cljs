@@ -15,7 +15,7 @@
 (defmethod routes/dispatches :profile/membership [route]
   (let [account-id (get-in route [:requester :id])]
     [[:profile/fetch-account account-id]
-     [:member/fetch-license account-id]]))
+     [:member.license/fetch account-id]]))
 
 
 ;; =============================================================================
@@ -25,7 +25,7 @@
 
 ;; retrieves the `active_license` for a member.
 (reg-event-fx
- :member/fetch-license
+ :member.license/fetch
  (fn [_ [k account-id]]
    {:dispatch [:loading k true]
     :graphql  {:query      [[:account {:id account-id}
@@ -69,4 +69,4 @@
  (fn [{db :db} [_ k _]]
    (let [account-id (get-in db [:config :account :id])]
      {:dispatch-n [[:loading k false]
-                   [:member/fetch-license account-id]]})))
+                   [:member.license/fetch account-id]]})))
