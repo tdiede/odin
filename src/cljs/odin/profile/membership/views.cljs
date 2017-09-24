@@ -1,19 +1,21 @@
 (ns odin.profile.membership.views
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
+            [odin.components.payments :as payments-ui]
             [odin.l10n :as l10n]
             [odin.utils.formatters :as format]
             [odin.utils.time :as t]
             [re-frame.core :refer [dispatch subscribe]]
             [toolbelt.core :as tb]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [odin.routes :as routes]))
 
 
 (defn card-license-summary []
   (let [license (subscribe [:member/license])
-        loading (subscribe [:member.license/loading?])
+        loading (subscribe [:loading? :member/fetch-license])
         {:keys [term rate starts ends property unit]} @license]
-    [ant/card {:loading @(subscribe [:member.license/loading?])
+    [ant/card {:loading @loading
                :class   "is-flush"}
      (when-not (nil? rate)
        [ant/card {:loading @loading :class "is-flush"}
@@ -84,7 +86,7 @@
 
 
 (defn deposit-status-card []
-  (let [loading     (subscribe [:member.license/loading?])
+  (let [loading     (subscribe [:loading? :member/fetch-license])
         deposit     (subscribe [:profile/security-deposit])
         modal-shown (r/atom false)]
     (fn []
@@ -98,18 +100,63 @@
           (deposit-status-content @deposit modal-shown)]]]])))
 
 
-(defn rent-status-card
-  []
-  (let [license (subscribe [:member/license])
-        loading (subscribe [:member.license/loading?])]
+(defn- rent-paid-card []
+  (let [this-month (.format (js/moment.) "MMMM")]
+    [ant/card
+     [:div.columns
+      [:div.column.is-2
+       [:span.icon.is-large.text-green [:i.fa.fa-home]]]
+      [:div.column
+       [:h4 "Rent is paid."]
+       [:p (format/format "Congratulations! You're paid for the month of %s." this-month)]]]]))
+
+
+(defn rent-due-card [{:keys [id amount due pstart pend] :as payment}]
+  (let [sources       (subscribe [:payment/sources :bank])
+        paying        (subscribe [:loading? :member/pay-rent-payment!])
+        modal-showing (r/atom false)]
+    (fn [{:keys [id amount due pstart pend] :as payment}]
+      [ant/card
+       (when (some? @sources)
+         [payments-ui/make-payment-modal payment modal-showing
+          :on-confirm (fn [payment-id source-id _]
+                        (dispatch [:member/pay-rent-payment! payment-id source-id]))
+          :loading @paying
+          :sources @sources])
+       [ant/tooltip
+        {:title (when (empty? @sources)
+                  (r/as-element [:span "Please link a bank account in your "
+                                 [:a {:href (routes/path-for :profile.payment/sources)}
+                                  "Payment Methods"] " page."]))}
+        [ant/button
+         {:on-click #(reset! modal-showing true)
+          :disabled (empty? @sources)}
+        (format/format "Pay Now (%s)" (format/currency amount))]]])))
+
+
+(defn- rent-due-cards [payments]
+  (r/create-class
+   {:component-will-mount
+    (fn [_]
+      (dispatch [:payment.sources/fetch]))
+    :reagent-render
+    (fn [payments]
+      [:div
+       (doall
+        (map-indexed
+         #(with-meta [rent-due-card %2] {:key %1})
+         payments))])}))
+
+
+(defn rent-status-card []
+  (let [license  (subscribe [:member/license])
+        loading  (subscribe [:loading? :member/fetch-license])
+        payments (subscribe [:member/rent-payments {:status :due}])]
     [:div.mb2
-     [ant/card {:loading @loading}
-      [:div.columns
-       [:div.column.is-2
-        [:span.icon.is-large.text-green [:i.fa.fa-home]]]
-       [:div.column
-        [:h4 "Rent is paid."]
-        [:p "Congratulations! You're paid for the month of September."]]]]]))
+     (cond
+       @loading           [ant/card {:loading true}]
+       (empty? @payments) [rent-paid-card]
+       :otherwise         [rent-due-cards @payments])]))
 
 
 (defn membership-summary []

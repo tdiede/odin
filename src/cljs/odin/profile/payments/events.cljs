@@ -29,7 +29,7 @@
    {:db      (assoc-in db [:loading :payments/list] true)
     :graphql {:query
               [[:payments {:params {:account (tb/str->int account-id)}}
-                [:id :method :for :autopay :amount :status :description
+                [:id :method :type :autopay :amount :status :description
                  :pstart :pend :paid_on [:source [:id :name :type :last4]]]]]
               :on-success [:payments.fetch/success]
               :on-failure [:payments.fetch/failure]}}))
@@ -48,6 +48,5 @@
  :payments.fetch/failure
  [(path db/path)]
  (fn [{:keys [db]} [_ response]]
-   ;;(tb/log response)
    {:db       (assoc-in db [:loading :payments/list] false)
     :dispatch [:graphql/notify-errors! response]}))

@@ -15,7 +15,10 @@
             [toolbelt.datomic :as td]
             [toolbelt.date :as date]
             [blueprints.models.order :as order]
-            [blueprints.models.service :as service]))
+            [blueprints.models.service :as service]
+            [ribbon.customer :as rcu]
+            [blueprints.models.customer :as customer]
+            [blueprints.models.property :as property]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -246,6 +249,7 @@
        (apply concat)
        (apply payment/query db)
        (sort-by :payment/paid-on)
+       (reverse)
        (map mapify)))
 
 
@@ -262,10 +266,88 @@
         (let [payments (query-payments (d/db conn) params)]
           (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
         (catch Throwable t
-          (timbre/error t "error querying payments")
-          (resolve/deliver! result nil {:message  (str "Exception:" (.getMessage t))
+          (timbre/error t ::payments params)
+          (resolve/deliver! result nil {:message  (.getMessage t)
                                         :err-data (ex-data t)}))))
     result))
+
+
+;; =============================================================================
+;; Mutations
+;; =============================================================================
+
+
+(defn- ensure-payment-allowed
+  [db requester payment stripe-customer source]
+  (let [owner (payment/account payment)]
+    (cond
+      (not= (:db/id requester) (:db/id owner))
+      "You do not own this payment!"
+
+      (not (#{:payment.status/due :payment.status/failed}
+            (payment/status payment)))
+      (format "This payment has status %s; cannot pay!"
+              (name (payment/status payment)))
+
+      (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
+                (= (:object source) "bank_account")))
+      "Only bank accounts can be used to pay rent."
+
+      (not= (:customer source) (:id stripe-customer))
+      "The source you are attempting to pay with is not yours.")))
+
+
+(defn- create-charge!
+  "Create a charge for `payment` on Stripe."
+  [{:keys [stripe conn]} account payment customer source-id]
+  (let [license  (member-license/active (d/db conn) account)
+        property (member-license/property license)
+        desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
+    (rch/create! stripe (int (* 100 (payment/amount payment))) source-id
+                :email (account/email account)
+                :description desc
+                :customer-id (customer/id customer)
+                :managed-account (member-license/rent-connect-id license))))
+
+
+(defn pay-rent!
+  [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
+  (let [result   (resolve/resolve-promise)
+        payment  (d/entity (d/db conn) id)
+        customer (customer/by-account (d/db conn) requester)]
+    (go
+      (try
+        (let [scus   (<!? (rcu/fetch stripe (customer/id customer)))
+              source (<!? (rcu/fetch-source stripe (:id scus) source))]
+          (if-let [error (ensure-payment-allowed (d/db conn) requester payment scus source)]
+            (resolve/deliver! result nil {:message error})
+            (let [charge-id (:id (<!? (create-charge! ctx requester payment customer (:id source))))]
+              @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
+                                           (assoc :stripe/source-id (:id source))
+                                           (assoc :payment/status :payment.status/pending)
+                                           (assoc :payment/paid-on (java.util.Date.)))])
+              (resolve/deliver! result (d/entity (d/db conn) id)))))
+        (catch Throwable t
+          (timbre/error t ::pay params)
+          (resolve/deliver! result nil {:message  (.getMessage t)
+                                        :err-data (ex-data t)}))))
+    result))
+
+
+(comment
+
+  (let [stripe    (odin.config/stripe-secret-key odin.config/config)
+        conn      odin.datomic/conn
+        requester (d/entity (d/db conn) [:account/email "member@test.com"])
+        payment   (d/entity (d/db conn) 285873023223183)
+        customer  (customer/by-account (d/db conn) requester)
+        scus      (<!!? (rcu/fetch stripe (customer/id customer)))
+        source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
+        owner     (payment/account payment)]
+    (ensure-payment-allowed (d/db conn) requester payment scus source))
+
+
+  )
 
 
 ;; =============================================================================
@@ -287,6 +369,8 @@
    :payment/order       order
    ;; queries
    :payment/list        payments
+   ;; mutations
+   :payment/pay-rent!   pay-rent!
    })
 
 

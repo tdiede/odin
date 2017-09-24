@@ -7,6 +7,10 @@
 ;;(def ^:private ms-per-month 2592000000)
 ;;(def ^:private ms-per-year  31536000000)
 
+
+(defn now []
+  (js/Date.))
+
 (defn is-before-now
   "Returns `true` if the provided time is in the past, `false` if in the future."
   [time]

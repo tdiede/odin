@@ -429,7 +429,21 @@
    :resolve     :account/change-password!}
 
 
+  ;;; Payments
+
+
+  :pay_rent_payment
+  {:type        :payment
+   :description "Make a payment."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "ID of the payment entity."}
+                 :source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-rent!}
+
+
    ;;; Payment Sources
+
 
   :delete_payment_source
   {:type        :payment_source

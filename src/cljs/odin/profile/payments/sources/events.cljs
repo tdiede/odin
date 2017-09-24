@@ -28,7 +28,7 @@
  (fn [{{sources :sources} :db} _]
    (if-let [source (first sources)]
      {:route (routes/path-for :profile.payment/sources :query-params {:source-id (:id source)})}
-     {:dispatch [:payment.sources/fetch]})))
+     {:dispatch [:payment.sources/fetch true]})))
 
 
 (reg-event-fx
@@ -36,10 +36,8 @@
  [(path db/path)]
  (fn [{{sources :sources} :db} [_ {:keys [params]}]]
    (let [source-id (:source-id params)]
-     (if (empty? sources)
-       {:dispatch-n [[:payment.sources/set source-id]
-                     [:payment.sources/fetch]]}
-       {:dispatch [:payment.sources/set source-id]}))))
+     {:dispatch-n [[:payment.sources/set source-id]
+                   [:payment.sources/fetch true]]})))
 
 
 (reg-event-db
@@ -56,14 +54,14 @@
 
 (reg-event-fx
  :payment.sources/fetch
- (fn [{:keys [db]} _]
+ (fn [{:keys [db]} [_ change-route?]]
    (let [account-id (get-in db [:config :account :id])]
      {:dispatch [:loading :payment.sources/fetch true]
       :graphql  {:query
                  [[:payment_sources {:account account-id}
                    [:id :last4 :customer :type :name :status :default :autopay :expires
-                    [:payments [:id :method :for :autopay :amount :status :pstart :pend :paid_on :description]]]]]
-                 :on-success [:payment.sources.fetch/success]
+                    [:payments [:id :method :type :autopay :amount :status :pstart :pend :paid_on :description]]]]]
+                 :on-success [:payment.sources.fetch/success change-route?]
                  :on-failure [:payment.sources.fetch/failure]}})))
 
 
@@ -74,17 +72,15 @@
 (reg-event-fx
  :payment.sources.fetch/success
  [(path db/path)]
- (fn [{:keys [db]} [_ response]]
+ (fn [{:keys [db]} [_ change-route? response]]
    (let [sources (get-in response [:data :payment_sources])
-         route   (when (active-source-should-change? db sources)
+         route   (when (and change-route? (active-source-should-change? db sources))
                    (routes/path-for :profile.payment/sources
                                     :query-params {:source-id (:id (first sources))}))]
-     (tb/log response)
      (tb/assoc-when
       {:db       (assoc db :sources sources)
        :dispatch [:loading :payment.sources/fetch false]}
       :route route))))
-      ;; :dispatch [:payment.sources.autopay/parse payment-sources]
 
 
 

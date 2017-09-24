@@ -10,6 +10,9 @@
 
 (defn phone?
   [number]
-  (let [pu     (pnu/getInstance)
-        parsed (.parse pu number "US")]
-    (.isValidNumber pu parsed)))
+  (try
+    (let [pu     (pnu/getInstance)
+          parsed (.parse pu number "US")]
+      (.isValidNumber pu parsed))
+    (catch js/Error _
+      false)))
