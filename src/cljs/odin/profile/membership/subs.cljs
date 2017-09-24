@@ -17,17 +17,13 @@
 
 
 (reg-sub
- :member.license/loading?
- :<- [::membership]
- (fn [db _]
-   (get-in db [:loading :member/license])))
-
-
-(reg-sub
  :member/rent-payments
  :<- [::membership]
- (fn [db _]
-   (get-in db [:license :payments])))
+ (fn [db [_ {:keys [status]}]]
+   (let [payments (get-in db [:license :payments])]
+     (if (some? status)
+       (filter #(= status (:status %)) payments)
+       payments))))
 
 
 (reg-sub

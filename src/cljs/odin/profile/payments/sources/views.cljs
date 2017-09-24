@@ -77,10 +77,6 @@
        @sources))
 
      [add-new-source-button]]))
-;;[ant/button {:type "primary"
-;;             :on-click #(dispatch [:modal/show :payment.source/add])}
-;; [ant/icon {:type "plus-circle-o"}]
-;; [:span "Add Payment Method"]]]))
 
 
 (defn- source-actions-menu []
@@ -112,7 +108,8 @@
        [:p (account-digits source)]]]
 
      [:div.card-controls
-      [ant/dropdown {:trigger ["click"] :overlay (r/as-element [source-actions-menu])}
+      [ant/dropdown {:trigger ["click"]
+                     :overlay (r/as-element [source-actions-menu])}
        [:a.ant-dropdown-link
         [:span "More"]
         [ant/icon {:type "down"}]]]]
@@ -123,16 +120,6 @@
                      :on-click #(dispatch [:modal/show :payment.source/verify-account])}
          [ant/icon {:type "check-circle"}]
          [:span "Verify Account"]])]]))
-
-;; Buttons
-;;[:footer.card-footer
-;; [:div.card-footer-item]
-;; (if autopay-on
-;;   [:a.card-footer-item {:class "is-success"}
-;;    [:span.icon.is-small [:i.fa.fa-check-circle]]
-;;    [:span "Autopay On"]]
-;;   [:a.card-footer-item [:span "Enable Autopay"]])
-;; [:a.card-footer-item.is-danger "Unlink"]]]))
 
 
 (defn source-payment-history
@@ -165,9 +152,9 @@
   (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])
         banks      (subscribe [:payment/sources :bank])
         selected   (r/atom (-> @banks first :id))]
-    [ant/modal {:title       "Autopay your rent?"
-                :visible     @is-visible
-                :footer      (r/as-element [modal-enable-autopay-footer @selected])}
+    [ant/modal {:title   "Autopay your rent?"
+                :visible @is-visible
+                :footer  (r/as-element [modal-enable-autopay-footer @selected])}
      [:div
       [:p "Autopay automatically transfers your rent payment each month. We recommend enabling this
             feature, so you never need to worry about making rent on time."]
@@ -220,6 +207,7 @@
                   :on-click #(dispatch [:payment.sources.bank/verify! @current-id amount-1 amount-2])}
       "Verify Amounts"]]))
 
+
 (defn modal-verify-account []
   (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
         ;; is-submitting (subscribe [:loading? :payment.sources.bank/verify])
@@ -236,7 +224,7 @@
       [:form.form-verify-microdeposits.mt2 {:on-submit #(do
                                                           (.preventDefault %)
                                                           (tb/log "submitting"))}
-                                                          ;; TODO: Hook up form to supply `32` and `45`
+       ;; TODO: Hook up form to supply `32` and `45`
 
        [ant/input-number {:default-value amount-1
                           :min           1
@@ -264,6 +252,7 @@
                   :on-cancel #(dispatch [:modal/hide :payment.source/remove])}
        [:p "If you remove this account, it will no longer be available for settling payments."]])))
 
+
 (defn modal-cannot-remove-only-bank []
   (let [is-visible     (subscribe [:modal/visible? :payment.source/cannot-remove-only-bank])
         current-source (subscribe [:payment.sources/current])]
@@ -276,6 +265,7 @@
                   :on-cancel #(dispatch [:modal/hide :payment.source/cannot-remove-only-bank])}
        [:p "You must have a bank account linked in order to pay rent."]
        [:p "If you wish to remove this bank, please link another one first."]])))
+
 
 (def ^:private tab-icon-classes
   {:bank    "fa-bank"
@@ -296,7 +286,6 @@
     [:span (get tab-labels tab-type)]]])
 
 
-;; NOTE: This is a simple example of how to componentize a common UI component.
 (defn tabs []
   (let [this (r/current-component)]
     [:div.tabs (r/props this)
@@ -361,22 +350,20 @@
                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
       [:p.ml1
        [:span.bold
-         {:class (when (not autopay-allowed) "subdued")}
-         (if @autopay-on "Autopay On" "Autopay Off")]
+        {:class (when (not autopay-allowed) "subdued")}
+        (if @autopay-on "Autopay On" "Autopay Off")]
        (if autopay-allowed
          [tooltip/info "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
          [tooltip/info "To enable Autopay, you must first add and verify bank account."])]
 
       [:span.page-controls-divider "•"]
       [:div
-       (for [source @card-sources] (tb/log source (:id source)))
-      ;; (tb/log @card-sources)
        [ant/select
+        {:style {:width 200}}
         (for [source @card-sources]
           (let [id (get source :id)]
             ^{:key id}
             [ant/select-option {:value id} (:name source)]))]]]]))
-      ;; [input/pretty-select @card-sources]]
 
 
 

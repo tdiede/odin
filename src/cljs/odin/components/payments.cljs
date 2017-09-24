@@ -6,7 +6,8 @@
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
             [toolbelt.core :as tb]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [clojure.string :as string]))
 
 
 (defn stripe-icon-link
@@ -20,7 +21,8 @@
 
 
 (defn payment-source-icon
-  "Renders an icon to illustrate a given payment source (such as :bank, :visa, or :amex). Defaults to :bank"
+  "Renders an icon to illustrate a given payment source (such as :bank, :visa,
+  or :amex). Defaults to :bank."
   ([source-type]
    [payment-source-icon source-type ""])
   ([source-type icon-size]
@@ -30,11 +32,10 @@
       [:i.fa.fa-university {:class icon-size}])]))
 
 
-(defn source-name-and-numbers
+(defn source-name
   ([source]
-   (when source (let [{name   :name
-                       last4  :last4 } source]
-                 (str name " **** " last4))))
+   (when-some [{:keys [name last4]} source]
+     (source-name name last4)))
   ([name last4]
    (str name " **** " last4)))
 
@@ -42,29 +43,29 @@
 (defn payment-status
   "Displays payment status (paid / pending / etc)."
   [status]
-  (case status
-    "due"       [:span.tag.is-hollow "Due"]
-    "canceled"  [:span.tag.is-hollow "Canceled"]
-    "pending"   [:span.tag.is-hollow "Pending"]
-    "failed"    [:span.tag.is-hollow "Failed"]
-    "paid"      [:span.tag.is-hollow "Paid"]
-    [:span]))
+  (letfn [(-hollow [txt]
+            [:span.tag.is-hollow txt])]
+    (case status
+      "due"      (-hollow "Due")
+      "canceled" (-hollow "Canceled")
+      "pending"  (-hollow "Pending")
+      "failed"   (-hollow "Failed")
+      "paid"     (-hollow "Paid")
+      [:span])))
 
 
 (defn payment-for
   "Displays payment status in tag format."
   [status]
-  (case status
-    "rent"    [:span.tag
-               [:span.icon.extra-small [:i.fa.fa-home]]
-               "Rent Payment"]
-    "deposit" [:span.tag
-               [:span.icon.extra-small [:i.fa.fa-shield]]
-               "Security Deposit"]
-    "order"   [:span.tag
-               [:span.icon.extra-small [:i.fa.fa-smile-o]]
-               "Service Order"]
-    [:span]))
+  (letfn [(-tag [icon txt]
+            [:span.tag
+             [:span.icon.extra-small [:i {:class (str "fa " icon)}]]
+             txt])]
+    (case status
+      "rent"    (-tag "fa-home" "Rent Payment")
+      "deposit" (-tag "fa-shield" "Security Deposit")
+      "order"   (-tag "fa-smile-o" "Service Order")
+      [:span])))
 
 
 (defn payment-for-icon
@@ -82,18 +83,6 @@
          "order"   [:i.fa.fa-smile-o {:class icon-size}]
          "")]])))
 
-
-(defn render-payment-period
-  "Takes tx. If period values exist, returns a string like '01/01/17 - 01/31/17'."
-  [tx]
-  ;;(tb/log tx)
-  (:description tx))
-  ;;(let [start (or (aget tx "pstart") (get tx :pstart))
-  ;;      end   (or (aget tx "pend")   (get tx :pend))]
-  ;;  (when (and start end)
-  ;;    (str (format/date-short start)
-  ;;         " - "
-  ;;         (format/date-short end)))))
 
 (defn get-due-date
   [payment]
@@ -131,9 +120,6 @@
                  (if (= (aget item "for") "rent")
                    (r/as-element [render-late-payment-date paid])
                    (format/date-short paid)))}
-                 ;;(tb/log val "///" item)
-                 ;;(tb/log "for: " (aget item "for") "due: " (aget item "due") "/ paid: " val " / pend: " (aget item "pend"))
-                 ;;(r/as-element [render-payment-date val (get-due-date item)]))}
 
    ;; AMOUNT
    {:title     (l10n/translate :amount)
@@ -166,13 +152,13 @@
     :dataIndex :source
     :className "align-right light"
     :render    (fn [val item _]
-                 (source-name-and-numbers (js->clj val :keywordize-keys true)))}])
+                 (source-name (js->clj val :keywordize-keys true)))}])
 
 
 (defn get-payment-row-class
   "Returns a String class name for highlighting pending and due payments."
-  [tx]
-  (case (aget tx "status")
+  [payment]
+  (case (aget payment "status")
     ;; "due"     "warning"
     "pending" "info"
     "default"))
@@ -180,18 +166,16 @@
 
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
-  [transactions loading?]
-  ;;(let [txs transactions]
-  (let [txs (filter #(not= (:status %) :due) transactions)]
-   ;;(tb/log txs)
-   [ant/table
-    {:class        "payments-table"
-     :loading      (or loading? false)
-     :columns      payment-table-columns
-     :rowClassName get-payment-row-class
-     :dataSource   (map-indexed utils/thing->column txs)
-     :locale       {:emptyText (l10n/translate :payment-table-no-payments)}
-     :pagination   false}]))
+  [payments loading?]
+  (let [payments (filter #(not= (:status %) :due) payments)]
+    [ant/table
+     {:class        "payments-table"
+      :loading      (or loading? false)
+      :columns      payment-table-columns
+      :rowClassName get-payment-row-class
+      :dataSource   (map-indexed utils/thing->column payments)
+      :locale       {:emptyText (l10n/translate :payment-table-no-payments)}
+      :pagination   false}]))
 
 
 (defn menu-select-source [sources]
@@ -200,54 +184,80 @@
     (for [source sources]
       (let [id (get source :id)]
         ^{:key id}
-        [:option {:value id} (source-name-and-numbers source)]))]])
+        [:option {:value id} (source-name source)]))]])
 
 
-(defn render-payment-box [tx]
-  (let [{reason :for
-         amount :amount
-         due    :due} tx]
-    [:div.box
-     [:div.columns
-      [:div.column.is-narrow
-       [:span.icon.is-large [:i.fa.fa-home]]]
-                                        ; [:div.column.is-narrow]
-                                        ; [:h3 (l10n/translate reason)]]
-      [:div.column
-       [:h3 (l10n/translate reason)]
-       [:h3 [:a "2027 Mission St #101"]]
-       [:h4 (render-payment-period tx)]]
+(defn render-payment-box
+  [{:keys [type amount due] :as payment} description]
+  [:div.box
+   [:div.columns
+    [:div.column.is-narrow
+     [:span.icon.is-large [:i.fa.fa-home]]]
+    [:div.column
+     [:h3 (l10n/translate (:type payment))]
+     (when (some? description)
+       [:h3 description])
+     [:h4 (string/capitalize (:description payment))]]
 
-      [:div.column.align-right
-       [:h3 (format/currency amount)]
-       (if (= reason (or :payment.for/rent :payment.for/deposit))
-         [:p (str "Due on " (format/date-short due))])]]]))
+    [:div.column.align-right
+     [:h3 (format/currency amount)]
+     (if (#{:rent :deposit} type)
+       [:p (str "Due on " (format/date-short due))])]]])
 
 
-(defn make-payment-modal [tx is-visible]
-  (let [{reason :for
-         amount :amount
-         due    :due} tx]
-    [ant/modal {:title     "Make a payment"
-                :width     "640px"
-                :visible   @is-visible
-                :on-ok     #(reset! is-visible false)
-                :on-cancel #(reset! is-visible false)
-                :footer    [#_(r/as-element [menu-select-source mocks/payment-sources])
-                                        ; (r/as-element [:a.button {:on-click #(reset! is-visible false)}
-                                        ; "Cancel"])
-                            (r/as-element [:a.button.is-success
-                                           (str "Confirm Payment - " (format/currency amount))])]}
-     [render-payment-box tx]]))
+(defn- make-payment-modal-footer
+  [payment-id visible {:keys [on-confirm on-cancel loading sources]
+                       :or   {on-confirm #(reset! visible false)
+                              loading false}}]
+  (let [selected-source (r/atom (-> sources first :id))]
+    (fn [payment-id visible {:keys [on-confirm on-cancel loading sources]
+                            :or   {on-confirm #(reset! visible false)
+                                   loading false}}]
+      [:div
+       (when (some? sources)
+         [ant/select
+          {:style {:width 225 :margin-right "1rem"}
+           :size  :large
+           :value @selected-source}
+          (for [{id :id :as source} sources]
+            ^{:key id} [ant/select-option {:value id} (source-name source)])])
+       [ant/button
+        {:type     :ghost
+         :size     :large
+         :on-click on-cancel}
+        "Cancel"]
+       [ant/button
+        {:type     :primary
+         :size     :large
+         :on-click (fn [e]
+                     (if-some [source-id @selected-source]
+                       (on-confirm payment-id source-id e)
+                       (on-confirm payment-id e)))
+         :loading  loading}
+        "Confirm Payment"]])))
+
+
+(defn make-payment-modal
+  [{:keys [type amount due] :as payment} visible & {:keys [on-cancel desc]
+                                                    :or   {on-cancel #(reset! visible false)}
+                                                    :as   opts}]
+  [ant/modal {:title     "Make a payment"
+              :width     "640px"
+              :visible   @visible
+              :on-cancel on-cancel
+              :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
+                           (r/as-element
+                            [make-payment-modal-footer (:id payment) visible opts]))}
+   [render-payment-box payment desc]])
 
 
 (defn rent-overdue-notification
-  "Takes a tx in 'due' state, and displays a CTA notification for making payment."
-  [tx]
+  "Takes a payment in 'due' state, and displays a CTA notification for making payment."
+  [payment]
   (let [modal-shown (r/atom false)]
-    (fn [tx]
+    (fn [payment]
       [notification/banner-danger
        [:div
-        [:p (l10n/translate :rent-overdue-notification-body (format/currency (get tx :amount)))
+        [:p (l10n/translate :rent-overdue-notification-body (format/currency (get payment :amount)))
          [:a {:on-click #(swap! modal-shown not)} (l10n/translate :rent-overdue-notification-body-cta)]
-         [make-payment-modal tx modal-shown]]]])))
+         [make-payment-modal payment modal-shown]]]])))

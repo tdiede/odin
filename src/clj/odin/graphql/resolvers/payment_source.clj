@@ -152,7 +152,9 @@
               :where
               [?p :stripe/source-id ?source-id]]
             db source-ids)
-       (map (partial d/entity db))))
+       (map (partial d/entity db))
+       (sort-by :payment/paid-on)
+       (reverse)))
 
 
 (defn- merge-autopay-payments
