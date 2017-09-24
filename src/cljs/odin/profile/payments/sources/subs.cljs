@@ -105,11 +105,18 @@
    (some? (tb/find-by (comp #{"verified"} :status) banks))))
 
 
-;; (reg-sub
-;;  :payment.sources/autopay-source
-;;  :<- [:payment/sources]
-;;  (fn [[sources] _]
-;;    (filter #(= (get % :autopay) true) sources)))
+(reg-sub
+ :payment.sources/autopay-source
+ :<- [:payment/sources]
+ (fn [sources _]
+   (tb/find-by :autopay sources)))
+
+
+(reg-sub
+ :payment.sources/autopay-on?
+ :<- [:payment.sources/autopay-source]
+ (fn [source _]
+   (:autopay source)))
 
 
 ;; =============================================================================

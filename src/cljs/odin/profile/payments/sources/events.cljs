@@ -1,14 +1,8 @@
 (ns odin.profile.payments.sources.events
   (:require [odin.profile.payments.sources.db :as db]
-            [odin.profile.payments.sources.autopay :as autopay]
             [odin.routes :as routes]
-            [re-frame.core :refer [reg-event-db
-                                   subscribe
-                                   reg-event-fx
-                                   dispatch
-                                   path debug]]
+            [re-frame.core :refer [path reg-event-db reg-event-fx]]
             [toolbelt.core :as tb]))
-
 
 ;; =============================================================================
 ;; Routing/Nav
@@ -159,6 +153,7 @@
 ;; =============================================================================
 ;; Verify
 
+
 (reg-event-db
  :payment.sources.bank.verify/edit-amount
  [(path db/add-path)]
@@ -213,6 +208,60 @@
                  [:modal/hide :payment.source/add]]
     :route      (routes/path-for :profile.payment/sources
                                  :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
+
+
+;; =============================================================================
+;; Autopay
+;; =============================================================================
+
+
+(reg-event-fx
+ :payment.sources.autopay/confirm-modal
+ [(path db/path)]
+ (fn [_ [_ is-enabled]]
+   (if is-enabled
+     {:dispatch [:modal/show :payment.source/autopay-disable]}
+     {:dispatch [:modal/show :payment.source/autopay-enable]})))
+
+
+(reg-event-fx
+ :payment.sources.autopay/enable!
+ [(path db/path)]
+ (fn [{:keys [db]} [k source-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:set_autopay_source {:id source-id} [:id]]]
+               :on-success [::autopay-enable-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::autopay-enable-success
+ [(path db/path)]
+ (fn [_ [_ k _]]
+   {:dispatch-n [[:loading k false]
+                 [:payment.sources/fetch]
+                 [:modal/hide :payment.source/autopay-enable]
+                 [:notify/success "Great! Autopay is now enabled."]]}))
+
+
+(reg-event-fx
+ :payment.sources.autopay/disable!
+ [(path db/path)]
+ (fn [_ [k source-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:unset_autopay_source {:id source-id} [:id]]]
+               :on-success [::autopay-disable-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::autopay-disable-success
+ [(path db/path)]
+ (fn [_ [_ k _]]
+   {:dispatch-n [[:loading k false]
+                 [:payment.sources/fetch]
+                 [:modal/hide :payment.source/autopay-disable]]}))
+
 
 
 ;; =============================================================================
