@@ -16,8 +16,5 @@
       "Payment History"
       "All of your payment activity will appear here.")
 
-      ;;(when-some [py (first @payments)]
-      ;;  [payments-ui/rent-overdue-notification py])]
-
      [ant/card {:class "is-flush"}
-      [payments-ui/payments-table @payments @loading]]]))
+      [payments-ui/payments-table @payments (and @loading (empty? @payments))]]]))

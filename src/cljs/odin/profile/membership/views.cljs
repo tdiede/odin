@@ -13,7 +13,7 @@
 
 (defn card-license-summary []
   (let [license (subscribe [:member/license])
-        loading (subscribe [:loading? :member/fetch-license])
+        loading (subscribe [:member.license/loading?])
         {:keys [term rate starts ends property unit]} @license]
     [ant/card {:loading @loading
                :class   "is-flush"}
@@ -86,7 +86,7 @@
 
 
 (defn deposit-status-card []
-  (let [loading     (subscribe [:loading? :member/fetch-license])
+  (let [loading     (subscribe [:member.license/loading?])
         deposit     (subscribe [:profile/security-deposit])
         modal-shown (r/atom false)]
     (fn []
@@ -150,7 +150,7 @@
 
 (defn rent-status-card []
   (let [license  (subscribe [:member/license])
-        loading  (subscribe [:loading? :member/fetch-license])
+        loading  (subscribe [:member.license/loading?])
         payments (subscribe [:member/rent-payments {:status :due}])]
     [:div.mb2
      (cond
@@ -169,7 +169,7 @@
 (defn btn-refetch-data []
   (let [account-id (subscribe [:profile/account-id])]
     [ant/button {:size    "large"
-                 :on-click #(dispatch [:member/fetch-license @account-id])}
+                 :on-click #(dispatch [:member.license/fetch @account-id])}
      "Re-fetch data"]))
 
 
