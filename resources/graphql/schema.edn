@@ -412,7 +412,7 @@
 
   :update_account
   {:type        :account
-   :description "Set an account's phone number. This is a demo mutation."
+   :description "Update account information."
    :args        {:id   {:type        (non-null :Long)
                         :description "This account's id."}
                  :data {:type        (non-null :update_account)
