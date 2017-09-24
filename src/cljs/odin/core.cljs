@@ -7,7 +7,7 @@
             [odin.graphql]
             [odin.content :as content]
             [odin.home.views]
-            [odin.global.views :refer [global-messages]]
+            [odin.global.views :refer [messages]]
             [odin.kami.views]
             [odin.metrics.views]
             [odin.orders.views]
@@ -130,7 +130,7 @@
       [error-view]
       [:div.container
        [navbar]
-       [global-messages]
+       [messages]
        [:section.section.root-section
         [:div.columns
          [:div.column

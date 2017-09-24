@@ -7,7 +7,7 @@
             [toolbelt.core :as tb]))
 
 
-(defn global-messages
+(defn messages
   []
   (let [messages (subscribe [:global/messages])]
     [:div

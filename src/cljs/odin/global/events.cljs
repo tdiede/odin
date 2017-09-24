@@ -35,7 +35,7 @@
 
 
 (reg-event-fx
-  :global.components/init
+  :global/init
   (fn [{:keys [db]} [_ config]]
     (let [account-id (get-in config [:account :id])]
       {;;:db         (assoc db :messages [])
@@ -52,12 +52,12 @@
                :on-failure [:graphql/failure]}}))
 
 
-(reg-event-fx
+(reg-event-db
  ::fetch-rent-payments-success
  [(path db/path)]
- (fn [{:keys [db]} [_ resp]]
+ (fn [db [_ resp]]
    (let [payments     (get-in resp [:data :account :active_license :payments])
          due-payments (filter #(= (:status %) :due) payments)]
      (if (< 0 (count due-payments))
-       {:db (update db :messages conj (create-rent-due-message (first due-payments)))}
-       {:db db}))))
+       (update db :messages conj (create-rent-due-message (first due-payments)))
+       db))))
