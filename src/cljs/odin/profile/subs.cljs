@@ -25,10 +25,3 @@
  :<- [::profile]
  (fn [db _]
    (get-in db [:account :id])))
-
-
-(reg-sub
- :profile/security-deposit
- :<- [::profile]
- (fn [db _]
-   (get-in db [:account :deposit])))

@@ -279,8 +279,16 @@
 ;; =============================================================================
 
 
+(defn- cents [x]
+  (int (* 100 x)))
+
+
+;; =============================================================================
+;; Pay Rent
+
+
 (defn- ensure-payment-allowed
-  [db requester payment stripe-customer source]
+  [db requester payment source]
   (cond
     (not (#{:payment.status/due :payment.status/failed}
           (payment/status payment)))
@@ -289,19 +297,16 @@
 
     (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
               (= (:object source) "bank_account")))
-    "Only bank accounts can be used to pay rent."
-
-    (not= (:customer source) (:id stripe-customer))
-    "The source you are attempting to pay with is not yours."))
+    "Only bank accounts can be used to pay rent."))
 
 
-(defn- create-charge!
+(defn- create-bank-charge!
   "Create a charge for `payment` on Stripe."
   [{:keys [stripe conn]} account payment customer source-id]
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
         desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
-    (rch/create! stripe (int (* 100 (payment/amount payment))) source-id
+    (rch/create! stripe (cents (payment/amount payment)) source-id
                  :email (account/email account)
                  :description desc
                 :customer-id (customer/id customer)
@@ -315,18 +320,17 @@
         customer (customer/by-account (d/db conn) requester)]
     (go
       (try
-        (let [scus   (<!? (rcu/fetch stripe (customer/id customer)))
-              source (<!? (rcu/fetch-source stripe (:id scus) source))]
-          (if-let [error (ensure-payment-allowed (d/db conn) requester payment scus source)]
+        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
+          (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
             (resolve/deliver! result nil {:message error})
-            (let [charge-id (:id (<!? (create-charge! ctx requester payment customer (:id source))))]
+            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
               @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
                                            (assoc :stripe/source-id (:id source))
                                            (assoc :payment/status :payment.status/pending)
                                            (assoc :payment/paid-on (java.util.Date.)))])
               (resolve/deliver! result (d/entity (d/db conn) id)))))
         (catch Throwable t
-          (timbre/error t ::pay params)
+          (timbre/error t ::pay-rent params)
           (resolve/deliver! result nil {:message  (.getMessage t)
                                         :err-data (ex-data t)}))))
     result))
@@ -349,6 +353,36 @@
 
 
 ;; =============================================================================
+;; Pay Deposit
+
+
+(defn pay-deposit!
+  [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
+  (let [result   (resolve/resolve-promise)
+        deposit  (deposit/by-account requester)
+        customer (customer/by-account (d/db conn) requester)]
+    (go
+      (try
+        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source-id))]
+          (if (= (:object source) "bank_account")
+            (let [payment (payment/create (deposit/amount-remaining deposit) requester
+                                          :for :payment.for/deposit
+                                          :source-id source-id)
+                  charge  (<!? (create-bank-charge! ctx requester payment customer source-id))]
+              @(d/transact-async conn [(assoc payment
+                                              :stripe/charge-id (:id charge)
+                                              :payment/paid-on (java.util.Date.))
+                                       (deposit/add-payment deposit payment)])
+              (resolve/deliver! result (d/entity (d/db conn) (:db/id deposit))))
+            (resolve/deliver! result nil {:message "Only bank accounts can be used to pay your deposit."})))
+        (catch Throwable t
+          (timbre/error t ::pay-deposit {:id (:db/id requester) :source source})
+          (resolve/deliver! result nil {:message  (.getMessage t)
+                                        :err-data (ex-data t)}))))
+    result))
+
+
+;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
 
@@ -366,20 +400,21 @@
 
 (def resolvers
   {;; fields
-   :payment/external-id external-id
-   :payment/method      method
-   :payment/status      status
-   :payment/source      source
-   :payment/autopay?    autopay?
-   :payment/for         payment-for
-   :payment/type        payment-for2
-   :payment/description description
-   :payment/property    property
-   :payment/order       order
+   :payment/external-id  external-id
+   :payment/method       method
+   :payment/status       status
+   :payment/source       source
+   :payment/autopay?     autopay?
+   :payment/for          payment-for
+   :payment/type         payment-for2
+   :payment/description  description
+   :payment/property     property
+   :payment/order        order
    ;; queries
-   :payment/list        payments
+   :payment/list         payments
    ;; mutations
-   :payment/pay-rent!   pay-rent!
+   :payment/pay-rent!    pay-rent!
+   :payment/pay-deposit! pay-deposit!
    })
 
 

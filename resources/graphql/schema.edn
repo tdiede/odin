@@ -443,6 +443,14 @@
    :resolve     :payment/pay-rent!}
 
 
+  :pay_remainder_deposit
+  {:type        :deposit
+   :description "Pay the remainder of the security deposit."
+   :args        {:source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-deposit!}
+
+
    ;;; Payment Sources
 
 

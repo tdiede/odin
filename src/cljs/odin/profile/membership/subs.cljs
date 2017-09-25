@@ -17,6 +17,13 @@
 
 
 (reg-sub
+ :member/deposit
+ :<- [::membership]
+ (fn [db _]
+   (:deposit db)))
+
+
+(reg-sub
  :member.license/loading?
  :<- [:member/license]
  :<- [:loading? :member.license/fetch]
@@ -36,7 +43,7 @@
 
 (reg-sub
  :member.deposit/payment
- :<- [:profile/security-deposit]
+ :<- [:member/deposit]
  (fn [deposit _]
    {:id          (:id deposit)
     :amount      (:amount_remaining deposit)

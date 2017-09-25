@@ -5,6 +5,7 @@
             [odin.utils.time :as time]
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
+            [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [reagent.core :as r]
             [clojure.string :as string]))
@@ -213,13 +214,13 @@
 
 
 (defn- make-payment-modal-footer
-  [payment-id visible {:keys [on-confirm on-cancel loading sources]
-                       :or   {on-confirm #(reset! visible false)
-                              loading false}}]
+  [payment-id {:keys [on-confirm on-cancel loading sources]
+               :or   {on-confirm #(dispatch [:modal/hide payment-id])
+                      loading    false}}]
   (let [selected-source (r/atom (-> sources first :id))]
-    (fn [payment-id visible {:keys [on-confirm on-cancel loading sources]
-                            :or   {on-confirm #(reset! visible false)
-                                   loading false}}]
+    (fn [payment-id {:keys [on-confirm on-cancel loading sources]
+                    :or   {on-confirm #(dispatch [:modal/hide payment-id])
+                           loading    false}}]
       [:div
        (when (some? sources)
          [ant/select
@@ -245,17 +246,18 @@
 
 
 (defn make-payment-modal
-  [{:keys [type amount due] :as payment} visible & {:keys [on-cancel desc]
-                                                    :or   {on-cancel #(reset! visible false)}
-                                                    :as   opts}]
-  [ant/modal {:title     "Make a payment"
-              :width     "640px"
-              :visible   @visible
-              :on-cancel on-cancel
-              :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
-                           (r/as-element
-                            [make-payment-modal-footer (:id payment) visible opts]))}
-   [payment-box payment desc]])
+  [{:keys [id type amount due] :as payment} & {:keys [on-cancel desc]
+                                               :or   {on-cancel #(dispatch [:modal/hide id])}
+                                               :as   opts}]
+  (let [visible (subscribe [:modal/visible? id])]
+    [ant/modal {:title     "Make a payment"
+                :width     "640px"
+                :visible   @visible
+                :on-cancel on-cancel
+                :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
+                             (r/as-element
+                              [make-payment-modal-footer (:id payment) opts]))}
+    [payment-box payment desc]]))
 
 
 (defn rent-overdue-notification

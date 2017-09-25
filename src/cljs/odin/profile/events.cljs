@@ -19,7 +19,6 @@
     :graphql  {:query      [[:account {:id account-id}
                              [:id :first_name :last_name :email :phone
                               [:emergency_contact [:first_name :last_name :phone]]
-                              [:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
                               [:property [:id :name :code]]]]]
                :on-success [:profile.fetch/success k]
                :on-failure [:graphql/failure k]}}))
