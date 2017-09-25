@@ -44,7 +44,6 @@
  :member.fetch.license/success
  [(path db/path)]
  (fn [{:keys [db]} [_ k response]]
-   (tb/log response)
    (let [{:keys [active_license deposit]} (get-in response [:data :account])]
      {:db       (assoc db :license active_license :deposit deposit)
       :dispatch [:loading k false]})))
