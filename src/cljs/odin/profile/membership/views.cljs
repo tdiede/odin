@@ -112,7 +112,7 @@
 
 
 (defn rent-due-card [{:keys [id amount due pstart pend] :as payment}]
-  (let [sources       (subscribe [:payment/sources :bank])
+  (let [sources       (subscribe [:payment.sources/verified-banks])
         paying        (subscribe [:loading? :member/pay-rent-payment!])
         modal-showing (r/atom false)]
     (fn [{:keys [id amount due pstart pend] :as payment}]
