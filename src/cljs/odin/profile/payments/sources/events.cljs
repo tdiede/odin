@@ -165,7 +165,6 @@
  :payment.sources.bank/verify!
  [(path db/path)]
  (fn [_ [k source-id amount-1 amount-2]]
-   (tb/log source-id amount-1 amount-2)
    {:dispatch [:loading k true]
     :graphql  {:mutation
                [[:verify_bank_source {:deposits [amount-1 amount-2]

@@ -16,10 +16,3 @@
  :<- [::payments]
  (fn [db _]
    (:payments db)))
-
-
-(reg-sub
- :payments.list/loading?
- :<- [::payments]
- (fn [db _]
-   (get-in db [:loading :payments/list])))

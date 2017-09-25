@@ -6,18 +6,6 @@
             [toolbelt.core :as tb]))
 
 
-(defn is-form-valid?
-  [errors _]
-  (nil? errors))
-
-
-(defn submit-card-if-valid
-  [errors fields]
-  (if (nil? errors)
-    (tb/log "Form is valid! I will submit it." (js->clj fields))
-    (tb/log "There are errors. Not submitting.")))
-
-
 (def ^:private form-style
   {:label-col   {:span 7}
    :wrapper-col {:span 10}})

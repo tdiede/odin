@@ -1,7 +1,4 @@
-(ns odin.profile.db
-  (:require [odin.profile.membership.db]))
-  ;;(:require [odin.profile.payments.sources.db :as sources]))
-
+(ns odin.profile.db)
 
 (def path ::profile)
 
@@ -10,9 +7,8 @@
                              :phone      ""})
 
 (def default-value
-   {path {:account nil
-          :contact {:personal {:current default-info
+  {path {:account nil
+         :contact {:personal  {:current default-info
                                :new     default-info}
-                    :emergency {:current default-info
-                                :new     default-info}}
-          :loading {:account/info false}}})
+                   :emergency {:current default-info
+                               :new     default-info}}}})

@@ -52,7 +52,7 @@
        (if (is-unverified source)
          [:p.italic
           [ant/icon {:type "exclamation-circle" :style {:font-size ".8rem"}}]
-          [:span.fs3 "Unverified"]]
+          [:span.fs3 {:style {:margin-left 4}} "Unverified"]]
          (payments-ui/payment-source-icon (or type :bank)))]]]))
 
 
@@ -147,12 +147,14 @@
   (let [is-visible (subscribe [:modal/visible? :payment.source/autopay-enable])
         banks      (subscribe [:payment/sources :bank])
         selected   (r/atom (-> @banks first :id))]
-    [ant/modal {:title   "Autopay your rent?"
-                :visible @is-visible
-                :footer  (r/as-element [modal-enable-autopay-footer @selected])}
+    [ant/modal {:title     "Autopay your rent?"
+                :visible   @is-visible
+                :on-cancel #(dispatch [:modal/hide :payment.source/autopay-enable])
+                :footer    (r/as-element [modal-enable-autopay-footer @selected])}
      [:div
-      [:p "Autopay automatically transfers your rent payment each month. We recommend enabling this
-            feature, so you never need to worry about making rent on time."]
+      [:p "Autopay automatically transfers your rent payment each month. We
+          recommend enabling this feature, so you never need to worry about
+          making rent on time."]
       [:p.bold "Choose a bank account to use for Autopay:"]
       [ant/radio-group {:default-value @selected
                         :disabled      (< (count @banks) 2)
@@ -178,7 +180,6 @@
 (defn modal-confirm-disable-autopay []
   (let [is-visible     (subscribe [:modal/visible? :payment.source/autopay-disable])
         autopay-source (subscribe [:payment.sources/autopay-source])]
-    ;;(tb/log (str "is disable modal visible?" @is-visible))
     [ant/modal {:title     (l10n/translate :confirm-unlink-autopay)
                 :visible   @is-visible
                 :footer    (r/as-element [modal-disable-autopay-footer (:id @autopay-source)])
@@ -204,23 +205,18 @@
 
 
 (defn modal-verify-account []
-  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
-        ;; is-submitting (subscribe [:loading? :payment.sources.bank/verify])
-        bank       (subscribe [:payment.sources/current])
+  (let [bank       (subscribe [:payment.sources/current])
         amounts    (subscribe [:payment.sources.bank.verify/microdeposits])
+        is-visible (subscribe [:modal/visible? :payment.source/verify-account])
         amount-1   (:amount-1 @amounts)
         amount-2   (:amount-2 @amounts)]
-    [ant/modal {:title     (str "Verify " (:name @bank))
-                :visible   @is-visible
-                :footer    (r/as-element [modal-verify-account-footer])}
+    [ant/modal {:title   (str "Verify " (:name @bank))
+                :visible @is-visible
+                :footer  (r/as-element [modal-verify-account-footer])}
      [:div
       [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
       [:p.fs2 "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
-      [:form.form-verify-microdeposits.mt2 {:on-submit #(do
-                                                          (.preventDefault %)
-                                                          (tb/log "submitting"))}
-       ;; TODO: Hook up form to supply `32` and `45`
-
+      [:form.form-verify-microdeposits.mt2 {:on-submit #(.preventDefault %)}
        [ant/input-number {:default-value amount-1
                           :min           1
                           :max           99
@@ -340,7 +336,7 @@
     [:div.page-controls
      [:div.flexrow.flex-center
       [ant/switch {:checked   @autopay-on
-                   :disabled  (not autopay-allowed)
+                   :disabled  (not @autopay-allowed)
                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
       [:p.ml1
        [:span.bold

@@ -51,8 +51,9 @@
         :unit  "Unit"
         :units "Units"
 
-        :rent "Rent"
-        :term "Term"
+        :rent    "Rent"
+        :term    "Term"
+        :deposit "Security Deposit"
 
         :note {:one   "Note"
                :other "Notes"}

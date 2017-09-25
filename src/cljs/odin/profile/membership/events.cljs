@@ -29,7 +29,8 @@
  (fn [_ [k account-id]]
    {:dispatch [:loading k true]
     :graphql  {:query      [[:account {:id account-id}
-                             [[:active_license
+                             [[:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
+                              [:active_license
                                [:id :rate :starts :ends :status :term
                                 [:unit [:id :number]]
                                 [:property [:id :name :code :cover_image_url]]
@@ -43,13 +44,13 @@
  :member.fetch.license/success
  [(path db/path)]
  (fn [{:keys [db]} [_ k response]]
-   (let [license (get-in response [:data :account :active_license])]
-     {:db       (assoc db :license license)
+   (let [{:keys [active_license deposit]} (get-in response [:data :account])]
+     {:db       (assoc db :license active_license :deposit deposit)
       :dispatch [:loading k false]})))
 
 
 ;; =============================================================================
-;; Make Payment
+;; Pay Rent Payment
 ;; =============================================================================
 
 
@@ -60,13 +61,28 @@
     :graphql  {:mutation   [[:pay_rent_payment {:id     payment-id
                                                 :source source-id}
                              [:id]]]
-               :on-success [::make-payment-success k]
+               :on-success [::make-payment-success k payment-id]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::make-payment-success
- (fn [{db :db} [_ k _]]
+ (fn [{db :db} [_ k modal-id response]]
    (let [account-id (get-in db [:config :account :id])]
      {:dispatch-n [[:loading k false]
+                   [:modal/hide modal-id]
                    [:member.license/fetch account-id]]})))
+
+
+;; =============================================================================
+;; Pay Remainder of Deposit
+;; =============================================================================
+
+
+(reg-event-fx
+ :member/pay-deposit!
+ (fn [_ [k deposit-id source-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:pay_remainder_deposit {:source source-id} [:id]]]
+               :on-success [::make-payment-success k deposit-id]
+               :on-failure [:graphql/failure k]}}))
