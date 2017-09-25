@@ -53,14 +53,6 @@
 ;;       [:a "Manage"]]]]))
 
 
-(defn modal-pay-security-deposit [deposit is-visible]
-  [ant/modal
-   {:title     "Pay Your Security Deposit"
-    :visible   @is-visible
-    :on-cancel #(reset! is-visible false)
-    :footer    nil}])
-
-
 (defmulti deposit-status-content
   (fn [{:keys [amount amount_remaining amount_paid amount_pending due]} _]
     (let [is-overdue (t/is-before-now due)]
@@ -87,12 +79,19 @@
 
 (defn deposit-status-card []
   (let [loading     (subscribe [:member.license/loading?])
-        deposit     (subscribe [:profile/security-deposit])
+        paying      (subscribe [:loading? :member/pay-deposit!])
+        deposit     (subscribe [:profile/security-deposit]) ; TODO: Rename to :member/deposit
+        payment     (subscribe [:member.deposit/payment])
+        sources     (subscribe [:payment.sources/verified-banks])
         modal-shown (r/atom false)]
     (fn []
       [:div.mb2
        [ant/card {:loading @loading}
-        [modal-pay-security-deposit @deposit modal-shown]
+        [payments-ui/make-payment-modal @payment modal-shown
+         :on-confirm (fn [payment-id source-id _]
+                       (dispatch [:member/pay-deposit! payment-id source-id]))
+         :loading @paying
+         :sources @sources]
         [:div.columns
          [:div.column.is-2
           [:span.icon.is-large.text-yellow [:i.fa.fa-shield]]]
@@ -131,7 +130,7 @@
         [ant/button
          {:on-click #(reset! modal-showing true)
           :disabled (empty? @sources)}
-        (format/format "Pay Now (%s)" (format/currency amount))]]])))
+         (format/format "Pay Now (%s)" (format/currency amount))]]])))
 
 
 (defn- rent-due-cards [payments]

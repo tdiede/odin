@@ -106,7 +106,7 @@
 (def ^:private payment-table-columns
   [
    ;; PAYMENT TYPE ICON
-   {:dataIndex :for
+   {:dataIndex :type
     :className "is-narrow width-2"
     :render    (fn [val]
                  (r/as-element [payment-for-icon val]))}
@@ -147,7 +147,7 @@
                  (r/as-element [:span.yes-wrap.restrict-width val]))}
 
    ;; PAYMENT SOURCE
-   {:title ""
+   {:title     ""
     :dataIndex :source
     :className "align-right light"
     :render    (fn [val item _]
@@ -186,12 +186,20 @@
         [:option {:value id} (source-name source)]))]])
 
 
-(defn render-payment-box
+(defn- icon-class [payment-type]
+  (case payment-type
+    :deposit "fa-shield"
+    :rent    "fa-home"
+    :order   "fa-smile-o"
+    ""))
+
+
+(defn payment-box
   [{:keys [type amount due] :as payment} description]
   [:div.box
    [:div.columns
     [:div.column.is-narrow
-     [:span.icon.is-large [:i.fa.fa-home]]]
+     [:span.icon.is-large [:i {:class (str "fa " (icon-class type))}]]]
     [:div.column
      [:h3 (l10n/translate (:type payment))]
      (when (some? description)
@@ -201,7 +209,7 @@
     [:div.column.align-right
      [:h3 (format/currency amount)]
      (if (#{:rent :deposit} type)
-       [:p (str "Due on " (format/date-short due))])]]])
+       [:p (str "Due by " (format/date-short due))])]]])
 
 
 (defn- make-payment-modal-footer
@@ -247,7 +255,7 @@
               :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
                            (r/as-element
                             [make-payment-modal-footer (:id payment) visible opts]))}
-   [render-payment-box payment desc]])
+   [payment-box payment desc]])
 
 
 (defn rent-overdue-notification
