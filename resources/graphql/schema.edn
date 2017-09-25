@@ -370,32 +370,33 @@
                               :default-value :all}}
              :resolve :account/list}
 
+
   :account {:type    :account
             :args    {:id {:type (non-null :Long)}}
             :resolve :account/entry}
+
 
   :orders {:type    (list :order)
            :args    {:params {:type :orders_query_params}}
            :resolve :order/list}
 
+
   :payments {:type    (list :payment)
              :args    {:params {:type :payments_query_params}}
              :resolve :payment/list}
+
 
   :payment_sources {:type    (list :payment_source)
                     :args    {:account {:type        (non-null :Long)
                                         :description "ID of an account to request sources for."}}
                     :resolve :payment.sources/list}
 
-  :autopay_source {:type    :payment_source
-                   :args    {:account {:type        (non-null :Long)
-                                       :description "ID of an account to request the autopay source for."}}
-                   :resolve :payment.sources/autopay-source}
 
   ;; TODO: This should return a list of `:referral`, not `:data_point`. See
   ;; above.
   :referrals {:type    (list :data_point)
               :resolve :metrics/referrals}
+
 
   :services {:type    (list :service)
              :args    {:params {:type :services_query_params}}
@@ -412,7 +413,7 @@
 
   :update_account
   {:type        :account
-   :description "Set an account's phone number. This is a demo mutation."
+   :description "Update account information."
    :args        {:id   {:type        (non-null :Long)
                         :description "This account's id."}
                  :data {:type        (non-null :update_account)

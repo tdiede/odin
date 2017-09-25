@@ -6,7 +6,9 @@
             [odin.graphql.resolvers.utils :as gqlu]
             [odin.routes.kami :as kami]
             [odin.routes.util :refer :all]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+            [taoensso.timbre :as timbre]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; GraphQL
@@ -27,6 +29,13 @@
     (->config req)))
 
 
+(defn result->status [{:keys [errors] :as result}]
+  (cond
+    (nil? errors)                                      200
+    (tb/find-by #(= :unauthorized (:reason %)) errors) 403
+    :otherwise                                         400))
+
+
 (defn graphql-handler
   [schema]
   (fn [req]
@@ -35,9 +44,9 @@
                              (format "%s %s" (name op) expr)
                              nil
                              (context req))]
-     (-> (response/response result)
-         (response/content-type "application/transit+json")
-         (response/status (if (-> result :errors some?) 400 200))))))
+      (-> (response/response result)
+          (response/content-type "application/transit+json")
+          (response/status (result->status result))))))
 
 
 ;; =============================================================================

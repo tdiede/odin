@@ -297,20 +297,20 @@
  (fn [{:keys [db]} [k id]]
    {:dispatch [:loading k true]
     :graphql  {:mutation   [[:delete_payment_source {:id id} [:id]]]
-               :on-success [::delete-source-success k]
+               :on-success [::delete-source-success k id]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::delete-source-success
  [(path db/path)]
- (fn [{:keys [db]} [_ k response]]
-   {:dispatch-n [[:loading k false]
-                 [:modal/hide :payment.source/remove]
-                 [:notify/success "Payment method deleted successfully."]
-                 [:payment.sources/fetch]]
-    :route      (routes/path-for :profile.payment/sources
-                                 :query-params {:source-id (-> db :sources first :id)})}))
+ (fn [{:keys [db]} [_ k source-id response]]
+   (let [new-source (first (filter #(not= source-id (:id %)) (:sources db)))]
+     {:dispatch-n [[:loading k false]
+                   [:modal/hide :payment.source/remove]
+                   [:notify/success "Payment method deleted successfully."]]
+      :route       (routes/path-for :profile.payment/sources
+                                    :query-params {:source-id (:id new-source)})})))
 
 
 ;; =============================================================================

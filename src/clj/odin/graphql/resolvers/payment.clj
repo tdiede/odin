@@ -1,24 +1,25 @@
 (ns odin.graphql.resolvers.payment
   (:require [blueprints.models.account :as account]
+            [blueprints.models.customer :as customer]
             [blueprints.models.member-license :as member-license]
+            [blueprints.models.order :as order]
             [blueprints.models.payment :as payment]
+            [blueprints.models.property :as property]
+            [blueprints.models.security-deposit :as deposit]
+            [blueprints.models.service :as service]
             [clojure.core.async :as async :refer [>! chan go]]
             [clojure.spec.alpha :as s]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
+            [odin.graphql.authorization :as authorization]
             [ribbon.charge :as rch]
+            [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
             [toolbelt.async :refer [<!!? <!?]]
-            [toolbelt.predicates :as p]
-            [blueprints.models.security-deposit :as deposit]
             [toolbelt.core :as tb]
-            [toolbelt.datomic :as td]
             [toolbelt.date :as date]
-            [blueprints.models.order :as order]
-            [blueprints.models.service :as service]
-            [ribbon.customer :as rcu]
-            [blueprints.models.customer :as customer]
-            [blueprints.models.property :as property]))
+            [toolbelt.datomic :as td]
+            [toolbelt.predicates :as p]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -279,22 +280,18 @@
 
 (defn- ensure-payment-allowed
   [db requester payment stripe-customer source]
-  (let [owner (payment/account payment)]
-    (cond
-      (not= (:db/id requester) (:db/id owner))
-      "You do not own this payment!"
+  (cond
+    (not (#{:payment.status/due :payment.status/failed}
+          (payment/status payment)))
+    (format "This payment has status %s; cannot pay!"
+            (name (payment/status payment)))
 
-      (not (#{:payment.status/due :payment.status/failed}
-            (payment/status payment)))
-      (format "This payment has status %s; cannot pay!"
-              (name (payment/status payment)))
+    (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
+              (= (:object source) "bank_account")))
+    "Only bank accounts can be used to pay rent."
 
-      (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
-                (= (:object source) "bank_account")))
-      "Only bank accounts can be used to pay rent."
-
-      (not= (:customer source) (:id stripe-customer))
-      "The source you are attempting to pay with is not yours.")))
+    (not= (:customer source) (:id stripe-customer))
+    "The source you are attempting to pay with is not yours."))
 
 
 (defn- create-charge!
@@ -304,8 +301,8 @@
         property (member-license/property license)
         desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
     (rch/create! stripe (int (* 100 (payment/amount payment))) source-id
-                :email (account/email account)
-                :description desc
+                 :email (account/email account)
+                 :description desc
                 :customer-id (customer/id customer)
                 :managed-account (member-license/rent-connect-id license))))
 
@@ -353,6 +350,17 @@
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
+
+
+(defmethod authorization/authorized? :payment/list [_ account params]
+  (or (account/admin? account)
+      (= (:db/id account) (get-in params [:params :account]))))
+
+
+(defmethod authorization/authorized? :payment/pay-rent!
+  [{conn :conn} account params]
+  (let [payment (d/entity (d/db conn) (:id params))]
+    (= (:db/id account) (:db/id (payment/account payment)))))
 
 
 (def resolvers

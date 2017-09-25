@@ -31,6 +31,14 @@
    (tb/find-by :default (:sources db))))
 
 
+(reg-sub
+ :payment.sources/verified-banks
+ :<- [:payment/sources :bank]
+ (fn [banks _]
+   (tb/log banks)
+   (filter #(= (:status %) "verified") banks)))
+
+
 ;; =============================================================================
 ;; Current Sources
 ;; =============================================================================

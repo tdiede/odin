@@ -1,5 +1,6 @@
 (ns odin.graphql.resolvers
-  (:require [odin.graphql.resolvers.account :as account]
+  (:require [odin.graphql.authorization :as authorization]
+            [odin.graphql.resolvers.account :as account]
             [odin.graphql.resolvers.deposit :as deposit]
             [odin.graphql.resolvers.member-license :as member-license]
             [odin.graphql.resolvers.metrics :as metrics]
@@ -12,64 +13,27 @@
             [datomic.api :as d]))
 
 
-;; TODO: Authorization middleware
-
-
-(def ^:private deposit-resolvers
-  {;;fields
-   :deposit/amount-remaining deposit/amount-remaining
-   :deposit/amount-paid      deposit/amount-paid
-   :deposit/amount-pending   deposit/amount-pending
-   :deposit/refund-status    deposit/refund-status})
-
-
-
-(def ^:private payment-source-resolvers
-  {;; fields
-   :payment.source/autopay?        source/autopay?
-   :payment.source/type            source/type
-   :payment.source/name            source/name
-   :payment.source/payments        source/payments
-   :payment.source/default?        source/default?
-   :payment.source/expiration      source/expiration
-   ;; queries
-   :payment.sources/list           source/sources
-   :payment.sources/autopay-source source/autopay-source
-   ;; mutations
-   :payment.sources/delete!        source/delete!
-   :payment.sources/add-source!    source/add-source!
-   :payment.sources/verify-bank!   source/verify-bank!
-   :payment.sources/set-autopay!   source/set-autopay!
-   :payment.sources/unset-autopay! source/unset-autopay!
-   :payment.sources/set-default!   source/set-default!})
-
-
-
-(def ^:private member-license-resolvers
-  {;;fields
-   :member-license/status     member-license/status
-   :member-license/autopay-on member-license/autopay-on})
-
-
-(def ^:private unit-resolvers
-  {;;fields
-   :unit/number unit/number})
-
-
 (def ^:private util-resolvers
   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
    :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
    :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))})
 
-(def resolvers
-  (merge
-   account/resolvers
-   deposit-resolvers
-   payment/resolvers
-   payment-source-resolvers
-   member-license-resolvers
-   unit-resolvers
-   order/resolvers
-   service/resolvers
-   metrics/resolvers
-   util-resolvers))
+
+(defn resolvers []
+  (->> (merge
+        account/resolvers
+        deposit/resolvers
+        payment/resolvers
+        source/resolvers
+        member-license/resolvers
+        unit/resolvers
+        order/resolvers
+        service/resolvers
+        metrics/resolvers)
+       (reduce
+        (fn [acc [k v]]
+          (if (contains? (methods authorization/authorized?) k)
+            (assoc acc k (authorization/wrap-authorize k v))
+            (assoc acc k v)))
+        {})
+       (merge util-resolvers)))
