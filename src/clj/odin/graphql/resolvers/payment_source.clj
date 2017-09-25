@@ -37,7 +37,7 @@
 
 
 (defn- error-message [t]
-  (or (:message (ex-data t)) (str "Exception: " (.getMessage t))))
+  (or (:message (ex-data t)) (.getMessage t)))
 
 (s/fdef error-message
         :args (s/cat :throwable p/throwable?)
@@ -127,7 +127,7 @@
   [_ _ source]
   (case (:object source)
     "bank_account" :bank
-    "card" :card
+    "card"         :card
     (resolve/resolve-as :unknown {:message (format "Unrecognized source type '%s'" (:object source))})))
 
 

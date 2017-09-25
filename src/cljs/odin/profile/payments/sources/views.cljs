@@ -205,10 +205,9 @@
 
 
 (defn modal-verify-account []
-  (let [is-visible (subscribe [:modal/visible? :payment.source/verify-account])
-        ;; is-submitting (subscribe [:loading? :payment.sources.bank/verify])
-        bank       (subscribe [:payment.sources/current])
+  (let [bank       (subscribe [:payment.sources/current])
         amounts    (subscribe [:payment.sources.bank.verify/microdeposits])
+        is-visible (subscribe [:modal/visible? :payment.source/verify-account])
         amount-1   (:amount-1 @amounts)
         amount-2   (:amount-2 @amounts)]
     [ant/modal {:title   (str "Verify " (:name @bank))
