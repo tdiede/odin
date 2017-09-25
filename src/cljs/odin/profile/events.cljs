@@ -14,40 +14,27 @@
 (reg-event-fx
  :profile/fetch-account
  [(path db/path)]
- (fn [{:keys [db]} [_ account-id]]
-    {:db      (assoc-in db [:loading :profile/account] true)
-     :graphql {:query      [[:account {:id account-id}
+ (fn [{:keys [db]} [k account-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:query      [[:account {:id account-id}
                              [:id :first_name :last_name :email :phone
                               [:emergency_contact [:first_name :last_name :phone]]
                               [:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
                               [:property [:id :name :code]]]]]
-               :on-success [:profile.fetch/success]
-               :on-failure [:profile.fetch/failure]}}))
-
-(def ^:private default-info {:first_name ""
-                             :last_name  ""
-                             :phone      ""})
-
-(reg-event-db
- :profile.fetch/success
- [(path db/path)]
- (fn [db [_ response]]
-   (let [account        (get-in response [:data :account])
-         personal-info  (select-keys account [:first_name :last_name :phone])
-         emergency-info (select-keys (:emergency_contact account) [:first_name :last_name :phone])
-         personal       (merge default-info personal-info)
-         emergency      (merge default-info emergency-info)]
-     (-> (assoc db :account account)
-         (assoc-in [:contact :personal] {:current personal
-                                         :new     personal})
-         (assoc-in [:contact :emergency] {:current emergency
-                                          :new     emergency})
-         (assoc-in [:loading :profile/account] false)))))
+               :on-success [:profile.fetch/success k]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
- :profile.fetch/failure
+ :profile.fetch/success
  [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   {:db       (assoc-in db [:loading :profile/account] false)
-    :dispatch [:graphql/notify-errors! response]}))
+ (fn [{:keys [db]} [_ k response]]
+   (let [account   (get-in response [:data :account])
+         personal  (select-keys account [:first_name :last_name :phone])
+         emergency (select-keys (:emergency_contact account) [:first_name :last_name :phone])]
+     {:db       (-> (assoc db :account account)
+                    (update-in [:contact :personal] merge {:current personal
+                                                           :new     personal})
+                    (update-in [:contact :emergency] merge {:current emergency
+                                                            :new     emergency}))
+      :dispatch [:loading k false]})))

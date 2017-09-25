@@ -54,28 +54,22 @@
  :profile.contact.personal/submit!
  [(path db/path)]
  (fn [{:keys [db]} [_ new-info]]
-   (let [account-id (get-in db [:account :id])]
-     (tb/log account-id new-info)
-     {:dispatch-n [[:loading :profile.contact.personal/submitting true]]
-      :graphql    {:mutation [[:update_account {:id   account-id
-                                                :data new-info} [:id]]]
-                   :on-success [::save-personal-info-success]
-                   :on-failure [::save-personal-info-fail]}})))
+   (let [account-id (get-in db [:account :id])
+         k          :profile.contact.personal/submitting]
+     {:dispatch [:loading k true]
+      :graphql  {:mutation   [[:update_account {:id   account-id
+                                                :data new-info}
+                               [:id :name :phone]]]
+                 :on-success [::save-personal-info-success k]
+                 :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
  ::save-personal-info-success
- (fn [{:keys [db]} [_ response]]
-   {:dispatch-n [[:loading :profile.contact.personal/submitting false]
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:loading k false]
+                 [:account/update (get-in response [:data :update_account])]
                  [:notify/success "Information saved."]]}))
-
-
-(reg-event-fx
- ::save-personal-info-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :profile.contact.personal/submitting false]
-                 [:graphql/notify-errors! response]]}))
 
 
 (reg-event-fx
@@ -83,24 +77,17 @@
  [(path db/path)]
  (fn [{:keys [db]} [_ new-info]]
    (let [account-id (get-in db [:account :id])
-         data       {:emergency_contact new-info}]
-     {:dispatch-n [[:loading :profile.contact.emergency/submitting true]]
-      :graphql    {:mutation [[:update_account {:id   account-id
-                                                :data data} [:id]]]
-                   :on-success [::save-emergency-info-success]
-                   :on-failure [::save-emergency-info-fail]}})))
+         data       {:emergency_contact new-info}
+         k          :profile.contact.emergency/submitting]
+     {:dispatch-n [[:loading k true]]
+      :graphql    {:mutation   [[:update_account {:id   account-id
+                                                  :data data} [:id]]]
+                   :on-success [::save-emergency-info-success k]
+                   :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
  ::save-emergency-info-success
- (fn [{:keys [db]} [_ response]]
-   {:dispatch-n [[:loading :profile.contact.emergency/submitting false]
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:loading k false]
                  [:notify/success "Information saved."]]}))
-
-
-(reg-event-fx
- ::save-emergency-info-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :profile.contact.emergency/submitting false]
-                 [:graphql/notify-errors! response]]}))

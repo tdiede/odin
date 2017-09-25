@@ -94,7 +94,6 @@
 (defn render-payment-date
   "Date appears red if it was overdue."
   [paid_on due]
-  (tb/log due paid_on)
   [:span (format/date-short paid_on)])
 
 

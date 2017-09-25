@@ -274,7 +274,8 @@
    ;;  :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
    ;;  ;; :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
    ;;  :stripe-customer/managed            [:property/internal-name "52gilbert"]}
-   ])
+   ]
+  )
 
 
 (defn avatar-tx []

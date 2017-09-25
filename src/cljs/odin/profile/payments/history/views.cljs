@@ -10,7 +10,7 @@
 
 (defn history [param]
   (let [payments (subscribe [:payments])
-        loading  (subscribe [:payments.list/loading?])]
+        loading  (subscribe [:loading? :payments/fetch])]
     [:div
      (typography/view-header
       "Payment History"
