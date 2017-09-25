@@ -85,7 +85,8 @@
 (defn payment-for2
   "What is this payment for?"
   [{conn :conn} _ payment]
-  (payment/payment-for2 (d/db conn) payment))
+  (when-some [x (payment/payment-for2 (d/db conn) payment)]
+    (keyword (name x))))
 
 
 (defn- deposit-desc
