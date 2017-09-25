@@ -35,7 +35,6 @@
  :payment.sources/verified-banks
  :<- [:payment/sources :bank]
  (fn [banks _]
-   (tb/log banks)
    (filter #(= (:status %) "verified") banks)))
 
 

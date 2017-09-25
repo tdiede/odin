@@ -17,6 +17,13 @@
 
 
 (reg-sub
+ :member/deposit
+ :<- [::membership]
+ (fn [db _]
+   (:deposit db)))
+
+
+(reg-sub
  :member.license/loading?
  :<- [:member/license]
  :<- [:loading? :member.license/fetch]
@@ -35,8 +42,11 @@
 
 
 (reg-sub
- :member/upcoming-rent-payment
- :<- [::membership]
- (fn [db _]
-   (let [payment (first (get-in db [:license :payments]))])
-   (:license db)))
+ :member.deposit/payment
+ :<- [:member/deposit]
+ (fn [deposit _]
+   {:id          (:id deposit)
+    :amount      (:amount_remaining deposit)
+    :due         (:due deposit)
+    :description "Remainder of your security deposit."
+    :type        :deposit}))

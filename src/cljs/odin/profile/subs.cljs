@@ -25,24 +25,3 @@
  :<- [::profile]
  (fn [db _]
    (get-in db [:account :id])))
-
-
-(reg-sub
- :profile/account-mutable
- :<- [::profile]
- (fn [db _]
-   (:new-account db)))
-
-
-(reg-sub
- :profile.account/loading?
- :<- [::profile]
- (fn [db _]
-   (get-in db [:loading :profile/account])))
-
-
-(reg-sub
- :profile/security-deposit
- :<- [::profile]
- (fn [db _]
-   (get-in db [:account :deposit])))

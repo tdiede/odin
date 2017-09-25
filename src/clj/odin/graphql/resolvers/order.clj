@@ -77,7 +77,7 @@
     (query-orders (d/db conn) params)
     (catch Throwable t
       (timbre/error t "error querying orders")
-      (resolve/resolve-as nil {:message  (str "Exception:" (.getMessage t))
+      (resolve/resolve-as nil {:message  (.getMessage t)
                                :err-data (ex-data t)}))))
 
 
