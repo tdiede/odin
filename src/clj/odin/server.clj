@@ -112,9 +112,9 @@
                               [optimizations/all strategies/serve-frozen-assets])]
     (-> routes/routes
         (optimus/wrap assemble-assets optimize strategy)
-        (wrap-deps deps)
         (wrap-authorization auth-backend)
         (wrap-authentication auth-backend)
+        (wrap-deps deps)
         (wrap-logging)
         (wrap-keyword-params)
         (wrap-nested-params)
