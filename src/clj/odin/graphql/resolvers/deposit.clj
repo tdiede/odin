@@ -26,3 +26,16 @@
   [_ _ deposit]
   (when-let [s (deposit/refund-status deposit)]
     (keyword (name s))))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(def resolvers
+  {;;fields
+   :deposit/amount-remaining amount-remaining
+   :deposit/amount-paid      amount-paid
+   :deposit/amount-pending   amount-pending
+   :deposit/refund-status    refund-status})

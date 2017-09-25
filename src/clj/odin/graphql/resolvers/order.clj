@@ -1,12 +1,13 @@
 (ns odin.graphql.resolvers.order
-  (:require [blueprints.models.order :as order]
-            [toolbelt.datomic :as td]
-            [datomic.api :as d]
+  (:require [blueprints.models.account :as account]
             [blueprints.models.member-license :as member-license]
-            [taoensso.timbre :as timbre]
+            [blueprints.models.order :as order]
             [com.walmartlabs.lacinia.resolve :as resolve]
-            [toolbelt.core :as tb]))
-
+            [datomic.api :as d]
+            [odin.graphql.authorization :as authorization]
+            [taoensso.timbre :as timbre]
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Fields
@@ -83,6 +84,10 @@
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
+
+
+(defmethod authorization/authorized? :order/list [_ account _]
+  (account/admin? account))
 
 
 (def resolvers

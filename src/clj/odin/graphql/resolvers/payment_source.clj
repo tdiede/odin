@@ -13,6 +13,7 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.config :as config]
+            [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.payment :as payment-resolvers]
             [odin.graphql.resolvers.utils :refer [context?]]
             [ribbon.charge :as rch]
@@ -43,7 +44,7 @@
         :ret string?)
 
 
-(defn autopay-source
+(defn- autopay-source
   "Fetch the autopay source for the requesting user, if there is one."
   [{:keys [stripe requester conn]}]
   (when-let [customer (customer/autopay (d/db conn) requester)]
@@ -585,6 +586,35 @@
           (resolve/deliver! result nil {:message  (error-message t)
                                         :err-data (ex-data t)}))))
     result))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(defmethod authorization/authorized? :payment.sources/list [_ account params]
+  (or (account/admin? account) (= (:db/id account) (:account params))))
+
+
+(def resolvers
+  {;; fields
+   :payment.source/autopay?        autopay?
+   :payment.source/type            type
+   :payment.source/name            name
+   :payment.source/payments        payments
+   :payment.source/default?        default?
+   :payment.source/expiration      expiration
+   ;; queries
+   :payment.sources/list           sources
+   ;; mutations
+   :payment.sources/delete!        delete!
+   :payment.sources/add-source!    add-source!
+   :payment.sources/verify-bank!   verify-bank!
+   :payment.sources/set-autopay!   set-autopay!
+   :payment.sources/unset-autopay! unset-autopay!
+   :payment.sources/set-default!   set-default!})
+
 
 
 ;;; Attach a charge id to all invoices
