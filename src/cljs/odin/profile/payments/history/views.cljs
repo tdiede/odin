@@ -2,7 +2,8 @@
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
             [odin.components.payments :as payments-ui]
-            [re-frame.core :refer [subscribe]]))
+            [re-frame.core :refer [subscribe]]
+            [toolbelt.core :as tb]))
 
 (defn sample-modal-content []
   [:p "Here's some content for a modal."])

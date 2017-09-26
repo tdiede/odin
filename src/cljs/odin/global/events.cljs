@@ -15,16 +15,18 @@
 ;; =============================================================================
 
 (defn- create-global-message
-  ([text route]
+  ([key text route]
    (create-global-message text route :info))
-  ([text route level]
-   {:text    text
+  ([key text route level]
+   {:key     key
+    :text    text
     :route   route
     :level   level}))
 
 (defn- create-rent-due-message
   [payment]
-  (create-global-message [:span [:b "Your rent for this month is due."] " Go to your Membership page to make payments."]
+  (create-global-message :rent_due
+                         [:span [:b "Your rent for this month is due."] " Go to your Membership page to make payments."]
                          :profile/membership
                          :warning))
 
@@ -61,3 +63,10 @@
      (if (< 0 (count due-payments))
        (update db :messages conj (create-rent-due-message (first due-payments)))
        db))))
+
+;; Deletes message with provided key
+(reg-event-db
+ :global.messages/clear
+ [(path db/path)]
+ (fn [db [_ key]]
+   (filter #(not= (:name %) key) (:messages db))))
