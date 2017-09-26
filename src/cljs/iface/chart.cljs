@@ -1,8 +1,5 @@
 (ns iface.chart
   (:require [reagent.core :as r]
-            [cljsjs.highcharts]
-            [cljsjs.highcharts-css]
-            [cljsjs.highcharts.modules.drilldown]
             [toolbelt.core :as tb]))
 
 

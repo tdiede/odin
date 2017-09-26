@@ -32,7 +32,11 @@
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
-                    ;;:fonts ["https://fonts.googleapis.com/css?family=Fira+Sans"]
+                    :scripts (if (= :account.role/admin (get-in req [:identity :account/role]))
+                               ["http://code.highcharts.com/highcharts.js"
+                                "http://code.highcharts.com/modules/exporting.js"
+                                "https://code.highcharts.com/modules/drilldown.js"]
+                               [])
                     :fonts ["https://fonts.googleapis.com/css?family=Work+Sans|Fira+Sans"]
                     :json [["stripe" {:key (config/stripe-public-key (:config deps))}]]
                     :stylesheets [facade/font-awesome]
@@ -54,9 +58,9 @@
        (fn [{:keys [deps] :as req}]
          (let [config (:config deps)]
            (if-not (config/development? config)
-            (response/redirect (format "%s/login" (config/root-domain config)))
-            (-> (response/resource-response "public/login.html")
-                (response/content-type "text/html"))))))
+             (response/redirect (format "%s/login" (config/root-domain config)))
+             (-> (response/resource-response "public/login.html")
+                 (response/content-type "text/html"))))))
 
   (POST "/login" [] login!)
 
