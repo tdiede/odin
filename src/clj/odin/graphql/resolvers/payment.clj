@@ -213,8 +213,7 @@
           (>! out (inject-charge payment charge)))
         (>! out payment))
       (catch Throwable t
-        (timbre/error t "failed to fetch charge for payment: %s"
-                      (:db/id payment))
+        (timbre/errorf t "failed to fetch charge for payment: %s" (:db/id payment))
         (>! out payment)))
     (async/close! out)))
 

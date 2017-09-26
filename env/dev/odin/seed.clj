@@ -19,7 +19,8 @@
             [odin.datomic :refer [conn]]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
-            [toolbelt.date :as date]))
+            [toolbelt.date :as date]
+            [odin.config :as config]))
 
 ;; =============================================================================
 ;; TX Construction
@@ -305,7 +306,7 @@
 ;; API
 ;; =============================================================================
 
-(defn- seed
+(defn seed
   "Seed the database with sample data."
   [conn]
   (cf/ensure-conforms
@@ -330,9 +331,3 @@
   #_(cf/ensure-conforms
    conn
    {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
-
-
-(defstate seeder
-  :start (do
-           (timbre/debug "seeding dev database...")
-           (seed conn)))

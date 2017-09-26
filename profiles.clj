@@ -34,6 +34,7 @@
                                      :asset-path       "/js/cljs/out"
                                      :output-dir       "resources/public/js/cljs/out"
                                      :output-to        "resources/public/js/cljs/odin.js"
-                                     :externs          ["externs/stripe.ext.js"]
+                                     :externs          ["externs/stripe.ext.js"
+                                                        "externs/highcharts.ext.js"]
                                      :closure-warnings {:externs-validation :off
                                                         :non-standard-jsdoc :off}}}]}}}

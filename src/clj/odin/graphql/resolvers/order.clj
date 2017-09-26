@@ -7,7 +7,8 @@
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
-            [toolbelt.datomic :as td]))
+            [toolbelt.datomic :as td]
+            [blueprints.models.payment :as payment]))
 
 ;; =============================================================================
 ;; Fields
@@ -26,7 +27,8 @@
 
 (defn status
   [_ _ order]
-  (-> order order/status name keyword))
+  (if-let [s (order/status order)]
+    (-> s name keyword)))
 
 
 (defn billed-on
@@ -44,9 +46,11 @@
   "The property that the member that placed this order lives in."
   [{conn :conn} _ order]
   (let [created (td/created-at (d/db conn) order)
-        license (member-license/active (d/as-of (d/db conn) created)
-                                       (order/account order))]
-    (member-license/property license)))
+        license (-> order order/account :account/licenses first)]
+    (if (some? license)
+      (member-license/property license)
+      (resolve/resolve-as nil {:message  "Cannot locate property for this order!"
+                               :order-id (:db/id order)}))))
 
 
 ;; =============================================================================
@@ -61,7 +65,7 @@
    :statuses (when-some [xs statuses]
                (map #(keyword "order.status" (name %)) xs))
    :billed (when-some [xs billed]
-            (map #(keyword "service.billed" (name %)) xs))))
+             (map #(keyword "service.billed" (name %)) xs))))
 
 
 (defn- query-orders
@@ -100,3 +104,52 @@
    ;; queries
    :order/list      orders
    })
+
+
+;;; Set proper dates on order statuses
+
+(comment
+
+
+  (defn- all-orders [db]
+    (->> (d/q '[:find [?o ...]
+                :where
+                [?o :order/account _]]
+              db)
+         (map (partial d/entity db))))
+
+
+  (defn- charge-status->payment-status [status]
+    (case status
+      :charge.status/succeeded :payment.status/paid
+      :charge.status/failed    :payment.status/failed
+      :payment.status/pending))
+
+
+  (defn add-order-status [db order]
+    (when (nil? (order/status order))
+      (let [[status entity] (if-let [charge (:stripe/charge order)]
+                              [:order.status/charged charge]
+                              [:order.status/pending order])]
+        [[:db/add (:db/id order) :order/status status]
+         {:db/id "datomic.tx" :db/txInstant (td/updated-at db entity)}])))
+
+
+  (defn add-order-payment [db order]
+    (when-some [charge (:stripe/charge order)]
+      {:db/id          (:db/id order)
+       :order/payments (payment/create (order/computed-price order) (order/account order)
+                                       :for :payment.for/order
+                                       :status (charge-status->payment-status (:charge/status charge))
+                                       :charge-id (:charge/stripe-id charge))}))
+
+
+  (let [conn odin.datomic/conn]
+    (doseq [order (all-orders (d/db conn))]
+      (when-let [tx (add-order-status (d/db conn) order)]
+        (try
+          @(d/transact-async conn (tb/conj-when tx (add-order-payment (d/db conn) order)))
+          (catch Throwable t
+            (timbre/errorf t "failed to add status & payment: %s" (:db/id order)))))))
+
+  )

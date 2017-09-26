@@ -30,7 +30,6 @@
                  [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
                  [reagent "0.7.0"]
-                 [cljsjs/highcharts "5.0.14-0"]
                  [cljsjs/highcharts-css "5.0.10-0"]
                  [cljsjs/filesaverjs "1.3.3-0"]
                  [cljsjs/libphonenumber "8.4.1-1"]
@@ -44,7 +43,7 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
-                 [starcity/blueprints "1.11.1" :exclusions [com.datomic/datomic-free
+                 [starcity/blueprints "1.11.3" :exclusions [com.datomic/datomic-free
                                                             com.andrewmcveigh/cljs-time
                                                             com.google.guava/guava]]
                  ;; dep resolution
