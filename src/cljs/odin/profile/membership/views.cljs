@@ -12,6 +12,17 @@
 
 
 ;; =============================================================================
+;; Helpers
+;; =============================================================================
+
+
+(defn link-bank-tooltip-title []
+  [:span "Please link a bank account in your "
+   [:a {:href (routes/path-for :profile.payment/sources)}
+    "Payment Methods"] " page."])
+
+
+;; =============================================================================
 ;; Security Deposit
 ;; =============================================================================
 
@@ -49,23 +60,27 @@
       :otherwise                         :pending)))
 
 
-(defmulti deposit-status-content deposit-status)
+(defmulti deposit-status-content (fn [deposit sources] (deposit-status deposit)))
 
 
-(defmethod deposit-status-content :default [{:keys [amount]}]
+(defmethod deposit-status-content :default [{:keys [amount]} sources]
   [:div
    [:h4 "Your security deposit is paid. Nothing to do here!"]])
 
 
-(defmethod deposit-status-content :partial [{:keys [id amount_remaining]}]
+(defmethod deposit-status-content :partial [{:keys [id amount_remaining]} sources]
   [:div
    [:h4 "Security deposit partially paid."]
-   [ant/button
-    {:on-click #(dispatch [:modal/show id])}
-    (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]])
+   [ant/tooltip
+    {:title (when (empty? sources)
+              (r/as-element [link-bank-tooltip-title]))}
+    [ant/button
+     {:on-click #(dispatch [:modal/show id])
+      :disabled (empty? sources)}
+     (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]]])
 
 
-(defmethod deposit-status-content :pending [{:keys [amount_pending]}]
+(defmethod deposit-status-content :pending [{:keys [amount_pending]} _]
   [:div
    [:h4 (str "Your recent payment is currently pending, and should be completed shortly.")]])
 
@@ -89,7 +104,7 @@
           (when (not @loading) [render-card-icon :deposit (deposit-status @deposit)])]
          [:div.column
           (when (not (nil? @deposit))
-            (deposit-status-content @deposit))]]]])))
+            (deposit-status-content @deposit @sources))]]]])))
 
 
 ;; =============================================================================
@@ -125,12 +140,10 @@
                           (dispatch [:member/pay-rent-payment! payment-id source-id]))
             :loading @paying
             :sources @sources])
+         [:p (str "Your next rent payment is due by " (format/date-month-day due) ".")]
          [ant/tooltip
           {:title (when (empty? @sources)
-                    (r/as-element [:span "Please link a bank account in your "
-                                   [:a {:href (routes/path-for :profile.payment/sources)}
-                                    "Payment Methods"] " page."]))}
-          [:p (str "Your next rent payment is due by " (format/date-month-day due) ".")]
+                    (r/as-element [link-bank-tooltip-title]))}
           [ant/button
            {:type     "primary"
             :on-click #(dispatch [:modal/show id])
@@ -186,12 +199,12 @@
           [:h3.title.is-4 (str (:name property) " #" (:number unit))]
           [:h4 (str term " months • " (str (format/date-short starts) " - " (format/date-short ends)))]
           [:p (str (format/currency rate) "/mo.")]]]])]))
-        ;; If a link to view PDF version of license is provided, show it here
-        ;;(when-not (nil? (:view-link @license))
-        ;;[:footer.card-footer
-        ;; [:a.card-footer-item
-        ;;  [:span.icon.is-small [:i.fa.fa-file-text]]
-        ;;  [:span.with-icon "View Agreement"]]]])]))
+;; If a link to view PDF version of license is provided, show it here
+;;(when-not (nil? (:view-link @license))
+;;[:footer.card-footer
+;; [:a.card-footer-item
+;;  [:span.icon.is-small [:i.fa.fa-file-text]]
+;;  [:span.with-icon "View Agreement"]]]])]))
 
 
 (defn membership-summary []
