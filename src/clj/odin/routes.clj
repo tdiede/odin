@@ -31,12 +31,12 @@
   "Handler to render the CLJS app."
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
+    ;; (if (= :account.role/admin (get-in req [:identity :account/role]))
+    ;;   [])
     (-> (facade/app req "odin"
-                    :scripts (if (= :account.role/admin (get-in req [:identity :account/role]))
-                               ["http://code.highcharts.com/highcharts.js"
-                                "http://code.highcharts.com/modules/exporting.js"
-                                "https://code.highcharts.com/modules/drilldown.js"]
-                               [])
+                    :scripts ["https://code.highcharts.com/highcharts.js"
+                              "https://code.highcharts.com/modules/exporting.js"
+                              "https://code.highcharts.com/modules/drilldown.js"]
                     :fonts ["https://fonts.googleapis.com/css?family=Work+Sans|Fira+Sans"]
                     :json [["stripe" {:key (config/stripe-public-key (:config deps))}]]
                     :stylesheets [facade/font-awesome]
