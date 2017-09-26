@@ -38,6 +38,13 @@
    (filter #(= (:status %) "verified") banks)))
 
 
+(reg-sub
+ :payment.sources/has-verified-bank?
+ :<- [:payment.sources/verified-banks]
+ (fn [banks _]
+   (not (empty? banks))))
+
+
 ;; =============================================================================
 ;; Current Sources
 ;; =============================================================================
@@ -107,9 +114,10 @@
 
 (reg-sub
  :payment.sources/can-enable-autopay?
- :<- [:payment/sources :bank]
- (fn [banks _]
-   (some? (tb/find-by (comp #{"verified"} :status) banks))))
+ :<- [:payment.sources/has-verified-bank?]
+ :<- [:member.rent/unpaid?]
+ (fn [[verified unpaid] _]
+   (and verified (not unpaid))))
 
 
 (reg-sub

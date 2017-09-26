@@ -327,6 +327,17 @@
       [:span (l10n/translate :btn-add-new-account)]]]]])
 
 
+(defn- autopay-tooltip []
+  (let [has-verified (subscribe [:payment.sources/has-verified-bank?])
+        rent-unpaid  (subscribe [:member.rent/unpaid?])
+        this         (r/current-component)]
+    [ant/tooltip
+     {:title (cond
+               (not @has-verified) "To enable Autopay, you must first add and verify a bank account."
+               @rent-unpaid        "You must pay your outstanding rent payment before enabling Autopay."
+               :otherwise          nil)}
+     (into [:div] (r/children this))]))
+
 
 (defn source-settings []
   (let [autopay-on      (subscribe [:payment.sources/autopay-on?])
@@ -335,33 +346,35 @@
         src-default     (subscribe [:payment.sources/default-source])]
     [:div.page-controls
      [:div.flexrow.flex-center
-      [ant/switch {:checked   @autopay-on
-                   :disabled  (not @autopay-allowed)
-                   :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]
+      [autopay-tooltip
+       [ant/switch {:checked   @autopay-on
+                    :disabled  (not @autopay-allowed)
+                    :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]]
       [:p.ml1
        [:span.bold
         {:class (when-not @autopay-allowed "subdued")}
         (if @autopay-on "Autopay On" "Autopay Off")]
-       (if @autopay-allowed
-         [tooltip/info "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
-         [tooltip/info "To enable Autopay, you must first add and verify a bank account."])]
+       [tooltip/info
+        (r/as-element
+         [:span "With Autopay enabled, rent payments will automatically be withdrawn from your bank account on the "
+          [:b "1st"] " of each month."])]]
 
-      (when (not (empty? @card-sources))
-       [:span.page-controls-divider "•"]
-       [:div
-        [ant/select
-         {:style {:width 200}}
-         (for [source @card-sources]
-           (let [id (get source :id)]
-             ^{:key id}
-             [ant/select-option {:value id} (:name source)]))]])]]))
+       (when (not (empty? @card-sources))
+         [:span.page-controls-divider "•"]
+         [:div
+          [ant/select
+           {:style {:width 200}}
+           (for [source @card-sources]
+             (let [id (get source :id)]
+               ^{:key id}
+               [ant/select-option {:value id} (:name source)]))]])]]))
 
 
 
-(defn- source-view [sources]
-  (if (empty? sources)
-    ;; Empty State
-    [no-sources]
+  (defn- source-view [sources]
+    (if (empty? sources)
+      ;; Empty State
+      [no-sources]
     ;; Show Sources
     [:div
      [source-settings]

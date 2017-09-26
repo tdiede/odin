@@ -42,6 +42,13 @@
 
 
 (reg-sub
+ :member.rent/unpaid?
+ :<- [:member/rent-payments {:status :due}]
+ (fn [payments _]
+   (not (empty? payments))))
+
+
+(reg-sub
  :member.deposit/payment
  :<- [:member/deposit]
  (fn [deposit _]

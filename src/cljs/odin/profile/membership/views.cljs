@@ -40,7 +40,7 @@
               :overdue "text-red"
               :unpaid  "text-yellow"
               :partial "text-yellow"
-              :pending "text-green"
+              :pending "text-blue"
               :paid    "text-green"
               "")}
     [:i.fa {:class (case type
@@ -50,9 +50,10 @@
 
 
 (defn- deposit-status
-  [{:keys [amount amount_remaining amount_paid amount_pending due]}]
+  [{:keys [amount amount_remaining amount_paid amount_pending due] :as deposit}]
   (let [is-overdue (t/is-before-now due)]
     (cond
+      (> amount_pending 0)               :pending
       (= amount amount_paid)             :paid
       (and is-overdue (= amount_paid 0)) :overdue
       (= amount_paid 0)                  :unpaid
