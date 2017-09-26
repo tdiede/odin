@@ -85,13 +85,6 @@
          "")]])))
 
 
-(defn get-due-date
-  [payment]
-  (let [month_end (aget payment "pend")
-        due_date  (aget payment "due")]
-    (if (not (nil? due_date)) due_date month_end)))
-
-
 (defn render-payment-date
   "Date appears red if it was overdue."
   [paid_on due]
@@ -99,10 +92,13 @@
 
 
 (defn render-late-payment-date
-  [paid_on]
+  [paid-on is-late]
   [:span
-   [ant/tooltip {:title "This payment was received late."}
-    [:span.text-red (format/date-short paid_on)]]])
+   (if is-late
+     [ant/tooltip {:title "This payment was received late."}
+      [:span.text-red (format/date-short paid-on)]]
+     [:span (format/date-short paid-on)])])
+
 
 (def ^:private payment-table-columns
   [
@@ -117,9 +113,9 @@
     :dataIndex :paid_on
     :className "width-6"
     :render    (fn [paid item _]
-                 ;;(if (= (aget item "for") "rent")
-                   (r/as-element [render-late-payment-date paid]))}
-                   ;;(format/date-short paid))}
+                 (let [due     (when-some [d (aget item "due")] (js/moment. d))
+                       is-late (if (some? due) (.isAfter (js/moment. paid) due) false)]
+                   (r/as-element [render-late-payment-date paid is-late])))}
 
    ;; AMOUNT
    {:title     (l10n/translate :amount)
