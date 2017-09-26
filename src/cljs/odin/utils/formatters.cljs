@@ -89,7 +89,7 @@
   "Accepts a number, and returns a formatted currency amount according to
   current language. e.g. [1999.99] -> '$1,999.99'"
   [amount]
-  (let [to-str (if (is-int amount) str #(.toFixed %))]
+  (let [to-str (if (is-int amount) str #(.toFixed % 2))]
     (->> amount to-str number (str "$"))))
 
 
