@@ -1,12 +1,13 @@
 (ns user
-  (:require [odin.core]
-            [odin.config :as config :refer [config]]
-            [odin.datomic :refer [conn]]
-            [odin.seed :as seed]
-            [clojure.spec.test :as stest]
+  (:require [clojure.spec.test :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
+            [datomic.api :as d]
             [figwheel-sidecar.repl-api :as ra]
             [mount.core :as mount :refer [defstate]]
+            [odin.datomic :refer [conn]]
+            [odin.config :as config :refer [config]]
+            [odin.core]
+            [odin.seed :as seed]
             [taoensso.timbre :as timbre]))
 
 
