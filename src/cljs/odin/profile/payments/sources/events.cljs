@@ -2,7 +2,8 @@
   (:require [odin.profile.payments.sources.db :as db]
             [odin.routes :as routes]
             [re-frame.core :refer [path reg-event-db reg-event-fx]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [odin.utils.formatters :as format]))
 
 ;; =============================================================================
 ;; Routing/Nav
@@ -11,9 +12,11 @@
 
 (defmethod routes/dispatches :profile.payment/sources
   [{:keys [params requester] :as route}]
-  (if (or (empty? params) (= (:source-id params) ""))
-    [[:payment.sources/set-default-route]]
-    [[:payment.sources/init route]]))
+  (conj
+   (if (or (empty? params) (= (:source-id params) ""))
+     [[:payment.sources/set-default-route]]
+     [[:payment.sources/init route]])
+   [:member.license/fetch (:id requester)]))
 
 
 (reg-event-fx
@@ -177,10 +180,9 @@
 (reg-event-fx
  ::bank-verify-success
  (fn [{db :db} [_ k _]]
-   (let [account-id (get-in db [:config :account :id])]
-     {:dispatch-n [[:loading k false]
-                   [:payment.sources/fetch account-id]
-                   [:modal/hide :payment.source/verify-account]]})))
+   {:dispatch-n [[:loading k false]
+                 [:payment.sources/fetch]
+                 [:modal/hide :payment.source/verify-account]]}))
 
 
 ;; =============================================================================
@@ -272,7 +274,7 @@
  :payment.source/set-default!
  (fn [{:keys [db]} [k id]]
    {:dispatch [:loading k true]
-    :graphql  {:mutation   [[:set_default_source {:id id} [:id]]]
+    :graphql  {:mutation   [[:set_default_source {:id id} [:id :name :last4]]]
                :on-success [::set-default-source-success k]
                :on-failure [:graphql/failure k]}}))
 
@@ -281,9 +283,12 @@
  ::set-default-source-success
  [(path db/path)]
  (fn [{:keys [db]} [_ k response]]
-   {:dispatch-n [[:loading k false]
-                 [:notify/success "Payment method was set as default for service payments."]
-                 [:payment.sources/fetch]]}))
+   (let [{:keys [name last4]} (get-in response [:data :set_default_source])]
+     {:dispatch-n [[:loading k false]
+                   [:notify/success
+                    (format/format "Great! We'll use your %s (%s) for service payments from now on."
+                                   name last4)]
+                   [:payment.sources/fetch]]})))
 
 
 ;; =============================================================================

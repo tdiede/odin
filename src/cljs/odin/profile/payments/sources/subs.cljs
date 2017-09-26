@@ -25,10 +25,10 @@
 
 
 (reg-sub
- :payment.sources/default-source
+ :payment.sources/service-source
  :<- [::sources]
  (fn [db _]
-   (tb/find-by :default (:sources db))))
+   (tb/find-by #(and (:default %) (= :card (:type %))) (:sources db))))
 
 
 (reg-sub
@@ -132,8 +132,3 @@
  :<- [:payment.sources/autopay-source]
  (fn [source _]
    (:autopay source)))
-
-
-;; =============================================================================
-;; Default Source
-;; =============================================================================

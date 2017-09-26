@@ -37,7 +37,7 @@
 
 
 (defn source-list-item
-  [{:keys [id type name last4] :as source}]
+  [{:keys [id type name last4 default] :as source}]
   (let [current (subscribe [:payment.sources/current])]
     [:a.source-list-item
      {:class (when (= id (:id @current)) "is-active")
@@ -53,7 +53,9 @@
          [:p.italic
           [ant/icon {:type "exclamation-circle" :style {:font-size ".8rem"}}]
           [:span.fs3 {:style {:margin-left 4}} "Unverified"]]
-         (payments-ui/payment-source-icon (or type :bank)))]]]))
+         [:span
+          (payments-ui/payment-source-icon (or type :bank))
+          (when default [ant/icon {:type :check-circle}])])]]]))
 
 
 (defn source-list
@@ -185,7 +187,6 @@
                 :footer    (r/as-element [modal-disable-autopay-footer (:id @autopay-source)])
                 :on-ok     #(dispatch [:payment.sources.autopay/disable! (:id @autopay-source)])
                 :on-cancel #(dispatch [:modal/hide :payment.source/autopay-disable])}
-     ;;:footer    nil}
      [:div
       [:p "Autopay automatically transfers your rent each month, one day before your Due Date. We recommend enabling this feature, so you never need to worry about making rent on time."]]]))
 
@@ -336,45 +337,57 @@
                (not @has-verified) "To enable Autopay, you must first add and verify a bank account."
                @rent-unpaid        "You must pay your outstanding rent payment before enabling Autopay."
                :otherwise          nil)}
-     (into [:div] (r/children this))]))
+     (into [:span] (r/children this))]))
 
 
 (defn source-settings []
   (let [autopay-on      (subscribe [:payment.sources/autopay-on?])
         autopay-allowed (subscribe [:payment.sources/can-enable-autopay?])
         card-sources    (subscribe [:payment/sources :card])
-        src-default     (subscribe [:payment.sources/default-source])]
-    [:div.page-controls
-     [:div.flexrow.flex-center
+        service-source  (subscribe [:payment.sources/service-source])
+        setting-svc-src (subscribe [:loading? :payment.source/set-default!])]
+    [:div.page-controls.columns
+     [:div.column {:style {:padding 0}}
+
+      [:span.bold.mr1
+       {:class (when-not @autopay-allowed "subdued")}
+       (if @autopay-on "Autopay On" "Autopay Off")]
+
       [autopay-tooltip
        [ant/switch {:checked   @autopay-on
                     :disabled  (not @autopay-allowed)
                     :on-change #(dispatch [:payment.sources.autopay/confirm-modal @autopay-on])}]]
-      [:p.ml1
-       [:span.bold
-        {:class (when-not @autopay-allowed "subdued")}
-        (if @autopay-on "Autopay On" "Autopay Off")]
+
+      [:span.ml1
        [tooltip/info
         (r/as-element
          [:span "With Autopay enabled, rent payments will automatically be withdrawn from your bank account on the "
-          [:b "1st"] " of each month."])]]
+          [:b "1st"] " of each month."])]]]
 
-       (when (not (empty? @card-sources))
-         [:span.page-controls-divider "•"]
-         [:div
-          [ant/select
-           {:style {:width 200}}
-           (for [source @card-sources]
-             (let [id (get source :id)]
-               ^{:key id}
-               [ant/select-option {:value id} (:name source)]))]])]]))
+     [:div.column {:style {:padding 0}}
+      [:span.bold.mr2 "Pay for Services with:"]
+      (if @setting-svc-src
+        [ant/spin {:style {:width 150}}]
+        [ant/select
+         {:style     {:width 150}
+          :value     (:id @service-source)
+          :disabled  (empty? @card-sources)
+          :on-change #(dispatch [:payment.source/set-default! %])}
+         (doall
+          (for [{id :id :as source} @card-sources]
+            ^{:key id} [ant/select-option {:value id :disabled (= id (:id @service-source))}
+                        (payments-ui/source-name source)]))])
+      [:span.ml1
+       [tooltip/info
+        (if (empty? @card-sources)
+          "To pay for premium services, please link a credit or debit card."
+          "This is the payment method that will be used for premium service orders.")]]]]))
 
 
-
-  (defn- source-view [sources]
-    (if (empty? sources)
-      ;; Empty State
-      [no-sources]
+(defn- source-view [sources]
+  (if (empty? sources)
+    ;; Empty State
+    [no-sources]
     ;; Show Sources
     [:div
      [source-settings]

@@ -26,7 +26,9 @@
 (defn- create-rent-due-message
   [payment]
   (create-global-message :rent_due
-                         [:span [:b "Your rent for this month is due."] " Go to your Membership page to make payments."]
+                         [:span
+                          [:b "Your rent for this month is due."]
+                          " Go to your " [:u "Membership"] " page to make payments."]
                          :profile/membership
                          :warning))
 
