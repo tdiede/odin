@@ -24,6 +24,18 @@
 (def stop mount/stop)
 
 
+(defn- in-memory-db?
+  "There's a more robust way to do this, but it's not really necessary ATM."
+  [uri]
+  (clojure.string/starts-with? uri "datomic:mem"))
+
+
+(defstate seeder
+  :start (when (in-memory-db? (config/datomic-uri config))
+           (timbre/debug "seeding dev database...")
+           (seed/seed conn)))
+
+
 (defn go []
   (start)
   (stest/instrument)

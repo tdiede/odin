@@ -47,7 +47,7 @@
         :class    (when @showing "is-active")}
        [:div.burger-wrap
         [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]
-        ;; [:span] [:span][:span]
+        ;; [:span] [:span] [:span]
         ]])))
 
 

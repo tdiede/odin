@@ -617,8 +617,6 @@
 
 
 
-;;; Attach a charge id to all invoices
-
 (comment
 
 

@@ -35,12 +35,6 @@
    {:style {:fontFamily "'Work Sans', 'Fira Sans', sans-serif"}}})
 
 
-(set! js/Highcharts.theme (clj->js chart-theme))
-
-
-(.setOptions js/Highcharts js/Highcharts.theme)
-
-
 (defn referrals-config [series-data]
   {:chart       {:plotBackgroundColor nil
                  :plotBorderWidth     nil
