@@ -17,6 +17,12 @@
   (if thing (-> (moment thing)
                 (.format (l10n/translate :tongue/format-date-short-num)))))
 
+(defn date-month-day
+  "Short date (e.g. Jan 1st)"
+  [thing]
+  (if thing (-> (moment thing)
+                (.format (l10n/translate :tongue/format-date-month-day)))))
+
 
 (defn date-short
   "Short date (e.g. Jan 01, 2017)"

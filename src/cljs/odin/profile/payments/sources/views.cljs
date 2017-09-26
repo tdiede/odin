@@ -346,14 +346,15 @@
          [tooltip/info "When you enable Autopay, rent payments will automatically be withdrawn from your bank account each month."]
          [tooltip/info "To enable Autopay, you must first add and verify a bank account."])]
 
-      [:span.page-controls-divider "•"]
-      [:div
-       [ant/select
-        {:style {:width 200}}
-        (for [source @card-sources]
-          (let [id (get source :id)]
-            ^{:key id}
-            [ant/select-option {:value id} (:name source)]))]]]]))
+      (when (not (empty? @card-sources))
+       [:span.page-controls-divider "•"]
+       [:div
+        [ant/select
+         {:style {:width 200}}
+         (for [source @card-sources]
+           (let [id (get source :id)]
+             ^{:key id}
+             [ant/select-option {:value id} (:name source)]))]])]]))
 
 
 

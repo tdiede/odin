@@ -20,20 +20,25 @@
                              [:id :first_name :last_name :email :phone
                               [:emergency_contact [:first_name :last_name :phone]]
                               [:property [:id :name :code]]]]]
-               :on-success [:profile.fetch/success k]
+               :on-success [:profile.fetch/success]
                :on-failure [:graphql/failure k]}}))
 
+(def ^:private default-info {:first_name ""
+                             :last_name  ""
+                             :phone      ""})
 
-(reg-event-fx
+(reg-event-db
  :profile.fetch/success
  [(path db/path)]
- (fn [{:keys [db]} [_ k response]]
-   (let [account   (get-in response [:data :account])
-         personal  (select-keys account [:first_name :last_name :phone])
-         emergency (select-keys (:emergency_contact account) [:first_name :last_name :phone])]
-     {:db       (-> (assoc db :account account)
-                    (update-in [:contact :personal] merge {:current personal
-                                                           :new     personal})
-                    (update-in [:contact :emergency] merge {:current emergency
-                                                            :new     emergency}))
-      :dispatch [:loading k false]})))
+ (fn [db [_ response]]
+   (let [account        (get-in response [:data :account])
+         personal-info  (select-keys account [:first_name :last_name :phone :email])
+         emergency-info (select-keys (:emergency_contact account) [:first_name :last_name :phone])
+         personal       (merge default-info personal-info)
+         emergency      (merge default-info emergency-info)]
+     (-> (assoc db :account account)
+         (assoc-in [:contact :personal] {:current personal
+                                         :new     personal})
+         (assoc-in [:contact :emergency] {:current emergency
+                                          :new     emergency})
+         (assoc-in [:loading :profile/account] false)))))

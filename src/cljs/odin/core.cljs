@@ -7,6 +7,7 @@
             [odin.graphql]
             [odin.content :as content]
             [odin.home.views]
+            [odin.global.views :refer [messages]]
             [odin.kami.views]
             [odin.metrics.views]
             [odin.orders.views]
@@ -46,9 +47,7 @@
        {:on-click #(dispatch [:menu/toggle])
         :class    (when @showing "is-active")}
        [:div.burger-wrap
-        [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]
-        ;; [:span] [:span] [:span]
-        ]])))
+        [:div.icon [:i.fa {:class (if @showing "fa-times" "fa-bars")}]]]])))
 
 
 (defn- mobile-nav-backdrop []
@@ -129,7 +128,7 @@
       [error-view]
       [:div.container
        [navbar]
-       ;;[notification/banner-global "This is a global notification that will remain visible as you navigate around the site." :danger]
+       [messages]
        [:section.section.root-section
         [:div.columns
          [:div.column
