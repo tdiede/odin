@@ -21,10 +21,9 @@
   [type status]
   [:div.flexcol.flex-center
    [:p.bold.mb0 (case type
-                  :rent "Rent"
+                  :rent    "Rent"
                   :deposit "Deposit"
                   "")]
-   ;;(tb/log "card icon" (str type) (str status))
    [:span.icon.is-large
     {:class (case status
               :overdue "text-red"
@@ -39,12 +38,7 @@
                      "")}]]])
 
 
-
-;; ========================================
-;; TODO: Eliminate this duplicated logic for computing deposit status.
-;;       I had to create this new function for determing icon color on the card itself.
-
-(defn- determine-deposit-status
+(defn- deposit-status
   [{:keys [amount amount_remaining amount_paid amount_pending due]}]
   (let [is-overdue (t/is-before-now due)]
     (cond
@@ -55,15 +49,7 @@
       :otherwise                         :pending)))
 
 
-(defmulti deposit-status-content
-  (fn [{:keys [amount amount_remaining amount_paid amount_pending due] :as deposit}]
-    (let [is-overdue (t/is-before-now due)]
-      (cond
-        (= amount amount_paid)             :paid
-        (and is-overdue (= amount_paid 0)) :overdue
-        (= amount_paid 0)                  :unpaid
-        (> amount_remaining amount_paid)   :partial
-        :otherwise                         :paid))))
+(defmulti deposit-status-content deposit-status)
 
 
 (defmethod deposit-status-content :default [{:keys [amount]}]
@@ -86,11 +72,10 @@
 
 (defn deposit-status-card []
   (let [loading (subscribe [:member.license/loading?])
-        deposit (subscribe [:member/deposit]) ; TODO: Rename to :member/deposit
+        deposit (subscribe [:member/deposit])
         payment (subscribe [:member.deposit/payment])
         sources (subscribe [:payment.sources/verified-banks])
-        paying  (subscribe [:loading? :member/pay-deposit!])
-        status  (determine-deposit-status @deposit)]
+        paying  (subscribe [:loading? :member/pay-deposit!])]
     (fn []
       [:div.mb2
        [ant/card {:loading @loading}
@@ -101,8 +86,7 @@
          :sources @sources]
         [:div.columns
          [:div.column.is-2
-          ;;(tb/log "LOADING?" @loading)
-          (when (not @loading) [render-card-icon :deposit status])]
+          (when (not @loading) [render-card-icon :deposit (deposit-status @deposit)])]
          [:div.column
           (when (not (nil? @deposit))
             (deposit-status-content @deposit))]]]])))
