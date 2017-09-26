@@ -6,6 +6,7 @@
   // background: $primary-color
 
 .global-notification
+  display:       block
   margin:        0 1rem
   padding:       .5rem 1rem
   font-size:     .85rem
@@ -15,3 +16,10 @@
   &.is-danger
     color:      $white
     background: $text-red
+
+  &.is-warning
+    color: $black
+    background: $warning
+
+  & + .global-notification
+    margin-top: .5rem
