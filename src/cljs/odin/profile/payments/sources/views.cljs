@@ -380,7 +380,7 @@
      [source-settings]
      [:div.columns
       [:div.column.fw200
-       [:h2 "Accounts"]
+       [:h3 "Accounts"]
        [source-list]]
       [:div.column
        [:h3 "Details"]
