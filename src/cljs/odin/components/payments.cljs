@@ -101,7 +101,7 @@
 (defn render-late-payment-date
   [paid_on]
   [:span
-   [ant/tooltip {:title "Paid after due date."}
+   [ant/tooltip {:title "This payment was received late."}
     [:span.text-red (format/date-short paid_on)]]])
 
 (def ^:private payment-table-columns
@@ -117,9 +117,9 @@
     :dataIndex :paid_on
     :className "width-6"
     :render    (fn [paid item _]
-                 (if (= (aget item "for") "rent")
-                   (r/as-element [render-late-payment-date paid])
-                   (format/date-short paid)))}
+                 ;;(if (= (aget item "for") "rent")
+                   (r/as-element [render-late-payment-date paid]))}
+                   ;;(format/date-short paid))}
 
    ;; AMOUNT
    {:title     (l10n/translate :amount)

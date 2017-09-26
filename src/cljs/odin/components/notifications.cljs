@@ -46,14 +46,25 @@
    [banner message :success cancelable]))
 
 
+(defn banner-icon
+  [level]
+  (case level
+    :warning [ant/icon {:type "exclamation-circle-o"}]
+    [:span]))
+
 
 (defn banner-global
   ([message]
-   [:div.global-notification {:class (level->class-name :info)}
-    message])
+   [banner-global message :info])
   ([message level]
    [:div.global-notification {:class (level->class-name level)}
-    message]))
+                             [banner-icon level]
+                             [:span message]])
+  ([message level route]
+   [:a.global-notification {:class (level->class-name level)
+                            :href  (routes/path-for route)}
+                           [banner-icon level]
+                           [:span message]]))
 
 
 ;; =============================================================================

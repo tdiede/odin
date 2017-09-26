@@ -71,7 +71,8 @@
    (let [account-id (get-in db [:config :account :id])]
      {:dispatch-n [[:loading k false]
                    [:modal/hide modal-id]
-                   [:member.license/fetch account-id]]})))
+                   [:member.license/fetch account-id]
+                   [:global.messages/clear :rent_due]]})))
 
 
 ;; =============================================================================

@@ -268,15 +268,15 @@
   [{:db/id                              (d/tempid :db.part/starcity)
     :stripe-customer/account            [:account/email "member@test.com"]
     :stripe-customer/customer-id        "cus_B68wMlijSv2U5p"
-    :stripe-customer/bank-account-token "ba_1AjwecIvRccmW9nO175kwr0e"}
+    :stripe-customer/bank-account-token "ba_1AjwecIvRccmW9nO175kwr0e"}])
    ;; {:db/id                              (d/tempid :db.part/starcity)
    ;;  :stripe-customer/account            [:account/email "member@test.com"]
    ;;  :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"
    ;;  :stripe-customer/bank-account-token "ba_19Z7BcJDow24Tc1aZBrHmWB5"
    ;;  ;; :stripe-customer/bank-account-token "ba_1AV6tfIvRccmW9nOfjsLP6DZ"
    ;;  :stripe-customer/managed            [:property/internal-name "52gilbert"]}
-   ]
-  )
+
+
 
 
 (defn avatar-tx []
@@ -326,8 +326,8 @@
   (cf/ensure-conforms
    conn
    {:seed/membership {:txes [(member-licenses-tx conn)
-                             ;; (rent-payments-tx conn)
+                             ;; (rent-payments-tx conn))
                              (deposit-payments-tx (d/db conn))]}})
   #_(cf/ensure-conforms
-   conn
-   {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
+     conn
+     {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
