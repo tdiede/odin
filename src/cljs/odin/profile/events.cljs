@@ -14,15 +14,14 @@
 (reg-event-fx
  :profile/fetch-account
  [(path db/path)]
- (fn [{:keys [db]} [_ account-id]]
-    {:db      (assoc-in db [:loading :profile/account] true)
-     :graphql {:query      [[:account {:id account-id}
+ (fn [{:keys [db]} [k account-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:query      [[:account {:id account-id}
                              [:id :first_name :last_name :email :phone
                               [:emergency_contact [:first_name :last_name :phone]]
-                              [:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
                               [:property [:id :name :code]]]]]
                :on-success [:profile.fetch/success]
-               :on-failure [:profile.fetch/failure]}}))
+               :on-failure [:graphql/failure k]}}))
 
 (def ^:private default-info {:first_name ""
                              :last_name  ""
@@ -43,11 +42,3 @@
          (assoc-in [:contact :emergency] {:current emergency
                                           :new     emergency})
          (assoc-in [:loading :profile/account] false)))))
-
-
-(reg-event-fx
- :profile.fetch/failure
- [(path db/path)]
- (fn [{:keys [db]} [_ response]]
-   {:db       (assoc-in db [:loading :profile/account] false)
-    :dispatch [:graphql/notify-errors! response]}))

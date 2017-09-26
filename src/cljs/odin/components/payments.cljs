@@ -5,6 +5,7 @@
             [odin.utils.time :as time]
             [odin.components.notifications :as notification]
             [antizer.reagent :as ant]
+            [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [reagent.core :as r]
             [clojure.string :as string]))
@@ -94,7 +95,6 @@
 (defn render-payment-date
   "Date appears red if it was overdue."
   [paid_on due]
-  (tb/log due paid_on)
   [:span (format/date-short paid_on)])
 
 
@@ -107,7 +107,7 @@
 (def ^:private payment-table-columns
   [
    ;; PAYMENT TYPE ICON
-   {:dataIndex :for
+   {:dataIndex :type
     :className "is-narrow width-2"
     :render    (fn [val]
                  (r/as-element [payment-for-icon val]))}
@@ -148,7 +148,7 @@
                  (r/as-element [:span.yes-wrap.restrict-width val]))}
 
    ;; PAYMENT SOURCE
-   {:title ""
+   {:title     ""
     :dataIndex :source
     :className "align-right light"
     :render    (fn [val item _]
@@ -187,12 +187,20 @@
         [:option {:value id} (source-name source)]))]])
 
 
-(defn render-payment-box
+(defn- icon-class [payment-type]
+  (case payment-type
+    :deposit "fa-shield"
+    :rent    "fa-home"
+    :order   "fa-smile-o"
+    ""))
+
+
+(defn payment-box
   [{:keys [type amount due] :as payment} description]
   [:div.box
    [:div.columns
     [:div.column.is-narrow
-     [:span.icon.is-large [:i.fa.fa-home]]]
+     [:span.icon.is-large [:i {:class (str "fa " (icon-class type))}]]]
     [:div.column
      [:h3 (l10n/translate (:type payment))]
      (when (some? description)
@@ -202,17 +210,17 @@
     [:div.column.align-right
      [:h3 (format/currency amount)]
      (if (#{:rent :deposit} type)
-       [:p (str "Due on " (format/date-short due))])]]])
+       [:p (str "Due by " (format/date-short due))])]]])
 
 
 (defn- make-payment-modal-footer
-  [payment-id visible {:keys [on-confirm on-cancel loading sources]
-                       :or   {on-confirm #(reset! visible false)
-                              loading false}}]
+  [payment-id {:keys [on-confirm on-cancel loading sources]
+               :or   {on-confirm #(dispatch [:modal/hide payment-id])
+                      loading    false}}]
   (let [selected-source (r/atom (-> sources first :id))]
-    (fn [payment-id visible {:keys [on-confirm on-cancel loading sources]
-                            :or   {on-confirm #(reset! visible false)
-                                   loading false}}]
+    (fn [payment-id {:keys [on-confirm on-cancel loading sources]
+                    :or   {on-confirm #(dispatch [:modal/hide payment-id])
+                           loading    false}}]
       [:div
        (when (some? sources)
          [ant/select
@@ -238,17 +246,18 @@
 
 
 (defn make-payment-modal
-  [{:keys [type amount due] :as payment} visible & {:keys [on-cancel desc]
-                                                    :or   {on-cancel #(reset! visible false)}
-                                                    :as   opts}]
-  [ant/modal {:title     "Make a payment"
-              :width     "640px"
-              :visible   @visible
-              :on-cancel on-cancel
-              :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
-                           (r/as-element
-                            [make-payment-modal-footer (:id payment) visible opts]))}
-   [render-payment-box payment desc]])
+  [{:keys [id type amount due] :as payment} & {:keys [on-cancel desc]
+                                               :or   {on-cancel #(dispatch [:modal/hide id])}
+                                               :as   opts}]
+  (let [visible (subscribe [:modal/visible? id])]
+    [ant/modal {:title     "Make a payment"
+                :width     "640px"
+                :visible   @visible
+                :on-cancel on-cancel
+                :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
+                             (r/as-element
+                              [make-payment-modal-footer (:id payment) opts]))}
+    [payment-box payment desc]]))
 
 
 (defn rent-overdue-notification

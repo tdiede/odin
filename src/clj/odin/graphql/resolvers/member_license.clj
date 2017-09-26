@@ -1,6 +1,7 @@
 (ns odin.graphql.resolvers.member-license
   (:require [blueprints.models.member-license :as member-license]))
 
+
 ;; =============================================================================
 ;; Fields
 ;; =============================================================================
@@ -16,3 +17,14 @@
   "Whether or not autopay is active for this license."
   [_ _ license]
   (keyword (name (member-license/autopay-on? license))))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(def resolvers
+  {;;fields
+   :member-license/status     status
+   :member-license/autopay-on autopay-on})

@@ -6,18 +6,6 @@
             [toolbelt.core :as tb]))
 
 
-(defn is-form-valid?
-  [errors _]
-  (nil? errors))
-
-
-(defn submit-card-if-valid
-  [errors fields]
-  (if (nil? errors)
-    (tb/log "Form is valid! I will submit it." (js->clj fields))
-    (tb/log "There are errors. Not submitting.")))
-
-
 (def ^:private form-style
   {:label-col   {:span 7}
    :wrapper-col {:span 10}})
@@ -35,26 +23,26 @@
 
 
 (defn credit-card []
-  (r/create-class
-   {:component-did-mount
-    (fn [this]
-      (let [st         (js/Stripe (.-key js/stripe))
-            elements   (.elements st)
-            card       (.create elements "card" #js {:style (clj->js card-style)})
-            errors     (.querySelector (r/dom-node this) "#card-errors")
-            submit-btn (.querySelector (r/dom-node this) "#submit-btn")]
-        (.mount card "#card-element")
-        (.addEventListener card "change" (partial handle-card-errors errors))
-        (->> (fn [_]
-               (let [p (.createToken st card)]
-                 (.then p (fn [result]
-                            (if-let [error (.-error result)]
-                              (aset errors "textContent" (.-message error))
-                              (dispatch [:payment.sources.add.card/save-stripe-token! (.. result -token -id)]))))))
-             (.addEventListener submit-btn "click"))))
-    :reagent-render
-    (fn []
-      (let [is-submitting (subscribe [:loading? :payment.sources.add/card])]
+  (let [is-submitting (subscribe [:loading? :payment.sources.add.card/save-stripe-token!])]
+    (r/create-class
+     {:component-did-mount
+      (fn [this]
+        (let [st         (js/Stripe (.-key js/stripe))
+              elements   (.elements st)
+              card       (.create elements "card" #js {:style (clj->js card-style)})
+              errors     (.querySelector (r/dom-node this) "#card-errors")
+              submit-btn (.querySelector (r/dom-node this) "#submit-btn")]
+          (.mount card "#card-element")
+          (.addEventListener card "change" (partial handle-card-errors errors))
+          (->> (fn [_]
+                 (let [p (.createToken st card)]
+                   (.then p (fn [result]
+                              (if-let [error (.-error result)]
+                                (aset errors "textContent" (.-message error))
+                                (dispatch [:payment.sources.add.card/save-stripe-token! (.. result -token -id)]))))))
+               (.addEventListener submit-btn "click"))))
+      :reagent-render
+      (fn []
         [:div
          [:div {:style {:background-color "#f7f8f9"
                         :padding          24
@@ -70,7 +58,7 @@
            {:type    :primary
             :id      "submit-btn"
             :loading @is-submitting}
-           "Add Credit Card"]]]))}))
+           "Add Credit Card"]]])})))
 
 
 (defn bitcoin-account []

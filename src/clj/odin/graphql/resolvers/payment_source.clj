@@ -13,6 +13,7 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.config :as config]
+            [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.payment :as payment-resolvers]
             [odin.graphql.resolvers.utils :refer [context?]]
             [ribbon.charge :as rch]
@@ -36,14 +37,14 @@
 
 
 (defn- error-message [t]
-  (or (:message (ex-data t)) (str "Exception: " (.getMessage t))))
+  (or (:message (ex-data t)) (.getMessage t)))
 
 (s/fdef error-message
         :args (s/cat :throwable p/throwable?)
         :ret string?)
 
 
-(defn autopay-source
+(defn- autopay-source
   "Fetch the autopay source for the requesting user, if there is one."
   [{:keys [stripe requester conn]}]
   (when-let [customer (customer/autopay (d/db conn) requester)]
@@ -126,7 +127,7 @@
   [_ _ source]
   (case (:object source)
     "bank_account" :bank
-    "card" :card
+    "card"         :card
     (resolve/resolve-as :unknown {:message (format "Unrecognized source type '%s'" (:object source))})))
 
 
@@ -336,10 +337,15 @@
     (go
       (try
         (let [customer (<!? (fetch-or-create-customer! ctx))
+              cus      (<!? (rcu/fetch stripe (customer/id customer)))
               source   (<!? (rcu/add-source! stripe (customer/id customer) token))]
+          ;; NOTE: Not sure that this is even necessary any longer.
           (when (= (:object source) "bank_account")
             @(d/transact-async conn [[:db/add (:db/id customer)
                                       :stripe-customer/bank-account-token (:id source)]]))
+          (when (and (= (:object source) "card")
+                     (not= (rcu/default-source-type cus) "card"))
+            (<!? (rcu/update! stripe (:id cus) :default-source (:id source))))
           (resolve/deliver! result source))
         (catch Throwable t
           (resolve/deliver! result nil {:message  (error-message t)
@@ -580,6 +586,35 @@
           (resolve/deliver! result nil {:message  (error-message t)
                                         :err-data (ex-data t)}))))
     result))
+
+
+;; =============================================================================
+;; Resolvers
+;; =============================================================================
+
+
+(defmethod authorization/authorized? :payment.sources/list [_ account params]
+  (or (account/admin? account) (= (:db/id account) (:account params))))
+
+
+(def resolvers
+  {;; fields
+   :payment.source/autopay?        autopay?
+   :payment.source/type            type
+   :payment.source/name            name
+   :payment.source/payments        payments
+   :payment.source/default?        default?
+   :payment.source/expiration      expiration
+   ;; queries
+   :payment.sources/list           sources
+   ;; mutations
+   :payment.sources/delete!        delete!
+   :payment.sources/add-source!    add-source!
+   :payment.sources/verify-bank!   verify-bank!
+   :payment.sources/set-autopay!   set-autopay!
+   :payment.sources/unset-autopay! unset-autopay!
+   :payment.sources/set-default!   set-default!})
+
 
 
 ;;; Attach a charge id to all invoices

@@ -12,6 +12,7 @@
                                                         :decimal "."})
 
         ;;:tongue/format-date-short "MMM D, YYYY"
+        :tongue/format-date-month-day  "MMMM Do"
         :tongue/format-date-short      "MMM DD, YYYY"
         :tongue/format-date-short-num  "MM/DD/YY"
         :tongue/format-date-time       "MMMM DD, YYYY @ h:mm a"
@@ -51,8 +52,9 @@
         :unit  "Unit"
         :units "Units"
 
-        :rent "Rent"
-        :term "Term"
+        :rent    "Rent"
+        :term    "Term"
+        :deposit "Security Deposit"
 
         :note {:one   "Note"
                :other "Notes"}

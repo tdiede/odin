@@ -1,14 +1,8 @@
 (ns odin.profile.payments.sources.events
   (:require [odin.profile.payments.sources.db :as db]
-            [odin.profile.payments.sources.autopay :as autopay]
             [odin.routes :as routes]
-            [re-frame.core :refer [reg-event-db
-                                   subscribe
-                                   reg-event-fx
-                                   dispatch
-                                   path debug]]
+            [re-frame.core :refer [path reg-event-db reg-event-fx]]
             [toolbelt.core :as tb]))
-
 
 ;; =============================================================================
 ;; Routing/Nav
@@ -54,15 +48,15 @@
 
 (reg-event-fx
  :payment.sources/fetch
- (fn [{:keys [db]} [_ change-route?]]
+ (fn [{:keys [db]} [k change-route?]]
    (let [account-id (get-in db [:config :account :id])]
-     {:dispatch [:loading :payment.sources/fetch true]
+     {:dispatch [:loading k true]
       :graphql  {:query
                  [[:payment_sources {:account account-id}
                    [:id :last4 :customer :type :name :status :default :autopay :expires
                     [:payments [:id :method :type :autopay :amount :status :pstart :pend :paid_on :description]]]]]
-                 :on-success [:payment.sources.fetch/success change-route?]
-                 :on-failure [:payment.sources.fetch/failure]}})))
+                 :on-success [:payment.sources.fetch/success k change-route?]
+                 :on-failure [:graphql/failure k]}})))
 
 
 (defn- active-source-should-change? [db sources]
@@ -72,71 +66,16 @@
 (reg-event-fx
  :payment.sources.fetch/success
  [(path db/path)]
- (fn [{:keys [db]} [_ change-route? response]]
+ (fn [{:keys [db]} [_ k change-route? response]]
    (let [sources (get-in response [:data :payment_sources])
          route   (when (and change-route? (active-source-should-change? db sources))
                    (routes/path-for :profile.payment/sources
                                     :query-params {:source-id (:id (first sources))}))]
      (tb/assoc-when
       {:db       (assoc db :sources sources)
-       :dispatch [:loading :payment.sources/fetch false]}
+       :dispatch [:loading k false]}
       :route route))))
 
-
-
-(reg-event-fx
- :payment.sources.fetch/failure
- [(path db/path)]
- (fn [_ [_ response]]
-   {:dispatch-n [[:graphql/notify-errors! response]
-                 [:loading :payment.sources/fetch false]]}))
-
-
-(reg-event-fx
- :payment.sources.autopay/parse
- [(path db/path)]
- (fn [{:keys [db]} [_ sources]]
-   (if-let [auto-source (autopay/get-autopay-source sources)]
-     {:db (-> (assoc-in db [:autopay :source] (:id auto-source))
-              (assoc-in [:autopay :on] true))}
-     {:db (-> (assoc-in db [:autopay :source] nil)
-              (assoc-in [:autopay :on] false))})))
-;;:dispatch [:graphql/notify-errors! response]}))
-
-
-
-
-;;(reg-event-fx
-;; :payment.source.autopay/fetch
-;; [(path db/path)]
-;; (fn [{:keys [db]} _]
-;;   {:graphql {:query [[:autopay_source [:id]]]
-;;              :on-success [:payment.source.autopay.fetch/success]
-;;              :on-failure [:payment.source.autopay.fetch/failure]}}))
-;;
-;;(reg-event-fx
-;; :payment.source.autopay.fetch/success
-;; [(path db/path)]
-;; (fn [{:keys [db]} [_ response]]
-;;   ;;(let [source (get-in response [:data :payment_sources])]
-;;     ;;(tb/log response)
-;;     {:db (assoc db :autopay-source nil)}))
-;;
-;;(reg-event-fx
-;; :payment.source.autopay.fetch/failure
-;; [(path db/path)]
-;; (fn [{:keys [db]} [_ response]]
-;;   {:dispatch [:graphql/notify-errors! response]}))
-
-;; (defn if-bank-enable-autopay
-;;   [source]
-;;   (if (= :bank (:type source))
-;;     (update source :autopay true)
-;;     source))
-
-;; (defn set-autopay-on-banks
-;;   [sources]
-;;   (into {} (for [[k v] sources] [k (if-bank-enable-autopay v)])))
 
 ;; =============================================================================
 ;; Add Source
@@ -214,17 +153,18 @@
 ;; =============================================================================
 ;; Verify
 
+
 (reg-event-db
  :payment.sources.bank.verify/edit-amount
  [(path db/add-path)]
  (fn [db [_ k v]]
    (assoc-in db [:microdeposits k] v)))
 
+
 (reg-event-fx
  :payment.sources.bank/verify!
  [(path db/path)]
  (fn [_ [k source-id amount-1 amount-2]]
-   (tb/log source-id amount-1 amount-2)
    {:dispatch [:loading k true]
     :graphql  {:mutation
                [[:verify_bank_source {:deposits [amount-1 amount-2]
@@ -253,64 +193,97 @@
 
 (reg-event-fx
  :payment.sources.add.card/save-stripe-token!
- (fn [{:keys [db]} [_ token]]
-   {:dispatch-n [[:loading :payment.sources.add/card true]]
-    :graphql
-    {:mutation   [[:add_payment_source {:token token} [:id]]]
-     :on-success [::create-card-source-success]
-     :on-failure [::create-card-source-fail]}}))
+ (fn [_ [k token]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:add_payment_source {:token token} [:id]]]
+               :on-success [::create-card-source-success k]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::create-card-source-success
- (fn [{:keys [db]} [_ response]]
-   {:dispatch-n [[:loading :payment.sources.add/card false]
-                 [:modal/hide :payment.source/add]
-                 [:payment.sources/fetch]]
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:loading k false]
+                 [:modal/hide :payment.source/add]]
     :route      (routes/path-for :profile.payment/sources
                                  :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
 
+
+;; =============================================================================
+;; Autopay
+;; =============================================================================
+
+
 (reg-event-fx
- ::create-card-source-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :payment.sources.add/card false]
-                 [:graphql/notify-errors! response]]}))
+ :payment.sources.autopay/confirm-modal
+ [(path db/path)]
+ (fn [_ [_ is-enabled]]
+   (if is-enabled
+     {:dispatch [:modal/show :payment.source/autopay-disable]}
+     {:dispatch [:modal/show :payment.source/autopay-enable]})))
+
+
+(reg-event-fx
+ :payment.sources.autopay/enable!
+ [(path db/path)]
+ (fn [{:keys [db]} [k source-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:set_autopay_source {:id source-id} [:id]]]
+               :on-success [::autopay-enable-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::autopay-enable-success
+ [(path db/path)]
+ (fn [_ [_ k _]]
+   {:dispatch-n [[:loading k false]
+                 [:payment.sources/fetch]
+                 [:modal/hide :payment.source/autopay-enable]
+                 [:notify/success "Great! Autopay is now enabled."]]}))
+
+
+(reg-event-fx
+ :payment.sources.autopay/disable!
+ [(path db/path)]
+ (fn [_ [k source-id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:unset_autopay_source {:id source-id} [:id]]]
+               :on-success [::autopay-disable-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::autopay-disable-success
+ [(path db/path)]
+ (fn [_ [_ k _]]
+   {:dispatch-n [[:loading k false]
+                 [:payment.sources/fetch]
+                 [:modal/hide :payment.source/autopay-disable]]}))
+
 
 
 ;; =============================================================================
 ;; Set the Default Source
 ;; =============================================================================
 
+
 (reg-event-fx
  :payment.source/set-default!
- (fn [{:keys [db]} [_ id]]
-   (tb/log id)
-   {:dispatch-n [[:loading :payment.sources/deleting true]]
-    :graphql
-    {:mutation   [[:set_default_source {:id id} [:id]]]
-     :on-success [::set-default-source-success]
-     :on-failure [::set-default-source-fail]}}))
+ (fn [{:keys [db]} [k id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:set_default_source {:id id} [:id]]]
+               :on-success [::set-default-source-success k]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::set-default-source-success
- (fn [{:keys [db]} [_ response]]
-   (let [account-id (get-in db [:config :account :id])
-         sources    (subscribe [:payment/sources])]
-     ;;(tb/log response sources)
-     {:dispatch-n [[:loading :payment.sources/deleting false]
-                   [:notify/success "Account was set as default payment source."]
-                   [:payment.sources/fetch]]
-      :route      (routes/path-for :profile.payment/sources
-                                   :query-params {})})))
-
-(reg-event-fx
- ::set-default-source-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :payment.sources/deleting false]
-                 [:graphql/notify-errors! response]]}))
+ [(path db/path)]
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:loading k false]
+                 [:notify/success "Payment method was set as default for service payments."]
+                 [:payment.sources/fetch]]}))
 
 
 ;; =============================================================================
@@ -320,35 +293,23 @@
 
 (reg-event-fx
  :payment.source/delete!
- (fn [{:keys [db]} [_ id]]
-   (tb/log id)
-   {:dispatch-n [[:loading :payment.sources/deleting true]]
-    :graphql
-    {:mutation   [[:delete_payment_source {:id id} [:id]]]
-     :on-success [::delete-source-success]
-     :on-failure [::delete-source-fail]}}))
+ (fn [{:keys [db]} [k id]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:delete_payment_source {:id id} [:id]]]
+               :on-success [::delete-source-success k id]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::delete-source-success
- (fn [{:keys [db]} [_ response]]
-   (let [account-id (get-in db [:config :account :id])
-         sources    (subscribe [:payment/sources])]
-     ;;(tb/log response sources)
-     {:dispatch-n [[:loading :payment.sources/deleting false]
+ [(path db/path)]
+ (fn [{:keys [db]} [_ k source-id response]]
+   (let [new-source (first (filter #(not= source-id (:id %)) (:sources db)))]
+     {:dispatch-n [[:loading k false]
                    [:modal/hide :payment.source/remove]
-                   [:notify/success "Account deleted successfully."]
-                   [:payment.sources/fetch]]
-      :route      (routes/path-for :profile.payment/sources
-                                   :query-params { :source-id (:id (first @sources))})})))
-
-
-(reg-event-fx
- ::delete-source-fail
- (fn [{:keys [db]} [_ response]]
-   (tb/error response)
-   {:dispatch-n [[:loading :payment.sources/deleting false]
-                 [:graphql/notify-errors! response]]}))
+                   [:notify/success "Payment method deleted successfully."]]
+      :route       (routes/path-for :profile.payment/sources
+                                    :query-params {:source-id (:id new-source)})})))
 
 
 ;; =============================================================================

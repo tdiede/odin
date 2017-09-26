@@ -1,9 +1,10 @@
 (ns odin.graphql.resolvers.service
-  (:require [blueprints.models.service :as service]
+  (:require [blueprints.models.account :as account]
+            [blueprints.models.service :as service]
+            [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
-            [taoensso.timbre :as timbre]
-            [com.walmartlabs.lacinia.resolve :as resolve]))
-
+            [odin.graphql.authorization :as authorization]
+            [taoensso.timbre :as timbre]))
 
 ;; =============================================================================
 ;; Fields
@@ -33,13 +34,17 @@
     (query-services (d/db conn) params)
     (catch Throwable t
       (timbre/error t "error querying services")
-      (resolve/resolve-as nil {:message  (str "Exception:" (.getMessage t))
+      (resolve/resolve-as nil {:message  (.getMessage t)
                                :err-data (ex-data t)}))))
 
 
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
+
+
+(defmethod authorization/authorized? :service/query [_ account _]
+  (account/admin? account))
 
 
 (def resolvers

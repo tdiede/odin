@@ -53,6 +53,11 @@
                 {:page   page
                  :path   (page->path page)
                  :params params})]
-     ;;(tb/log route)
      {:db         (assoc db :route route)
       :dispatch-n (routes/dispatches route)})))
+
+
+(reg-event-db
+ :account/update
+ (fn [db [_ account-data]]
+   (update-in db [:config :account] merge account-data)))

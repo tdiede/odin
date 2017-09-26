@@ -39,7 +39,7 @@
 (defstate schema
   :start (-> (read-resource "graphql/schema.edn")
              (merge custom-scalars)
-             (util/attach-resolvers resolvers/resolvers)
+             (util/attach-resolvers (resolvers/resolvers))
              schema/compile))
 
 

@@ -1,16 +1,17 @@
 (ns odin.graphql.resolvers.account
-  (:require [bouncer.core :as b]
-            [bouncer.validators :as v]
-            [blueprints.models.account :as account]
+  (:require [blueprints.models.account :as account]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.security-deposit :as deposit]
+            [bouncer.core :as b]
+            [bouncer.validators :as v]
+            [clojure.string :as string]
+            [com.walmartlabs.lacinia.resolve :as resolve]
             [customs.auth :as auth]
             [datomic.api :as d]
+            [odin.graphql.authorization :as authorization]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [toolbelt.validation :as tv]
-            [clojure.string :as string]
-            [com.walmartlabs.lacinia.resolve :as resolve]))
+            [toolbelt.validation :as tv]))
 
 ;; =============================================================================
 ;; Fields
@@ -161,6 +162,18 @@
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
+
+
+(defmethod authorization/authorized? :account/update! [_ account params]
+  (or (account/admin? account) (= (:id params) (:db/id account))))
+
+
+(defmethod authorization/authorized? :account/list [_ account _]
+  (account/admin? account))
+
+
+(defmethod authorization/authorized? :account/entry [_ account params]
+  (or (account/admin? account) (= (:id params) (:db/id account))))
 
 
 (def resolvers

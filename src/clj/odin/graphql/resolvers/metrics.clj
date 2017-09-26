@@ -1,7 +1,8 @@
 (ns odin.graphql.resolvers.metrics
-  (:require [datomic.api :as d]
+  (:require [blueprints.models.account :as account]
+            [datomic.api :as d]
+            [odin.graphql.authorization :as authorization]
             [toolbelt.core :as tb]))
-
 
 (defn- query-referrals [db]
   (d/q '[:find ?s (count ?s)
@@ -26,6 +27,10 @@
                  :percentage (if (zero? total)
                                0
                                (float (* 100 (/ count total))))})))))
+
+
+(defmethod authorization/authorized? :metrics/referrals [_ account _]
+  (account/admin? account))
 
 
 (def resolvers

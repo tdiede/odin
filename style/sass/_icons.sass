@@ -1,5 +1,3 @@
-
-
 // Fine-tuning the display of icons
 // and providing reusable additional styles.
 
@@ -74,7 +72,7 @@ td
     line-height: 11px
 
 // Provide space between icon + adjacent text (for use in buttons, etc.)
-.icon + .with-icon, .with-icon + .icon
+.icon + .with-icon, .with-icon + .icon, .anticon + span
   margin-left: $icon-side-spacing
 
 
@@ -84,8 +82,9 @@ td
   .fa
     vertical-align: middle
 
-span+.anticon, .anticon+span
-  margin-left: $icon-side-spacing
+/* NOTE: Commented out because of incorrect behavior with ant dialogs
+/* span+.anticon, .anticon+span
+/*   margin-left: $icon-side-spacing
 
 
 .icon-default-source

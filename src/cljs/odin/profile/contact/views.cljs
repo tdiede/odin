@@ -166,7 +166,7 @@
     "Update your info in our system, including an emergency contact.")
 
    [:div.columns
-    [:div.column.is-8
+    [:div.column.is-two-thirds-desktop
 
      [ant/card {:title "Personal Info"}
       (r/as-element (ant/create-form (contact-info-ui)))]
