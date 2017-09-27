@@ -67,12 +67,12 @@
 
 (reg-event-fx
  ::make-payment-success
- (fn [{db :db} [_ k modal-id response]]
+ (fn [{db :db} [_ k modal-id _]]
    (let [account-id (get-in db [:config :account :id])]
      {:dispatch-n [[:loading k false]
                    [:modal/hide modal-id]
                    [:member.license/fetch account-id]
-                   [:global.messages/clear :rent_due]]})))
+                   [:global.messages/clear :rent-due]]})))
 
 
 ;; =============================================================================
@@ -85,5 +85,15 @@
  (fn [_ [k deposit-id source-id]]
    {:dispatch [:loading k true]
     :graphql  {:mutation   [[:pay_remainder_deposit {:source source-id} [:id]]]
-               :on-success [::make-payment-success k deposit-id]
+               :on-success [::pay-deposit-success k deposit-id]
                :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::pay-deposit-success
+ (fn [{db :db} [_ k modal-id _]]
+   (let [account-id (get-in db [:config :account :id])]
+     {:dispatch-n [[:loading k false]
+                   [:modal/hide modal-id]
+                   [:member.license/fetch account-id]
+                   [:global.messages/clear :deposit-overdue]]})))

@@ -27,14 +27,18 @@
 ;; =============================================================================
 
 
+(defn- card-title [type]
+  [:h4.bold
+   (case type
+     :rent    "Rent"
+     :deposit "Security Deposit"
+     "")])
+
+
 (defn- render-card-icon
   "Renders a large icon with title above it, colored according to payment status."
   [type status]
   [:div.flexcol.flex-center
-   [:p.bold.mb0 (case type
-                  :rent    "Rent"
-                  :deposit "Deposit"
-                  "")]
    [:span.icon.is-large
     {:class (case status
               :overdue "text-red"
@@ -53,37 +57,60 @@
   [{:keys [amount amount_remaining amount_paid amount_pending due] :as deposit}]
   (let [is-overdue (t/is-before-now due)]
     (cond
-      (> amount_pending 0)               :pending
-      (= amount amount_paid)             :paid
-      (and is-overdue (= amount_paid 0)) :overdue
-      (= amount_paid 0)                  :unpaid
-      (> amount_remaining amount_paid)   :partial
-      :otherwise                         :pending)))
+      (> amount_pending 0)                    :pending
+      (= amount amount_paid)                  :paid
+      (and is-overdue (> amount_remaining 0)) :overdue
+      (= amount_paid 0)                       :unpaid
+      (> amount_remaining amount_paid)        :partial
+      :otherwise                              :pending)))
 
 
 (defmulti deposit-status-content (fn [deposit sources] (deposit-status deposit)))
 
 
 (defmethod deposit-status-content :default [{:keys [amount]} sources]
+  [:p.fs2 "Your security deposit is has been paid in entirety."])
+
+
+(defmethod deposit-status-content :overdue [{:keys [id amount due amount_remaining]} sources]
   [:div
-   [:h4 "Your security deposit is paid. Nothing to do here!"]])
+   [:p.fs2 "Your security deposit is overdue."]
+   [ant/tooltip
+    {:title (when (empty? sources)
+              (r/as-element [link-bank-tooltip-title]))}
+    [ant/button
+     {:type     :danger
+      :on-click #(dispatch [:modal/show id])
+      :disabled (empty? sources)}
+     (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]]])
 
 
 (defmethod deposit-status-content :partial [{:keys [id amount_remaining]} sources]
   [:div
-   [:h4 "Security deposit partially paid."]
+   [:p.fs2 "Your security deposit is partially paid."]
    [ant/tooltip
     {:title (when (empty? sources)
               (r/as-element [link-bank-tooltip-title]))}
     [ant/button
      {:on-click #(dispatch [:modal/show id])
       :disabled (empty? sources)}
-     (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]]])
+     (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]])
+
+
+(defmethod deposit-status-content :unpaid [{:keys [id amount_remaining]} sources]
+  [:div
+   [:p.fs2 "Your security deposit is unpaid."]
+   [ant/tooltip
+    {:title (when (empty? sources)
+              (r/as-element [link-bank-tooltip-title]))}
+    [ant/button
+     {:on-click #(dispatch [:modal/show id])
+      :disabled (empty? sources)}
+     (format/format "Pay Now (%s)" (format/currency amount_remaining))]]])
 
 
 (defmethod deposit-status-content :pending [{:keys [amount_pending]} _]
-  [:div
-   [:h4 (str "Your recent payment is currently pending, and should be completed shortly.")]])
+  [:p.fs2 "Your recent payment is currently pending, and should be completed shortly."])
 
 
 (defn deposit-status-card []
@@ -104,6 +131,7 @@
          [:div.column.is-2
           (when (not @loading) [render-card-icon :deposit (deposit-status @deposit)])]
          [:div.column
+          (card-title :deposit)
           (when (not (nil? @deposit))
             (deposit-status-content @deposit @sources))]]]])))
 
@@ -111,6 +139,9 @@
 ;; =============================================================================
 ;; Rent
 ;; =============================================================================
+
+(defn- rent-overdue? [payment]
+  (t/is-before-now (:due payment)))
 
 
 (defn- rent-paid-card []
@@ -120,8 +151,15 @@
       [:div.column.is-2
        [render-card-icon :rent :paid]]
       [:div.column
-       [:h4 "Rent is paid."]
-       [:p (format/format "Congratulations! You're paid for the month of %s." this-month)]]]]))
+       (card-title :rent)
+       [:p.fs2 (format/format "Your rent is paid for the month of %s. Thanks!" this-month)]]]]))
+
+
+(defn- rent-payment-text [{due :due :as payment}]
+  (if (rent-overdue? payment)
+    (format/format "Your rent payment was due on %s. Please pay it now to retain your membership."
+                   (format/date-month-day due))
+    (str "Your next rent payment is due by " (format/date-month-day due) ".")))
 
 
 (defn rent-due-card
@@ -133,7 +171,7 @@
       [ant/card
        [:div.columns
         [:div.column.is-2
-         [render-card-icon :rent :unpaid]]
+         [render-card-icon :rent (if (rent-overdue? payment) :overdue :unpaid)]]
         [:div.column
          (when (some? @sources)
            [payments-ui/make-payment-modal payment
@@ -141,12 +179,13 @@
                           (dispatch [:member/pay-rent-payment! payment-id source-id]))
             :loading @paying
             :sources @sources])
-         [:p (str "Your next rent payment is due by " (format/date-month-day due) ".")]
+         (card-title :rent)
+         [:p.fs2 (rent-payment-text payment)]
          [ant/tooltip
           {:title (when (empty? @sources)
                     (r/as-element [link-bank-tooltip-title]))}
           [ant/button
-           {:type     "primary"
+           {:type     (if (rent-overdue? payment) :danger :primary)
             :on-click #(dispatch [:modal/show id])
             :disabled (empty? @sources)}
            (format/format "Pay Now (%s)" (format/currency amount))]]]]])))

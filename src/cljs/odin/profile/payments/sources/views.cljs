@@ -37,7 +37,7 @@
 
 
 (defn source-list-item
-  [{:keys [id type name last4 default] :as source}]
+  [{:keys [id type name last4 default autopay] :as source}]
   (let [current (subscribe [:payment.sources/current])]
     [:a.source-list-item
      {:class (when (= id (:id @current)) "is-active")
@@ -55,6 +55,7 @@
           [:span.fs3 {:style {:margin-left 4}} "Unverified"]]
          [:span
           (payments-ui/payment-source-icon (or type :bank))
+          (when autopay [ant/icon {:type :sync}])
           (when default [ant/icon {:type :check-circle}])])]]]))
 
 

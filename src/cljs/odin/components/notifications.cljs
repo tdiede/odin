@@ -50,6 +50,7 @@
   [level]
   (case level
     :warning [ant/icon {:type "exclamation-circle-o"}]
+    :danger [ant/icon {:type "exclamation-circle-o"}]
     [:span]))
 
 
