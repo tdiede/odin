@@ -19,7 +19,9 @@
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
-            [toolbelt.predicates :as p]))
+            [toolbelt.predicates :as p]
+            [clj-time.coerce :as c]
+            [clj-time.core :as t]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -59,6 +61,19 @@
       v)))
 
 
+(defn overdue? [payment]
+  (when-let [due-date (payment/due payment)]
+    (t/after? (t/now) (c/to-date-time due-date))))
+
+
+(defn- rent-late-fee [payment]
+  (if-let [license (:member-license/_rent-payments payment)]
+    (if (and (overdue? payment) (member-license/grace-period-over? license))
+      (* (payment/amount payment) 0.1)
+      0)
+    0))
+
+
 ;; =============================================================================
 ;; Fields
 ;; =============================================================================
@@ -76,13 +91,15 @@
   (or (payment/charge-id payment) (payment/invoice-id)))
 
 
-(defn payment-for
-  "What is this payment for?"
+(defn late-fee
+  "Any late fees associated with this payment."
   [{conn :conn} _ payment]
-  (payment/payment-for (d/entity (d/db conn) (td/id payment))))
+  (let [payment (d/entity (d/db conn) (:db/id payment))]
+    (when (= :payment.for/rent (payment/payment-for2 (d/db conn) payment))
+      (rent-late-fee payment))))
 
 
-(defn payment-for2
+(defn payment-for
   "What is this payment for?"
   [{conn :conn} _ payment]
   (when-some [x (payment/payment-for2 (d/db conn) payment)]
@@ -304,6 +321,7 @@
   [{:keys [stripe conn]} account payment customer source-id]
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
+        amount   (+ (payment/amount payment) (rent-late-fee payment))
         desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
     (rch/create! stripe (cents (payment/amount payment)) source-id
                  :email (account/email account)
@@ -400,12 +418,12 @@
 (def resolvers
   {;; fields
    :payment/external-id  external-id
+   :payment/late-fee     late-fee
    :payment/method       method
    :payment/status       status
    :payment/source       source
    :payment/autopay?     autopay?
-   :payment/for          payment-for
-   :payment/type         payment-for2
+   :payment/type         payment-for
    :payment/description  description
    :payment/property     property
    :payment/order        order

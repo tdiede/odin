@@ -196,7 +196,7 @@
   [:div.box
    [:div.columns
     [:div.column.is-narrow
-     [:span.icon.is-large [:i {:class (str "fa " (icon-class type))}]]]
+     [:span.icon.is-large [:i {:class (str "fa fa-3x " (icon-class type))}]]]
     [:div.column
      [:h3 (l10n/translate (:type payment))]
      (when (some? description)

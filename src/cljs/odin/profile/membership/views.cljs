@@ -47,10 +47,10 @@
               :pending "text-blue"
               :paid    "text-green"
               "")}
-    [:i.fa {:class (case type
-                     :rent    "fa-home"
-                     :deposit "fa-shield"
-                     "")}]]])
+    [:i.fa.fa-3x {:class (case type
+                           :rent    "fa-home"
+                           :deposit "fa-shield"
+                           "")}]]])
 
 
 (defn- deposit-status
@@ -167,7 +167,7 @@
   [{:keys [id amount due pstart pend] :as payment}]
   (let [sources (subscribe [:payment.sources/verified-banks])
         paying  (subscribe [:loading? :member/pay-rent-payment!])]
-    (fn [{:keys [id amount due pstart pend] :as payment}]
+    (fn [{:keys [id amount due pstart pend late_fee] :as payment}]
       [ant/card
        [:div.columns
         [:div.column.is-2
@@ -182,13 +182,16 @@
          (card-title :rent)
          [:p.fs2 (rent-payment-text payment)]
          [ant/tooltip
-          {:title (when (empty? @sources)
-                    (r/as-element [link-bank-tooltip-title]))}
+          {:title (cond
+                    (empty? @sources) (r/as-element [link-bank-tooltip-title])
+                    (> late_fee 0)    (format/format "A late fee of %s has been added."
+                                                     (format/currency late_fee))
+                    :otherwise        nil)}
           [ant/button
            {:type     (if (rent-overdue? payment) :danger :primary)
             :on-click #(dispatch [:modal/show id])
             :disabled (empty? @sources)}
-           (format/format "Pay Now (%s)" (format/currency amount))]]]]])))
+           (format/format "Pay Now (%s)" (format/currency (+ amount late_fee)))]]]]])))
 
 
 (defn- rent-due-cards

@@ -47,7 +47,6 @@
  :accounts.list/success
  [(path db/path)]
  (fn [db [_ response]]
-   ;;(tb/log response)
    (let [accounts (get-in response [:data :accounts])]
      (-> db
          (create-accounts-list accounts)

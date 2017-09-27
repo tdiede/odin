@@ -268,7 +268,8 @@
   [{:db/id                              (d/tempid :db.part/starcity)
     :stripe-customer/account            [:account/email "member@test.com"]
     :stripe-customer/customer-id        "cus_B68wMlijSv2U5p"
-    :stripe-customer/bank-account-token "ba_1AjwecIvRccmW9nO175kwr0e"}])
+    :stripe-customer/bank-account-token "ba_1AjwecIvRccmW9nO175kwr0e"}]
+  )
    ;; {:db/id                              (d/tempid :db.part/starcity)
    ;;  :stripe-customer/account            [:account/email "member@test.com"]
    ;;  :stripe-customer/customer-id        "cus_9ssxgKtsJ02bVo"

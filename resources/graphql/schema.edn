@@ -192,14 +192,13 @@
                           :resolve :payment/description}
             :type        {:type    :payment_type
                           :resolve :payment/type}
-            :for         {:type        :Keyword
-                          :description "DEPRECATED: Use `:type` instead."
-                          :resolve     :payment/for}
             :autopay     {:type        Boolean
                           :description "Is this an autopay payment?"
                           :resolve     :payment/autopay?}
             :amount      {:type    (non-null Float)
                           :resolve (:get :payment/amount)}
+            :late_fee    {:type    Float
+                          :resolve :payment/late-fee}
             :status      {:type    :payment_status
                           :resolve :payment/status}
             :due         {:type    :Instant

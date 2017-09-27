@@ -86,7 +86,6 @@
  ::fetch-success
  [(path db/path)]
  (fn [db [_ response]]
-   (tb/log response)
    (update db :messages concat (messages (:data response)))))
 
 
