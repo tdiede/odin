@@ -5,6 +5,7 @@
             [odin.content :as content]
             [odin.routes :as routes]
             [re-frame.core :as rf :refer [dispatch subscribe]]
+            [odin.utils.formatters :as format]
             [reagent.core :as r]))
 
 ;; (rf/reg-event-fx
@@ -60,17 +61,70 @@
 (defn- report-title [address]
   [:b "Report for " (:address address)])
 
+;;(defn- prettify-key [key]
+;;  (gstring/capitalize key))
+
+(defn- get-score-sum [scores]
+  (str (->> scores (map second) (apply +))
+    " / "
+    (* (count scores) 3)))
+
+
+(defn- format-reason
+  [k]
+  (let [reason (k (:criteria @(subscribe [:kami/report])))]
+    (if (nil? reason)
+      "No data"
+      (case k
+        :last-buyout-filed      (format/get-time-ago reason)
+        :last-planning-activity (format/get-time-ago reason)
+        :last-permit-created    (format/get-time-ago reason)
+        :square-feet            (format/number reason)
+        reason))))
+    ;;  (tb/log k reason)
+    ;;  ;;(if nil? reason)
+    ;;    ;;"No data"
+    ;;    ;;(reason)
+    ;;k))
+
+(defn- get-score-class
+  [score]
+  (case score
+    0 "score-0"
+    1 "score-1"
+    2 "score-2"
+    3 "score-3"
+    "score-none"))
+
+
+(defn- score-summary []
+  (let [scores   (:scores @(subscribe [:kami/report]))
+        criteria (:criteria @(subscribe [:kami/report]))
+        keys     (keys scores)]
+    ;;(tb/log keys scores)
+    (fn []
+      [ant/card
+        [:p [:span "Total Score: "] [:b (get-score-sum scores)]]
+        (into [:ul.enum-list] (map #(vector :li.enum-item
+                                            [:span.enum-label %]
+                                            [:span.enum-value {:class (get-score-class (% scores))}
+                                              (% scores)]
+                                            [:span.enum-reason (format-reason %)])
+                                   keys))])))
+
 
 (defn- report-view []
   (let [is-loading (subscribe [:loading? :kami/score])
         address    (subscribe [:kami/selected-address])
         report     (subscribe [:kami/report])]
-    [ant/card {:title   (r/as-element (report-title @address))
-               :loading @is-loading}
+    ;;[ant/card {:title   (r/as-element (report-title @address))
+    ;;           :loading @is-loading}
      (let [scores (:scores @report)]
-       [:p [:span "Total Score: "] [:b (str (->> scores (map second) (apply +))
-                                            " / "
-                                            (* (count scores) 3))]])]))
+       [:div
+        [:h2 (report-title @address)]
+        [:div.columns
+         [:div.column.is-half.mt2
+          [score-summary]]]])))
 
 
 (defn- content-view []

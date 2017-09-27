@@ -51,6 +51,12 @@
   (when (some? date) (-> (moment date) (.calendar))))
 
 
+(defn get-time-ago
+  "Wraps moment's .fromNow() function -> '1 year ago', etc."
+  [thing]
+  (when thing (.fromNow (.moment js/window thing))))
+
+
 (defn str->timestamp
   "For mocking purposes. Generates a timestamp for strings like 'Aug 1, 2017'."
   [str] (if str (-> (moment str) (.unix) (* 1000))))

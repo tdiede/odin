@@ -56,3 +56,32 @@ $metadata-item-padding: .75rem
 
 .red
   color: red
+
+
+ul.enum-list
+  display: table
+  // table-layout: fixed
+  width: 100%
+  .enum-item
+    display: table-row
+    // @extend .flexrow
+    > *
+      display: table-cell
+      padding: 3px 5px
+      border-bottom: 1px solid $inner-component-border-color
+    .enum-label
+      font-weight: bold
+      text-align: right
+      text-transform: capitalize
+    .enum-value
+      font-size: 1rem
+      // margin-left: auto
+    &:nth-child(2n+1)
+      background: $off-white
+
+.score-1
+  color: $danger
+.score-2
+  color: $info
+.score-3
+  color: $success

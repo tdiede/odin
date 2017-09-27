@@ -75,6 +75,13 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (tb/log k response)
+   (let [kami (get-in response [:data :kami])
+         {datasets :datasets
+          criteria :criteria
+          scores   :scores} kami])
+    ;; (tb/log (keys datasets))
+    ;; (tb/log (keys criteria))
+    ;; (tb/log (keys scores)))
    {:dispatch [:loading k false]
     :db       (assoc db :report (get-in response [:data :kami]))}))
 
