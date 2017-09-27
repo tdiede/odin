@@ -8,7 +8,8 @@
             [compojure.core :as compojure :refer [context defroutes GET POST]]
             [facade.core :as facade]
             [ring.util.response :as response]
-            [datomic.api :as d]))
+            [datomic.api :as d]
+            [taoensso.timbre :as timbre]))
 
 
 ;; =============================================================================
@@ -19,20 +20,21 @@
 (defn- login! [{:keys [params session deps] :as req}]
   (let [{:keys [email password]} params
         account                  (auth/authenticate (d/db (:conn deps)) email password)]
-    (if (:account/activated account)
-      (let [session (assoc session :identity account)]
-        (-> (response/redirect "/")
-            (assoc :session session)))
-      (-> (response/response "Invalid credentials")
-          (response/status 400)))))
+    (timbre/debug params (into {} account))
+    (cond
+      (empty? account)             (-> (response/response "No account on file.")
+                                       (response/status 400))
+      (:account/activated account) (let [session (assoc session :identity account)]
+                                     (-> (response/redirect "/")
+                                         (assoc :session session)))
+      :otherwise                   (-> (response/response "Invalid credentials")
+                                       (response/status 400)))))
 
 
 (defn show
   "Handler to render the CLJS app."
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
-    ;; (if (= :account.role/admin (get-in req [:identity :account/role]))
-    ;;   [])
     (-> (facade/app req "odin"
                     :scripts ["https://code.highcharts.com/highcharts.js"
                               "https://code.highcharts.com/modules/exporting.js"

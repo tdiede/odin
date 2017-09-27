@@ -1,4 +1,4 @@
-(defproject odin "0.1.0-beta1"
+(defproject odin "0.1.0-beta2"
   :description "The all-seing dashboard."
   :url "http://my.joinstarcity.com"
   :license {:name "Eclipse Public License"
@@ -43,9 +43,9 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
-                 [starcity/blueprints "1.11.3" :exclusions [com.datomic/datomic-free
-                                                            com.andrewmcveigh/cljs-time
-                                                            com.google.guava/guava]]
+                 [starcity/blueprints "1.12.0-SNAPSHOT" :exclusions [com.datomic/datomic-free
+                                                                     com.andrewmcveigh/cljs-time
+                                                                     com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
                  [cljs-ajax "0.6.0"]
