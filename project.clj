@@ -43,9 +43,9 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
-                 [starcity/blueprints "1.12.0-SNAPSHOT" :exclusions [com.datomic/datomic-free
-                                                                     com.andrewmcveigh/cljs-time
-                                                                     com.google.guava/guava]]
+                 [starcity/blueprints "1.12.0" :exclusions [com.datomic/datomic-free
+                                                            com.andrewmcveigh/cljs-time
+                                                            com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
                  [cljs-ajax "0.6.0"]
