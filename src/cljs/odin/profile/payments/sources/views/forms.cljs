@@ -139,7 +139,7 @@
       (let [form (ant/get-form)]
        [:div
         (bank-account-form)
-        [:p.pad [:small bank-account-desc]]
+        [:p.pad.text-red.fs2 [:b bank-account-desc]]
         [:hr]
         [:div.align-right
          [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
