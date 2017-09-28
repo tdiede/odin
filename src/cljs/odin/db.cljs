@@ -19,7 +19,7 @@
     {:feature :profile
      :uri     "/profile"}]
    :account.role/admin
-   [{:feature :home
+   [#_{:feature :home
      :uri     "/"}
     {:feature :metrics
      :uri     "/metrics"}

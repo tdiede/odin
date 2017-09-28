@@ -273,7 +273,9 @@
             :price  {:type    Float
                      :resolve (:get :service/price)}
             :billed {:type    :service_billed
-                     :resolve :service/billed}}}
+                     :resolve :service/billed}
+            :rental {:type    Boolean
+                     :resolve (:get :service/rental)}}}
 
 
   :unit
@@ -329,6 +331,17 @@
                  :description "Orders after."}
     :to         {:type        :Instant
                  :description "Orders until."}}}
+
+
+  :create_order_params
+  {:description "Parameters needed to create an order."
+   :fields      {:account  {:type (non-null Long)}
+                 :service  {:type (non-null Long)}
+                 :variant  {:type        Long
+                            :description "Optional variant of the service."}
+                 :price    {:type Float}
+                 :quantity {:type Float}
+                 :desc     {:type String}}}
 
 
   ;;; Payments
@@ -427,6 +440,16 @@
                  :new_password_1 {:type (non-null String)}
                  :new_password_2 {:type (non-null String)}}
    :resolve     :account/change-password!}
+
+
+  ;;; Orders
+
+
+  :create_order
+  {:type        :order
+   :description "Create a new premium service order."
+   :args        {:params {:type :create_order_params}}
+   :resolve     :order/create!}
 
 
   ;;; Payments

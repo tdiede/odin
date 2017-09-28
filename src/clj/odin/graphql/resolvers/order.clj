@@ -86,12 +86,37 @@
 
 
 ;; =============================================================================
+;; Mutations
+;; =============================================================================
+
+
+(defn create!
+  "Create a new order."
+  [{:keys [conn]} {{:keys [account service variant desc quantity price]} :params} _]
+  (let [[account service] (td/entities (d/db conn) account service)
+        order             (order/create account service
+                                        (tb/assoc-when
+                                         {}
+                                         :desc desc
+                                         :price price
+                                         :variant variant
+                                         :quantity quantity))]
+    @(d/transact conn [order])
+    (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
+
+
+;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
 
 
 (defmethod authorization/authorized? :order/list [_ account _]
   (account/admin? account))
+
+
+(defmethod authorization/authorized? :order/create!
+  [{conn :conn} account {account-id :account}]
+  (or (account/admin? account) (= account-id (:db/id account))))
 
 
 (def resolvers
@@ -103,6 +128,8 @@
    :order/property property
    ;; queries
    :order/list      orders
+   ;; mutations
+   :order/create! create!
    })
 
 

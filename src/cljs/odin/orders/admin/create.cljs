@@ -6,6 +6,7 @@
             [reagent.core :as r]
             [toolbelt.core :as tb]
             [clojure.string :as string]
+            [odin.components.service :as service]
             [odin.utils.formatters :as format]))
 
 
@@ -17,7 +18,7 @@
 (def default-db
   {:accounts []
    :services []
-   :form     {}})
+   :form     {:quantity 1}})
 
 
 ;; =============================================================================
@@ -62,6 +63,32 @@
    (tb/find-by #(= account-id (:id %)) accounts)))
 
 
+(reg-sub
+ ::selected-service
+ :<- [::services]
+ :<- [::form :service]
+ (fn [[services service-id] _]
+   (tb/find-by #(= service-id (:id %)) services)))
+
+
+(reg-sub
+ ::service-fields
+ :<- [::selected-service]
+ :<- [::form]
+ (fn [[{:keys [price] :as service} {:keys [quantity] :as form}]]
+   (cond-> []
+     true (conj (service/notes-field :notes "")
+                (service/quantity-field :quantity quantity)
+                (service/price-field :price (or (:price form) price))))))
+
+
+(reg-sub
+ ::can-create?
+ :<- [::form]
+ (fn [{:keys [service account]} _]
+   (and (some? service) (some? account))))
+
+
 ;; =============================================================================
 ;; Events
 ;; =============================================================================
@@ -101,6 +128,32 @@
  [(path ::path)]
  (fn [db [_ k v]]
    (assoc-in db [:form k] v)))
+
+
+(reg-event-db
+ ::clear-service
+ [(path ::path)]
+ (fn [db _]
+   (-> (update-in db [:form] dissoc :service :price :notes)
+       (assoc-in [:form :quantity] 1))))
+
+
+(reg-event-fx
+ ::create!
+ [(path ::path)]
+ (fn [{db :db} [k]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation   [[:create_order {:params (:form db)} [:id]]]
+               :on-success [::create-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::create-success
+ (fn [_ [_ k response]]
+   {:dispatch-n [[:loading k false]
+                 [:modal/hide ::modal]
+                 [:admin.orders/fetch]]}))
 
 
 ;; =============================================================================
@@ -149,7 +202,7 @@
     (if-let [p price]
       (format/currency p)
       " quote")]
-   [:p [:small desc]]])
+   [:p.fs2 [:small desc]]])
 
 
 (defn- service-autocomplete []
@@ -164,35 +217,62 @@
       :filter-option     (fn [val opt]
                            (let [q (string/lower-case (.. opt -props -qterm))]
                              (string/includes? q (string/lower-case val))))
-      :on-change         #(when (nil? %) (dispatch [::update :service nil]))
+      :on-change         #(when (nil? %) (dispatch [::clear-service]))
       :on-select         #(dispatch [::update :service (tb/str->int %)])}
      (doall (map service-option @services))]))
 
 
 (defn- form []
-  (let [form (subscribe [::form])]
-    (fn []
-      (let [{:keys [account service]} @form]
-        [:div
-         [:div.field
-          [:label.label "For whom?"]
-          [account-autocomplete]]
-         [:div.field
-          [:label.label "Which service?"]
-          [service-autocomplete]]
+  (let [account (subscribe [::selected-account])
+        service (subscribe [::selected-service])
+        fields  (subscribe [::service-fields])
+        form    (subscribe [::form])]
+    [:div
+     [:div.field
+      [:label.label "For whom?"]
+      [account-autocomplete]]
+     [:div.field
+      [:label.label "Which service?"]
+      [service-autocomplete]]
 
-         (when (and account service)
-           [:div.box.mt4
-            {:style {:min-height 100}}])]))))
+     (when (and (some? @account) (some? @service))
+       [service/card
+        {:name     (:name @service)
+         :desc     (:desc @service)
+         :rental   (:rental @service)
+         :quantity (:quantity @form)
+         :price    (or (:price @form) (:price @service))
+         :billed   (:billed @service)
+         :service  (:id @service)
+         :selected true
+         :fields   @fields}
+        {:on-change (fn [[_ k v]] (dispatch [::update k v]))
+         :on-delete #(dispatch [::clear-service])}])]))
 
 
 (defn- modal []
-  (let [is-showing (subscribe [:modal/visible? ::modal])
-        is-loading (subscribe [:loading? ::fetch])]
+  (let [is-showing  (subscribe [:modal/visible? ::modal])
+        is-loading  (subscribe [:loading? ::fetch])
+        can-create  (subscribe [::can-create?])
+        is-creating (subscribe [:loading? ::create!])]
     [ant/modal
      {:title     "Create New Order"
+      :width     640
       :visible   @is-showing
-      :on-cancel #(dispatch [:modal/hide ::modal])}
+      :on-cancel #(dispatch [:modal/hide ::modal])
+      :footer    [(r/as-element
+                   ^{:key 1}
+                   [ant/button
+                    {:on-click #(dispatch [:modal/hide ::modal])}
+                    "Cancel"])
+                  (r/as-element
+                   ^{:key 2}
+                   [ant/button
+                    {:disabled (not @can-create)
+                     :type     :primary
+                     :loading  @is-creating
+                     :on-click #(dispatch [::create!])}
+                    "Create"])]}
      [:div
       (if @is-loading
         [:div {:style {:text-align "center"
@@ -201,7 +281,7 @@
         [form])]]))
 
 
-;; What do we need to know to creat an order?
+;; What do we need to know to create an order?
 ;; - account
 ;; - service
 ;; - quantity
