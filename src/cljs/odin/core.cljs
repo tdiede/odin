@@ -63,7 +63,7 @@
 
 
 (defn navbar-menu-item
-  [role {:keys [feature titles uri]}]
+  [role {:keys [feature uri]}]
   (let [root (subscribe [:route/root])]
     [:a.navbar-item {:href  uri
                      :class (when (= feature @root) "is-active")}

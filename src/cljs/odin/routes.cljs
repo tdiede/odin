@@ -120,7 +120,6 @@
        (accountant/navigate! new-route)))))
 
 
-
 ;; =============================================================================
 ;; NOTE: Added to redirect to profile page for initial release.
 ;; =============================================================================
@@ -130,7 +129,17 @@
   [[::route-to-profile]])
 
 
+(defmethod dispatches :admin/home [route]
+  [[::route-to-metrics]])
+
+
 (rf/reg-event-fx
  ::route-to-profile
  (fn [_ _]
    {:route (path-for :profile/membership)}))
+
+
+(rf/reg-event-fx
+ ::route-to-metrics
+ (fn [_ _]
+   {:route (path-for :metrics)}))

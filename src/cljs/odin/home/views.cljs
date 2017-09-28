@@ -11,7 +11,7 @@
 
 
 (defmethod content/view :admin/home [route]
-  [ant/card {:title "Admin Home"}])
+  [:div])
 
 
 ;; =============================================================================

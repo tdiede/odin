@@ -27,8 +27,8 @@
      :uri     "/orders"}
     {:feature :kami
      :uri     "/kami"}
-    {:feature :communities
-     :uri     "/communities"}]})
+    #_{:feature :communities
+       :uri     "/communities"}]})
 
 
 (defn- menu-items [config]

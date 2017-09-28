@@ -11,64 +11,7 @@
 
 
 ;; =============================================================================
-;; Accounts
-
-;; (def password
-;;   "bcrypt+blake2b-512$30e1776f40ee533841fcba62a0dbd580$12$2dae523ec1eb9fd91409ebb5ed805fe53e667eaff0333243")
-
-;; (defn account
-;;   [email first-name last-name phone role & [slack-handle]]
-;;   (tb/assoc-when
-;;    {:db/id                (d/tempid :db.part/starcity)
-;;     :account/email        email
-;;     :account/password     password
-;;     :account/first-name   first-name
-;;     :account/last-name    last-name
-;;     :account/phone-number phone
-;;     :account/role         role
-;;     :account/activated    true}
-;;    :account/slack-handle slack-handle))
-
-;; (defn accounts-tx []
-;;   [(account "test@test.com" "Applicant" "User" "2345678910" :account.role/applicant)
-;;    (account "applicant@test.com" "Applicant" "User" "2345678910" :account.role/applicant)
-;;    (account "member@test.com" "Member" "User" "2345678910" :account.role/member)
-;;    (account "onboarding@test.com" "Onboarding" "User" "2345678910" :account.role/onboarding)
-;;    (account "admin@test.com" "Admin" "User" "2345678910" :account.role/admin)
-;;    (account "josh@joinstarcity.com" "Josh" "Lehman" "2345678910" :account.role/admin "@josh")])
-
-;; ;; =============================================================================
-;; ;; Approval
-
-;; (defn approve
-;;   "A more light-weight version of `starcity.models.approval/approve` that
-;;   doesn't create `msg` and `cmd`."
-;;   [approver approvee unit license move-in]
-;;   [(approval/create approver approvee unit license move-in)
-;;    ;; Change role
-;;    {:db/id (:db/id approvee) :account/role :account.role/onboarding}
-;;    (deposit/create approvee (int (unit/rate unit license)))
-;;    (onboard/create approvee)
-;;    (app/change-status (:account/application approvee)
-;;                       :application.status/approved)])
-
-;; (defn approval-tx [conn]
-;;   (concat
-;;    (approve
-;;     (d/entity (d/db conn) [:account/email "admin@test.com"])
-;;     (d/entity (d/db conn) [:account/email "member@test.com"])
-;;     (unit/by-name (d/db conn) "52gilbert-1")
-;;     (license/by-term (d/db conn) 3)
-;;     (c/to-date (t/now)))
-;;    (approve
-;;     (d/entity (d/db conn) [:account/email "admin@test.com"])
-;;     (d/entity (d/db conn) [:account/email "onboarding@test.com"])
-;;     (unit/by-name (d/db conn) "2072mission-1")
-;;     (license/by-term (d/db conn) 3)
-;;     (c/to-date (t/plus (t/now) (t/months 1))))))
-
-;; ;; =============================================================================
-;; ;; Applications
+;; Applications
 
 ;; (defn application
 ;;   [account-id & {:keys [address properties license move-in pet fitness status]
@@ -261,34 +204,20 @@
 ;;    ;;  :stripe-customer/managed            [:property/internal-name "52gilbert"]}
 
 
-
-
-;; (defn avatar-tx []
-;;   [{:db/id       (d/tempid :db.part/starcity)
-;;     :avatar/name :system
-;;     :avatar/url  "/assets/img/starcity-logo-black.png"}])
-
-
-;; (defn referrals-tx []
-;;   (let [sources ["craigslist" "word of mouth" "video" "starcity member" "instagram"]
-;;         total   (inc (rand-int 100))]
-;;     (mapv
-;;      (fn [_]
-;;        {:db/id           (d/tempid :db.part/starcity)
-;;         :referral/source (rand-nth sources)
-;;         :referral/from   :referral.from/tour})
-;;      (range total))))
-
-;; (defn properties-tx []
-;;   [{:db/id                    [:property/internal-name "52gilbert"]
-;;     :property/cover-image-url "/assets/images/52gilbert.jpg"}
-;;    {:db/id                    [:property/internal-name "2072mission"]
-;;     :property/cover-image-url "/assets/images/2072mission.jpg"}])
-
-
 ;; =============================================================================
 ;; API
 ;; =============================================================================
+
+
+(defn- referrals []
+  (let [sources ["craigslist" "word of mouth" "video" "starcity member" "instagram"]
+        total   (inc (rand-int 100))]
+    (mapv
+     (fn [_]
+       {:db/id           (d/tempid :db.part/starcity)
+        :referral/source (rand-nth sources)
+        :referral/from   :referral.from/tour})
+     (range total))))
 
 
 (defn- accounts [db]
@@ -299,7 +228,8 @@
 
 
 (defn seed [conn]
-  (->> {:seed/accounts {:txes [(accounts (d/db conn))]}}
+  (->> {:seed/accounts  {:txes [(accounts (d/db conn))]}
+        :seed/referrals {:txes [(referrals)]}}
        (cf/ensure-conforms conn)))
 
 
