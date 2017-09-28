@@ -7,5 +7,5 @@
   [:article.media
    (when (string? icon-type)
      [:div.media-left
-      [:span.icon.is-medium [:i.fa {:class (str "fa-" icon-type)}]]])
+      [:span.icon.is-medium [:i.fa.fa-2x {:class (str "fa-" icon-type)}]]])
    [:div.media-content contents]])
