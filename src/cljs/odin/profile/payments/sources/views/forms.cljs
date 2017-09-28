@@ -39,7 +39,7 @@
                    (.then p (fn [result]
                               (if-let [error (.-error result)]
                                 (aset errors "textContent" (.-message error))
-                                (dispatch [:payment.sources.add.card/save-stripe-token! (.. result -token -id)]))))))
+                                (dispatch [:payment.sources.add.card/save-stripe-token! (aget (aget result "token") "id")]))))))
                (.addEventListener submit-btn "click"))))
       :reagent-render
       (fn []
