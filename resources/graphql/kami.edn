@@ -1,0 +1,33 @@
+{:enums
+ {:historic_code
+  {:description "Different historic building classifications."
+   :values      [:A :B :C]}}
+
+ :objects
+ {:address
+  {:fields {:address        {:type    (non-null String)
+                             :resolve (:get :address)}
+            :address_number {:type    (non-null Int)
+                             :resolve (:get :address_number)}
+            :street_name    {:type    (non-null String)
+                             :resolve (:get :street_name)}
+            :zipcode        {:type    (non-null String)
+                             :resolve (:get :zipcode)}}}
+
+  :building
+  {:fields {:address  {:type    (non-null :address)
+                       :resolve (:get :address)}
+            :historic {:type    :historic_code
+                       :resolve :building/historic-code}
+            :sqft     {:type    (non-null Float)
+                       :resolve :building/sqft}}}}
+
+
+ :queries
+ {:search_buildings {:type    (list :address)
+                     :args    {:query {:type (non-null String)}}
+                     :resolve :search-buildings}
+
+  :building {:type    (non-null :building)
+             :args    {:address {:type (non-null :address)}}
+             :resolve :fetch-building}}}

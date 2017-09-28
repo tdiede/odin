@@ -1,0 +1,87 @@
+// TODO: Styling for list views
+// ----------------------------
+
+$metadata-item-padding: .75rem
+
+// BASIC LIST (vertically-aligned, minimal styling)
+.metadata-list
+  // display: table
+  border-radius: $inner-component-border-radius
+  border: 1px solid $inner-component-border-color
+
+// List row
+.metadata-item
+  display: table-row
+
+  &:not(:last-child)
+    .metadata-item-label, .metadata-item-value
+      border-bottom: 1px solid $inner-component-border-color
+
+.metadata-item-label, .metadata-item-value
+  display: table-cell
+  text-align: center
+  padding: .25rem $metadata-item-padding
+
+// Item Label (e.g. Property)
+.metadata-item-label
+  font-weight: bold
+
+// Item Value (e.g. West SoMa)
+.metadata-item-value
+  border-left: 1px solid $inner-component-border-color
+  background-color: #f8f8f8
+
+.metadata-item:first-child .metadata-item-value
+  border-top-right-radius: $inner-component-border-radius - 1px
+.metadata-item:last-child .metadata-item-value
+  border-bottom-right-radius: $inner-component-border-radius - 1px
+
+
+// Derryl - testing for component, to be deleted or relocated
+.payment-item
+  display: flex
+  span.date
+    font-size: .8rem
+  span
+    padding: 0 .5rem
+  // span + span
+    // margin-left: 1rem
+
+.flex-right
+  margin-left: auto
+
+.has-text-grey-light
+  color: #aaa
+  text-transform: capitalize
+
+.red
+  color: red
+
+
+ul.enum-list
+  display: table
+  // table-layout: fixed
+  width: 100%
+  .enum-item
+    display: table-row
+    // @extend .flexrow
+    > *
+      display: table-cell
+      padding: 3px 5px
+      border-bottom: 1px solid $inner-component-border-color
+    .enum-label
+      font-weight: bold
+      text-align: right
+      text-transform: capitalize
+    .enum-value
+      font-size: 1rem
+      // margin-left: auto
+    &:nth-child(2n+1)
+      background: $off-white
+
+.score-1
+  color: $danger
+.score-2
+  color: $info
+.score-3
+  color: $success

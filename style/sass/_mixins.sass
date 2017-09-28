@@ -1,0 +1,113 @@
+// Flexbox
+.flexbox
+  display: flex
+  flex-direction: row
+
+.valign
+  align-self: center
+
+.flexrow
+  display: flex
+  flex-direction: row
+  align-items: center
+
+.flexcol
+  display: flex
+  flex-direction: column
+  // align-items: baseline
+
+.flexcol
+  display: flex
+  flex-direction: column
+
+.space-between
+  justify-content: space-between
+.space-around
+  justify-content: space-around
+
+.flex-auto
+  flex: 1 1 auto
+
+.pin-top, .flex-pin-top
+  margin-bottom: auto
+.pin-right, .flex-pin-right
+  margin-left: auto
+.pin-bottom, .flex-pin-bottom
+  margin-top: auto
+
+.flex-center
+  align-items: center
+.align-start
+  align-items: flex-start
+
+// Sizing
+.full-width
+  width: 100%
+.full-height
+  height: 100%
+
+// Alignment
+.center, .is-centered
+  margin-left:  auto
+  margin-right: auto
+
+// Spacing
+.pad
+  padding: $side-padding
+.pad-left
+  padding-left: $side-padding
+.pad-right
+  padding-right: $side-padding
+.unpad
+  padding: 0
+.unpad-sides
+  padding-left: 0
+  padding-right: 0
+.unpad-vert
+  padding-top: 0
+  padding-bottom: 0
+
+// Provide side padding
+.add-gutter-margin
+  margin-left: 1rem
+  margin-right: 1rem
+
+// Spacing for elements in a row. When using this class,
+// the :last-child will not have spacing. If this behavior
+// is undesired, then use the classes above.
+.space-right
+  &:not(:last-child)
+    margin-right: $side-padding
+
+.space-top
+  margin-top: $side-padding
+
+
+
+// Widths
+.width-90
+  max-width: 90%
+.width-80
+  max-width: 80%
+.width-70
+  max-width: 70%
+.width-60
+  max-width: 60%
+.width-50
+  max-width: 50%
+
+
+=square($size)
+  width:  $size
+  height: $size
+
+.rounded, .round
+  border-radius: $component-border-radius
+
+.pseudo-element
+  position: absolute
+  display: block
+  content: " "
+
+.bg-gray
+  background: $off-white

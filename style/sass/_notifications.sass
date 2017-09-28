@@ -1,0 +1,25 @@
+.notification
+  background: #eee
+  // box-shadow: 2px 2px 0 rgba(0,0,0,0.15)
+  // background: red
+// .notification.is-info
+  // background: $primary-color
+
+.global-notification
+  display:       block
+  margin:        0 1rem
+  padding:       .5rem 1rem
+  font-size:     .85rem
+  background:    $off-white
+  border-radius: $component-border-radius
+
+  &.is-danger
+    color:      $white
+    background: $text-red
+
+  &.is-warning
+    color: $black
+    background: $warning
+
+  & + .global-notification
+    margin-top: .5rem

@@ -1,0 +1,526 @@
+{:enums
+ {;; accounts
+  :role
+  {:description "Account roles."
+   :values      [:all :member :onboarding :applicant :admin]}
+
+  :deposit_refund_status
+  {:description "Possible statuses of the security deposit refund."
+   :values      [:initiated :successful :failed]}
+
+  :license_status
+  {:description "Possible statuses of a member license."
+   :values      [:active :inactive :canceled :renewal]}
+
+  :order_status
+  {:description "Possible statuses of orders."
+   :values      [:placed :canceled :charged :pending]}
+
+  :payment_method
+  {:description "Methods of payment."
+   :values      [:ach :card :check :other]}
+
+  :payment_type
+  {:description "Different types of payment."
+   :values      [:order :rent :deposit]}
+
+  :payments_date_key
+  {:description "Allowed keys for date-based payment queries."
+   :values      [:created :paid]}
+
+  :orders_date_key
+  {:description "Allowed keys for date-based order queries."
+   :values      [:created :charged]}
+
+  :payment_source_type
+  {:description "Types of payment source."
+   :values      [:bank :card]}
+
+  :payment_status
+  {:description "Payment status."
+   :values      [:due :canceled :paid :pending :failed :refunded]}
+
+  :service_billed
+  {:description "Different ways a service can be billed."
+   :values      [:once :monthly]}}
+
+ :interfaces
+ {:person
+  {:fields {:first_name {:type (non-null String)}
+            :last_name  {:type (non-null String)}}}}
+
+ :objects
+ {:account
+  {:implements [:person]
+   :fields     {:id                {:type    (non-null :Long)
+                                    :resolve (:get :db/id)}
+                :name              {:type    (non-null String)
+                                    :resolve :person/full-name}
+                :first_name        {:type    (non-null String)
+                                    :resolve (:get :person/first-name)}
+                :last_name         {:type    (non-null String)
+                                    :resolve (:get :person/last-name)}
+                :email             {:type    (non-null String)
+                                    :resolve (:get :account/email)}
+                :phone             {:type    String
+                                    :resolve (:get :person/phone-number)}
+                :role              {:type    (non-null :role)
+                                    :resolve :account/role}
+                :property          {:type    :property
+                                    :resolve :account/property}
+                :emergency_contact {:type    :emergency_contact
+                                    :resolve :account/emergency-contact}
+                :active_license    {:type        :license
+                                    :description "The active member license for this account."
+                                    :resolve     :account/active-license}
+                :deposit           {:type        :deposit
+                                    :description "Security deposit for this account."
+                                    :resolve     :account/deposit}}}
+
+
+  :emergency_contact
+  {:implements [:person]
+   :fields     {:name       {:type    (non-null String)
+                             :resolve :person/full-name}
+                :first_name {:type    (non-null String)
+                             :resolve (:get :person/first-name)}
+                :last_name  {:type    (non-null String)
+                             :resolve (:get :person/last-name)}
+                :phone      {:type    (non-null String)
+                             :resolve (:get :person/phone-number)}}}
+
+
+  :deposit
+  {:fields {:id               {:type    (non-null :Long)
+                               :resolve (:get :db/id)}
+            :amount           {:type        (non-null Float)
+                               :description "The total amount of the security deposit."
+                               :resolve     (:get :deposit/amount)}
+            :due              {:type        (non-null :Instant)
+                               :description "The due date of the entire security deposit."
+                               :resolve     (:get :deposit/due)}
+            :account          {:type    (non-null :account)
+                               :resolve (:get :deposit/account)}
+            :payments         {:type        (list :payment)
+                               :description "Payments made towards the security deposit."
+                               :resolve     (:get :deposit/payments)}
+            :amount_remaining {:type        (non-null Float)
+                               :description "The amount remaining to be paid."
+                               :resolve     :deposit/amount-remaining}
+            :amount_paid      {:type        (non-null Float)
+                               :description "The amount paid so far."
+                               :resolve     :deposit/amount-paid}
+            :amount_pending   {:type        (non-null Float)
+                               :description "The amount currently pending."
+                               :resolve     :deposit/amount-pending}
+            :refund_status    {:type        :deposit_refund_status
+                               :description "The status of the refund, if any."
+                               :resolve     :deposit/refund-status}}}
+
+
+  :license
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :rate     {:type        (non-null Float)
+                       :description "The amount paid for rent each month."
+                       :resolve     (:get :member-license/rate)}
+            :payments {:type        (list :payment)
+                       :description "The rent payments for this license."
+                       :resolve     (:get :member-license/rent-payments)}
+            :starts   {:type        (non-null :Instant)
+                       :description "Start date of the member license (commencement)."
+                       :resolve     (:get :member-license/commencement)}
+            :ends     {:type        (non-null :Instant)
+                       :description "End date of the member license."
+                       :resolve     (:get :member-license/ends)}
+            :term     {:type        (non-null Long)
+                       :description "Term in months of the license."
+                       :resolve     (:get :member-license/license :license/term)}
+            :unit     {:type        (non-null :unit)
+                       :description "The unit that htis license pertains to."
+                       :resolve     (:get :member-license/unit)}
+            :account  {:type        (non-null :account)
+                       :description "Account that owns this license."
+                       :resolve     (:get :account/_license)}
+            :status   {:type    (non-null :license_status)
+                       :resolve :member-license/status}
+            :property {:type        (non-null :property)
+                       :description "Property that this license is for."
+                       :resolve     (:get :member-license/unit :property/_units)}}}
+
+
+  :order
+  {:fields {:id        {:type    (non-null :Long)
+                        :resolve (:get :db/id)}
+            :price     {:type    Float
+                        :resolve :order/price}
+            :quantity  {:type    Float
+                        :resolve (:get :order/quantity)}
+            :name      {:type    String
+                        :resolve :order/name}
+            :desc      {:type    String
+                        :resolve (:get :order/desc)}
+            :status    {:type    (non-null :order_status)
+                        :resolve :order/status}
+            :billed_on {:type    :Instant
+                        :resolve :order/billed-on}
+            :account   {:type    (non-null :account)
+                        :resolve (:get :order/account)}
+            :service   {:type    (non-null :service)
+                        :resolve (:get :order/service)}
+            :payments  {:type    (list :payment)
+                        :resolve (:get :order/payments)}
+            :property  {:type    (non-null :property)
+                        :resolve :order/property}
+            :created   {:type    (non-null :Instant)
+                        :resolve :entity/created}
+            :updated   {:type    (non-null :Instant)
+                        :resolve :entity/updated}}}
+
+
+  :payment
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :uuid        {:type    (non-null String)
+                          :resolve (:get :payment/id)}
+            :ext_id      {:type        String
+                          :description "The Stripe external id."
+                          :resolve     :payment/external-id}
+            :method      {:type    :payment_method
+                          :resolve :payment/method}
+            :description {:type    String
+                          :resolve :payment/description}
+            :type        {:type    :payment_type
+                          :resolve :payment/type}
+            :autopay     {:type        Boolean
+                          :description "Is this an autopay payment?"
+                          :resolve     :payment/autopay?}
+            :amount      {:type    (non-null Float)
+                          :resolve (:get :payment/amount)}
+            :late_fee    {:type    Float
+                          :resolve :payment/late-fee}
+            :status      {:type    :payment_status
+                          :resolve :payment/status}
+            :due         {:type    :Instant
+                          :resolve (:get :payment/due)}
+            :paid_on     {:type    :Instant
+                          :resolve (:get :payment/paid-on)}
+            :pstart      {:type        :Instant
+                          :description "Period start."
+                          :resolve     (:get :payment/pstart)}
+            :pend        {:type        :Instant
+                          :description "Period end."
+                          :resolve     (:get :payment/pend)}
+            :property    {:type        :property
+                          :description "The property that the member that made this payment is associated with."
+                          :resolve     :payment/property}
+            :order       {:type    :order
+                          :resolve :payment/order}
+            :account     {:type    (non-null :account)
+                          :resolve (:get :payment/account)}
+            :source      {:type    :payment_source
+                          :resolve :payment/source}}}
+
+
+  :payment_source
+  {:fields {:id       {:type    (non-null String)
+                       :resolve (:get :id)}
+            :last4    {:type    (non-null String)
+                       :resolve (:get :last4)}
+            :default  {:type    (non-null Boolean)
+                       :resolve :payment.source/default?}
+            :expires  {:type    String
+                       :resolve :payment.source/expiration}
+            :customer {:type    String
+                       :resolve (:get :customer)}
+            :status   {:type    String
+                       :resolve (:get :status)}
+            :autopay  {:type    Boolean
+                       :resolve :payment.source/autopay?}
+            :type     {:type    (non-null :payment_source_type)
+                       :resolve :payment.source/type}
+            :name     {:type    (non-null String)
+                       :resolve :payment.source/name}
+            :payments {:type        (list :payment)
+                       :description "Payments associated with this source."
+                       :resolve     :payment.source/payments}}}
+
+  :property
+  {:fields {:id              {:type    (non-null :Long)
+                              :resolve (:get :db/id)}
+            :name            {:type    (non-null String)
+                              :resolve (:get :property/name)}
+            :code            {:type    (non-null String)
+                              :resolve (:get :property/internal-name)}
+            :cover_image_url {:type    (non-null String)
+                              :resolve (:get :property/cover-image-url)}}}
+
+
+  ;; TODO:
+  ;; :referral
+  ;; {:fields {:id {:type (non-null :Long)}}}
+
+
+  :service
+  {:fields {:id     {:type    (non-null :Long)
+                     :resolve (:get :db/id)}
+            :name   {:type    (non-null String)
+                     :resolve (:get :service/name)}
+            :desc   {:type    String
+                     :resolve (:get :service/desc)}
+            :code   {:type    (non-null String)
+                     :resolve (:get :service/code)}
+            :price  {:type    Float
+                     :resolve (:get :service/price)}
+            :billed {:type    :service_billed
+                     :resolve :service/billed}
+            :rental {:type    Boolean
+                     :resolve (:get :service/rental)}}}
+
+
+  :unit
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :code     {:type        (non-null String)
+                       :description "Internal unit code to identify this unit."
+                       :resolve     (:get :unit/name)}
+            :number   {:type        (non-null Int)
+                       :description "Room number."
+                       :resolve     :unit/number}
+            :property {:type    (non-null :property)
+                       :resolve (:get :property/_units)}}}
+
+
+  ;; TODO: This is silly. The client should just pull the referral objects
+  ;; directly and perform the transformation to "data points" itself.
+  :data_point
+  {:fields {:percentage {:type Float}
+            :count      {:type Int}
+            :label      {:type String}}}}
+
+
+ ;; =============================================================================
+ ;; Input Objects
+ ;; =============================================================================
+
+
+ :input-objects
+ {;;; Account
+  :update_account
+  {:description "Inputs to update an account."
+   :fields      {:first_name        {:type String}
+                 :middle_name       {:type String}
+                 :last_name         {:type String}
+                 :phone             {:type String}
+                 :emergency_contact {:type :update_account}}}
+
+  ;;; Orders
+  :orders_query_params
+  {:description "Parameters to query for orders."
+   :fields
+   {:accounts   {:type        (list :Long)
+                 :description "ID of an account to query orders for."}
+    :billed     {:type (list :service_billed)}
+    :services   {:type (list :Long)}
+    :properties {:type (list :Long)}
+    :statuses   {:type (list :order_status)}
+    :datekey    {:type          :orders_date_key
+                 :default-value :created
+                 :description   "Specifies which date attribute to use for date params."}
+    :from       {:type        :Instant
+                 :description "Orders after."}
+    :to         {:type        :Instant
+                 :description "Orders until."}}}
+
+
+  :create_order_params
+  {:description "Parameters needed to create an order."
+   :fields      {:account  {:type (non-null Long)}
+                 :service  {:type (non-null Long)}
+                 :variant  {:type        Long
+                            :description "Optional variant of the service."}
+                 :price    {:type Float}
+                 :quantity {:type Float}
+                 :desc     {:type String}}}
+
+
+  ;;; Payments
+  :payments_query_params
+  {:description "Parameters to query for payments."
+   :fields
+   {:account  {:type        :Long
+               :description "ID of an account to query payments for."}
+    :types    {:type          (list :payment_type)
+               :default-value [:deposit :order :rent]
+               :description   "List of payment types to query."}
+    :from     {:type        :Instant
+               :description "Payments after."}
+    :to       {:type        :Instant
+               :description "Payments until."}
+    :statuses {:type          (list :payment_status)
+               :default-value [:due :canceled :paid :pending :failed :refunded]
+               :description   "List of payment statuses to query."}
+    :datekey  {:type          :payments_date_key
+               :default-value :created
+               :description   "Specifies which date attribute to use for date params."}}}
+
+  :services_query_params
+  {:description "Parameters to query for services."
+   :fields
+   {:q {:type        String
+        :description "Query term."}}}}
+
+
+ ;; =============================================================================
+ ;; Queries
+ ;; =============================================================================
+
+
+ :queries
+ {:accounts {:type    (list :account)
+             :args    {:role {:type          :role
+                              :default-value :all}}
+             :resolve :account/list}
+
+
+  :account {:type    :account
+            :args    {:id {:type (non-null :Long)}}
+            :resolve :account/entry}
+
+
+  :orders {:type    (list :order)
+           :args    {:params {:type :orders_query_params}}
+           :resolve :order/list}
+
+
+  :payments {:type    (list :payment)
+             :args    {:params {:type :payments_query_params}}
+             :resolve :payment/list}
+
+
+  :payment_sources {:type    (list :payment_source)
+                    :args    {:account {:type        (non-null :Long)
+                                        :description "ID of an account to request sources for."}}
+                    :resolve :payment.sources/list}
+
+
+  ;; TODO: This should return a list of `:referral`, not `:data_point`. See
+  ;; above.
+  :referrals {:type    (list :data_point)
+              :resolve :metrics/referrals}
+
+
+  :services {:type    (list :service)
+             :args    {:params {:type :services_query_params}}
+             :resolve :service/query}}
+
+
+ ;; =============================================================================
+ ;; Mutations
+ ;; =============================================================================
+
+
+ :mutations
+ {;;; Account
+
+  :update_account
+  {:type        :account
+   :description "Update account information."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "This account's id."}
+                 :data {:type        (non-null :update_account)
+                        :description "The data to update the account with."}}
+   :resolve     :account/update!}
+
+
+  :change_password
+  {:type        :account
+   :description "Change requesting user's password."
+   :args        {:old_password   {:type (non-null String)}
+                 :new_password_1 {:type (non-null String)}
+                 :new_password_2 {:type (non-null String)}}
+   :resolve     :account/change-password!}
+
+
+  ;;; Orders
+
+
+  :create_order
+  {:type        :order
+   :description "Create a new premium service order."
+   :args        {:params {:type :create_order_params}}
+   :resolve     :order/create!}
+
+
+  ;;; Payments
+
+
+  :pay_rent_payment
+  {:type        :payment
+   :description "Make a payment."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "ID of the payment entity."}
+                 :source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-rent!}
+
+
+  :pay_remainder_deposit
+  {:type        :deposit
+   :description "Pay the remainder of the security deposit."
+   :args        {:source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-deposit!}
+
+
+   ;;; Payment Sources
+
+
+  :delete_payment_source
+  {:type        :payment_source
+   :description "Delete a payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe source id."}}
+   :resolve     :payment.sources/delete!}
+
+
+  :add_payment_source
+  {:type        :payment_source
+   :description "Add a new source to the requesting users's account."
+   :args        {:token {:type        (non-null String)
+                         :description "The token to create the source with."}}
+   :resolve     :payment.sources/add-source!}
+
+
+  :verify_bank_source
+  {:type        :payment_source
+   :description "Verify a bank account using microdeposits."
+   :args        {:deposits {:type        (list Int)
+                            :description "The two microdeposit amounts."}
+                 :id       {:type        (non-null String)
+                            :description "The Stripe source id."}}
+   :resolve     :payment.sources/verify-bank!}
+
+
+  :set_autopay_source
+  {:type        :payment_source
+   :description "Set a payment source as the autopay source. Currently restricted to bank accounts."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use for autopay."}}
+   :resolve     :payment.sources/set-autopay!}
+
+
+  :unset_autopay_source
+  {:type        :payment_source
+   :description "Unset the source as the autopay source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source used for autopay."}}
+   :resolve     :payment.sources/unset-autopay!}
+
+
+  :set_default_source
+  {:type        :payment_source
+   :description "Set the source as the default payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use as the defaullt source."}}
+   :resolve     :payment.sources/set-default!}}}

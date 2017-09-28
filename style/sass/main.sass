@@ -1,16 +1,50 @@
 @charset "UTF-8"
+@import "variables"
+@import "colors"
 
 body
-  display: flex
-  min-height: 100vh
+  display:        flex
+  min-height:     100vh
   flex-direction: column
+  // background: $off-white
+  background: $white
+
+.root-section
+  // background: $off-white
+  background: $white
 
 main
   flex: 1 0 auto
 
 @import "../../node_modules/spinkit/scss/spinners/2-double-bounce.scss"
 
-@import "variables"
-
-// Vendor
+// Bulma (with our variables applied for customization)
+// --> http://bulma.io/documentation/overview/customize/
 @import "../../node_modules/bulma/bulma"
+
+// Our styles (after Bulma, to override)
+@import "mixins"
+@import "layout"
+@import "columns"
+@import "typography"
+@import "elements"
+@import "dropdowns"
+@import "buttons"
+@import "icons"
+@import "interaction"
+@import "modals"
+@import "notifications"
+@import "progress-bar"
+@import "navigation"
+@import "mobile-nav"
+@import "tags"
+@import "people"
+@import "cards"
+@import "tooltips"
+@import "forms"
+@import "select"
+@import "lists"
+@import "search"
+@import "tables"
+@import "charts"
+// @import "garnishes"

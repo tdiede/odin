@@ -1,0 +1,109 @@
+// Fine-tuning the display of icons
+// and providing reusable additional styles.
+
+h1,h2,h3,h4
+  .icon, .icon i
+    font-size: inherit !important
+    line-height: inherit !important
+    display: inline-block
+    vertical-align: baseline !important
+    text-align: center
+
+    & + span
+      display: inline-block
+      vertical-align: baseline !important
+
+// Space between icons that precede (or reside in) headings
+h1 .icon
+  margin-right: 1.4rem
+.icon + h1
+  margin-left: 1.4rem
+
+h2 .icon
+  margin-right: .7rem
+.icon + h2
+  margin-left: .7rem
+
+h3 .icon
+  margin-right: .5rem
+.icon + h3
+  margin-left: .5rem
+
+// h1
+//   .icon, .icon i
+//     font-size: inherit !important
+
+
+
+// Reinforcing Bulma panel icon styles, but with different selector,
+// so we can blindly use "span.icon" anywhere + get proper results.
+.panel
+  .icon
+    display: inline-block
+    font-size: 14px
+    height: 1em
+    line-height: 1em
+    text-align: center
+    vertical-align: top
+    width: 1em
+    color: #7a7a7a
+    margin-right: 0.75em
+    .fa
+      font-size: inherit
+      line-height: inherit
+
+// Icons inside of .tag's are very small.
+span.tag
+  .icon
+    width: 1rem
+    height: 1rem
+    margin-right: .2rem
+  .icon, .fa
+    font-size:   12px
+    line-height: 12px
+
+// Icons directly in a table row are slightly larger.
+td
+  & > .icon
+    width: .8rem
+    height: .8rem
+  & > .icon, & > .icon .fa
+    font-size:   11px
+    line-height: 11px
+
+// Provide space between icon + adjacent text (for use in buttons, etc.)
+.icon + .with-icon, .with-icon + .icon, .anticon + span
+  margin-left: $icon-side-spacing
+
+
+// Icons with tooltips have extra padding to create a larger hover area
+.icon.has-tooltip
+  padding: 8px
+  .fa
+    vertical-align: middle
+
+/* NOTE: Commented out because of incorrect behavior with ant dialogs
+/* span+.anticon, .anticon+span
+/*   margin-left: $icon-side-spacing
+
+
+.icon-default-source
+  color: $blue !important
+
+.default-source-indicator
+  @extend .flexrow
+  color: $blue
+  .default-source-label
+    display: none
+    font-size: .8rem
+    margin-left: .2rem
+
+
+.meta-with-icon
+  font-size: .9rem
+  &:not(:last-child)
+    margin-right: $inner-component-padding
+
+.icon-blue
+  .anticon, .icon
+    color: $blue
