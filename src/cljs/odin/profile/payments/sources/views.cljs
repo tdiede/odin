@@ -209,9 +209,7 @@
 (defn modal-verify-account []
   (let [bank       (subscribe [:payment.sources/current])
         amounts    (subscribe [:payment.sources.bank.verify/microdeposits])
-        is-visible (subscribe [:modal/visible? :payment.source/verify-account])
-        amount-1   (:amount-1 @amounts)
-        amount-2   (:amount-2 @amounts)]
+        is-visible (subscribe [:modal/visible? :payment.source/verify-account])]
     [ant/modal {:title   (str "Verify " (:name @bank))
                 :visible @is-visible
                 :footer  (r/as-element [modal-verify-account-footer])}
@@ -219,13 +217,13 @@
       [:p "If the two microdeposits have posted to your account, enter them below to verify ownership."]
       [:p.fs2 "Note: Amounts should be entered in " [:i "cents"] " (e.g. '32' not '0.32')"]
       [:form.form-verify-microdeposits.mt2 {:on-submit #(.preventDefault %)}
-       [ant/input-number {:default-value amount-1
+       [ant/input-number {:default-value (:amount-1 @amounts)
                           :min           1
                           :max           99
                           :placeholder   "00"
                           :size          "large"
                           :on-change     #(dispatch [:payment.sources.bank.verify/edit-amount :amount-1 %])}]
-       [ant/input-number {:default-value amount-2
+       [ant/input-number {:default-value (:amount-2 @amounts)
                           :min           1
                           :max           99
                           :placeholder   "00"
