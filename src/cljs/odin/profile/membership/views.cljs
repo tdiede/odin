@@ -69,7 +69,7 @@
 
 
 (defmethod deposit-status-content :default [{:keys [amount]} sources]
-  [:p.fs2 "Your security deposit is has been paid in entirety."])
+  [:p.fs2 "Your security deposit has been paid in entirety."])
 
 
 (defmethod deposit-status-content :overdue [{:keys [id amount due amount_remaining]} sources]
