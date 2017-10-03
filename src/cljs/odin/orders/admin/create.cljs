@@ -183,7 +183,7 @@
       :placeholder       "search by name or email"
       :allow-clear       true
       :option-label-prop :label
-      :value             (str @account)
+      :default-value     (str @account)
       :filter-option     (fn [val opt]
                            (let [q (string/lower-case (.. opt -props -qterm))]
                              (string/includes? q (string/lower-case val))))
@@ -213,7 +213,7 @@
       :placeholder       "search within service name, code or description"
       :allow-clear       true
       :option-label-prop :label
-      :value             (str @service)
+      :default-value     (str @service)
       :filter-option     (fn [val opt]
                            (let [q (string/lower-case (.. opt -props -qterm))]
                              (string/includes? q (string/lower-case val))))
@@ -291,17 +291,16 @@
 
 
 (defn button []
-  (let []
-    (r/create-class
-     {:component-will-mount
-      (fn [_]
-        (rf/dispatch-sync [::bootstrap]))
-      :reagent-render
-      (fn []
-        [:div
-         [modal]
-         [ant/button
-          {:type     :primary
-           :icon     "plus"
-           :on-click #(dispatch [:modal/show ::modal])}
-          "Create Order"]])})))
+  (r/create-class
+   {:component-will-mount
+    (fn [_]
+      (rf/dispatch-sync [::bootstrap]))
+    :reagent-render
+    (fn []
+      [:div {:style {:display "inline"}}
+       [modal]
+       [ant/button
+        {:type     :primary
+         :icon     "plus"
+         :on-click #(dispatch [:modal/show ::modal])}
+        "Create Order"]])}))

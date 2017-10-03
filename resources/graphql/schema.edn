@@ -14,7 +14,7 @@
 
   :order_status
   {:description "Possible statuses of orders."
-   :values      [:placed :canceled :charged :pending]}
+   :values      [:pending :placed :fulfilled :charged :canceled]}
 
   :payment_method
   {:description "Methods of payment."
@@ -30,7 +30,7 @@
 
   :orders_date_key
   {:description "Allowed keys for date-based order queries."
-   :values      [:created :charged]}
+   :values      [:created :billed :fulfilled]}
 
   :payment_source_type
   {:description "Types of payment source."
@@ -55,6 +55,8 @@
    :fields     {:id                {:type    (non-null :Long)
                                     :resolve (:get :db/id)}
                 :name              {:type    (non-null String)
+                                    :resolve :person/short-name}
+                :full_name         {:type    (non-null String)
                                     :resolve :person/full-name}
                 :first_name        {:type    (non-null String)
                                     :resolve (:get :person/first-name)}
@@ -323,7 +325,8 @@
     :billed     {:type (list :service_billed)}
     :services   {:type (list :Long)}
     :properties {:type (list :Long)}
-    :statuses   {:type (list :order_status)}
+    :statuses   {:type          (list :order_status)
+                 :default-value [:pending :placed :fulfilled :charged :canceled]}
     :datekey    {:type          :orders_date_key
                  :default-value :created
                  :description   "Specifies which date attribute to use for date params."}

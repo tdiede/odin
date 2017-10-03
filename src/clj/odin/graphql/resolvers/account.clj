@@ -34,6 +34,12 @@
   (account/emergency-contact account))
 
 
+(defn short-name
+  "Account's full name."
+  [_ _ account]
+  (str (account/first-name account) " " (account/last-name account)))
+
+
 (defn full-name
   "Account's full name."
   [_ _ account]
@@ -182,6 +188,7 @@
    :account/deposit           deposit
    :account/property          property
    :account/role              role
+   :person/short-name         short-name
    :person/full-name          full-name
    :account/emergency-contact emergency-contact
    ;; mutations

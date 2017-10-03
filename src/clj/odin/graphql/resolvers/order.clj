@@ -7,8 +7,7 @@
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
-            [toolbelt.datomic :as td]
-            [blueprints.models.payment :as payment]))
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Fields
@@ -34,12 +33,14 @@
 (defn billed-on
   "Date that `order` was billed on."
   [{conn :conn} _ order]
-  (d/q '[:find ?date .
-         :in $ ?o
-         :where
-         [?o :order/status :order.status/charged ?tx]
-         [?tx :db/txInstant ?date]]
-       (d/db conn) (td/id order)))
+  (when (order/charged? order)
+    (or (order/billed order)
+        (d/q '[:find ?date .
+                :in $ ?o
+                :where
+                [?o :order/status :order.status/charged ?tx]
+                [?tx :db/txInstant ?date]]
+              (d/db conn) (td/id order)))))
 
 
 (defn property

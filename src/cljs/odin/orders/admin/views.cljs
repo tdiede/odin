@@ -2,9 +2,12 @@
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
             [odin.orders.admin.create :as create]
+            [odin.orders.admin.db :as db]
             [odin.utils.formatters :as format]
             [re-frame.core :refer [dispatch subscribe]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [toolbelt.core :as tb]
+            [odin.routes :as routes]))
 
 ;;; How might we use an orders view?
 ;; - Orders begin life as "pending" (i.e. "new") -- these require attention.
@@ -25,10 +28,6 @@
     (f x (js->clj record :keywordize-keys true))))
 
 
-(defn- render-service [_ {:keys [service]}]
-  (:code service))
-
-
 (defn- render-total [_ {:keys [price quantity]}]
   (format/currency (* price (or quantity 1))))
 
@@ -44,22 +43,40 @@
     status))
 
 
-(def ^:private columns
-  [{:title     "Name"
-    :dataIndex :name}
-   {:title     "Service"
-    :dataIndex :service
-    :render    (wrap-cljs render-service)}
+(defn- sort-col [query-params key title href-fn]
+  (let [{:keys [sort-by sort-order]} query-params]
+    [:span title
+     [:div.ant-table-column-sorter
+      [:a.ant-table-column-sorter-up
+       {:class (if (and (= sort-by key) (= sort-order :asc)) "on" "off")
+        :href  (href-fn (assoc query-params :sort-order :asc :sort-by key))}
+       [ant/icon {:type "caret-up"}]]
+      [:a.ant-table-column-sorter-down
+       {:class (if (and (= sort-by key) (= sort-order :desc)) "on" "off")
+        :href  (href-fn (assoc query-params :sort-order :desc :sort-by key))}
+       [ant/icon {:type "caret-down"}]]]]))
+
+
+(defn- columns [query-params orders]
+  [{:title     "Service"
+    :dataIndex :name
+    :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
+    :onFilter  (fn [value record]
+                 (= value (str (.. record -service -id))))
+    :render    #(r/as-element [:span {:dangerouslySetInnerHTML {:__html %1}}])}
    {:title     "Member"
     :dataIndex :account
-    :render    #(.-name %)}
-   {:title     "Created"
+    :filters  (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
+    :onFilter (fn [value record]
+                (= value (str (.. record -account -id))))
+    :render   #(.-name %)}
+   {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
     :render    format/date-time-short}
-   {:title     "Billed On"
+   {:title     (r/as-element [sort-col query-params :billed_on "Billed On" db/params->route])
     :dataIndex :billed_on
     :render    #(if (some? %) (format/date-time-short %) "N/A")}
-   {:title     "Price"
+   {:title     (r/as-element [sort-col query-params :price "Price" db/params->route])
     :dataIndex :price
     :render    (wrap-cljs render-price)}
    {:title     "#"
@@ -70,47 +87,72 @@
     :render    (wrap-cljs render-total)}
    {:title     "Status"
     :dataIndex :status
-    :render    (wrap-cljs render-status)}
-   {:title     "Billed"
-    :dataIndex :billed
-    :render    (wrap-cljs #(get-in %2 [:service :billed]))}])
+    :render    (wrap-cljs render-status)}])
 
 
 (defn- expanded [record]
-  (or (.-desc record) "N/A"))
+  [:div.columns
+   [:div.column
+    [:p.fs1 [:b "Billed"]]
+    [:p.fs2 (.. record -service -billed)]]
+   [:div.column.is-10
+    [:p.fs1 [:b "Description/Notes"]]
+    [:p.fs2 (or (.-desc record) "N/A")]]])
 
 
 (defn orders-table []
   (let [orders     (subscribe [:admin/orders])
+        params     (subscribe [:admin.orders/query-params])
         is-loading (subscribe [:loading? :admin.orders/fetch])]
-    [ant/table
-     {:loading           @is-loading
-      :columns           columns
-      :expandedRowRender (comp expanded r/as-element)
-      :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}]))
+    (fn []
+      [ant/table
+       {:loading           (and @is-loading (empty? @orders))
+        :columns           (columns @params @orders)
+        :expandedRowRender (comp r/as-element expanded)
+        :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}])))
 
 
 ;; =============================================================================
 ;; Controls
 ;; =============================================================================
 
-(defn checkable-tags []
-  (let [tags (r/atom [{:name "all" :key :all}
-                      {:name "new" :key :pending}
-                      {:name "in progress" :key :placed}
-                      {:name "canceled" :key :canceled}
-                      {:name "charged" :key :charged}])]
+
+(defn status-filters []
+  (let [statuses (subscribe [:admin.orders/statuses])
+        selected (subscribe [:admin.orders.statuses/selected])]
     [:div
      (doall
-      (for [{:keys [name key]} @tags]
-        ^{:key key}
+      (for [status @statuses]
+        ^{:key status}
         [ant/tag-checkable-tag
-         {:on-change #(dispatch [:admin.orders.status/select key])
+         {:on-change #(dispatch [:admin.orders.status/select status])
+          :checked   (@selected status)
           :style     {:font-size   18
                       :line-height "26px"
                       :height      "30px"}}
-         [:span name]]))]))
+         [:span (name status)]]))]))
 
+
+
+(defn- controls []
+  (let [params (subscribe [:admin.orders/query-params])]
+    [:div.chart-controls
+     [:div.columns
+      [:div.column.is-2
+       [ant/form-item {:label "Calculate Range With"}
+        [ant/select {:value     (:datekey @params)
+                     :style     {:width 138}
+                     :size      :large
+                     :on-change #(dispatch [:admin.orders/datekey (keyword %)])}
+         [ant/select-option {:value :created} "Created"]
+         [ant/select-option {:value :billed} "Billed On"]]]]
+      [:div.column
+       [ant/form-item {:label "Within Range"}
+        [ant/date-picker-range-picker
+         {:format      "l"
+          :allow-clear false
+          :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
+          :value       ((juxt :from :to) @params)}]]]]]))
 
 
 ;; =============================================================================
@@ -118,28 +160,28 @@
 ;; =============================================================================
 
 
-;; TODO: Wire up checkable-tags w/ actual data, drives query params
-;; TODO: Add download as csv button
-;; TODO: Create order modal
-;; TODO: Create order mutation
-;; DONE: Add services query w/ fulltext search term `q`
-;; DONE: Extend accounts query w/ fulltext search term `q`
-;; TODO: Place order mutation/action for orders
-;; TODO: Process order mutation/action for orders
-
-
 (defn view []
-  [:div
-   (typography/view-header "Orders" "Manage and view premium service orders.")
-   ;; [:hr]
-   ;; [:div.chart-controls
-   ;;  ]
+  (let [showing-controls (r/atom false)]
+    (fn []
+      [:div
+       (typography/view-header "Orders" "Manage and view premium service orders.")
+       [:div.columns
+        (when-not @showing-controls
+          {:style {:margin-top 24 :margin-bottom 24}})
+        [:div.column
+         [status-filters]]
+        [:div.column
+         [:div.is-pulled-right
+          [create/button]
+          [ant/button
+           {:class    "ml2"
+            :type     (if @showing-controls :primary :default)
+            :shape    :circle
+            :icon     :setting
+            :on-click #(swap! showing-controls not)}]]]]
 
-   ;;; controls
-   [:div.columns {:style {:margin-top 24 :margin-bottom 24}}
-    [:div.column
-     [checkable-tags]]
-    [:div.column
-     [:div.is-pulled-right [create/button]]]]
-   [:div
-    [orders-table]]])
+       (when @showing-controls [controls])
+
+
+       [:div
+        [orders-table]]])))
