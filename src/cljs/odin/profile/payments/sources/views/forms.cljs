@@ -53,9 +53,13 @@
           [:p#card-errors.help.is-danger]]
          [:hr]
          [:div.align-right
-          [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
+          [ant/button
+           {:on-click #(dispatch [:modal/hide :payment.source/add])
+            :size     :large}
+           "Cancel"]
           [ant/button
            {:type    :primary
+            :size    :large
             :id      "submit-btn"
             :loading @is-submitting}
            "Add Credit Card"]]])})))
@@ -142,9 +146,13 @@
         [:p.pad.text-red.fs2 [:b bank-account-desc]]
         [:hr]
         [:div.align-right
-         [ant/button {:on-click #(dispatch [:modal/hide :payment.source/add])} "Cancel"]
          [ant/button
-          {:type     "primary"
+          {:on-click #(dispatch [:modal/hide :payment.source/add])
+           :size     :large}
+          "Cancel"]
+         [ant/button
+          {:type     :primary
+           :size     :large
            :loading  @is-submitting
            :on-click (submit-when-valid form [:payment.sources.add.bank/submit!])}
           "Add Bank Account"]]]))))

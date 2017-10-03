@@ -138,9 +138,12 @@
 (defn modal-enable-autopay-footer [selected-autopay-source]
   (let [is-submitting (subscribe [:loading? :payment.sources.autopay/enable!])]
     [:div
-     [ant/button {:on-click #(dispatch [:modal/hide :payment.source/autopay-enable])}
+     [ant/button
+      {:on-click #(dispatch [:modal/hide :payment.source/autopay-enable])
+       :size     :large}
       "I'd rather pay manually."]
      [ant/button {:type     "primary"
+                  :size     :large
                   :loading  @is-submitting
                   :on-click #(dispatch [:payment.sources.autopay/enable! selected-autopay-source])}
       "Great! Let's do it"]]))
