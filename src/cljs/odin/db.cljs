@@ -43,6 +43,7 @@
     :menu    {:showing false
               :items   (menu-items config)}
     :route   {:current :home
+              :page    :home
               :path    [:home]
               :params  {}}
     :config  config}

@@ -1,8 +1,8 @@
-(ns odin.orders.admin.views
+(ns odin.orders.admin.list.views
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
             [odin.orders.admin.create :as create]
-            [odin.orders.admin.db :as db]
+            [odin.orders.admin.list.db :as db]
             [odin.utils.formatters :as format]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]
@@ -58,18 +58,20 @@
 
 
 (defn- columns [query-params orders]
-  [{:title     "Service"
+  [{:title     "Order"
     :dataIndex :name
     :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
     :onFilter  (fn [value record]
                  (= value (str (.. record -service -id))))
-    :render    #(r/as-element [:span {:dangerouslySetInnerHTML {:__html %1}}])}
+    :render    #(r/as-element
+                 [:a {:href                    (routes/path-for :orders/entry :order-id (.-id %2))
+                      :dangerouslySetInnerHTML {:__html %1}}])}
    {:title     "Member"
     :dataIndex :account
-    :filters  (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
-    :onFilter (fn [value record]
-                (= value (str (.. record -account -id))))
-    :render   #(.-name %)}
+    :filters   (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
+    :onFilter  (fn [value record]
+                 (= value (str (.. record -account -id))))
+    :render    #(.-name %)}
    {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
     :render    format/date-time-short}
@@ -127,9 +129,9 @@
         [ant/tag-checkable-tag
          {:on-change #(dispatch [:admin.orders.status/select status])
           :checked   (@selected status)
-          :style     {:font-size   18
-                      :line-height "26px"
-                      :height      "30px"}}
+          :style     {:font-size   16
+                      :line-height "24px"
+                      :height      "28px"}}
          [:span (name status)]]))]))
 
 

@@ -7,14 +7,14 @@
             [clojure.walk :as walk]
             [clojure.string :as string]
             [odin.utils.dispatch :as dispatch]))
-            ;;[ring.middleware.params :as ring]))
 
 
 (def app-routes
   [""
    [["/metrics" :metrics]
 
-    ["/orders" :orders]
+    ["/orders" [["" :orders]
+                [["/" :order-id] :orders/entry]]]
 
     ["/kami" :kami]
 
@@ -35,9 +35,8 @@
     [true :home]]])
 
 
-(defmulti dispatches
-  (fn [{:keys [requester page]}]
-    (dispatch/role-dispatch dispatches (:role requester) page)))
+(defmulti dispatches (fn [route] (dispatch/role-dispatch dispatches route)))
+
 
 (defmethod dispatches :default [route] [])
 
@@ -106,7 +105,7 @@
   ([route]
    (path-for route {}))
   ([route & {:as params}]
-   (-> (bidi/path-for app-routes route (get-route-params params))
+   (-> (apply bidi/path-for app-routes route (apply concat (get-route-params params)))
        (append-query-params params)
        unbaseify-uri)))
 

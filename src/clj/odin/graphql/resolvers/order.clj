@@ -34,7 +34,7 @@
   "Date that `order` was billed on."
   [{conn :conn} _ order]
   (when (order/charged? order)
-    (or (order/billed order)
+    (or (order/billed-on order)
         (d/q '[:find ?date .
                 :in $ ?o
                 :where

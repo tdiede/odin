@@ -6,9 +6,7 @@
             [reagent.core :as r]))
 
 
-(defmulti view
-  (fn [{:keys [requester path]}]
-    (dispatch/role-dispatch view (:role requester) (first path))))
+(defmulti view (fn [route] (dispatch/role-dispatch view route)))
 
 
 (defmethod view :default [{:keys [page path root params]}]

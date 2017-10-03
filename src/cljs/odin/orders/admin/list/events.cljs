@@ -1,5 +1,5 @@
-(ns odin.orders.admin.events
-  (:require [odin.orders.admin.db :as db]
+(ns odin.orders.admin.list.events
+  (:require [odin.orders.admin.list.db :as db]
             [odin.utils.norms :as norms]
             [odin.routes :as routes]
             [re-frame.core :refer [reg-event-db

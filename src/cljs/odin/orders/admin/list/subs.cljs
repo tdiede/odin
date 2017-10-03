@@ -1,5 +1,5 @@
-(ns odin.orders.admin.subs
-  (:require [odin.orders.admin.db :as db]
+(ns odin.orders.admin.list.subs
+  (:require [odin.orders.admin.list.db :as db]
             [odin.utils.norms :as norms]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))

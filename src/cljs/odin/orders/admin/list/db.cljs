@@ -1,4 +1,4 @@
-(ns odin.orders.admin.db
+(ns odin.orders.admin.list.db
   (:require [clojure.string :as string]
             [toolbelt.core :as tb]
             [odin.routes :as routes]))

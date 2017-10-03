@@ -77,9 +77,9 @@
  :<- [::form]
  (fn [[{:keys [price] :as service} {:keys [quantity] :as form}]]
    (cond-> []
-     true (conj (service/notes-field :notes "")
-                (service/quantity-field :quantity quantity)
-                (service/price-field :price (or (:price form) price))))))
+     (some? price) (conj (service/quantity-field :quantity quantity))
+     true          (conj (service/notes-field :notes "")
+                         (service/price-field :price (or (:price form) price))))))
 
 
 (reg-sub
@@ -263,12 +263,14 @@
       :footer    [(r/as-element
                    ^{:key 1}
                    [ant/button
-                    {:on-click #(dispatch [:modal/hide ::modal])}
+                    {:on-click #(dispatch [:modal/hide ::modal])
+                     :size     :large}
                     "Cancel"])
                   (r/as-element
                    ^{:key 2}
                    [ant/button
                     {:disabled (not @can-create)
+                     :size     :large
                      :type     :primary
                      :loading  @is-creating
                      :on-click #(dispatch [::create!])}
