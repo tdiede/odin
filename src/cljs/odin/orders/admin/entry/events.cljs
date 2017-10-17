@@ -8,6 +8,13 @@
   [[:order/fetch (tb/str->int (get-in route [:params :order-id]))]])
 
 
+;; TODO: Show ant message
+(reg-event-fx
+ :order/refresh
+ (fn [_ [_ order-id]]
+   {:dispatch [:order/fetch order-id]}))
+
+
 (reg-event-fx
  :order/place!
  (fn [_ [k {id :id} {:keys [send-notification projected-fulfillment]}]]

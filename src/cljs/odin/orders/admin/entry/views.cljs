@@ -3,7 +3,7 @@
             [iface.loading :as loading]
             [iface.typography :as typography]
             [odin.orders.admin.entry.views.progress :as progress]
-            [re-frame.core :refer [subscribe]]
+            [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]))
 
 (defn- subheader [order]
@@ -26,7 +26,14 @@
     (if (and @is-loading (nil? @order))
       (loading/fullpage :text "Fetching order...")
       [:div
-       (typography/view-header (:name @order) (subheader @order))
+       [:div.columns
+        [:div.column.is-three-quarters
+         (typography/view-header (:name @order) (subheader @order))]
+        [:div.column.is-hidden-mobile.has-text-right
+         [ant/button {:shape   :circle
+                      :icon    "reload"
+                      :loading @is-loading
+                      :on-click #(dispatch [:order/refresh order-id])}]]]
 
        [:div.columns
         [:div.column
