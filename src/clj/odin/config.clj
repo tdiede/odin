@@ -79,6 +79,41 @@
 
 
 ;; =============================================================================
+;; Mailgun
+;; =============================================================================
+
+
+(defn mailgun-domain
+  [config]
+  (get-in config [:mailgun :domain]))
+
+
+(defn mailgun-sender
+  [config]
+  (get-in config [:mailgun :sender]))
+
+
+(defn mailgun-api-key
+  [config]
+  (get-in config [:mailgun :api-key]))
+
+
+;; =============================================================================
+;; Slack
+;; =============================================================================
+
+
+(defn slack-webhook-url
+  [config]
+  (get-in config [:secrets :slack :webhook]))
+
+
+(defn slack-username
+  [config]
+  (get-in config [:slack :username]))
+
+
+;; =============================================================================
 ;; Stripe
 ;; =============================================================================
 

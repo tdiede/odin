@@ -8,7 +8,9 @@
             [odin.config :as config :refer [config]]
             [odin.core]
             [odin.seed :as seed]
-            [taoensso.timbre :as timbre]))
+            [reactor.reactor :as reactor]
+            [taoensso.timbre :as timbre]
+            [clojure.core.async :as a]))
 
 
 (timbre/refer-timbre)
@@ -35,6 +37,21 @@
   :start (when (in-memory-db? (config/datomic-uri config))
            (timbre/debug "seeding dev database...")
            (seed/seed conn)))
+
+
+(defstate reactor
+  :start (let [conf {:mailer          {:api-key (config/mailgun-api-key config)
+                                       :domain  (config/mailgun-domain config)
+                                       :sender  (config/mailgun-sender config)
+                                       :send-to "josh@joinstarcity.com"}
+                     :slack           {:webhook-url (config/slack-webhook-url config)
+                                       :username    (config/slack-username config)
+                                       :channel     "#debug"}
+                     :stripe          {:secret-key (config/stripe-secret-key config)}
+                     :public-hostname "http://localhost:8080"}
+               chan (a/chan (a/sliding-buffer 512))]
+           (reactor/start! conn chan conf))
+  :stop (reactor/stop! reactor))
 
 
 (defn go []

@@ -14,7 +14,7 @@
 
   :order_status
   {:description "Possible statuses of orders."
-   :values      [:pending :placed :fulfilled :charged :canceled]}
+   :values      [:pending :placed :fulfilled :charged :processing :canceled]}
 
   :payment_method
   {:description "Methods of payment."
@@ -75,6 +75,9 @@
                 :active_license    {:type        :license
                                     :description "The active member license for this account."
                                     :resolve     :account/active-license}
+                :service_source    {:type        :payment_source
+                                    :description "The source to use to pay for premium service orders."
+                                    :resolve     :account/service-source}
                 :deposit           {:type        :deposit
                                     :description "Security deposit for this account."
                                     :resolve     :account/deposit}}}
@@ -152,32 +155,38 @@
 
 
   :order
-  {:fields {:id        {:type    (non-null :Long)
-                        :resolve (:get :db/id)}
-            :price     {:type    Float
-                        :resolve :order/price}
-            :quantity  {:type    Float
-                        :resolve (:get :order/quantity)}
-            :name      {:type    String
-                        :resolve :order/name}
-            :desc      {:type    String
-                        :resolve (:get :order/desc)}
-            :status    {:type    (non-null :order_status)
-                        :resolve :order/status}
-            :billed_on {:type    :Instant
-                        :resolve :order/billed-on}
-            :account   {:type    (non-null :account)
-                        :resolve (:get :order/account)}
-            :service   {:type    (non-null :service)
-                        :resolve (:get :order/service)}
-            :payments  {:type    (list :payment)
-                        :resolve (:get :order/payments)}
-            :property  {:type    (non-null :property)
-                        :resolve :order/property}
-            :created   {:type    (non-null :Instant)
-                        :resolve :entity/created}
-            :updated   {:type    (non-null :Instant)
-                        :resolve :entity/updated}}}
+  {:fields {:id                    {:type    (non-null :Long)
+                                    :resolve (:get :db/id)}
+            :price                 {:type    Float
+                                    :resolve :order/price}
+            :quantity              {:type    Float
+                                    :resolve (:get :order/quantity)}
+            :name                  {:type    String
+                                    :resolve :order/name}
+            :desc                  {:type    String
+                                    :resolve (:get :order/desc)}
+            :status                {:type    (non-null :order_status)
+                                    :resolve :order/status}
+            :billed_on             {:type    :Instant
+                                    :resolve :order/billed-on}
+            :fulfilled_on          {:type    :Instant
+                                    :resolve :order/fulfilled-on}
+            :account               {:type    (non-null :account)
+                                    :resolve (:get :order/account)}
+            :service               {:type    (non-null :service)
+                                    :resolve (:get :order/service)}
+            :payments              {:type    (list :payment)
+                                    :resolve (:get :order/payments)}
+            :property              {:type    (non-null :property)
+                                    :resolve :order/property}
+            :projected_fulfillment {:type    :Instant
+                                    :resolve (:get :order/projected-fulfillment)}
+            :meta                  {:type    (list :metadata)
+                                    :resolve :order/meta}
+            :created               {:type    (non-null :Instant)
+                                    :resolve :entity/created}
+            :updated               {:type    (non-null :Instant)
+                                    :resolve :entity/updated}}}
 
 
   :payment
@@ -298,7 +307,13 @@
   :data_point
   {:fields {:percentage {:type Float}
             :count      {:type Int}
-            :label      {:type String}}}}
+            :label      {:type String}}}
+
+  :metadata
+  {:fields {:attr             {:type (non-null :Keyword)}
+            :value            {:type :Any}
+            :last_modified    {:type :Instant}
+            :last_modified_by {:type :account}}}}
 
 
  ;; =============================================================================
@@ -348,6 +363,8 @@
 
 
   ;;; Payments
+
+
   :payments_query_params
   {:description "Parameters to query for payments."
    :fields
@@ -394,6 +411,11 @@
   :orders {:type    (list :order)
            :args    {:params {:type :orders_query_params}}
            :resolve :order/list}
+
+
+  :order {:type    :order
+          :args    {:id {:type (non-null :Long)}}
+          :resolve :order/entry}
 
 
   :payments {:type    (list :payment)
@@ -453,6 +475,48 @@
    :description "Create a new premium service order."
    :args        {:params {:type :create_order_params}}
    :resolve     :order/create!}
+
+
+  :place_order
+  {:type        :order
+   :description "Place a premium service order."
+   :args        {:id                    {:type        (non-null :Long)
+                                         :description "ID of the order entity."}
+                 :projected_fulfillment {:type        :Instant
+                                         :description "Projected fulfillment date."}
+                 :notify                {:type        Boolean
+                                         :description "Send notification?"}}
+   :resolve     :order/place!}
+
+
+  :fulfill_order
+  {:type        :order
+   :description "Fulfill a premium service order."
+   :args        {:id           {:type        (non-null :Long)
+                                :description "ID of the order entity."}
+                 :fulfilled_on {:type        :Instant
+                                :description "Actual fulfillment date."}
+                 :charge       {:type        Boolean
+                                :description "Charge the order?"}
+                 :notify       {:type        Boolean
+                                :description "Send notification?"}}
+   :resolve     :order/fulfill!}
+
+
+  :charge_order
+  {:type    :order
+   :args    {:id {:type (non-null :Long)}}
+   :resolve :order/charge!}
+
+
+  :cancel_order
+  {:type        :order
+   :description "Cancel a premium service order."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "ID of the order entity."}
+                 :notify {:type        Boolean
+                          :description "Send cancelation notification?"}}
+   :resolve     :order/cancel!}
 
 
   ;;; Payments

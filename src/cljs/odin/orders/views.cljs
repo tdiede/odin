@@ -15,4 +15,4 @@
 
 
 (defmethod content/view :admin.orders/entry [route]
-  [admin-entry/view])
+  [admin-entry/view route])

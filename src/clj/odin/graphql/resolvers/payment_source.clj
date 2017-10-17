@@ -25,7 +25,8 @@
             [toolbelt.async :refer [<!? go-try]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.predicates :as p]))
+            [toolbelt.predicates :as p]
+            [odin.models.payment-source :as payment-source]))
 
 ;; =============================================================================
 ;; Helpers
@@ -213,32 +214,21 @@
 ;; =============================================================================
 
 
-(defn- sources-by-account
-  "Produce all payment sources for a given `account`."
-  [{:keys [conn stripe]} account]
-  (let [customer (customer/by-account (d/db conn) account)
+(defn sources
+  "Retrieve payment sources."
+  [{:keys [conn stripe] :as context} {:keys [account]} _]
+  (let [account  (d/entity (d/db conn) account)
+        customer (customer/by-account (d/db conn) account)
         result   (resolve/resolve-promise)]
     (if (nil? customer)
       (resolve/deliver! result [])
       (go
         (try
-          (let [customer' (<!? (rcu/fetch stripe (customer/id customer)))
-                sources   (->> (rcu/sources customer')
-                               ;; inject the customer for field resolvers
-                               (map #(assoc % ::customer customer')))]
-            (resolve/deliver! result sources))
+          (resolve/deliver! result (<!? (payment-source/sources-by-account stripe customer)))
           (catch Throwable t
             (resolve/deliver! result nil {:message  (error-message t)
                                           :err-data (ex-data t)})))))
     result))
-
-
-(defn sources
-  "Retrieve payment sources."
-  [{:keys [conn] :as context} {:keys [account]} _]
-  (let [account (d/entity (d/db conn) account)]
-    ;; NOTE: We may also provide the capability to supply customer-id.
-    (sources-by-account context account)))
 
 
 ;; =============================================================================

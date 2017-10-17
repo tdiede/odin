@@ -8,8 +8,7 @@
 
 
 (def default-value
-  {path {:orders []
-         :params {:sort-by    :price
+  {path {:params {:sort-by    :created
                   :sort-order :desc
                   :datekey    :created
                   :from       (.startOf (js/moment.) "month")

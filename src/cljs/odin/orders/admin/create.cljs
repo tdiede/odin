@@ -141,19 +141,19 @@
 (reg-event-fx
  ::create!
  [(path ::path)]
- (fn [{db :db} [k]]
+ (fn [{db :db} [k on-create]]
    {:dispatch [:loading k true]
     :graphql  {:mutation   [[:create_order {:params (:form db)} [:id]]]
-               :on-success [::create-success k]
+               :on-success [::create-success k on-create]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::create-success
- (fn [_ [_ k response]]
-   {:dispatch-n [[:loading k false]
-                 [:modal/hide ::modal]
-                 [:admin.orders/fetch]]}))
+ (fn [_ [_ k on-create response]]
+   {:dispatch-n (tb/conj-when [[:loading k false]
+                               [:modal/hide ::modal]]
+                              on-create)}))
 
 
 ;; =============================================================================
@@ -250,7 +250,7 @@
          :on-delete #(dispatch [::clear-service])}])]))
 
 
-(defn- modal []
+(defn- modal [on-create]
   (let [is-showing  (subscribe [:modal/visible? ::modal])
         is-loading  (subscribe [:loading? ::fetch])
         can-create  (subscribe [::can-create?])
@@ -273,7 +273,7 @@
                      :size     :large
                      :type     :primary
                      :loading  @is-creating
-                     :on-click #(dispatch [::create!])}
+                     :on-click #(dispatch [::create! on-create])}
                     "Create"])]}
      [:div
       (if @is-loading
@@ -299,10 +299,11 @@
       (rf/dispatch-sync [::bootstrap]))
     :reagent-render
     (fn []
-      [:div {:style {:display "inline"}}
-       [modal]
-       [ant/button
-        {:type     :primary
-         :icon     "plus"
-         :on-click #(dispatch [:modal/show ::modal])}
-        "Create Order"]])}))
+      (let [props (r/props (r/current-component))]
+        [:div {:style {:display "inline"}}
+         [modal (:on-create props)]
+         [ant/button
+          {:type     :primary
+           :icon     "plus"
+           :on-click #(dispatch [:modal/show ::modal])}
+          "Create Order"]]))}))

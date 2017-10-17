@@ -56,10 +56,10 @@
                  [aero "1.1.2"]
                  [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
-                 [starcity/toolbelt "0.1.8" :exclusions [com.datomic/datomic-free
-                                                         org.apache.httpcomponents/httpclient
-                                                         com.andrewmcveigh/cljs-time
-                                                         com.google.guava/guava]]]
+                 [starcity/toolbelt "0.1.9-SNAPSHOT" :exclusions [com.datomic/datomic-free
+                                                                  org.apache.httpcomponents/httpclient
+                                                                  com.andrewmcveigh/cljs-time
+                                                                  com.google.guava/guava]]]
 
   :jvm-opts ["-server"
              "-Xmx4g"

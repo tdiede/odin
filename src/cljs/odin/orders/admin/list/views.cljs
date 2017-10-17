@@ -103,9 +103,9 @@
 
 
 (defn orders-table []
-  (let [orders     (subscribe [:admin/orders])
+  (let [orders     (subscribe [:admin.table/orders])
         params     (subscribe [:admin.orders/query-params])
-        is-loading (subscribe [:loading? :admin.orders/fetch])]
+        is-loading (subscribe [:loading? :orders/query])]
     (fn []
       [ant/table
        {:loading           (and @is-loading (empty? @orders))
@@ -163,7 +163,8 @@
 
 
 (defn view []
-  (let [showing-controls (r/atom false)]
+  (let [showing-controls (r/atom false)
+        query-params     (subscribe [:admin.orders/query-params])]
     (fn []
       [:div
        (typography/view-header "Orders" "Manage and view premium service orders.")
@@ -174,7 +175,7 @@
          [status-filters]]
         [:div.column
          [:div.is-pulled-right
-          [create/button]
+          [create/button {:on-create [:orders/query @query-params]}]
           [ant/button
            {:class    "ml2"
             :type     (if @showing-controls :primary :default)
