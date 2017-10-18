@@ -273,20 +273,31 @@
 
 
   :service
-  {:fields {:id     {:type    (non-null :Long)
-                     :resolve (:get :db/id)}
-            :name   {:type    (non-null String)
-                     :resolve (:get :service/name)}
-            :desc   {:type    String
-                     :resolve (:get :service/desc)}
-            :code   {:type    (non-null String)
-                     :resolve (:get :service/code)}
-            :price  {:type    Float
-                     :resolve (:get :service/price)}
-            :billed {:type    :service_billed
-                     :resolve :service/billed}
-            :rental {:type    Boolean
-                     :resolve (:get :service/rental)}}}
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :name     {:type    (non-null String)
+                       :resolve (:get :service/name)}
+            :desc     {:type    String
+                       :resolve (:get :service/desc)}
+            :code     {:type    (non-null String)
+                       :resolve (:get :service/code)}
+            :price    {:type    Float
+                       :resolve (:get :service/price)}
+            :billed   {:type    :service_billed
+                       :resolve :service/billed}
+            :rental   {:type    Boolean
+                       :resolve (:get :service/rental)}
+            :variants {:type    (list :service_variant)
+                       :resolve (:get :service/variants)}}}
+
+
+  :service_variant
+  {:fields {:id    {:type    (non-null :Long)
+                    :resolve (:get :db/id)}
+            :name  {:type    (non-null String)
+                    :resolve (:get :svc-variant/name)}
+            :price {:type    Float
+                    :resolve (:get :svc-variant/price)}}}
 
 
   :unit
@@ -330,6 +341,7 @@
                  :last_name         {:type String}
                  :phone             {:type String}
                  :emergency_contact {:type :update_account}}}
+
 
   ;;; Orders
   :orders_query_params

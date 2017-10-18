@@ -75,11 +75,16 @@
  ::service-fields
  :<- [::selected-service]
  :<- [::form]
- (fn [[{:keys [price] :as service} {:keys [quantity] :as form}]]
+ (fn [[{:keys [price variants] :as service} {:keys [quantity] :as form}]]
    (cond-> []
-     (some? price) (conj (service/quantity-field :quantity quantity))
-     true          (conj (service/notes-field :notes "")
-                         (service/price-field :price (or (:price form) price))))))
+     (or (some? price) (not (empty? variants)))
+     (conj (service/quantity-field :quantity quantity))
+
+     (and (nil? price) (empty? variants))
+     (conj (service/notes-field :notes ""))
+
+     (empty? variants)
+     (conj (service/price-field :price (or (:price form) price))))))
 
 
 (reg-sub
@@ -108,7 +113,8 @@
  (fn [{db :db} [_ bootstrapped]]
    (tb/assoc-when
     {:graphql {:query      [[:accounts [:id :name :email [:property [:name]]]]
-                            [:services [:id :code :name :desc :price :billed]]]
+                            [:services [:id :code :name :desc :price :billed
+                                        [:variants [:id :name :price]]]]]
                :on-success [::fetch-success]
                :on-failure [:graphql/failure ::fetch]}}
     :dispatch (when-not bootstrapped [:loading ::fetch true]))))
@@ -192,16 +198,14 @@
      (doall (map account-option @accounts))]))
 
 
-(defn- service-option [{:keys [id code name desc price]}]
+(defn- service-option [{:keys [id code name desc price] :as service}]
   [autocomplete-option {:key   id
                         :label (string/replace name "&amp;" "&")
                         :qterm (str code " " name " " desc)}
    [:span
     [:span {:dangerouslySetInnerHTML {:__html (or name code)}}]
     " - "
-    (if-let [p price]
-      (format/currency p)
-      " quote")]
+    (service/price-text service)]
    [:p.fs2 [:small desc]]])
 
 
@@ -220,6 +224,13 @@
       :on-change         #(when (nil? %) (dispatch [::clear-service]))
       :on-select         #(dispatch [::update :service (tb/str->int %)])}
      (doall (map service-option @services))]))
+
+
+(defn- order-price
+  [{:keys [variants] :as service} {:keys [price variant] :as form}]
+  (let [vprice (:price (tb/find-by (comp (partial = variant) :id) variants))
+        fprice (when-not (or (zero? price) (string/blank? price)) price)]
+    (or vprice fprice (:price service))))
 
 
 (defn- form []
@@ -241,10 +252,11 @@
          :desc     (:desc @service)
          :rental   (:rental @service)
          :quantity (:quantity @form)
-         :price    (or (:price @form) (:price @service))
+         :price    (order-price @service @form)
          :billed   (:billed @service)
          :service  (:id @service)
          :selected true
+         :variants (:variants @service)
          :fields   @fields}
         {:on-change (fn [[_ k v]] (dispatch [::update k v]))
          :on-delete #(dispatch [::clear-service])}])]))
@@ -281,15 +293,6 @@
                        :padding    "50px 50px"}}
          [ant/spin {:size :large}]]
         [form])]]))
-
-
-;; What do we need to know to create an order?
-;; - account
-;; - service
-;; - quantity
-;; - description
-;; - price (pre-populated from service)
-;; - variant?
 
 
 (defn button []

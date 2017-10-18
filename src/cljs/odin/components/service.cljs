@@ -12,11 +12,12 @@
   (str (apply min prices) "-" (apply max prices)))
 
 
-(defn- price-text
-  [{:keys [price billed quantity fields variants] :as item}]
+(defn price-text
+  "The text-based representation of a service's price."
+  [{:keys [price billed quantity fields variants] :as service}]
   (let [prices (->> (conj (map :price variants) price)
                     (remove nil?)
-                    (map (partial * quantity)))
+                    (map (partial * (or quantity 1))))
         suf    (if (= billed :monthly) "/month" "")]
     (cond
       (empty? prices)      "Quote"
@@ -87,40 +88,44 @@
     (:variants item))])
 
 
+(defn- form-label [label]
+  [:label.label {:style {:color "#6f6f6f" :font-size "0.75rem"}} label])
+
+
 (defn- form-item
   [item field {:keys [on-change] :or {on-change identity}}]
   (let [{:keys [label type key min max step]} field]
     [:div.control
-     [:label.label {:style {:color "#6f6f6f" :font-size "0.75rem"}} label]
+     (form-label label)
      (form-field item field on-change)]))
 
 
 (defn- form
-  [{:keys [service selected fields] :as item} {:keys [on-select]
-                                               :or   {on-select identity}
-                                               :as   opts}]
-  (cond
-    (not selected)
-    [:div [ant/button {:type :ghost :on-click (fn [_] (on-select item))} "Select"]]
+  [{:keys [service selected fields variants] :as item} {:keys [on-select on-change]
+                                                        :or   {on-select identity}
+                                                        :as   opts}]
+  (let [fields (if-not (empty? variants)
+                 (conj fields {:type      :variants
+                               :key       :variant
+                               :label     "Variants"
+                               :col-class "is-two-thirds"
+                               :value     (-> variants first :id)})
+                 fields)]
+    (cond
+      (not selected)
+      [:div [ant/button {:type :ghost :on-click (fn [_] (on-select item))} "Select"]]
 
-    (= 1 (count fields))
-    [:div (form-item item (first fields) opts)]
-
-    (> (count fields) 1)
-    (let [pred   (comp (partial = :notes) :type)
-          notes  (tb/find-by pred fields)
-          fields (if (some? notes) (remove pred fields) fields)]
+      (> (count fields) 0)
       [:div.columns
-       (when (some? notes)
-         [:div.column {:class (when-not (empty? fields) "is-half")}
-          (form-item item notes opts)])
        (map-indexed
         #(with-meta
-           [:div.column (form-item item %2 opts)]
+           [:div.column
+            {:class (:col-class %2)}
+            (form-item item %2 opts)]
            {:key %1})
-        fields)])
+        fields)]
 
-    :else [:div]))
+      :otherwise [:div])))
 
 
 ;; =============================================================================
@@ -135,38 +140,34 @@
 (defn quantity-field
   [key value & {:keys [min max step] :or {min 1, step 1, max 100000}}]
   (tb/assoc-when
-   {:type  :quantity
-    :label "Quantity"
-    :value value
-    :key   key
-    :min   min
-    :step  step}
+   {:type      :quantity
+    :label     "Quantity"
+    :col-class "is-one-third"
+    :value     value
+    :key       key
+    :min       min
+    :step      step}
    :max max))
 
 
 (defn notes-field [key value]
-  {:key   key
-   :label "Description"
-   :value value
-   :type  :notes})
-
-
-(defn variants-field [key value]
-  {:key   key
-   :label "Variants"
-   :value value
-   :type  :variants})
+  {:key       key
+   :label     "Description"
+   :col-class "is-two-thirds"
+   :value     value
+   :type      :notes})
 
 
 (defn price-field
   [key value & {:keys [min max step] :or {min 1, step 1, max 100000}}]
-  {:key   key
-   :type  :price
-   :label "Price"
-   :value value
-   :min   min
-   :max   max
-   :step  step})
+  {:key       key
+   :type      :price
+   :label     "Price"
+   :col-class "is-one-third"
+   :value     value
+   :min       min
+   :max       max
+   :step      step})
 
 
 ;; =============================================================================

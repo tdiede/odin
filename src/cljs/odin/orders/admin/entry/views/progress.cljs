@@ -85,14 +85,13 @@
 
 
 (defn- charge-tooltip [{:keys [status price] :as order}]
-  (when (= :fulfilled status)
-    (cond
-      (nil? (service-source order))
-      (format/format "%s has no payment method linked for services."
-                     (get-in order [:account :name]))
+  (cond
+    (nil? (service-source order))
+    (format/format "%s has no payment method linked for services."
+                   (get-in order [:account :name]))
 
-      (nil? price)
-      "This order has no price; cannot charge.")))
+    (nil? price)
+    "This order has no price; cannot charge."))
 
 
 (defn- can-charge? [{:keys [price] :as order}]
@@ -198,7 +197,7 @@
     {:dangerouslySetInnerHTML
      {:__html "Charge the member for this order&mdash;order must be fulfilled."}}]
    [ant/tooltip
-    {:title (charge-tooltip order)}
+    {:title (when (= status :fulfilled) (charge-tooltip order))}
     [ant/button
      {:size     :small
       :loading  (= :processing status)

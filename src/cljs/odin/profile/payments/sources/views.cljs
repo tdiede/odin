@@ -163,6 +163,7 @@
           making rent on time."]
       [:p.bold "Choose a bank account to use for Autopay:"]
       [ant/radio-group {:default-value @selected
+                        :class         "vertical-radio"
                         :disabled      (< (count @banks) 2)
                         :on-change     #(reset! selected (.. % -target -value))}
        (map-indexed
