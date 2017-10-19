@@ -17,6 +17,14 @@
   (get-in order [:account :service_source :id]))
 
 
+(defn- status-history [history]
+  (->> (group-by :v (:order/status history))
+       (reduce
+        (fn [acc [k v]]
+          (assoc acc k (first (sort-by :t > v))))
+        {})))
+
+
 ;; =============================================================================
 ;; Actions
 ;; =============================================================================
@@ -279,14 +287,6 @@
     :process))
 
 
-(defn- parse-meta [metadata]
-  (reduce
-   (fn [acc {:keys [attr value] :as meta}]
-     (assoc-in acc [attr value] meta))
-   {}
-   metadata))
-
-
 (def ^:private status-icon
   {:pending    "clock-circle-o"
    :placed     "sync"
@@ -299,18 +299,17 @@
   (keyword "order.status" (name status)))
 
 
-(defn- completed-desc [status metadata]
-  (when-let [{:keys [last_modified last_modified_by]}
-             (get-in metadata [:order/status (full-status status)])]
-    (when (some? last_modified)
+(defn- completed-desc [status history]
+  (when-let [{:keys [t account]} (get (status-history history) (full-status status))]
+    (when (some? t)
       (conj
-       [:span "set at " [:b (format/date-time-short last_modified)] " by "]
-       (if (some? last_modified_by) [:a (:name last_modified_by)] "system")))))
+       [:span "set at " [:b (format/date-time-short t)] " by "]
+       (if-some [{n :name} account] [:a n] "system")))))
 
 
 (defn- step-desc
-  [step-status order metadata]
-  (if-let [desc (completed-desc step-status metadata)]
+  [step-status order history]
+  (if-let [desc (completed-desc step-status history)]
     desc
     [step-action step-status order]))
 
@@ -318,22 +317,24 @@
 (defn- step-status
   "Given the `status` of the rendered step and the order, determine the ant
   `status` it should have."
-  [status order metadata]
-  (cond
-    (and (= status :canceled) (= (:status order) :canceled))
-    "error"
+  [status order history]
+  (let [history (status-history history)]
+    (cond
+      (and (= status :canceled) (= (:status order) :canceled))
+      "error"
 
-    (some? (get-in metadata [:order/status (full-status status) :last_modified]))
-    "finish"
+      (some? (get-in history [(full-status status) :t]))
+      "finish"
 
-    :otherwise
-    "wait"))
+      :otherwise
+      "wait")))
 
 
-(defn progress [{:keys [status meta] :as order}]
+(defn progress [{:keys [id status] :as order}]
   (let [statuses   [:pending :placed :fulfilled :charged :canceled]
-        metadata   (parse-meta meta)
+        history    (subscribe [:history id])
         is-loading (subscribe [:loading? :order/fetch])]
+    (tb/log :history (status-history @history))
     [:div
      (if (and @is-loading (nil? meta))
        [:div {:style {:text-align "center"
@@ -347,5 +348,5 @@
            ^{:key status}
            [ant/steps-step {:title       (-> status name string/capitalize)
                             :icon        (status-icon status)
-                            :description (r/as-component [step-desc status order metadata])
-                            :status      (step-status status order metadata)}]))])]))
+                            :description (r/as-component [step-desc status order @history])
+                            :status      (step-status status order @history)}]))])]))

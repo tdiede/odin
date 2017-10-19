@@ -181,8 +181,6 @@
                                     :resolve :order/property}
             :projected_fulfillment {:type    :Instant
                                     :resolve (:get :order/projected-fulfillment)}
-            :meta                  {:type    (list :metadata)
-                                    :resolve :order/meta}
             :created               {:type    (non-null :Instant)
                                     :resolve :entity/created}
             :updated               {:type    (non-null :Instant)
@@ -318,13 +316,7 @@
   :data_point
   {:fields {:percentage {:type Float}
             :count      {:type Int}
-            :label      {:type String}}}
-
-  :metadata
-  {:fields {:attr             {:type (non-null :Keyword)}
-            :value            {:type :Any}
-            :last_modified    {:type :Instant}
-            :last_modified_by {:type :account}}}}
+            :label      {:type String}}}}
 
 
  ;; =============================================================================

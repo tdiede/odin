@@ -7,7 +7,6 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [odin.graphql.resolvers.utils.meta :as meta]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
@@ -55,39 +54,6 @@
       (member-license/property license)
       (resolve/resolve-as nil {:message  "Cannot locate property for this order!"
                                :order-id (:db/id order)}))))
-
-
-(defn meta*
-  [{conn :conn} _ order]
-  (->> [[:order/status :order.status/pending]
-        [:order/status :order.status/placed]
-        [:order/status :order.status/fulfilled :order/fulfilled-on]
-        [:order/status :order.status/charged]
-        [:order/status :order.status/canceled]]
-       (meta/create (d/db conn) order)))
-
-
-(comment
-
-  (def order-id 285873023223332)
-
-
-  (let [conn odin.datomic/conn]
-    (meta* {:conn conn} nil (d/entity (d/db conn) order-id)))
-
-
-  (let [conn odin.datomic/conn]
-    @(d/transact conn [{:db/id        order-id
-                        :order/status :order.status/placed}
-                       (source/create [:account/email "member@test.com"])]))
-
-
-  (let [conn odin.datomic/conn]
-    (d/touch (td/eav-tx (d/db conn) 285873023223266 :order/status :order.status/canceled)))
-
-
-
-  )
 
 
 ;; =============================================================================
@@ -273,7 +239,6 @@
    :order/billed-on    billed-on
    :order/fulfilled-on fulfilled-on
    :order/property     property
-   :order/meta         meta*
    ;; queries
    :order/list         orders
    :order/entry        order

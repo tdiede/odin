@@ -2,6 +2,7 @@
   (:require [odin.global.db :as global]
             [odin.account.db :as accounts]
             [odin.components.modals :as modals]
+            [odin.history.db :as history]
             [odin.profile.db :as profile]
             [odin.metrics.db :as metrics]
             [odin.orders.db :as orders]
@@ -49,6 +50,7 @@
     :config  config}
    global/default-value
    accounts/default-value
+   history/default-value
    payments/default-value
    modals/default-value
    orders/default-value

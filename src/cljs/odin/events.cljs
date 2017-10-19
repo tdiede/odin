@@ -4,6 +4,7 @@
             [odin.global.events]
             [odin.account.list.events]
             [odin.account.entry.events]
+            [odin.history.events]
             [odin.metrics.events]
             [odin.orders.events]
             [odin.profile.events]

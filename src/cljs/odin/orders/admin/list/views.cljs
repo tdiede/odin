@@ -108,7 +108,7 @@
         is-loading (subscribe [:loading? :orders/query])]
     (fn []
       [ant/table
-       {:loading           (and @is-loading (empty? @orders))
+       {:loading           @is-loading
         :columns           (columns @params @orders)
         :expandedRowRender (comp r/as-element expanded)
         :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}])))

@@ -47,19 +47,18 @@
  :order/fetch
  [(path db/path)]
  (fn [{db :db} [k order-id]]
-   {:dispatch [:loading k true]
-    :graphql  {:query
-               [[:order {:id order-id}
-                 [:id :price :created :quantity :name :desc :status
-                  :billed_on :fulfilled_on :projected_fulfillment
-                  [:meta [:attr :value :last_modified
-                          [:last_modified_by [:id :name]]]]
-                  [:account [:id :name [:service_source [:id]]]]
-                  [:service [:id :name :code :billed :price]]
-                  [:property [:id :name]]
-                  [:payments [:id :amount]]]]]
-               :on-success [::order-fetch k]
-               :on-failure [:graphql/failure k]}}))
+   {:dispatch-n [[:loading k true]
+                 [:history/fetch order-id]]
+    :graphql    {:query
+                 [[:order {:id order-id}
+                   [:id :price :created :quantity :name :desc :status
+                    :billed_on :fulfilled_on :projected_fulfillment
+                    [:account [:id :name [:service_source [:id]]]]
+                    [:service [:id :name :code :billed :price]]
+                    [:property [:id :name]]
+                    [:payments [:id :amount]]]]]
+                 :on-success [::order-fetch k]
+                 :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
