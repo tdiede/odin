@@ -1,17 +1,24 @@
 (ns odin.graphql.resolvers.account
   (:require [blueprints.models.account :as account]
+            [blueprints.models.customer :as customer]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.security-deposit :as deposit]
             [bouncer.core :as b]
             [bouncer.validators :as v]
+            [clojure.core.async :refer [go]]
             [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [customs.auth :as auth]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
+            [odin.graphql.resolvers.utils :refer [error-message]]
+            [odin.models.payment-source :as payment-source]
+            [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [toolbelt.validation :as tv]))
+            [toolbelt.async :refer [<!?]]
+            [toolbelt.validation :as tv]
+            [ribbon.customer :as rcu]))
 
 ;; =============================================================================
 ;; Fields
@@ -34,6 +41,12 @@
   (account/emergency-contact account))
 
 
+(defn short-name
+  "Account's full name."
+  [_ _ account]
+  (str (account/first-name account) " " (account/last-name account)))
+
+
 (defn full-name
   "Account's full name."
   [_ _ account]
@@ -50,6 +63,20 @@
 (defn role
   [_ _ account]
   (keyword (name (account/role account))))
+
+
+(defn service-source
+  [{:keys [conn stripe]} _ account]
+  (let [result (resolve/resolve-promise)]
+    (go
+      (try
+        (let [source (<!? (payment-source/service-source (d/db conn) stripe account))]
+          (resolve/deliver! result source))
+        (catch Throwable t
+          (timbre/error t ::service-source {:account (:db/id account)})
+          (resolve/deliver! result nil {:mesage   (error-message t)
+                                        :err-data (ex-data t)}))))
+    result))
 
 
 ;; =============================================================================
@@ -168,6 +195,10 @@
   (or (account/admin? account) (= (:id params) (:db/id account))))
 
 
+(defmethod authorization/authorized? :account/change-password! [_ account params]
+  (= (:id params) (:db/id account)))
+
+
 (defmethod authorization/authorized? :account/list [_ account _]
   (account/admin? account))
 
@@ -182,8 +213,10 @@
    :account/deposit           deposit
    :account/property          property
    :account/role              role
+   :person/short-name         short-name
    :person/full-name          full-name
    :account/emergency-contact emergency-contact
+   :account/service-source    service-source
    ;; mutations
    :account/update!           update!
    :account/change-password!  change-password!

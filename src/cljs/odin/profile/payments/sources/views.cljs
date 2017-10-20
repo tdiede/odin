@@ -138,9 +138,12 @@
 (defn modal-enable-autopay-footer [selected-autopay-source]
   (let [is-submitting (subscribe [:loading? :payment.sources.autopay/enable!])]
     [:div
-     [ant/button {:on-click #(dispatch [:modal/hide :payment.source/autopay-enable])}
+     [ant/button
+      {:on-click #(dispatch [:modal/hide :payment.source/autopay-enable])
+       :size     :large}
       "I'd rather pay manually."]
      [ant/button {:type     "primary"
+                  :size     :large
                   :loading  @is-submitting
                   :on-click #(dispatch [:payment.sources.autopay/enable! selected-autopay-source])}
       "Great! Let's do it"]]))
@@ -160,6 +163,7 @@
           making rent on time."]
       [:p.bold "Choose a bank account to use for Autopay:"]
       [ant/radio-group {:default-value @selected
+                        :class         "vertical-radio"
                         :disabled      (< (count @banks) 2)
                         :on-change     #(reset! selected (.. % -target -value))}
        (map-indexed
@@ -321,7 +325,8 @@
     [media/step "Link a payment source so you can settle your charges." "bank"]
     [media/step "Turn on Autopay and never worry about a late payment again." "history"]
     [media/step
-     [ant/button {:type "primary"
+     [ant/button {:type     :primary
+                  :size     :large
                   :on-click #(dispatch [:modal/show :payment.source/add])}
       [:span.icon.is-small [:i.fa.fa-plus-square-o]]
       [:span (l10n/translate :btn-add-new-account)]]]]])

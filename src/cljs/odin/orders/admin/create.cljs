@@ -75,11 +75,16 @@
  ::service-fields
  :<- [::selected-service]
  :<- [::form]
- (fn [[{:keys [price] :as service} {:keys [quantity] :as form}]]
+ (fn [[{:keys [price variants] :as service} {:keys [quantity] :as form}]]
    (cond-> []
-     true (conj (service/notes-field :notes "")
-                (service/quantity-field :quantity quantity)
-                (service/price-field :price (or (:price form) price))))))
+     (or (some? price) (not (empty? variants)))
+     (conj (service/quantity-field :quantity quantity))
+
+     (and (nil? price) (empty? variants))
+     (conj (service/notes-field :notes ""))
+
+     (empty? variants)
+     (conj (service/price-field :price (or (:price form) price))))))
 
 
 (reg-sub
@@ -108,7 +113,8 @@
  (fn [{db :db} [_ bootstrapped]]
    (tb/assoc-when
     {:graphql {:query      [[:accounts [:id :name :email [:property [:name]]]]
-                            [:services [:id :code :name :desc :price :billed]]]
+                            [:services [:id :code :name :desc :price :billed
+                                        [:variants [:id :name :price]]]]]
                :on-success [::fetch-success]
                :on-failure [:graphql/failure ::fetch]}}
     :dispatch (when-not bootstrapped [:loading ::fetch true]))))
@@ -138,22 +144,38 @@
        (assoc-in [:form :quantity] 1))))
 
 
+(reg-event-db
+ ::clear-form
+ [(path ::path)]
+ (fn [db _]
+   (assoc db :form {:quantity 1})))
+
+
 (reg-event-fx
  ::create!
  [(path ::path)]
- (fn [{db :db} [k]]
-   {:dispatch [:loading k true]
-    :graphql  {:mutation   [[:create_order {:params (:form db)} [:id]]]
-               :on-success [::create-success k]
-               :on-failure [:graphql/failure k]}}))
+ (fn [{db :db} [k on-create]]
+   (let [form    (:form db)
+         service (tb/find-by #(= (:service form) (:id %)) (:services db))
+         params  (-> form
+                     (assoc :desc (:notes form))
+                     (tb/assoc-when :variant (when (and (nil? (:variant form))
+                                                        (some? (:variants service)))
+                                               (-> service :variants first :id)))
+                     (dissoc :notes))]
+     {:dispatch-n [[:loading k true]
+                   [::clear-form]]
+      :graphql    {:mutation   [[:create_order {:params params} [:id]]]
+                   :on-success [::create-success k on-create]
+                   :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
  ::create-success
- (fn [_ [_ k response]]
-   {:dispatch-n [[:loading k false]
-                 [:modal/hide ::modal]
-                 [:admin.orders/fetch]]}))
+ (fn [_ [_ k on-create response]]
+   {:dispatch-n (tb/conj-when [[:loading k false]
+                               [:modal/hide ::modal]]
+                              on-create)}))
 
 
 ;; =============================================================================
@@ -192,16 +214,14 @@
      (doall (map account-option @accounts))]))
 
 
-(defn- service-option [{:keys [id code name desc price]}]
+(defn- service-option [{:keys [id code name desc price] :as service}]
   [autocomplete-option {:key   id
                         :label (string/replace name "&amp;" "&")
                         :qterm (str code " " name " " desc)}
    [:span
     [:span {:dangerouslySetInnerHTML {:__html (or name code)}}]
     " - "
-    (if-let [p price]
-      (format/currency p)
-      " quote")]
+    (service/price-text service)]
    [:p.fs2 [:small desc]]])
 
 
@@ -220,6 +240,13 @@
       :on-change         #(when (nil? %) (dispatch [::clear-service]))
       :on-select         #(dispatch [::update :service (tb/str->int %)])}
      (doall (map service-option @services))]))
+
+
+(defn- order-price
+  [{:keys [variants] :as service} {:keys [price variant] :as form}]
+  (let [vprice (:price (tb/find-by (comp (partial = variant) :id) variants))
+        fprice (when-not (or (zero? price) (string/blank? price)) price)]
+    (or vprice fprice (:price service))))
 
 
 (defn- form []
@@ -241,16 +268,17 @@
          :desc     (:desc @service)
          :rental   (:rental @service)
          :quantity (:quantity @form)
-         :price    (or (:price @form) (:price @service))
+         :price    (order-price @service @form)
          :billed   (:billed @service)
          :service  (:id @service)
          :selected true
+         :variants (:variants @service)
          :fields   @fields}
         {:on-change (fn [[_ k v]] (dispatch [::update k v]))
          :on-delete #(dispatch [::clear-service])}])]))
 
 
-(defn- modal []
+(defn- modal [on-create]
   (let [is-showing  (subscribe [:modal/visible? ::modal])
         is-loading  (subscribe [:loading? ::fetch])
         can-create  (subscribe [::can-create?])
@@ -263,15 +291,17 @@
       :footer    [(r/as-element
                    ^{:key 1}
                    [ant/button
-                    {:on-click #(dispatch [:modal/hide ::modal])}
+                    {:on-click #(dispatch [:modal/hide ::modal])
+                     :size     :large}
                     "Cancel"])
                   (r/as-element
                    ^{:key 2}
                    [ant/button
                     {:disabled (not @can-create)
+                     :size     :large
                      :type     :primary
                      :loading  @is-creating
-                     :on-click #(dispatch [::create!])}
+                     :on-click #(dispatch [::create! on-create])}
                     "Create"])]}
      [:div
       (if @is-loading
@@ -281,27 +311,18 @@
         [form])]]))
 
 
-;; What do we need to know to create an order?
-;; - account
-;; - service
-;; - quantity
-;; - description
-;; - price (pre-populated from service)
-;; - variant?
-
-
 (defn button []
-  (let []
-    (r/create-class
-     {:component-will-mount
-      (fn [_]
-        (rf/dispatch-sync [::bootstrap]))
-      :reagent-render
-      (fn []
-        [:div
-         [modal]
+  (r/create-class
+   {:component-will-mount
+    (fn [_]
+      (rf/dispatch-sync [::bootstrap]))
+    :reagent-render
+    (fn []
+      (let [props (r/props (r/current-component))]
+        [:div {:style {:display "inline"}}
+         [modal (:on-create props)]
          [ant/button
           {:type     :primary
            :icon     "plus"
            :on-click #(dispatch [:modal/show ::modal])}
-          "Create Order"]])})))
+          "Create Order"]]))}))

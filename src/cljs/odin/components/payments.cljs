@@ -226,8 +226,7 @@
           (for [{id :id :as source} sources]
             ^{:key id} [ant/select-option {:value id} (source-name source)])])
        [ant/button
-        {:type     :ghost
-         :size     :large
+        {:size     :large
          :on-click on-cancel}
         "Cancel"]
        [ant/button

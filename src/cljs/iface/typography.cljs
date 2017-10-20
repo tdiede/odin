@@ -7,6 +7,7 @@
    (view-header title nil))
   ([title subtitle]
    [:div.view-header
-    [:h1.title.is-3 title]
+    [:h1.title.is-3
+     {:dangerouslySetInnerHTML {:__html title}}]
     (when-some [s subtitle]
-      [:p.subtitle.is-6 s])]))
+      [:p.subtitle.is-5 s])]))

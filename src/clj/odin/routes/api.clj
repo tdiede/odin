@@ -8,7 +8,8 @@
             [odin.routes.util :refer :all]
             [ring.util.response :as response]
             [taoensso.timbre :as timbre]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [datomic.api :as d]))
 
 ;; =============================================================================
 ;; GraphQL
@@ -99,6 +100,51 @@
 
 
 ;; =============================================================================
+;; History
+;; =============================================================================
+
+
+(defn- query-history
+  [db e]
+  (d/q '[:find ?attr ?type ?v ?tx-time ?account
+         :in $ ?e
+         :where
+         [?e ?a ?v ?t true]
+         [?a :db/ident ?attr]
+         [?a :db/valueType ?_type]
+         [?_type :db/ident ?type]
+         [?t :db/txInstant ?tx-time]
+         [(get-else $ ?t :source/account false) ?account]]
+       (d/history db) e))
+
+
+(defn- resolve-value
+  [db type value]
+  (if (not= type :db.type/ref)
+    value
+    (let [e (d/entity db value)]
+      (or (:db/ident e) value))))
+
+
+(defn history
+  "Produce a list of all changes to entity `e`, the instant at time in which the
+  change occurred, and the user that made the change (if present)."
+  [db e]
+  (->> (query-history db e)
+       (mapv
+        (fn [[attr type value tx-time account]]
+          (let [value   (resolve-value db type value)
+                account (when-let [account (d/entity db account)]
+                          {:id   (:db/id account)
+                           :name (account/short-name account)})]
+            (tb/assoc-when
+             {:a attr
+              :v value
+              :t tx-time}
+             :account account))))))
+
+
+;; =============================================================================
 ;; Routes
 ;; =============================================================================
 
@@ -106,11 +152,16 @@
 (defroutes routes
   (GET "/config" [] config-handler)
 
+
+  (GET "/history/:entity-id" [entity-id]
+       (fn [req]
+         (let [db (d/db (->conn req))]
+           (-> (response/response {:data {:history (history db (tb/str->int entity-id))}})
+               (response/content-type "application/transit+json")
+               (response/status 200)))))
+
+
   (GET "/graphql" [] (graphql-handler graph/schema))
   (POST "/graphql" [] (graphql-handler graph/schema))
 
-  (compojure/context "/kami" [] kami/routes)
-
-  ;; (GET "/kami" [] (graphql-handler graph/kami))
-  ;; (POST "/kami" [] (graphql-handler graph/kami))
-  )
+  (compojure/context "/kami" [] kami/routes))

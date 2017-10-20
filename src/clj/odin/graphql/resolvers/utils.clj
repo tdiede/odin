@@ -32,3 +32,11 @@
                      :stripe ::stripe
                      :config ::config)
         :ret ::ctx)
+
+
+(defn error-message [t]
+  (or (:message (ex-data t)) (.getMessage t) "Unknown error!"))
+
+(s/fdef error-message
+        :args (s/cat :throwable p/throwable?)
+        :ret string?)

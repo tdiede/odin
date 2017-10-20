@@ -38,3 +38,13 @@
     (mapv #(let [v (get % lookup-key)]
              (get-in db [norms-key :norms v]))
           refs)))
+
+
+(defn get-norm
+  [db norms-key id]
+  (get-in db [norms-key :norms id]))
+
+
+(defn assoc-norm
+  [db norms-key id data]
+  (assoc-in db [norms-key :norms id] data))

@@ -20,7 +20,6 @@
 (defn- login! [{:keys [params session deps] :as req}]
   (let [{:keys [email password]} params
         account                  (auth/authenticate (d/db (:conn deps)) email password)]
-    (timbre/debug params (into {} account))
     (cond
       (empty? account)             (-> (response/response "No account on file.")
                                        (response/status 400))
@@ -36,6 +35,7 @@
   [{:keys [deps] :as req}]
   (let [render (partial apply str)]
     (-> (facade/app req "odin"
+                    :title "Starcity Dashboard"
                     :scripts ["https://code.highcharts.com/highcharts.js"
                               "https://code.highcharts.com/modules/exporting.js"
                               "https://code.highcharts.com/modules/drilldown.js"]

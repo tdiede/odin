@@ -1,9 +1,11 @@
 (ns odin.seed
   (:require [blueprints.seed.accounts :as accounts]
+            [blueprints.seed.orders :as orders]
             [blueprints.models.license :as license]
             [io.rkn.conformity :as cf]
-            [odin.datomic :refer [conn]]
-            [datomic.api :as d]))
+            [datomic.api :as d]
+            [re-frame.db :as db]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; TX Construction
@@ -220,41 +222,42 @@
      (range total))))
 
 
+(defn- rand-unit [property]
+  (-> property :property/units vec rand-nth :db/id))
+
+
+(defn distinct-by
+  "Returns elements of xs which return unique values according to f. If multiple
+  elements of xs return the same value under f, the first is returned"
+  [f xs]
+  (let [s (atom #{})]
+    (for [x     xs
+          :let  [id (f x)]
+          :when (not (contains? @s id))]
+      (do (swap! s conj id)
+          x))))
+
+
 (defn- accounts [db]
-  (let [license (license/by-term (d/db conn) 3)]
-    (concat
-     (accounts/member [:unit/name "52gilbert-1"] (:db/id license) :email "member@test.com")
-     (accounts/admin :email "admin@test.com"))))
+  (let [license  (license/by-term db 3)
+        property (d/entity db [:property/internal-name "2072mission"])
+        members  (->> (range 13)
+                      (map (fn [_] (accounts/member (rand-unit property) (:db/id license))))
+                      (distinct-by (comp :account/email #(tb/find-by :account/email %))))]
+    (apply concat
+           (accounts/member [:unit/name "52gilbert-1"] (:db/id license) :email "member@test.com")
+           (accounts/admin :email "admin@test.com")
+           members)))
 
 
 (defn seed [conn]
-  (->> {:seed/accounts  {:txes [(accounts (d/db conn))]}
-        :seed/referrals {:txes [(referrals)]}}
-       (cf/ensure-conforms conn)))
-
-
-;; (defn seed
-;;   "Seed the database with sample data."
-;;   [conn]
-;;   (cf/ensure-conforms
-;;    conn
-;;    {:seed/accounts         {:txes [(accounts-tx)]}
-;;     :seed/applications     {:txes     [(applications-tx conn)]
-;;                             :requires [:seed/accounts]}
-;;     :seed/stripe-customers {:txes     [(stripe-customers-tx)]
-;;                             :requires [:seed/accounts]}
-;;     :seed/avatar           {:txes [(avatar-tx)]}
-;;     :seed/referrals        {:txes [(referrals-tx)]}
-;;     :seed/properties       {:txes [(properties-tx)]}})
-;;   ;; NOTE: These need to happen in separate transactions.
-;;   (cf/ensure-conforms
-;;    conn
-;;    {:seed/approval {:txes [(approval-tx conn)]}})
-;;   (cf/ensure-conforms
-;;    conn
-;;    {:seed/membership {:txes [(member-licenses-tx conn)
-;;                              ;; (rent-payments-tx conn))
-;;                              (deposit-payments-tx (d/db conn))]}})
-;;   #_(cf/ensure-conforms
-;;      conn
-;;      {:seed/orders {:txes [(orders-tx (d/db conn))]}}))
+  (let [db          (d/db conn)
+        accounts-tx (accounts db)
+        member-ids  (->> accounts-tx
+                         (filter #(and (:account/email %) (= :account.role/member (:account/role %))))
+                         (map (fn [m] [:account/email (:account/email m)])))]
+    (->> {:seed/accounts  {:txes [accounts-tx]}
+          :seed/referrals {:txes [(referrals)]}
+          :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
+                           :requires [:seed/accounts]}}
+         (cf/ensure-conforms conn))))
