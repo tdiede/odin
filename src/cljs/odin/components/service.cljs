@@ -116,14 +116,18 @@
       [:div [ant/button {:type :ghost :on-click (fn [_] (on-select item))} "Select"]]
 
       (> (count fields) 0)
-      [:div.columns
-       (map-indexed
-        #(with-meta
-           [:div.column
-            {:class (:col-class %2)}
-            (form-item item %2 opts)]
-           {:key %1})
-        fields)]
+      (let [pred   (comp (partial = :notes) :type)
+            notes  (tb/find-by pred fields)
+            fields (if (some? notes) (remove pred fields) fields)]
+        [:div.columns
+         (when (some? notes)
+           [:div.column {:class (when-not (empty? fields) "is-half")}
+            (form-item item notes opts)])
+         (map-indexed
+          #(with-meta
+             [:div.column (form-item item %2 opts)]
+             {:key %1})
+          fields)])
 
       :otherwise [:div])))
 

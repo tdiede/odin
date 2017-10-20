@@ -62,7 +62,7 @@
     :dataIndex :name
     :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
     :onFilter  (fn [value record]
-                 (= value (str (.. record -service -id))))
+                 (= value (str (goog.object/getValueByKeys record "service" "id"))))
     :render    #(r/as-element
                  [:a {:href                    (routes/path-for :orders/entry :order-id (.-id %2))
                       :dangerouslySetInnerHTML {:__html %1}}])}
@@ -70,7 +70,7 @@
     :dataIndex :account
     :filters   (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
     :onFilter  (fn [value record]
-                 (= value (str (.. record -account -id))))
+                 (= value (str (goog.object/getValueByKeys record "account" "id"))))
     :render    #(.-name %)}
    {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
@@ -96,10 +96,10 @@
   [:div.columns
    [:div.column
     [:p.fs1 [:b "Billed"]]
-    [:p.fs2 (.. record -service -billed)]]
+    [:p.fs2 (goog.object/getValueByKeys record "service" "billed")]]
    [:div.column.is-10
     [:p.fs1 [:b "Description/Notes"]]
-    [:p.fs2 (or (.-desc record) "N/A")]]])
+    [:p.fs2 (or (goog.object/getValueByKeys record "desc") "N/A")]]])
 
 
 (defn orders-table []

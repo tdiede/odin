@@ -6,7 +6,8 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [odin.utils.formatters :as format]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [clojure.string :as string]))
 
 
 (defn- order-name
@@ -106,7 +107,7 @@
            [:div.column
             [:p.heading "Billed On"]
             [:p (format/date-time-short b)]])])
-      (when (some? desc)
+      (when (and (some? desc) (not (string/blank? desc)))
         [:div.columns
          [:div.column
           [:p.heading "Notes"]
