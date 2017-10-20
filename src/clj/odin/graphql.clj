@@ -27,6 +27,10 @@
 
     :Instant
     {:parse     (schema/as-conformer (comp c/to-date c/from-string))
+     :serialize (schema/as-conformer identity)}
+
+    :Any
+    {:parse     (schema/as-conformer identity)
      :serialize (schema/as-conformer identity)}}})
 
 

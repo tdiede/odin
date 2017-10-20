@@ -1,14 +1,17 @@
 (ns odin.graphql.resolvers.order
   (:require [blueprints.models.account :as account]
+            [blueprints.models.events :as events]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
+            [blueprints.models.source :as source]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [blueprints.models.payment :as payment]))
+            [toolbelt.async :refer [<!!?]]
+            [odin.models.payment-source :as payment-source]))
 
 ;; =============================================================================
 ;; Fields
@@ -20,6 +23,11 @@
   (order/computed-price order))
 
 
+(defn cost
+  [_ _ order]
+  (order/computed-cost order))
+
+
 (defn order-name
   [_ _ order]
   (order/computed-name order))
@@ -27,19 +35,20 @@
 
 (defn status
   [_ _ order]
-  (if-let [s (order/status order)]
-    (-> s name keyword)))
+  (-> order order/status name keyword))
 
 
 (defn billed-on
   "Date that `order` was billed on."
   [{conn :conn} _ order]
-  (d/q '[:find ?date .
-         :in $ ?o
-         :where
-         [?o :order/status :order.status/charged ?tx]
-         [?tx :db/txInstant ?date]]
-       (d/db conn) (td/id order)))
+  (or (order/billed-on order)
+      (td/last-modified-to (d/db conn) (td/id order) :order/status :order.status/charged)))
+
+
+(defn fulfilled-on
+  "Date that `order` was fulfilled."
+  [{conn :conn} _ order]
+  (order/fulfilled-on order))
 
 
 (defn property
@@ -85,6 +94,11 @@
                                :err-data (ex-data t)}))))
 
 
+(defn order
+  [{conn :conn} {order-id :id} _]
+  (d/entity (d/db conn) order-id))
+
+
 ;; =============================================================================
 ;; Mutations
 ;; =============================================================================
@@ -92,7 +106,7 @@
 
 (defn create!
   "Create a new order."
-  [{:keys [conn]} {{:keys [account service variant desc quantity price]} :params} _]
+  [{:keys [requester conn]} {{:keys [account service variant desc quantity price]} :params} _]
   (let [[account service] (td/entities (d/db conn) account service)
         order             (order/create account service
                                         (tb/assoc-when
@@ -101,8 +115,93 @@
                                          :price price
                                          :variant variant
                                          :quantity quantity))]
-    @(d/transact conn [order])
+    @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
+
+
+;; TODO: notify
+(defn place!
+  "Place an order."
+  [{:keys [requester conn]} {:keys [id projected_fulfillment notify]} _]
+  (let [order (d/entity (d/db conn) id)]
+    (if-not (order/pending? order)
+      (resolve/resolve-as nil {:message  "Order must be in pending status!"
+                               :err-data {:current-status (order/status order)
+                                          :order-id       id}})
+      (do
+        @(d/transact conn [(tb/assoc-when
+                            (order/is-placed id)
+                            :order/projected-fulfillment projected_fulfillment)
+                           (source/create requester)])
+        (d/entity (d/db conn) id)))))
+
+
+;; TODO: notify
+(defn fulfill!
+  "Fulfill an order."
+  [{:keys [conn requester stripe]} {:keys [id fulfilled_on charge notify]} _]
+  (let [order  (d/entity (d/db conn) id)
+        source (<!!? (payment-source/service-source (d/db conn) stripe (order/account order)))]
+    (cond
+      (not (or (order/pending? order) (order/placed? order)))
+      (resolve/resolve-as nil {:message  "Order must be in pending or placed status!"
+                               :err-data {:current-status (order/status order)
+                                          :order-id       id}})
+
+      (and charge (nil? source))
+      (resolve/resolve-as nil {:message  "Cannot charge order; no service source linked!"
+                               :err-data {:order-id id}})
+
+      (and charge (nil? (order/computed-price order)))
+      (resolve/resolve-as nil {:message  "Cannot charge order without a price!"
+                               :err-data {:order-id id}})
+
+      :otherwise
+      (do
+        @(d/transact conn (concat
+                           [(source/create requester)]
+                           (if charge
+                             [(events/process-order requester order)
+                              [:db/add id :order/fulfilled-on fulfilled_on]
+                              [:db/add id :order/status :order.status/processing]]
+                             [(order/is-fulfilled id fulfilled_on)])))
+        (d/entity (d/db conn) id)))))
+
+
+;; TODO: notify?
+(defn charge!
+  "Charge an order."
+  [{:keys [conn requester stripe]} {:keys [id]} _]
+  (let [order  (d/entity (d/db conn) id)
+        source (<!!? (payment-source/service-source (d/db conn) stripe (order/account order)))]
+    (cond
+      (nil? source)
+      (resolve/resolve-as nil {:message  "Cannot charge order; no service source linked!"
+                               :err-data {:order-id id}})
+
+      (not (order/fulfilled? order))
+      (resolve/resolve-as nil {:message  "Order must be in fulfilled status!"
+                               :err-data {:order-id       id
+                                          :current-status (order/status order)}})
+
+      (nil? (order/computed-price order))
+      (resolve/resolve-as nil {:message  "Cannot charge order without a price!"
+                               :err-data {:order-id id}})
+
+      :otherwise
+      (do
+        @(d/transact conn [[:db/add id :order/status :order.status/processing]
+                           (source/create requester)
+                           (events/process-order requester order)])
+        (d/entity (d/db conn) id)))))
+
+
+;; TODO: notify
+(defn cancel!
+  "Cancel a premium service order."
+  [{:keys [requester conn]} {:keys [id notify]} _]
+  @(d/transact conn [(order/is-canceled id) (source/create requester)])
+  (d/entity (d/db conn) id))
 
 
 ;; =============================================================================
@@ -110,8 +209,17 @@
 ;; =============================================================================
 
 
+(defn- admin-or-owner? [db order-id account]
+  (let [order (d/entity db order-id)]
+    (or (account/admin? account) (= (:db/id (order/account order)) (:db/id account)))))
+
+
 (defmethod authorization/authorized? :order/list [_ account _]
   (account/admin? account))
+
+
+(defmethod authorization/authorized? :order/entry [{conn :conn} account params]
+  (admin-or-owner? (d/db conn) (:id params) account))
 
 
 (defmethod authorization/authorized? :order/create!
@@ -119,64 +227,31 @@
   (or (account/admin? account) (= account-id (:db/id account))))
 
 
+(defmethod authorization/authorized? :order/cancel!
+  [{conn :conn} account {order-id :id}]
+  (admin-or-owner? (d/db conn) order-id account))
+
+
+(defmethod authorization/authorized? :order/charge!
+  [{conn :conn} account {order-id :id}]
+  (admin-or-owner? (d/db conn) order-id account))
+
+
 (def resolvers
   {;; fields
-   :order/price     price
-   :order/name      order-name
-   :order/status    status
-   :order/billed-on billed-on
-   :order/property property
+   :order/price        price
+   :order/cost         cost
+   :order/name         order-name
+   :order/status       status
+   :order/billed-on    billed-on
+   :order/fulfilled-on fulfilled-on
+   :order/property     property
    ;; queries
-   :order/list      orders
+   :order/list         orders
+   :order/entry        order
    ;; mutations
-   :order/create! create!
-   })
-
-
-;;; Set proper dates on order statuses
-
-(comment
-
-
-  (defn- all-orders [db]
-    (->> (d/q '[:find [?o ...]
-                :where
-                [?o :order/account _]]
-              db)
-         (map (partial d/entity db))))
-
-
-  (defn- charge-status->payment-status [status]
-    (case status
-      :charge.status/succeeded :payment.status/paid
-      :charge.status/failed    :payment.status/failed
-      :payment.status/pending))
-
-
-  (defn add-order-status [db order]
-    (when (nil? (order/status order))
-      (let [[status entity] (if-let [charge (:stripe/charge order)]
-                              [:order.status/charged charge]
-                              [:order.status/pending order])]
-        [[:db/add (:db/id order) :order/status status]
-         {:db/id "datomic.tx" :db/txInstant (td/updated-at db entity)}])))
-
-
-  (defn add-order-payment [db order]
-    (when-some [charge (:stripe/charge order)]
-      {:db/id          (:db/id order)
-       :order/payments (payment/create (order/computed-price order) (order/account order)
-                                       :for :payment.for/order
-                                       :status (charge-status->payment-status (:charge/status charge))
-                                       :charge-id (:charge/stripe-id charge))}))
-
-
-  (let [conn odin.datomic/conn]
-    (doseq [order (all-orders (d/db conn))]
-      (when-let [tx (add-order-status (d/db conn) order)]
-        (try
-          @(d/transact-async conn (tb/conj-when tx (add-order-payment (d/db conn) order)))
-          (catch Throwable t
-            (timbre/errorf t "failed to add status & payment: %s" (:db/id order)))))))
-
-  )
+   :order/create!      create!
+   :order/place!       place!
+   :order/fulfill!     fulfill!
+   :order/charge!      charge!
+   :order/cancel!      cancel!})

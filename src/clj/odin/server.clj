@@ -33,7 +33,7 @@
 
 (defn wrap-exception-handling
   [handler]
-  (fn [{:keys [identity uri request-method remote-addr] :as req}]
+  (fn [{:keys [session uri request-method remote-addr] :as req}]
     (try
       (handler req)
       (catch Throwable t
@@ -42,7 +42,7 @@
                                    {:uri         uri
                                     :method      request-method
                                     :remote-addr remote-addr}
-                                   :user (:account/email identity)))
+                                   :user (get-in session [:identity :account/email])))
           {:status 500
            :body   "Unexpected server error!"})))))
 
@@ -57,14 +57,14 @@
                 (string/ends-with? uri ".js")
                 (string/ends-with? uri ".css")
                 (string/ends-with? uri ".map")))]
-    (fn [{:keys [uri request-method identity remote-addr] :as req}]
+    (fn [{:keys [uri request-method session remote-addr] :as req}]
       (when-not (-junk? uri)
         (timbre/info :web/request
                      (tb/assoc-when
                       {:uri         uri
                        :method      request-method
                        :remote-addr remote-addr}
-                      :user (:account/email identity))))
+                      :user (get-in session [:identity :account/email]))))
       (handler req))))
 
 

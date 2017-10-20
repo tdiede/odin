@@ -2,6 +2,7 @@
   (:require [odin.global.subs]
             [odin.account.list.subs]
             [odin.account.entry.subs]
+            [odin.history.subs]
             [odin.metrics.subs]
             [odin.orders.subs]
             [odin.profile.subs]

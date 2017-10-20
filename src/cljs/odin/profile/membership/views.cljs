@@ -80,6 +80,7 @@
               (r/as-element [link-bank-tooltip-title]))}
     [ant/button
      {:type     :danger
+      :size     :large
       :on-click #(dispatch [:modal/show id])
       :disabled (empty? sources)}
      (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]]])
@@ -93,6 +94,7 @@
               (r/as-element [link-bank-tooltip-title]))}
     [ant/button
      {:on-click #(dispatch [:modal/show id])
+      :size     :large
       :disabled (empty? sources)}
      (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]])
 
@@ -105,6 +107,7 @@
               (r/as-element [link-bank-tooltip-title]))}
     [ant/button
      {:on-click #(dispatch [:modal/show id])
+      :size     :large
       :disabled (empty? sources)}
      (format/format "Pay Now (%s)" (format/currency amount_remaining))]]])
 
@@ -189,6 +192,7 @@
                     :otherwise        nil)}
           [ant/button
            {:type     (if (rent-overdue? payment) :danger :primary)
+            :size     :large
             :on-click #(dispatch [:modal/show id])
             :disabled (empty? @sources)}
            (format/format "Pay Now (%s)" (format/currency (+ amount late_fee)))]]]]])))

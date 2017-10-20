@@ -77,17 +77,18 @@ h4.fieldset-label
   display: block
 
 
-.ant-radio-group
+.ant-radio-group.vertical-radio
   margin: 1rem 0
   width: 100%
   background: $off-white
   border-radius: $inner-component-border-radius
 
-.ant-radio-wrapper
-  @extend .flexrow
-  align-items: center
-  padding: .5rem 1rem
-  font-size: 1rem
+.vertical-radio
+  .ant-radio-wrapper
+    @extend .flexrow
+    align-items: center
+    padding: .5rem 1rem
+    font-size: 1rem
 
 
 // Ant switch (iOS style checkbox)
@@ -146,7 +147,7 @@ h4.fieldset-label
 .ant-select-lg
 
   .ant-select-selection--single
-    height: 2.4rem
+    /* height: 2.4rem
 
     .ant-select-selection__rendered
-      line-height: 38px
+      /* line-height: 38px

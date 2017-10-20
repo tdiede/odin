@@ -25,7 +25,8 @@
             [toolbelt.async :refer [<!? go-try]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.predicates :as p]))
+            [toolbelt.predicates :as p]
+            [odin.models.payment-source :as payment-source]))
 
 ;; =============================================================================
 ;; Helpers
@@ -213,32 +214,21 @@
 ;; =============================================================================
 
 
-(defn- sources-by-account
-  "Produce all payment sources for a given `account`."
-  [{:keys [conn stripe]} account]
-  (let [customer (customer/by-account (d/db conn) account)
+(defn sources
+  "Retrieve payment sources."
+  [{:keys [conn stripe] :as context} {:keys [account]} _]
+  (let [account  (d/entity (d/db conn) account)
+        customer (customer/by-account (d/db conn) account)
         result   (resolve/resolve-promise)]
     (if (nil? customer)
       (resolve/deliver! result [])
       (go
         (try
-          (let [customer' (<!? (rcu/fetch stripe (customer/id customer)))
-                sources   (->> (rcu/sources customer')
-                               ;; inject the customer for field resolvers
-                               (map #(assoc % ::customer customer')))]
-            (resolve/deliver! result sources))
+          (resolve/deliver! result (<!? (payment-source/sources-by-account stripe customer)))
           (catch Throwable t
             (resolve/deliver! result nil {:message  (error-message t)
                                           :err-data (ex-data t)})))))
     result))
-
-
-(defn sources
-  "Retrieve payment sources."
-  [{:keys [conn] :as context} {:keys [account]} _]
-  (let [account (d/entity (d/db conn) account)]
-    ;; NOTE: We may also provide the capability to supply customer-id.
-    (sources-by-account context account)))
 
 
 ;; =============================================================================
@@ -614,67 +604,3 @@
    :payment.sources/set-autopay!   set-autopay!
    :payment.sources/unset-autopay! unset-autopay!
    :payment.sources/set-default!   set-default!})
-
-
-
-(comment
-
-
-  (let [conn odin.datomic/conn
-        account (d/entity (d/db conn) [:account/email "member@test.com"])]
-    @(d/transact conn [[:db/retract 285873023223104 :stripe-customer/bank-account-token "ba_1Awfc7JDow24Tc1abTE5iR6q"]]))
-
-
-  (do
-
-    (do
-      (require '[datomic.api :as d])
-      (require '[toolbelt.async :refer [<!!?]])
-      (require '[blueprints.models.payment :as payment])
-      (require '[blueprints.models.member-license :as member-license])
-      (require '[clojure.core.async :as async])
-      (require '[ribbon.charge :as rch])
-      )
-
-
-    (defn payments
-      "Get the payments that do not yet have source ids."
-      [db]
-      (->> (d/q '[:find [?p ...]
-                  :in $
-                  :where
-                  [?p :payment/amount _]
-                  [?p :stripe/charge-id _]
-                  [(missing? $ ?p :stripe/source-id)]]
-                db)
-           (map (partial d/entity db))))
-
-
-    (defn get-charge
-      [stripe db payment]
-      (if-let [managed-account (and (payment/autopay? payment)
-                                    (->> (payment/account payment)
-                                         (member-license/active db)
-                                         (member-license/rent-connect-id)))]
-        (rch/fetch stripe (payment/charge-id payment) :managed-account managed-account)
-        (rch/fetch stripe (payment/charge-id payment))))
-
-
-    (defn migrate-charges
-      "Fetch all payments with `:stripe/charge-id`, find their associated charge
-     on Stripe, and set `:stripe/source-id` on the payment."
-      [stripe conn]
-      (let [payments (payments (d/db conn))
-            charges (<!!? (->> (map #(get-charge stripe (d/db conn) %) payments)
-                               (async/merge)
-                               (async/into [])))]
-        @(d/transact conn (map (fn [charge]
-                                 {:db/id            [:stripe/charge-id (:id charge)]
-                                  :stripe/source-id (get-in charge [:source :id])})
-                               charges))))
-
-
-    (migrate-charges (odin.config/stripe-secret-key odin.config/config) odin.datomic/conn))
-
-
-  )

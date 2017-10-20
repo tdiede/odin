@@ -59,7 +59,7 @@
 
 
 (defn content
-  "The top-level conrtent for all `:profile` views. Sets up a side menu for
+  "The top-level content for all `:profile` views. Sets up a side menu for
   sub-navigation and a container for sub-content."
   [{:keys [page path] :as route}]
   [:div
