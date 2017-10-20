@@ -76,12 +76,12 @@
  :<- [::selected-service]
  :<- [::form]
  (fn [[{:keys [price variants] :as service} {:keys [quantity] :as form}]]
-   (cond-> []
+   (cond-> [(service/notes-field :notes "")]
      (or (some? price) (not (empty? variants)))
      (conj (service/quantity-field :quantity quantity))
 
-     (and (nil? price) (empty? variants))
-     (conj (service/notes-field :notes ""))
+     ;; (and (nil? price) (empty? variants))
+     ;; (conj (service/notes-field :notes ""))
 
      (empty? variants)
      (conj (service/price-field :price (or (:price form) price))))))
@@ -112,7 +112,7 @@
  [(path ::path)]
  (fn [{db :db} [_ bootstrapped]]
    (tb/assoc-when
-    {:graphql {:query      [[:accounts [:id :name :email [:property [:name]]]]
+    {:graphql {:query      [[:accounts {:role :member} [:id :name :email [:property [:name]]]]
                             [:services [:id :code :name :desc :price :billed
                                         [:variants [:id :name :price]]]]]
                :on-success [::fetch-success]
@@ -197,21 +197,26 @@
      (str " (" email ")"))])
 
 
+(defn- get-qterm [opt]
+  (goog.object/getValueByKeys opt "props" "qterm"))
+
+
 (defn- account-autocomplete []
   (let [accounts (subscribe [::accounts])
         account  (subscribe [::form :account])]
-    [ant/auto-complete
-     {:style             {:width "100%"}
-      :placeholder       "search by name or email"
-      :allow-clear       true
-      :option-label-prop :label
-      :value             (str @account)
-      :filter-option     (fn [val opt]
-                           (let [q (string/lower-case (.. opt -props -qterm))]
-                             (string/includes? q (string/lower-case val))))
-      :on-change         #(when (nil? %) (dispatch [::update :account nil]))
-      :on-select         #(dispatch [::update :account (tb/str->int %)])}
-     (doall (map account-option @accounts))]))
+    (fn []
+      [ant/auto-complete
+      {:style             {:width "100%"}
+       :placeholder       "search by name or email"
+       :allow-clear       true
+       :option-label-prop :label
+       :value             (str @account)
+       :filter-option     (fn [val opt]
+                            (let [q (string/lower-case (get-qterm opt))]
+                              (string/includes? q (string/lower-case val))))
+       :on-change         #(when (nil? %) (dispatch [::update :account nil]))
+       :on-select         #(dispatch [::update :account (tb/str->int %)])}
+      (doall (map account-option @accounts))])))
 
 
 (defn- service-option [{:keys [id code name desc price] :as service}]
@@ -235,7 +240,7 @@
       :option-label-prop :label
       :value             (str @service)
       :filter-option     (fn [val opt]
-                           (let [q (string/lower-case (.. opt -props -qterm))]
+                           (let [q (string/lower-case (get-qterm opt))]
                              (string/includes? q (string/lower-case val))))
       :on-change         #(when (nil? %) (dispatch [::clear-service]))
       :on-select         #(dispatch [::update :service (tb/str->int %)])}
