@@ -54,8 +54,7 @@
 (defn property
   "The property that the member that placed this order lives in."
   [{conn :conn} _ order]
-  (let [created (td/created-at (d/db conn) order)
-        license (-> order order/account :account/licenses first)]
+  (let [license (-> order order/account :account/licenses first)]
     (if (some? license)
       (member-license/property license)
       (resolve/resolve-as nil {:message  "Cannot locate property for this order!"
