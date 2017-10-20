@@ -43,9 +43,9 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
-                 [starcity/blueprints "1.13.0-SNAPSHOT" :exclusions [com.datomic/datomic-free
-                                                                     com.andrewmcveigh/cljs-time
-                                                                     com.google.guava/guava]]
+                 [starcity/blueprints "1.13.0" :exclusions [com.datomic/datomic-free
+                                                            com.andrewmcveigh/cljs-time
+                                                            com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
                  [cljs-ajax "0.6.0"]
@@ -56,10 +56,10 @@
                  [aero "1.1.2"]
                  [starcity/drawknife "0.2.0" :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
-                 [starcity/toolbelt "0.1.9-SNAPSHOT" :exclusions [com.datomic/datomic-free
-                                                                  org.apache.httpcomponents/httpclient
-                                                                  com.andrewmcveigh/cljs-time
-                                                                  com.google.guava/guava]]]
+                 [starcity/toolbelt "0.1.9" :exclusions [com.datomic/datomic-free
+                                                         org.apache.httpcomponents/httpclient
+                                                         com.andrewmcveigh/cljs-time
+                                                         com.google.guava/guava]]]
 
   :jvm-opts ["-server"
              "-Xmx4g"
