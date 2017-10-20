@@ -52,9 +52,10 @@
     :graphql    {:query
                  [[:order {:id order-id}
                    [:id :price :created :quantity :name :desc :status
-                    :billed_on :fulfilled_on :projected_fulfillment
+                    :billed_on :fulfilled_on :projected_fulfillment :cost
+                    [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
-                    [:service [:id :name :code :billed :price]]
+                    [:service [:id :name :desc :code :cost :billed :price]]
                     [:property [:id :name]]
                     [:payments [:id :amount]]]]]
                  :on-success [::order-fetch k]

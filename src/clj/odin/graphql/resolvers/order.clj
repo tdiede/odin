@@ -23,6 +23,11 @@
   (order/computed-price order))
 
 
+(defn cost
+  [_ _ order]
+  (order/computed-cost order))
+
+
 (defn order-name
   [_ _ order]
   (order/computed-name order))
@@ -36,7 +41,8 @@
 (defn billed-on
   "Date that `order` was billed on."
   [{conn :conn} _ order]
-  (td/last-modified-to (d/db conn) (td/id order) :order/status :order.status/charged))
+  (or (order/billed-on order)
+      (td/last-modified-to (d/db conn) (td/id order) :order/status :order.status/charged)))
 
 
 (defn fulfilled-on
@@ -234,6 +240,7 @@
 (def resolvers
   {;; fields
    :order/price        price
+   :order/cost         cost
    :order/name         order-name
    :order/status       status
    :order/billed-on    billed-on

@@ -159,6 +159,8 @@
                                     :resolve (:get :db/id)}
             :price                 {:type    Float
                                     :resolve :order/price}
+            :cost                  {:type    Float
+                                    :resolve :order/cost}
             :quantity              {:type    Float
                                     :resolve (:get :order/quantity)}
             :name                  {:type    String
@@ -181,6 +183,8 @@
                                     :resolve :order/property}
             :projected_fulfillment {:type    :Instant
                                     :resolve (:get :order/projected-fulfillment)}
+            :variant               {:type    :service_variant
+                                    :resolve (:get :order/variant)}
             :created               {:type    (non-null :Instant)
                                     :resolve :entity/created}
             :updated               {:type    (non-null :Instant)
@@ -281,6 +285,8 @@
                        :resolve (:get :service/code)}
             :price    {:type    Float
                        :resolve (:get :service/price)}
+            :cost     {:type    Float
+                       :resolve (:get :service/cost)}
             :billed   {:type    :service_billed
                        :resolve :service/billed}
             :rental   {:type    Boolean

@@ -70,6 +70,9 @@
                        :help  "This is used to give the member an idea of when they can expect their order to be fulfilled."}
         [ant/date-picker
          {:style         {:width "100%"}
+          :showTime      #js {:use12Hours          true
+                              :disabledSeconds     (constantly (range 61))
+                              :hideDisabledOptions true}
           :on-change     #(swap! form assoc :projected-fulfillment %)
           :disabled-date #(and % (< (.valueOf %) (.valueOf (.subtract (js/moment.) 1 "days"))))}]]
        [ant/checkbox {:checked   (:send-notification @form)
@@ -80,7 +83,8 @@
 (defmethod step-action :placed [_ {:keys [status] :as order}]
   [:div
    [place-order-modal order]
-   [:p.fs1 "Indicates that the order is " [:i "in-progress"] ", and cannot be canceled by the member."]
+   [:p.fs1.mb1
+    "Indicates that the order is " [:i "in-progress"] ", and cannot be canceled by the member."]
    [ant/button
     {:size     :small
      :disabled (not= status :pending)
@@ -135,6 +139,9 @@
                        :help  "The date that this order was fulfilled."}
         [ant/date-picker
          {:style         {:width "100%"}
+          :showTime      #js {:use12Hours          true
+                              :disabledSeconds     (constantly (range 61))
+                              :hideDisabledOptions true}
           :default-value (:actual-fulfillment @form)
           :on-change     #(swap! form assoc :actual-fulfillment %)
           :allow-clear   false}]]
@@ -156,7 +163,7 @@
     (fn [{:keys [status] :as order}]
       [:div
        [fulfill-order-modal order form]
-       [:p.fs1 "Indicates that the order has been fulfilled."]
+       [:p.fs1.mb1 "Indicates that the order has been fulfilled."]
        [ant/button
         {:size     :small
          :type     :primary
@@ -201,7 +208,7 @@
 (defn- charged-action [{:keys [status] :as order}]
   [:div
    [charged-modal order]
-   [:p.fs1
+   [:p.fs1.mb1
     {:dangerouslySetInnerHTML
      {:__html "Charge the member for this order&mdash;order must be fulfilled."}}]
    [ant/tooltip
@@ -254,7 +261,7 @@
 (defmethod step-action :canceled [_ order]
   [:div
    [cancel-order-modal order]
-   [:p.fs1
+   [:p.fs1.mb1
     {:dangerouslySetInnerHTML
      {:__html "Cancel this order&mdash;order must be pending or placed."}}]
    [ant/button
@@ -331,22 +338,22 @@
 
 
 (defn progress [{:keys [id status] :as order}]
-  (let [statuses   [:pending :placed :fulfilled :charged :canceled]
-        history    (subscribe [:history id])
-        is-loading (subscribe [:loading? :order/fetch])]
-    (tb/log :history (status-history @history))
+  (let [statuses        [:pending :placed :fulfilled :charged :canceled]
+        history         (subscribe [:history id])
+        order-loading   (subscribe [:loading? :order/fetch])
+        history-loading (subscribe [:loading? :history/fetch])]
     [:div
-     (if (and @is-loading (nil? meta))
-       [:div {:style {:text-align "center"
-                      :padding    "30px 50px"}}
-        [ant/spin {:tip "Fetching progress..."}]]
-       [ant/steps {:current   (status-idx status)
-                   :status    (steps-status status)
-                   :direction "vertical"}
-        (doall
-         (for [status statuses]
-           ^{:key status}
-           [ant/steps-step {:title       (-> status name string/capitalize)
-                            :icon        (status-icon status)
-                            :description (r/as-component [step-desc status order @history])
-                            :status      (step-status status order @history)}]))])]))
+     [ant/spin (tb/assoc-when
+                {:tip      "Fetching progress..."
+                 :spinning (or @order-loading @history-loading)}
+                :delay (when (some? order) 1000))
+      [ant/steps {:current   (status-idx status)
+                  :status    (steps-status status)
+                  :direction "vertical"}
+       (doall
+        (for [status statuses]
+          ^{:key status}
+          [ant/steps-step {:title       (-> status name string/capitalize)
+                           :icon        (status-icon status)
+                           :description (r/as-component [step-desc status order @history])
+                           :status      (step-status status order @history)}]))]]]))

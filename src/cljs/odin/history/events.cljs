@@ -20,7 +20,6 @@
  ::on-success
  [(path db/path)]
  (fn [{db :db} [_ k entity-id response]]
-   (tb/log response)
    {:dispatch [:loading k false]
     :db       (assoc db entity-id (get-in response [:data :history]))}))
 

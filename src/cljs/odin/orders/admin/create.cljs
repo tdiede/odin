@@ -144,14 +144,30 @@
        (assoc-in [:form :quantity] 1))))
 
 
+(reg-event-db
+ ::clear-form
+ [(path ::path)]
+ (fn [db _]
+   (assoc db :form {:quantity 1})))
+
+
 (reg-event-fx
  ::create!
  [(path ::path)]
  (fn [{db :db} [k on-create]]
-   {:dispatch [:loading k true]
-    :graphql  {:mutation   [[:create_order {:params (:form db)} [:id]]]
-               :on-success [::create-success k on-create]
-               :on-failure [:graphql/failure k]}}))
+   (let [form    (:form db)
+         service (tb/find-by #(= (:service form) (:id %)) (:services db))
+         params  (-> form
+                     (assoc :desc (:notes form))
+                     (tb/assoc-when :variant (when (and (nil? (:variant form))
+                                                        (some? (:variants service)))
+                                               (-> service :variants first :id)))
+                     (dissoc :notes))]
+     {:dispatch-n [[:loading k true]
+                   [::clear-form]]
+      :graphql    {:mutation   [[:create_order {:params params} [:id]]]
+                   :on-success [::create-success k on-create]
+                   :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
@@ -189,7 +205,7 @@
       :placeholder       "search by name or email"
       :allow-clear       true
       :option-label-prop :label
-      :default-value     (str @account)
+      :value             (str @account)
       :filter-option     (fn [val opt]
                            (let [q (string/lower-case (.. opt -props -qterm))]
                              (string/includes? q (string/lower-case val))))
@@ -217,7 +233,7 @@
       :placeholder       "search within service name, code or description"
       :allow-clear       true
       :option-label-prop :label
-      :default-value     (str @service)
+      :value             (str @service)
       :filter-option     (fn [val opt]
                            (let [q (string/lower-case (.. opt -props -qterm))]
                              (string/includes? q (string/lower-case val))))

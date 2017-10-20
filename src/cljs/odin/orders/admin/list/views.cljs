@@ -107,11 +107,14 @@
         params     (subscribe [:admin.orders/query-params])
         is-loading (subscribe [:loading? :orders/query])]
     (fn []
-      [ant/table
-       {:loading           @is-loading
-        :columns           (columns @params @orders)
-        :expandedRowRender (comp r/as-element expanded)
-        :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}])))
+      [ant/spin (tb/assoc-when
+                 {:tip      "Fetch orders..."
+                  :spinning @is-loading}
+                 :delay (when-not (empty? @orders) 1000))
+       [ant/table
+        {:columns           (columns @params @orders)
+         :expandedRowRender (comp r/as-element expanded)
+         :dataSource        (map-indexed #(assoc %2 :key %1) @orders)}]])))
 
 
 ;; =============================================================================
