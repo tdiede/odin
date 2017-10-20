@@ -96,10 +96,10 @@
   [:div.columns
    [:div.column
     [:p.fs1 [:b "Billed"]]
-    [:p.fs2 (.. record -service -billed)]]
+    [:p.fs2 (goog.object/getValueByKeys record "service" "billed")]]
    [:div.column.is-10
     [:p.fs1 [:b "Description/Notes"]]
-    [:p.fs2 (or (.-desc record) "N/A")]]])
+    [:p.fs2 (or (goog.object/getValueByKeys record "desc") "N/A")]]])
 
 
 (defn orders-table []
