@@ -138,7 +138,6 @@
          [:span (name status)]]))]))
 
 
-
 (defn- controls []
   (let [params (subscribe [:admin.orders/query-params])]
     [:div.chart-controls

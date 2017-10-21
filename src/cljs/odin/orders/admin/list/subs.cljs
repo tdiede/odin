@@ -18,10 +18,22 @@
 
 
 (def ^:private compfns
-  {:date   {:asc  #(if (and %1 %2)
+  {:date   {:asc  #(cond
+                     (and (some? %1) (some? %2))
                      (.isBefore (js/moment. %1) (js/moment. %2))
-                     false)
-            :desc #(if (and %1 %2) (.isAfter (js/moment. %1) (js/moment. %2)) false)}
+
+                     (and (some? %1) (nil? %2))
+                     true
+
+                     :otherwise false)
+            :desc #(cond
+                     (and (some? %1) (some? %2))
+                     (.isAfter (js/moment. %1) (js/moment. %2))
+
+                     (and (some? %1) (nil? %2))
+                     true
+
+                     :otherwise false)}
    :number {:asc < :desc >}})
 
 
