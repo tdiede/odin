@@ -70,3 +70,24 @@
  :<- [:admin.orders/query-params]
  (fn [params _]
    (:statuses params #{:all})))
+
+
+(reg-sub
+ :admin.orders/members
+ :<- [::orders]
+ (fn [db _]
+   (:accounts db)))
+
+
+(reg-sub
+ :admin.orders.accounts/selected
+ :<- [::orders]
+ (fn [db _]
+   (:selected-accounts db)))
+
+
+(reg-sub
+ :admin.orders.filters/dirty?
+ :<- [:admin.orders/query-params]
+ (fn [params _]
+   (not= params db/default-params)))

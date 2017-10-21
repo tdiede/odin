@@ -71,7 +71,6 @@
 (defn order-card
   [{:keys [status service name desc billed_on fulfilled_on projected_fulfillment] :as order}]
   (let [is-loading (subscribe [:loading? :order/fetch])]
-    (tb/log order)
     [ant/card {:class     "svc"
                :bodyStyle {:padding "10px 16px"}
                :loading   @is-loading}

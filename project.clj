@@ -24,12 +24,13 @@
                  [kami "0.1.0"]
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.20.0"]
-                 [vincit/venia "0.2.2"]
+                 [vincit/venia "0.2.3"]
                  ;; CLJS
                  [tongue "0.2.2"]       ; i18n
-                 [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react]]
+                 [antizer "0.2.2" :exclusions [com.google.guava/guava cljsjs/react cljsjs/antd]]
                  [re-frame "0.9.4" :exclusions [com.google.guava/guava cljsjs/react]]
                  [reagent "0.7.0"]
+                 [cljsjs/antd "2.13.4-0"]
                  [cljsjs/highcharts-css "5.0.10-0"]
                  [cljsjs/filesaverjs "1.3.3-0"]
                  [cljsjs/libphonenumber "8.4.1-1"]

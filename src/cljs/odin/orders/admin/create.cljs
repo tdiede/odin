@@ -112,7 +112,7 @@
  [(path ::path)]
  (fn [{db :db} [_ bootstrapped]]
    (tb/assoc-when
-    {:graphql {:query      [[:accounts {:role :member} [:id :name :email [:property [:name]]]]
+    {:graphql {:query      [[:accounts {:params {:roles [:member]}} [:id :name :email [:property [:name]]]]
                             [:services [:id :code :name :desc :price :billed
                                         [:variants [:id :name :price]]]]]
                :on-success [::fetch-success]

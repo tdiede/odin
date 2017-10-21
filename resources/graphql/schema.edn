@@ -2,7 +2,7 @@
  {;; accounts
   :role
   {:description "Account roles."
-   :values      [:all :member :onboarding :applicant :admin]}
+   :values      [:member :onboarding :applicant :admin]}
 
   :deposit_refund_status
   {:description "Possible statuses of the security deposit refund."
@@ -332,6 +332,15 @@
 
  :input-objects
  {;;; Account
+
+  :accounts_query_params
+  {:description "Parameters to query for accounts."
+   :fields      {:roles      {:type (list :role)}
+                 :q          {:type        String
+                              :description "Query string to search for accounts by name or email."}
+                 :properties {:type (list :Long)}}}
+
+
   :update_account
   {:description "Inputs to update an account."
    :fields      {:first_name        {:type String}
@@ -408,8 +417,7 @@
 
  :queries
  {:accounts {:type    (list :account)
-             :args    {:role {:type          :role
-                              :default-value :all}}
+             :args    {:params {:type :accounts_query_params}}
              :resolve :account/list}
 
 

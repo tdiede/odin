@@ -122,7 +122,7 @@
 ;; =============================================================================
 
 
-(defn status-filters []
+(defn- status-filters []
   (let [statuses (subscribe [:admin.orders/statuses])
         selected (subscribe [:admin.orders.statuses/selected])]
     [:div
@@ -138,24 +138,53 @@
          [:span (name status)]]))]))
 
 
+(defn- filter-by-members []
+  (let [is-loading        (subscribe [:loading? :admin.orders/search-members])
+        selected-accounts (subscribe [:admin.orders.accounts/selected])
+        accounts          (subscribe [:admin.orders/members])]
+    [ant/select
+     {:placeholder       "select members"
+      :style             {:width "100%"}
+      :filter-option     false
+      :not-found-content (when @is-loading (r/as-element [ant/spin {:size "small"}]))
+      :mode              :multiple
+      :label-in-value    true
+      :value             (if-some [xs @selected-accounts] xs [])
+      :allow-clear       true
+      :on-search         #(dispatch [:admin.orders/search-members %])
+      :on-change         #(dispatch [:admin.orders/select-members (js->clj % :keywordize-keys true)])}
+     (doall
+      (for [{:keys [id name]} @accounts]
+        [ant/select-option {:key id} name]))]))
+
+
 (defn- controls []
-  (let [params (subscribe [:admin.orders/query-params])]
+  (let [params        (subscribe [:admin.orders/query-params])
+        filters-dirty (subscribe [:admin.orders.filters/dirty?])]
     [:div.chart-controls
      [:div.columns
+      [:div.column.is-3
+       [ant/form-item {:label "Filter by Members"}
+        [filter-by-members]]]
+      [:div.column.is-3
+       [ant/form-item {:label "Within Range"}
+        [ant/date-picker-range-picker
+         {:format      "l"
+          :allow-clear true
+          :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
+          :value       ((juxt :from :to) @params)}]]]
       [:div.column.is-2
        [ant/form-item {:label "Calculate Range With"}
         [ant/select {:value     (:datekey @params)
                      :style     {:width 138}
                      :on-change #(dispatch [:admin.orders/datekey (keyword %)])}
          [ant/select-option {:value :created} "Created"]
-         [ant/select-option {:value :billed} "Billed On"]]]]
-      [:div.column
-       [ant/form-item {:label "Within Range"}
-        [ant/date-picker-range-picker
-         {:format      "l"
-          :allow-clear true
-          :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
-          :value       ((juxt :from :to) @params)}]]]]]))
+         [ant/select-option {:value :billed} "Billed On"]]]]]
+     [:div
+      [ant/button {:on-click #(dispatch [:admin.orders.filters/reset])
+                   :type     (when @filters-dirty :primary)
+                   :icon     "filter"}
+       "Reset Filters"]]]))
 
 
 ;; =============================================================================
@@ -176,7 +205,6 @@
           [create/button {:on-create [:orders/query @query-params]}]]]]
 
        [controls]
-
 
        [:div
         [orders-table]]])))
