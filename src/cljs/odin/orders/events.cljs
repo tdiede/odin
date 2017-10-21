@@ -11,9 +11,10 @@
 (defn- orders-query-params
   [{:keys [statuses from to datekey]}]
   (tb/assoc-when
-   {:to      (.toISOString to)
-    :from    (.toISOString from)
-    :datekey datekey}
+   {}
+   :to      (when (some? to) (.toISOString to))
+   :from    (when (some? from) (.toISOString from))
+   :datekey (when (or (some? to) (some? from)) datekey)
    :statuses (when-not (contains? statuses :all)
                (vec statuses))))
 

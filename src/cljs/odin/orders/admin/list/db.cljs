@@ -11,22 +11,28 @@
   {path {:params {:sort-by    :created
                   :sort-order :desc
                   :datekey    :created
-                  :from       (.startOf (js/moment.) "month")
-                  :to         (.endOf (js/moment.) "month")
                   :statuses   #{:all}}}})
+
+(defn- remove-nil-keys [m]
+  (reduce
+   (fn [acc [k v]]
+     (if (nil? v) acc (assoc acc k v)))
+   {}
+   m))
 
 
 (defn params->route [params]
-  (let [params (tb/transform-when-key-exists
-                   params
-                 {:sort-by    name
-                  :sort-order name
-                  :datekey    name
-                  :from       #(when % (.unix %))
-                  :to         #(when % (.unix %))
-                  :statuses   #(->> (map name %)
-                                    (interpose ",")
-                                    (apply str))})]
+  (let [params (-> (tb/transform-when-key-exists
+                       params
+                     {:sort-by    name
+                      :sort-order name
+                      :datekey    name
+                      :from       #(when % (.unix %))
+                      :to         #(when % (.unix %))
+                      :statuses   #(->> (map name %)
+                                        (interpose ",")
+                                        (apply str))})
+                   (remove-nil-keys))]
     (routes/path-for :orders :query-params params)))
 
 

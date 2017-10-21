@@ -146,7 +146,6 @@
        [ant/form-item {:label "Calculate Range With"}
         [ant/select {:value     (:datekey @params)
                      :style     {:width 138}
-                     :size      :large
                      :on-change #(dispatch [:admin.orders/datekey (keyword %)])}
          [ant/select-option {:value :created} "Created"]
          [ant/select-option {:value :billed} "Billed On"]]]]
@@ -154,7 +153,7 @@
        [ant/form-item {:label "Within Range"}
         [ant/date-picker-range-picker
          {:format      "l"
-          :allow-clear false
+          :allow-clear true
           :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
           :value       ((juxt :from :to) @params)}]]]]]))
 
@@ -165,27 +164,18 @@
 
 
 (defn view []
-  (let [showing-controls (r/atom false)
-        query-params     (subscribe [:admin.orders/query-params])]
+  (let [query-params (subscribe [:admin.orders/query-params])]
     (fn []
       [:div
        (typography/view-header "Orders" "Manage and view premium service orders.")
        [:div.columns
-        (when-not @showing-controls
-          {:style {:margin-top 24 :margin-bottom 24}})
         [:div.column
          [status-filters]]
         [:div.column
          [:div.is-pulled-right
-          [create/button {:on-create [:orders/query @query-params]}]
-          [ant/button
-           {:class    "ml2"
-            :type     (if @showing-controls :primary :default)
-            :shape    :circle
-            :icon     :setting
-            :on-click #(swap! showing-controls not)}]]]]
+          [create/button {:on-create [:orders/query @query-params]}]]]]
 
-       (when @showing-controls [controls])
+       [controls]
 
 
        [:div
