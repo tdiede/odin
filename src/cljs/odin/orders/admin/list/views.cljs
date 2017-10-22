@@ -1,6 +1,7 @@
 (ns odin.orders.admin.list.views
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
+            [odin.components.order :as order]
             [odin.orders.admin.create :as create]
             [odin.orders.admin.list.db :as db]
             [odin.utils.formatters :as format]
@@ -25,7 +26,7 @@
 
 (defn- wrap-cljs [f]
   (fn [x record]
-    (f x (js->clj record :keywordize-keys true))))
+    (r/as-element (f x (js->clj record :keywordize-keys true)))))
 
 
 (defn- render-total [_ {:keys [price quantity]}]
@@ -36,11 +37,29 @@
   (if (some? price) (format/currency price) "N/A"))
 
 
+(defn- render-date [date _]
+  [ant/tooltip {:title (when-some [d date] (format/date-time-short d))}
+   (if (some? date) (format/date-short-num date) "N/A")])
+
+
+(defn- status-icon-class [status]
+  (get
+   {:placed    "has-text-info"
+    :fulfilled "has-text-primary"
+    :failed    "has-text-danger"
+    :charged   "has-text-success"}
+   status))
+
+
 (defn- render-status [_ {status :status}]
-  (case status
-    :order.status/pending "new"
-    :order.status/placed  "in-progress"
-    status))
+  [ant/tooltip {:title status}
+   [ant/icon {:class (status-icon-class (keyword status))
+              :type  (order/status-icon (keyword status))}]])
+
+
+(defn- render-member-name [_ {account :account}]
+  [ant/tooltip {:title (format/format "%s @ %s" (:email account) (get-in account [:property :name]))}
+   (:name account)])
 
 
 (defn- sort-col [query-params key title href-fn]
@@ -58,7 +77,10 @@
 
 
 (defn- columns [query-params orders]
-  [{:title     "Order"
+  [{:title     ""
+    :dataIndex :status
+    :render    (wrap-cljs render-status)}
+   {:title     "Order"
     :dataIndex :name
     :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
     :onFilter  (fn [value record]
@@ -71,13 +93,13 @@
     :filters   (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
     :onFilter  (fn [value record]
                  (= value (str (goog.object/getValueByKeys record "account" "id"))))
-    :render    #(.-name %)}
+    :render    (wrap-cljs render-member-name)}
    {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
-    :render    format/date-time-short}
+    :render    (wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :billed_on "Billed On" db/params->route])
     :dataIndex :billed_on
-    :render    #(if (some? %) (format/date-time-short %) "N/A")}
+    :render    (wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :price "Price" db/params->route])
     :dataIndex :price
     :render    (wrap-cljs render-price)}
@@ -86,20 +108,21 @@
     :render    (fnil format/number 1)}
    {:title     "Total"
     :dataIndex :total
-    :render    (wrap-cljs render-total)}
-   {:title     "Status"
-    :dataIndex :status
-    :render    (wrap-cljs render-status)}])
+    :render    (wrap-cljs render-total)}])
 
 
 (defn- expanded [record]
-  [:div.columns
-   [:div.column
-    [:p.fs1 [:b "Billed"]]
-    [:p.fs2 (goog.object/getValueByKeys record "service" "billed")]]
-   [:div.column.is-10
-    [:p.fs1 [:b "Description/Notes"]]
-    [:p.fs2 (or (goog.object/getValueByKeys record "desc") "N/A")]]])
+  (let [record (js->clj record :keywordize-keys true)]
+    [:div.columns
+     [:div.column
+      [:p.fs1 [:b "Billed"]]
+      [:p.fs2 (get-in record [:service :billed])]]
+     [:div.column
+      [:p.fs1 [:b "Cost"]]
+      [:p.fs2 (if-some [c (:cost record)] (format/currency c) "N/A")]]
+     [:div.column.is-8
+      [:p.fs1 [:b "Description/Notes"]]
+      [:p.fs2 (get record "desc" "N/A")]]]))
 
 
 (defn orders-table []

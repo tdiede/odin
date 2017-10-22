@@ -28,7 +28,7 @@
     :graphql  {:query
                [[:orders {:params (orders-query-params params)}
                  [:id :price :created :quantity :name :desc :status :billed_on
-                  [:account [:id :name]]
+                  [:account [:id :name :email [:property [:id :name]]]]
                   [:service [:id :name :code :billed :price]]
                   [:property [:id :name]]
                   [:payments [:id :amount]]]]]
