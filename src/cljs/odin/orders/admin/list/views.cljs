@@ -46,8 +46,9 @@
   (get
    {:placed    "has-text-info"
     :fulfilled "has-text-primary"
-    :failed    "has-text-danger"
-    :charged   "has-text-success"}
+    :failed    "has-text-warning"
+    :charged   "has-text-success"
+    :canceld   "has-text-danger"}
    status))
 
 

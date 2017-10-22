@@ -14,7 +14,7 @@
 
   :order_status
   {:description "Possible statuses of orders."
-   :values      [:pending :placed :fulfilled :charged :processing :canceled]}
+   :values      [:pending :placed :fulfilled :processing :failed :charged :canceled]}
 
   :payment_method
   {:description "Methods of payment."

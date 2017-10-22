@@ -5,7 +5,8 @@
             [antizer.reagent :as ant]
             [clojure.string :as string]
             [toolbelt.core :as tb]
-            [iface.loading :as loading]))
+            [iface.loading :as loading]
+            [odin.components.order :as order]))
 
 
 ;; =============================================================================
@@ -226,6 +227,15 @@
 
 
 ;; =============================================================================
+;; Failed/Retry Order
+
+
+;; (defmethod step-action :failed [_ order]
+;;   [:div
+;;    ])
+
+
+;; =============================================================================
 ;; Cancel Order
 
 
@@ -294,14 +304,6 @@
     :process))
 
 
-(def ^:private status-icon
-  {:pending    "clock-circle-o"
-   :placed     "sync"
-   :fulfilled  "check-circle-o"
-   :charged    "credit-card"
-   :canceled   "close-circle-o"})
-
-
 (defn- full-status [status]
   (keyword "order.status" (name status)))
 
@@ -338,7 +340,7 @@
 
 
 (defn progress [{:keys [id status] :as order}]
-  (let [statuses        [:pending :placed :fulfilled :charged :canceled]
+  (let [statuses        [:pending :placed :fulfilled :charged #_:failed :canceled]
         history         (subscribe [:history id])
         order-loading   (subscribe [:loading? :order/fetch])
         history-loading (subscribe [:loading? :history/fetch])]
@@ -354,6 +356,6 @@
         (for [status statuses]
           ^{:key status}
           [ant/steps-step {:title       (-> status name string/capitalize)
-                           :icon        (status-icon status)
+                           :icon        (order/status-icon status)
                            :description (r/as-component [step-desc status order @history])
                            :status      (step-status status order @history)}]))]]]))

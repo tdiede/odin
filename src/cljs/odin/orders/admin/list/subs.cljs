@@ -62,7 +62,7 @@
 (reg-sub
  :admin.orders/statuses
  (fn [db _]
-   [:all :pending :placed :fulfilled :charged :canceled]))
+   [:all :pending :placed :fulfilled :failed :charged :canceled]))
 
 
 (reg-sub
