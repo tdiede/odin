@@ -105,15 +105,20 @@
 
 (defn create!
   "Create a new order."
-  [{:keys [requester conn]} {{:keys [account service variant desc quantity price]} :params} _]
+  [{:keys [requester conn]} {{:keys [account service line_items] :as params} :params} _]
   (let [[account service] (td/entities (d/db conn) account service)
+        line-items        (when-not (empty? line_items)
+                            (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
         order             (order/create account service
                                         (tb/assoc-when
                                          {}
-                                         :desc desc
-                                         :price price
-                                         :variant variant
-                                         :quantity quantity))]
+                                         :lines line-items
+                                         :summary (:summary params)
+                                         :request (:request params)
+                                         :price (:price params)
+                                         :cost (:cost params)
+                                         :variant (:variant params)
+                                         :quantity (:quantity params)))]
     @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
 

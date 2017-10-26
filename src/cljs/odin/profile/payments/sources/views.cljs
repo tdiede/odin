@@ -304,7 +304,6 @@
                     :on-cancel #(dispatch [:modal/hide :payment.source/add])
                     :footer    nil}
          [:div
-          (when [:div.loading-box])
           [tabs {:class "is-centered"}
            (doall
             (map-indexed

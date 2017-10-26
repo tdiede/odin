@@ -65,11 +65,11 @@
   [{:keys [cost price]}]
   (if (nil? cost)
     [ant/tooltip {:title "Please input a cost."} "N/A"]
-    (str (format/format "%.2f" (- 1 (/ cost price))) "%")))
+    (str (format/format "%.2f" (* (- 1 (/ cost price)) 100)) "%")))
 
 
 (defn order-card
-  [{:keys [status service name desc billed_on fulfilled_on projected_fulfillment] :as order}]
+  [{:keys [status service name request billed_on fulfilled_on projected_fulfillment] :as order}]
   (let [is-loading (subscribe [:loading? :order/fetch])]
     [ant/card {:class     "svc"
                :bodyStyle {:padding "10px 16px"}
@@ -106,11 +106,11 @@
            [:div.column
             [:p.heading "Billed On"]
             [:p (format/date-time-short b)]])])
-      (when (and (some? desc) (not (string/blank? desc)))
+      (when (and (some? request) (not (string/blank? request)))
         [:div.columns
          [:div.column
-          [:p.heading "Notes"]
-          [:p.fs2 desc]]])]]))
+          [:p.heading "Request"]
+          [:p.fs2 request]]])]]))
 
 
 (defn- subheader [order]

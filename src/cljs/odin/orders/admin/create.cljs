@@ -7,7 +7,8 @@
             [toolbelt.core :as tb]
             [clojure.string :as string]
             [odin.components.service :as service]
-            [odin.utils.formatters :as format]))
+            [odin.utils.formatters :as format]
+            [odin.components.order :as order]))
 
 
 ;; =============================================================================
@@ -43,7 +44,8 @@
  ::services
  :<- [::create]
  (fn [db _]
-   (:services db)))
+   (->> (:services db)
+        (sort-by :name))))
 
 
 (reg-sub
@@ -88,10 +90,23 @@
 
 
 (reg-sub
+ ::line-items-valid
+ :<- [::form :line_items]
+ (fn [items _]
+   (every?
+    (fn [{:keys [price desc]}]
+      (and (number? price) (not (neg? price)) (not (string/blank? desc))))
+    items)))
+
+
+(reg-sub
  ::can-create?
  :<- [::form]
- (fn [{:keys [service account]} _]
-   (and (some? service) (some? account))))
+ :<- [::line-items-valid]
+ (fn [[{:keys [service account]} lines-valid] _]
+   (and (some? service)
+        (some? account)
+        lines-valid)))
 
 
 ;; =============================================================================
@@ -129,18 +144,25 @@
       :dispatch [:loading ::fetch false]})))
 
 
-(reg-event-db
+(reg-event-fx
  ::update
  [(path ::path)]
- (fn [db [_ k v]]
-   (assoc-in db [:form k] v)))
+ (fn [{db :db} [_ k v]]
+   (let [variant (when (= k :service)
+                   (when-let [v (-> (tb/find-by #(= (:id %) v) (:services db))
+                                    :variants
+                                    first)]
+                     (:id v)))]
+     (tb/assoc-when
+      {:db (assoc-in db [:form k] v)}
+      :dispatch (when-some [v variant] [::update :variant v])))))
 
 
 (reg-event-db
  ::clear-service
  [(path ::path)]
  (fn [db _]
-   (-> (update-in db [:form] dissoc :service :price :notes)
+   (-> (update-in db [:form] dissoc :service :price :summary :request :cost :variant :line_items)
        (assoc-in [:form :quantity] 1))))
 
 
@@ -155,17 +177,9 @@
  ::create!
  [(path ::path)]
  (fn [{db :db} [k on-create]]
-   (let [form    (:form db)
-         service (tb/find-by #(= (:service form) (:id %)) (:services db))
-         params  (-> form
-                     (assoc :desc (:notes form))
-                     (tb/assoc-when :variant (when (and (nil? (:variant form))
-                                                        (some? (:variants service)))
-                                               (-> service :variants first :id)))
-                     (dissoc :notes))]
-     {:dispatch-n [[:loading k true]
-                   [::clear-form]]
-      :graphql    {:mutation   [[:create_order {:params params} [:id]]]
+   (let [form (:form db)]
+     {:dispatch-n [[:loading k true] [::clear-form]]
+      :graphql    {:mutation   [[:create_order {:params form} [:id]]]
                    :on-success [::create-success k on-create]
                    :on-failure [:graphql/failure k]}})))
 
@@ -206,17 +220,17 @@
         account  (subscribe [::form :account])]
     (fn []
       [ant/auto-complete
-      {:style             {:width "100%"}
-       :placeholder       "search by name or email"
-       :allow-clear       true
-       :option-label-prop :label
-       :value             (str @account)
-       :filter-option     (fn [val opt]
-                            (let [q (string/lower-case (get-qterm opt))]
-                              (string/includes? q (string/lower-case val))))
-       :on-change         #(when (nil? %) (dispatch [::update :account nil]))
-       :on-select         #(dispatch [::update :account (tb/str->int %)])}
-      (doall (map account-option @accounts))])))
+       {:style             {:width "100%"}
+        :placeholder       "search by name or email"
+        :allow-clear       true
+        :option-label-prop :label
+        :value             (str @account)
+        :filter-option     (fn [val opt]
+                             (let [q (string/lower-case (get-qterm opt))]
+                               (string/includes? q (string/lower-case val))))
+        :on-change         #(when (nil? %) (dispatch [::update :account nil]))
+        :on-select         #(dispatch [::update :account (tb/str->int %)])}
+       (doall (map account-option @accounts))])))
 
 
 (defn- service-option [{:keys [id code name desc price] :as service}]
@@ -247,13 +261,6 @@
      (doall (map service-option @services))]))
 
 
-(defn- order-price
-  [{:keys [variants] :as service} {:keys [price variant] :as form}]
-  (let [vprice (:price (tb/find-by (comp (partial = variant) :id) variants))
-        fprice (when-not (or (zero? price) (string/blank? price)) price)]
-    (or vprice fprice (:price service))))
-
-
 (defn- form []
   (let [account (subscribe [::selected-account])
         service (subscribe [::selected-service])
@@ -268,19 +275,17 @@
       [service-autocomplete]]
 
      (when (and (some? @account) (some? @service))
-       [service/card
-        {:name     (:name @service)
-         :desc     (:desc @service)
-         :rental   (:rental @service)
-         :quantity (:quantity @form)
-         :price    (order-price @service @form)
-         :billed   (:billed @service)
-         :service  (:id @service)
-         :selected true
-         :variants (:variants @service)
-         :fields   @fields}
-        {:on-change (fn [[_ k v]] (dispatch [::update k v]))
-         :on-delete #(dispatch [::clear-service])}])]))
+       [order/form
+        @service
+        {:cost       (:cost @form)
+         :price      (:price @form)
+         :billed     (:billed @service)
+         :variant    (:variant @form)
+         :quantity   (:quantity @form)
+         :request    (:request @form)
+         :summary    (:summary @form)
+         :line_items (:line_items @form)}
+        {:on-change (fn [k v] (dispatch [::update k v]))}])]))
 
 
 (defn- modal [on-create]
