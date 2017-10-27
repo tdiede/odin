@@ -8,7 +8,8 @@
             [odin.utils.formatters :as format]
             [reagent.core :as r]
             [clojure.string :as string]
-            [odin.components.order :as order]))
+            [odin.components.order :as order]
+            [odin.components.payments :as payments-ui]))
 
 
 (defn- order-name
@@ -28,8 +29,9 @@
      {:title (when show-tooltip
                (r/as-element
                 [:div
-                 (when (some? sprice)
-                   [:p.fs2 [:b "Service: "] (format/format "Service price is $%.2f" sprice)])
+                 (when sprice
+                   [:p.fs2 [:b "Service: "]
+                    (format/format "Service price is $%.2f" sprice)])
                  (when (> quantity 1)
                    [:p.fs2
                     [:b "Calculation: "]
@@ -211,4 +213,9 @@
         [:div.column
          [progress/progress @order]]
         [:div.column
-         [order-card @order]]]])))
+         [order-card @order]]]
+       [:div.columns
+        [:div.column.is-half]
+        [:div.column
+         [ant/card {:class "is-flush"}
+          [payments-ui/payments-table (:payments @order) @is-loading]]]]])))
