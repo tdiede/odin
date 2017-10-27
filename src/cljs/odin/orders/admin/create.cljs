@@ -93,10 +93,7 @@
  ::line-items-valid
  :<- [::form :line_items]
  (fn [items _]
-   (every?
-    (fn [{:keys [price desc]}]
-      (and (number? price) (not (neg? price)) (not (string/blank? desc))))
-    items)))
+   (order/line-items-valid? items)))
 
 
 (reg-sub
@@ -275,17 +272,18 @@
       [service-autocomplete]]
 
      (when (and (some? @account) (some? @service))
-       [order/form
-        @service
-        {:cost       (:cost @form)
-         :price      (:price @form)
-         :billed     (:billed @service)
-         :variant    (:variant @form)
-         :quantity   (:quantity @form)
-         :request    (:request @form)
-         :summary    (:summary @form)
-         :line_items (:line_items @form)}
-        {:on-change (fn [k v] (dispatch [::update k v]))}])]))
+       [ant/card {:class "svc" :bodyStyle {:padding "10px 16px"}}
+        [order/form
+         @service
+         {:cost       (:cost @form)
+          :price      (:price @form)
+          :billed     (:billed @service)
+          :variant    (:variant @form)
+          :quantity   (:quantity @form)
+          :request    (:request @form)
+          :summary    (:summary @form)
+          :line_items (:line_items @form)}
+         {:on-change (fn [k v] (dispatch [::update k v]))}]])]))
 
 
 (defn- modal [on-create]

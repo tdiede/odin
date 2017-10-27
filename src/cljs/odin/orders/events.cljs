@@ -53,8 +53,9 @@
                  [:history/fetch order-id]]
     :graphql    {:query
                  [[:order {:id order-id}
-                   [:id :price :created :quantity :name :desc :status
+                   [:id :price :created :quantity :name :request :summary :status
                     :billed_on :fulfilled_on :projected_fulfillment :cost
+                    [:line_items [:id :desc :cost :price]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
                     [:service [:id :name :desc :code :cost :billed :price]]

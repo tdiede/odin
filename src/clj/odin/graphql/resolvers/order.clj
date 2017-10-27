@@ -11,7 +11,8 @@
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
             [toolbelt.async :refer [<!!?]]
-            [odin.models.payment-source :as payment-source]))
+            [odin.models.payment-source :as payment-source]
+            [clojure.set :as set]))
 
 ;; =============================================================================
 ;; Fields
@@ -57,7 +58,7 @@
   (let [license (-> order order/account :account/licenses first)]
     (if (some? license)
       (member-license/property license)
-      (resolve/resolve-as nil {:message  "Cannot locate property for this order!"
+      (resolve/resolve-as nil {:message  "cannot locate property for this order!"
                                :order-id (:db/id order)}))))
 
 
@@ -103,6 +104,17 @@
 ;; =============================================================================
 
 
+(defn- use-order-price? [service {:keys [line_items variant]}]
+  (let [vprice (:price (tb/find-by (comp (partial = variant) :db/id) (:service/variants service)))]
+    (and (empty? line_items) (nil? vprice))))
+
+
+(defn- use-order-cost? [service {:keys [line_items variant]}]
+  (let [vcost (:cost (tb/find-by (comp (partial = variant) :db/id) (:service/variants service)))
+        lcost (->> line_items (map (fnil :cost 0)) (apply +))]
+    (and (zero? lcost) (nil? vcost))))
+
+
 (defn create!
   "Create a new order."
   [{:keys [requester conn]} {{:keys [account service line_items] :as params} :params} _]
@@ -115,12 +127,74 @@
                                          :lines line-items
                                          :summary (:summary params)
                                          :request (:request params)
-                                         :price (:price params)
-                                         :cost (:cost params)
+                                         :price (when (use-order-price? service params)
+                                                  (:price params))
+                                         :cost (when (use-order-cost? service params)
+                                                 (:cost params))
                                          :variant (:variant params)
                                          :quantity (:quantity params)))]
     @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
+
+
+;; Given set of existing ids, examine set of `old` ids
+
+
+(defn- update-line-item-tx
+  [db {:keys [id desc cost price] :as item}]
+  (let [entity (d/entity db id)]
+    (cond-> []
+      ;; update desc
+      (not= desc (:line-item/desc entity))
+      (conj [:db/add id :line-item/desc desc])
+
+      ;; remove cost
+      (and (nil? cost) (some? (:line-item/cost entity)))
+      (conj [:db/retract id :line-item/cost (:line-item/cost entity)])
+
+      ;; update cost
+      (and (some? cost) (not= (float cost) (:line-item/cost entity)))
+      (conj [:db/add id :line-item/cost (float cost)])
+
+      ;; update price
+      (and (some? price) (not= (float price) (:line-item/price entity)))
+      (conj [:db/add id :line-item/price (float price)]))))
+
+
+(defn- update-line-items-tx [db order line-items-params]
+  (let [line-items   (order/line-items order)
+        [new old]    [(remove (comp some? :id) line-items-params)
+                      (filter (comp some? :id) line-items-params)]
+        existing-ids (set (map :db/id line-items))
+        update-ids   (set (map :id old))
+        to-retract   (set/difference existing-ids update-ids)]
+    (cond-> []
+      (not (empty? to-retract))
+      (concat (map #(vector :db.fn/retractEntity %) to-retract))
+
+      (not (empty? old))
+      (concat (remove empty? (mapcat (partial update-line-item-tx db) old)))
+
+      (not (empty? new))
+      (concat (order/update order {:lines (map (fn [{:keys [desc price cost]}]
+                                                 (order/line-item desc price cost))
+                                               new)})))))
+
+
+(defn update!
+  "Update an existing order."
+  [{:keys [requester conn]} {:keys [id params]} _]
+  (let [order (d/entity (d/db conn) id)]
+    (if (empty? params)
+      (resolve/resolve-as nil {:message  "Please provide something to update."
+                               :order-id (:db/id order)})
+      (do
+        @(d/transact conn (concat
+                           (order/update order (dissoc params :line_items))
+                           [(source/create requester)]
+                           (when-let [line-items (:line_items params)]
+                             (update-line-items-tx (d/db conn) order line-items))))
+        (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))))
 
 
 ;; TODO: notify
@@ -230,6 +304,10 @@
   [{conn :conn} account {account-id :account}]
   (or (account/admin? account) (= account-id (:db/id account))))
 
+(defmethod authorization/authorized? :order/update!
+  [{conn :conn} account {account-id :account}]
+  (or (account/admin? account) (= account-id (:db/id account))))
+
 
 (defmethod authorization/authorized? :order/cancel!
   [{conn :conn} account {order-id :id}]
@@ -255,6 +333,7 @@
    :order/entry        order
    ;; mutations
    :order/create!      create!
+   :order/update!      update!
    :order/place!       place!
    :order/fulfill!     fulfill!
    :order/charge!      charge!

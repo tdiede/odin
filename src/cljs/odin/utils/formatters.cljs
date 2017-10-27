@@ -113,3 +113,15 @@
 
 
 (def format gstring/format)
+
+
+(defn unescape-newlines [s]
+  (string/replace s #"\\n" "\n"))
+
+
+(defn escape-newlines [s]
+  (string/replace s #"\n" "\\n"))
+
+
+(defn newlines->line-breaks [s]
+  (string/replace s #"\\n" "<br>"))

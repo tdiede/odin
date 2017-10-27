@@ -90,7 +90,11 @@
 
 (defn- line-item-cost
   [line-items]
-  (->> line-items (map (fnil :cost 0)) (apply +)))
+  (->> line-items
+       (map
+        (fn [{cost :cost}]
+          (if (or (nil? cost) (string/blank? cost)) 0 cost)))
+       (apply +)))
 
 
 (defn- order-cost
@@ -133,16 +137,16 @@
        :help  "Information provided to us by the customer when the order was requested."}
       [ant/input
        {:type      :textarea
-        :value     request
-        :on-change #(on-change :request (.. % -target -value))}]]
+        :value     (format/unescape-newlines request)
+        :on-change #(on-change :request (format/escape-newlines (.. % -target -value)))}]]
 
      [ant/form-item
       {:label "Fulfillment Notes"
        :help  "Information pertaining to the fulfillment of this order."}
       [ant/input
        {:type      :textarea
-        :value     summary
-        :on-change #(on-change :summary (.. % -target -value))}]]
+        :value     (format/unescape-newlines summary)
+        :on-change #(on-change :summary (format/escape-newlines (.. % -target -value)))}]]
 
      (when-not (empty? line_items)
        [:div
@@ -158,11 +162,20 @@
        "Add Line Item"]]]))
 
 
+(defn line-items-valid?
+  "Are `line-items` in a state compatible with persisting them?"
+  [line-items]
+  (every?
+   (fn [{:keys [price desc]}]
+     (and (number? price) (not (neg? price)) (not (string/blank? desc))))
+   line-items))
+
+
 (defn form
   "A form used to manipulate order fields during creation/modification."
   [{:keys [name desc] :as svc} order opts]
   (let [{:keys [price billed quantity]} order]
-    [ant/card {:class "svc" :bodyStyle {:padding "10px 16px"}}
+    [:div
      [:div.level.is-mobile
       {:style {:margin-bottom "0.75em"}}
       [:div.level-left

@@ -7,7 +7,8 @@
             [toolbelt.core :as tb]
             [odin.utils.formatters :as format]
             [reagent.core :as r]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [odin.components.order :as order]))
 
 
 (defn- order-name
@@ -68,49 +69,121 @@
     (str (format/format "%.2f" (* (- 1 (/ cost price)) 100)) "%")))
 
 
-(defn order-card
-  [{:keys [status service name request billed_on fulfilled_on projected_fulfillment] :as order}]
-  (let [is-loading (subscribe [:loading? :order/fetch])]
+(defn- order-text-field [label text]
+  (when (and (some? text) (not (string/blank? text)))
+    [:div.columns
+     [:div.column
+      [:p.heading label]
+      [:p.fs2
+       {:style {:word-break "break-word"}
+        :dangerouslySetInnerHTML {:__html (format/newlines->line-breaks text)}}]]]))
+
+
+(def ^:private line-item-columns
+  [{:key       "desc"
+    :dataIndex "desc"
+    :title     "Description"
+    :width     "70%"}
+   {:key       "cost"
+    :dataIndex "cost"
+    :title     "Cost"
+    :render    (fn [cost] (if-let [c cost] (format/currency c) "N/A"))}
+   {:key       "price"
+    :dataIndex "price"
+    :title     "Price"
+    :render    (fn [price] (if-let [p price] (format/currency p) "N/A"))
+    :className "has-text-right"}])
+
+
+(defn- line-items-table [line-items]
+  [ant/table
+   {:dataSource (clj->js line-items)
+    :columns    line-item-columns
+    :size       :small
+    :class      "is-flush"
+    :pagination false}])
+
+
+(defn- order-details
+  [{:keys [service status name line_items billed_on fulfilled_on projected_fulfillment] :as order}]
+  [:div
+   [:h4.svc-title.mb1
+    {:style {:font-weight 600 :margin-bottom 0}}
+    (order-name order)
+    [:div.pull-right
+     [ant/button {:on-click #(dispatch [:admin.order/editing (:id order) true])} "Edit"]]]
+
+   [:p.svc-desc.fs2.mb1
+    {:dangerouslySetInnerHTML {:__html (:desc service)}}]
+
+   [:div.svc-foot
+    [:div.columns.mb0
+     [:div.column
+      [:p.heading "Price"]
+      [:p (order-price order)]]
+     [:div.column
+      [:p.heading "Cost"]
+      [:p (order-cost order)]]
+     [:div.column.is-one-quarter
+      [:p.heading "Margin"]
+      [:p (order-margin order)]]]
+    (when (or (some? fulfilled_on) (some? projected_fulfillment))
+      [:div.columns
+       (when-some [p projected_fulfillment]
+         [:div.column
+          [:p.heading "Projected Fulfillment"]
+          [:p (format/date-time-short p)]])
+       (when-some [f fulfilled_on]
+         [:div.column
+          [:p.heading "Fulfilled"]
+          [:p (format/date-time-short f)]])
+       (when-some [b billed_on]
+         [:div.column
+          [:p.heading "Billed On"]
+          [:p (format/date-time-short b)]])])
+    (order-text-field "Request Notes" (:request order))
+    (order-text-field "Fulfillment Notes" (:summary order))
+    (when-not (empty? line_items)
+      [:div
+       [:p.heading "Line Items"]
+       (line-items-table line_items)])]])
+
+
+(defn- order-edit
+  [order]
+  (let [is-loading (subscribe [:loading? :admin.order/update!])
+        form       (r/atom (-> order (update :line_items vec)))]
+    (fn [order]
+      [:div
+       [order/form
+        (:service order)
+        @form
+        {:on-change (fn [k v] (swap! form assoc k v))}]
+       [:div.mt2.has-text-right
+        [ant/button
+         {:on-click #(dispatch [:admin.order/editing (:id order) false])}
+         "Cancel"]
+        [ant/button
+         {:on-click #(reset! form order)}
+         "Reset"]
+        [ant/button
+         {:type     :primary
+          :disabled (or (= @form order)
+                        (not (order/line-items-valid? (:line_items @form))))
+          :loading  @is-loading
+          :on-click #(dispatch [:admin.order/update! order @form])}
+         "Save"]]])))
+
+
+(defn order-card [order]
+  (let [is-loading (subscribe [:loading? :order/fetch])
+        is-editing (subscribe [:admin.order/editing? (:id order)])]
     [ant/card {:class     "svc"
                :bodyStyle {:padding "10px 16px"}
                :loading   @is-loading}
-     [:h4.svc-title.mb1
-      {:style {:font-weight 600 :margin-bottom 0}}
-      (order-name order)]
-
-     [:p.svc-desc.fs2.mb1
-      {:dangerouslySetInnerHTML {:__html (:desc service)}}]
-
-     [:div.svc-foot
-      [:div.columns.mb0
-       [:div.column
-        [:p.heading "Price"]
-        [:p (order-price order)]]
-       [:div.column
-        [:p.heading "Cost"]
-        [:p (order-cost order)]]
-       [:div.column.is-one-quarter
-        [:p.heading "Margin"]
-        [:p (order-margin order)]]]
-      (when (or (some? fulfilled_on) (some? projected_fulfillment))
-        [:div.columns
-         (when-some [p projected_fulfillment]
-           [:div.column
-            [:p.heading "Projected Fulfillment"]
-            [:p (format/date-time-short p)]])
-         (when-some [f fulfilled_on]
-           [:div.column
-            [:p.heading "Fulfilled"]
-            [:p (format/date-time-short f)]])
-         (when-some [b billed_on]
-           [:div.column
-            [:p.heading "Billed On"]
-            [:p (format/date-time-short b)]])])
-      (when (and (some? request) (not (string/blank? request)))
-        [:div.columns
-         [:div.column
-          [:p.heading "Request"]
-          [:p.fs2 request]]])]]))
+     (if @is-editing
+       [order-edit order]
+       [order-details order])]))
 
 
 (defn- subheader [order]

@@ -390,15 +390,16 @@
                  :description "Orders until."}}}
 
 
-  :create_line_item_params
+  :mutate_line_item_params
   {:description "Parameters to create a line item."
    :fields
-   {:desc  {:type (non-null String)}
+   {:id    {:type :Long}
+    :desc  {:type (non-null String)}
     :cost  {:type Float}
     :price {:type (non-null Float)}}}
 
 
-  :create_order_params
+  :mutate_order_params
   {:description "Parameters needed to create an order."
    :fields      {:account    {:type (non-null Long)}
                  :service    {:type (non-null Long)}
@@ -409,7 +410,7 @@
                  :quantity   {:type Float}
                  :request    {:type String}
                  :summary    {:type String}
-                 :line_items {:type (list :create_line_item_params)}}}
+                 :line_items {:type (list :mutate_line_item_params)}}}
 
 
   ;;; Payments
@@ -522,8 +523,17 @@
   :create_order
   {:type        :order
    :description "Create a new premium service order."
-   :args        {:params {:type :create_order_params}}
+   :args        {:params {:type :mutate_order_params}}
    :resolve     :order/create!}
+
+
+  :update_order
+  {:type        :order
+   :description "Update a premium service order."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "Id of the order to update."}
+                 :params {:type :mutate_order_params}}
+   :resolve     :order/update!}
 
 
   :place_order

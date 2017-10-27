@@ -109,6 +109,7 @@
     :render    (fnil format/number 1)}
    {:title     "Total"
     :dataIndex :total
+    :className "has-text-right"
     :render    (wrap-cljs render-total)}])
 
 
@@ -121,9 +122,12 @@
      [:div.column
       [:p.fs1 [:b "Cost"]]
       [:p.fs2 (if-some [c (:cost record)] (format/currency c) "N/A")]]
-     [:div.column.is-8
-      [:p.fs1 [:b "Description/Notes"]]
-      [:p.fs2 (get record "desc" "N/A")]]]))
+     [:div.column.is-4
+      [:p.fs1 [:b "Request Notes"]]
+      [:p.fs2 (get record "request" "N/A")]]
+     [:div.column.is-4
+      [:p.fs1 [:b "Fulfillment Notes"]]
+      [:p.fs2 (get record "summary" "N/A")]]]))
 
 
 (defn orders-table []
