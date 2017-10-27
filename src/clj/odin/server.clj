@@ -57,14 +57,15 @@
                 (string/ends-with? uri ".js")
                 (string/ends-with? uri ".css")
                 (string/ends-with? uri ".map")))]
-    (fn [{:keys [uri request-method session remote-addr] :as req}]
+    (fn [{:keys [deps params uri request-method session remote-addr] :as req}]
       (when-not (-junk? uri)
         (timbre/info :web/request
                      (tb/assoc-when
                       {:uri         uri
                        :method      request-method
                        :remote-addr remote-addr}
-                      :user (get-in session [:identity :account/email]))))
+                      :user (get-in session [:identity :account/email])
+                      :params (when-not (config/production? (:config deps)) params))))
       (handler req))))
 
 

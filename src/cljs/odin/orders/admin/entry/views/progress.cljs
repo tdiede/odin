@@ -5,7 +5,8 @@
             [antizer.reagent :as ant]
             [clojure.string :as string]
             [toolbelt.core :as tb]
-            [iface.loading :as loading]))
+            [iface.loading :as loading]
+            [odin.components.order :as order]))
 
 
 ;; =============================================================================
@@ -41,19 +42,19 @@
 
 
 (defn- place-order-modal [order]
-  (let [is-visible (subscribe [:modal/visible? :order/place])
-        is-loading (subscribe [:loading? :order/place!])
+  (let [is-visible (subscribe [:modal/visible? :admin.order/place])
+        is-loading (subscribe [:loading? :admin.order/place!])
         form       (r/atom {:projected-fulfillment nil
                             :send-notification     true})]
     (fn [order]
       [ant/modal
        {:title     "Place Order"
         :visible   @is-visible
-        :on-cancel #(dispatch [:modal/hide :order/place])
+        :on-cancel #(dispatch [:modal/hide :admin.order/place])
         :footer    [(r/as-element
                      ^{:key "cancel"}
                      [ant/button
-                      {:on-click #(dispatch [:modal/hide :order/place])
+                      {:on-click #(dispatch [:modal/hide :admin.order/place])
                        :size     :large}
                       "Cancel"])
                     (r/as-element
@@ -62,7 +63,7 @@
                       {:type     :primary
                        :size     :large
                        :loading  @is-loading
-                       :on-click #(dispatch [:order/place! order @form])}
+                       :on-click #(dispatch [:admin.order/place! order @form])}
                       "Place"])]}
        [:p "When the order is \"placed\" it can be considered " [:i "in-progress"]
         "; this means that the order can no longer be canceled by the member."]
@@ -88,7 +89,7 @@
    [ant/button
     {:size     :small
      :disabled (not= status :pending)
-     :on-click #(dispatch [:modal/show :order/place])}
+     :on-click #(dispatch [:modal/show :admin.order/place])}
     "Place"]])
 
 
@@ -111,17 +112,17 @@
 
 
 (defn- fulfill-order-modal [order form]
-  (let [is-visible (subscribe [:modal/visible? :order/fulfill])
-        is-loading (subscribe [:loading? :order/fulfill!])]
+  (let [is-visible (subscribe [:modal/visible? :admin.order/fulfill])
+        is-loading (subscribe [:loading? :admin.order/fulfill!])]
     (fn [order form]
       [ant/modal
        {:title     "Fulfill Order"
         :visible   @is-visible
-        :on-cancel #(dispatch [:modal/hide :order/fulfill])
+        :on-cancel #(dispatch [:modal/hide :admin.order/fulfill])
         :footer    [(r/as-element
                      ^{:key "cancel"}
                      [ant/button
-                      {:on-click #(dispatch [:modal/hide :order/fulfill])
+                      {:on-click #(dispatch [:modal/hide :admin.order/fulfill])
                        :size     :large}
                       "Cancel"])
                     (r/as-element
@@ -130,7 +131,7 @@
                       {:type     :primary
                        :loading  @is-loading
                        :size     :large
-                       :on-click #(dispatch [:order/fulfill! order @form])}
+                       :on-click #(dispatch [:admin.order/fulfill! order @form])}
                       (if (:process-charge @form)
                         [:span {:dangerouslySetInnerHTML {:__html "Fulfill & Charge"}}]
                         "Fulfill")])]}
@@ -168,7 +169,7 @@
         {:size     :small
          :type     :primary
          :disabled (#{:charged :fulfilled :processing :canceled} status)
-         :on-click #(dispatch [:modal/show :order/fulfill])}
+         :on-click #(dispatch [:modal/show :admin.order/fulfill])}
         "Fulfill"]])))
 
 
@@ -181,11 +182,11 @@
 
 
 (defn- charged-modal [order]
-  (let [is-visible (subscribe [:modal/visible? :order/charge])
-        is-loading (subscribe [:loading? :order/charge!])]
+  (let [is-visible (subscribe [:modal/visible? :admin.order/charge])
+        is-loading (subscribe [:loading? :admin.order/charge!])]
     [ant/modal
      {:visible   @is-visible
-      :on-cancel #(dispatch [:modal/hide :order/charge])
+      :on-cancel #(dispatch [:modal/hide :admin.order/charge])
       :class     "ant-confirm"
       :footer    nil}
      [:div.ant-confirm-body-wrapper
@@ -196,12 +197,12 @@
        [:div.ant-confirm-content "This cannot be undone!"]
        [:div.ant-confirm-btns
         [ant/button
-         {:on-click #(dispatch [:modal/hide :order/charge])}
+         {:on-click #(dispatch [:modal/hide :admin.order/charge])}
          "Cancel"]
         [ant/button
          {:type     :primary
           :loading  @is-loading
-          :on-click #(dispatch [:order/charge! order])}
+          :on-click #(dispatch [:admin.order/charge! order])}
          "Yes, process the charge"]]]]]))
 
 
@@ -217,7 +218,7 @@
      {:size     :small
       :loading  (= :processing status)
       :disabled (not (and (= status :fulfilled) (can-charge? order)))
-      :on-click #(dispatch [:modal/show :order/charge])}
+      :on-click #(dispatch [:modal/show :admin.order/charge])}
      (if (= :processing (:status order)) "Processing..." "Charge")]]])
 
 
@@ -226,22 +227,31 @@
 
 
 ;; =============================================================================
+;; Failed/Retry Order
+
+
+;; (defmethod step-action :failed [_ order]
+;;   [:div
+;;    ])
+
+
+;; =============================================================================
 ;; Cancel Order
 
 
 (defn- cancel-order-modal [order]
-  (let [is-visible (subscribe [:modal/visible? :order/cancel])
-        is-loading (subscribe [:loading? :order/cancel!])
+  (let [is-visible (subscribe [:modal/visible? :admin.order/cancel])
+        is-loading (subscribe [:loading? :admin.order/cancel!])
         form       (r/atom {:send-notification false})]
     (fn [order]
       [ant/modal
        {:title     "Cancel Order"
         :visible   @is-visible
-        :on-cancel #(dispatch [:modal/hide :order/cancel])
+        :on-cancel #(dispatch [:modal/hide :admin.order/cancel])
         :footer    [(r/as-element
                      ^{:key "cancel"}
                      [ant/button
-                      {:on-click #(dispatch [:modal/hide :order/cancel])
+                      {:on-click #(dispatch [:modal/hide :admin.order/cancel])
                        :size     :large}
                       "Cancel"])
                     (r/as-element
@@ -250,7 +260,7 @@
                       {:type     :danger
                        :size     :large
                        :loading  @is-loading
-                       :on-click #(dispatch [:order/cancel! order @form])}
+                       :on-click #(dispatch [:admin.order/cancel! order @form])}
                       "Cancel Order"])]}
 
        [ant/checkbox {:checked   (:send-notification @form)
@@ -268,7 +278,7 @@
     {:size     :small
      :type     :danger
      :disabled (#{:fulfilled :charged} (:status order))
-     :on-click #(dispatch [:modal/show :order/cancel])}
+     :on-click #(dispatch [:modal/show :admin.order/cancel])}
     "Cancel"]])
 
 
@@ -292,14 +302,6 @@
     :charged  :finish
     :canceled :error
     :process))
-
-
-(def ^:private status-icon
-  {:pending    "clock-circle-o"
-   :placed     "sync"
-   :fulfilled  "check-circle-o"
-   :charged    "credit-card"
-   :canceled   "close-circle-o"})
 
 
 (defn- full-status [status]
@@ -338,7 +340,7 @@
 
 
 (defn progress [{:keys [id status] :as order}]
-  (let [statuses        [:pending :placed :fulfilled :charged :canceled]
+  (let [statuses        [:pending :placed :fulfilled :charged #_:failed :canceled]
         history         (subscribe [:history id])
         order-loading   (subscribe [:loading? :order/fetch])
         history-loading (subscribe [:loading? :history/fetch])]
@@ -354,6 +356,6 @@
         (for [status statuses]
           ^{:key status}
           [ant/steps-step {:title       (-> status name string/capitalize)
-                           :icon        (status-icon status)
+                           :icon        (order/status-icon status)
                            :description (r/as-component [step-desc status order @history])
                            :status      (step-status status order @history)}]))]]]))

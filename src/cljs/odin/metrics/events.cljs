@@ -67,6 +67,5 @@
  :metrics.category.fetch/success
  [(path db/path)]
  (fn [{db :db} [_ response]]
-   (tb/log response)
    {:db       (-> (:data response) transform-metrics (merge db))
     :dispatch [:loading :metrics.category/fetch false]}))

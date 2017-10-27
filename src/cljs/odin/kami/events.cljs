@@ -42,7 +42,6 @@
  ::search-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (tb/log k response)
    {:db       (assoc db :addresses (get-in response [:data :addresses]))
     :dispatch [:loading k false]}))
 
@@ -74,7 +73,6 @@
  ::score-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (tb/log k response)
    (let [kami (get-in response [:data :kami])
          {datasets :datasets
           criteria :criteria

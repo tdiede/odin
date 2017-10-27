@@ -1,7 +1,8 @@
 (ns odin.orders.admin.entry.events
   (:require [odin.routes :as routes]
-            [re-frame.core :refer [reg-event-fx path]]
-            [toolbelt.core :as tb]))
+            [re-frame.core :refer [reg-event-fx reg-event-db path]]
+            [toolbelt.core :as tb]
+            [odin.orders.db :as db]))
 
 
 (defmethod routes/dispatches :admin.orders/entry [route]
@@ -16,7 +17,7 @@
 
 
 (reg-event-fx
- :order/place!
+ :admin.order/place!
  (fn [_ [k {id :id} {:keys [send-notification projected-fulfillment]}]]
    {:dispatch [:loading k true]
     :graphql  {:mutation
@@ -34,11 +35,11 @@
  (fn [_ [_ k response]]
    {:dispatch-n [[:loading k false]
                  [:order/fetch (get-in response [:data :place_order :id])]
-                 [:modal/hide :order/place]]}))
+                 [:modal/hide :admin.order/place]]}))
 
 
 (reg-event-fx
- :order/cancel!
+ :admin.order/cancel!
  (fn [_ [k {id :id} {:keys [send-notification]}]]
    {:dispatch [:loading k true]
     :graphql {:mutation
@@ -52,11 +53,11 @@
  (fn [_ [_ k response]]
    {:dispatch-n [[:loading k false]
                  [:order/fetch (get-in response [:data :cancel_order :id])]
-                 [:modal/hide :order/cancel]]}))
+                 [:modal/hide :admin.order/cancel]]}))
 
 
 (reg-event-fx
- :order/fulfill!
+ :admin.order/fulfill!
  (fn [_ [k {id :id} {:keys [send-notification actual-fulfillment process-charge]}]]
    (tb/assoc-when
     {:dispatch [:loading k true]
@@ -78,11 +79,11 @@
  (fn [_ [_ k response]]
    {:dispatch-n [[:loading k false]
                  [:order/fetch (get-in response [:data :fulfill_order :id])]
-                 [:modal/hide :order/fulfill]]}))
+                 [:modal/hide :admin.order/fulfill]]}))
 
 
 (reg-event-fx
- :order/charge!
+ :admin.order/charge!
  (fn [_ [k {id :id}]]
    {:dispatch       [:loading k true]
     :graphql        {:mutation
@@ -98,4 +99,39 @@
  (fn [_ [_ k response]]
    {:dispatch-n [[:loading k false]
                  [:order/fetch (get-in response [:data :charge_order :id])]
-                 [:modal/hide :order/charge]]}))
+                 [:modal/hide :admin.order/charge]]}))
+
+
+(reg-event-db
+ :admin.order/editing
+ [(path db/path)]
+ (fn [db [_ order-id is-editing]]
+   (assoc-in db [:admin.order/editing order-id] is-editing)))
+
+
+(reg-event-fx
+ :admin.order/update!
+ (fn [_ [k order params]]
+   (let [uparams (reduce
+                  (fn [acc [k v]]
+                    (if (not= v (get order k))
+                      (assoc acc k v)
+                      acc))
+                  {}
+                  params)]
+     {:dispatch [:loading k true]
+      :graphql  {:mutation
+                 [[:update_order {:id     (:id order)
+                                  :params (dissoc uparams :id)}
+                   [:id]]]
+                 :on-success [::update! k]
+                 :on-failure [:graphql/failure k]}})))
+
+
+(reg-event-fx
+ ::update!
+ (fn [_ [_ k response]]
+   (let [order-id (get-in response [:data :update_order :id])]
+     {:dispatch-n [[:loading k false]
+                   [:order/fetch order-id]
+                   [:admin.order/editing order-id false]]})))

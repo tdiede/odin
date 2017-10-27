@@ -27,7 +27,7 @@
  [(path db/path)]
  (fn [{db :db} [k query-params]]
    {:dispatch [:orders/query query-params]
-    :db       (update db :params merge query-params)}))
+    :db       (assoc db :params query-params)}))
 
 
 (reg-event-fx
@@ -55,3 +55,51 @@
  [(path db/path)]
  (fn [{db :db} [_ datekey]]
    {:route (db/params->route (assoc (:params db) :datekey datekey))}))
+
+
+(reg-event-fx
+ :admin.orders/search-members
+ [(path db/path)]
+ (fn [{db :db} [k query]]
+   {:dispatch-throttle {:id              k
+                        :window-duration 500
+                        :leading?        false
+                        :trailing?       true
+                        :dispatch        [::search-members k query]}}))
+
+
+(reg-event-fx
+ ::search-members
+ [(path db/path)]
+ (fn [{db :db} [_ k query]]
+   {:dispatch [:loading k true]
+    :graphql  {:query      [[:accounts {:params {:roles [:member]
+                                                 :q     query}}
+                             [:id :name :email]]]
+               :on-success [::search-members-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::search-members-success
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   {:db      (assoc db :accounts (get-in response [:data :accounts]))
+    :dispatch [:loading k false]}))
+
+
+(reg-event-fx
+ :admin.orders/select-members
+ [(path db/path)]
+ (fn [{db :db} [_ selected]]
+   {:db    (assoc db :selected-accounts selected)
+    :route (db/params->route (assoc (:params db) :accounts (map (comp tb/str->int :key) selected)))}))
+
+
+
+(reg-event-fx
+ :admin.orders.filters/reset
+ [(path db/path)]
+ (fn [{db :db} _]
+   {:db    (dissoc db :selected-accounts)
+    :route (db/params->route db/default-params)}))

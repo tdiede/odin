@@ -65,8 +65,10 @@
      (case (:status response)
        401 {:route "/logout"}
        403 {:route "/logout"}
-       500 (ant/notification-error {:message     "Server error!"
-                                    :description "Something unexpected happened."})
+       500 (do
+             (ant/notification-error {:message     "Server error!"
+                                      :description "Something unexpected happened."})
+             {:dispatch [:loading k false]})
        (do
          (doseq [{m :message} (get-in response [:response :errors])]
            (ant/notification-error {:message     "Error!"

@@ -1,6 +1,7 @@
 (ns odin.orders.admin.list.views
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
+            [odin.components.order :as order]
             [odin.orders.admin.create :as create]
             [odin.orders.admin.list.db :as db]
             [odin.utils.formatters :as format]
@@ -25,7 +26,7 @@
 
 (defn- wrap-cljs [f]
   (fn [x record]
-    (f x (js->clj record :keywordize-keys true))))
+    (r/as-element (f x (js->clj record :keywordize-keys true)))))
 
 
 (defn- render-total [_ {:keys [price quantity]}]
@@ -36,11 +37,30 @@
   (if (some? price) (format/currency price) "N/A"))
 
 
+(defn- render-date [date _]
+  [ant/tooltip {:title (when-some [d date] (format/date-time-short d))}
+   (if (some? date) (format/date-short-num date) "N/A")])
+
+
+(defn- status-icon-class [status]
+  (get
+   {:placed    "has-text-info"
+    :fulfilled "has-text-primary"
+    :failed    "has-text-warning"
+    :charged   "has-text-success"
+    :canceld   "has-text-danger"}
+   status))
+
+
 (defn- render-status [_ {status :status}]
-  (case status
-    :order.status/pending "new"
-    :order.status/placed  "in-progress"
-    status))
+  [ant/tooltip {:title status}
+   [ant/icon {:class (status-icon-class (keyword status))
+              :type  (order/status-icon (keyword status))}]])
+
+
+(defn- render-member-name [_ {account :account}]
+  [ant/tooltip {:title (format/format "%s @ %s" (:email account) (get-in account [:property :name]))}
+   (:name account)])
 
 
 (defn- sort-col [query-params key title href-fn]
@@ -58,7 +78,10 @@
 
 
 (defn- columns [query-params orders]
-  [{:title     "Order"
+  [{:title     ""
+    :dataIndex :status
+    :render    (wrap-cljs render-status)}
+   {:title     "Order"
     :dataIndex :name
     :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
     :onFilter  (fn [value record]
@@ -71,13 +94,13 @@
     :filters   (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
     :onFilter  (fn [value record]
                  (= value (str (goog.object/getValueByKeys record "account" "id"))))
-    :render    #(.-name %)}
+    :render    (wrap-cljs render-member-name)}
    {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
-    :render    format/date-time-short}
+    :render    (wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :billed_on "Billed On" db/params->route])
     :dataIndex :billed_on
-    :render    #(if (some? %) (format/date-time-short %) "N/A")}
+    :render    (wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :price "Price" db/params->route])
     :dataIndex :price
     :render    (wrap-cljs render-price)}
@@ -86,20 +109,25 @@
     :render    (fnil format/number 1)}
    {:title     "Total"
     :dataIndex :total
-    :render    (wrap-cljs render-total)}
-   {:title     "Status"
-    :dataIndex :status
-    :render    (wrap-cljs render-status)}])
+    :className "has-text-right"
+    :render    (wrap-cljs render-total)}])
 
 
 (defn- expanded [record]
-  [:div.columns
-   [:div.column
-    [:p.fs1 [:b "Billed"]]
-    [:p.fs2 (goog.object/getValueByKeys record "service" "billed")]]
-   [:div.column.is-10
-    [:p.fs1 [:b "Description/Notes"]]
-    [:p.fs2 (or (goog.object/getValueByKeys record "desc") "N/A")]]])
+  (let [record (js->clj record :keywordize-keys true)]
+    [:div.columns
+     [:div.column
+      [:p.fs1 [:b "Billed"]]
+      [:p.fs2 (get-in record [:service :billed])]]
+     [:div.column
+      [:p.fs1 [:b "Cost"]]
+      [:p.fs2 (if-some [c (:cost record)] (format/currency c) "N/A")]]
+     [:div.column.is-4
+      [:p.fs1 [:b "Request Notes"]]
+      [:p.fs2 (get record "request" "N/A")]]
+     [:div.column.is-4
+      [:p.fs1 [:b "Fulfillment Notes"]]
+      [:p.fs2 (get record "summary" "N/A")]]]))
 
 
 (defn orders-table []
@@ -122,7 +150,7 @@
 ;; =============================================================================
 
 
-(defn status-filters []
+(defn- status-filters []
   (let [statuses (subscribe [:admin.orders/statuses])
         selected (subscribe [:admin.orders.statuses/selected])]
     [:div
@@ -138,26 +166,53 @@
          [:span (name status)]]))]))
 
 
+(defn- filter-by-members []
+  (let [is-loading        (subscribe [:loading? :admin.orders/search-members])
+        selected-accounts (subscribe [:admin.orders.accounts/selected])
+        accounts          (subscribe [:admin.orders/members])]
+    [ant/select
+     {:placeholder       "select members"
+      :style             {:width "100%"}
+      :filter-option     false
+      :not-found-content (when @is-loading (r/as-element [ant/spin {:size "small"}]))
+      :mode              :multiple
+      :label-in-value    true
+      :value             (if-some [xs @selected-accounts] xs [])
+      :allow-clear       true
+      :on-search         #(dispatch [:admin.orders/search-members %])
+      :on-change         #(dispatch [:admin.orders/select-members (js->clj % :keywordize-keys true)])}
+     (doall
+      (for [{:keys [id name]} @accounts]
+        [ant/select-option {:key id} name]))]))
+
 
 (defn- controls []
-  (let [params (subscribe [:admin.orders/query-params])]
+  (let [params        (subscribe [:admin.orders/query-params])
+        filters-dirty (subscribe [:admin.orders.filters/dirty?])]
     [:div.chart-controls
      [:div.columns
+      [:div.column.is-3
+       [ant/form-item {:label "Filter by Members"}
+        [filter-by-members]]]
+      [:div.column.is-3
+       [ant/form-item {:label "Within Range"}
+        [ant/date-picker-range-picker
+         {:format      "l"
+          :allow-clear true
+          :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
+          :value       ((juxt :from :to) @params)}]]]
       [:div.column.is-2
        [ant/form-item {:label "Calculate Range With"}
         [ant/select {:value     (:datekey @params)
                      :style     {:width 138}
-                     :size      :large
                      :on-change #(dispatch [:admin.orders/datekey (keyword %)])}
          [ant/select-option {:value :created} "Created"]
-         [ant/select-option {:value :billed} "Billed On"]]]]
-      [:div.column
-       [ant/form-item {:label "Within Range"}
-        [ant/date-picker-range-picker
-         {:format      "l"
-          :allow-clear false
-          :on-change   #(dispatch [:admin.orders.range/change (first %) (second %)])
-          :value       ((juxt :from :to) @params)}]]]]]))
+         [ant/select-option {:value :billed} "Billed On"]]]]]
+     [:div
+      [ant/button {:on-click #(dispatch [:admin.orders.filters/reset])
+                   :type     (when @filters-dirty :primary)
+                   :icon     "filter"}
+       "Reset Filters"]]]))
 
 
 ;; =============================================================================
@@ -166,28 +221,18 @@
 
 
 (defn view []
-  (let [showing-controls (r/atom false)
-        query-params     (subscribe [:admin.orders/query-params])]
+  (let [query-params (subscribe [:admin.orders/query-params])]
     (fn []
       [:div
        (typography/view-header "Orders" "Manage and view premium service orders.")
        [:div.columns
-        (when-not @showing-controls
-          {:style {:margin-top 24 :margin-bottom 24}})
         [:div.column
          [status-filters]]
         [:div.column
          [:div.is-pulled-right
-          [create/button {:on-create [:orders/query @query-params]}]
-          [ant/button
-           {:class    "ml2"
-            :type     (if @showing-controls :primary :default)
-            :shape    :circle
-            :icon     :setting
-            :on-click #(swap! showing-controls not)}]]]]
+          [create/button {:on-create [:orders/query @query-params]}]]]]
 
-       (when @showing-controls [controls])
-
+       [controls]
 
        [:div
         [orders-table]]])))
