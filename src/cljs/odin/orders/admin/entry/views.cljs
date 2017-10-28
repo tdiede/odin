@@ -78,7 +78,7 @@
       [:p.heading label]
       [:p.fs2
        {:style {:word-break "break-word"}
-        :dangerouslySetInnerHTML {:__html (format/newlines->line-breaks text)}}]]]))
+        :dangerouslySetInnerHTML {:__html (when-some [s text] (format/newlines->line-breaks s))}}]]]))
 
 
 (def ^:private line-item-columns

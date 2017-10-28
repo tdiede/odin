@@ -137,7 +137,7 @@
        :help  "Information provided to us by the customer when the order was requested."}
       [ant/input
        {:type      :textarea
-        :value     (format/unescape-newlines request)
+        :value     (when-some [s request] (format/unescape-newlines s))
         :on-change #(on-change :request (format/escape-newlines (.. % -target -value)))}]]
 
      [ant/form-item
@@ -145,7 +145,7 @@
        :help  "Information pertaining to the fulfillment of this order."}
       [ant/input
        {:type      :textarea
-        :value     (format/unescape-newlines summary)
+        :value     (when-some [s summary] (format/unescape-newlines summary))
         :on-change #(on-change :summary (format/escape-newlines (.. % -target -value)))}]]
 
      (when-not (empty? line_items)
