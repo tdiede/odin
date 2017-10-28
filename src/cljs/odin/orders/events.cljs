@@ -9,11 +9,13 @@
 
 
 (defn- orders-query-params
-  [{:keys [statuses from to datekey]}]
+  [{:keys [statuses from to datekey accounts]}]
   (tb/assoc-when
-   {:to      (.toISOString to)
-    :from    (.toISOString from)
-    :datekey datekey}
+   {}
+   :accounts (when (some? accounts) (vec accounts))
+   :to      (when (some? to) (.toISOString to))
+   :from    (when (some? from) (.toISOString from))
+   :datekey (when (or (some? to) (some? from)) datekey)
    :statuses (when-not (contains? statuses :all)
                (vec statuses))))
 
@@ -26,7 +28,7 @@
     :graphql  {:query
                [[:orders {:params (orders-query-params params)}
                  [:id :price :created :quantity :name :desc :status :billed_on
-                  [:account [:id :name]]
+                  [:account [:id :name :email [:property [:id :name]]]]
                   [:service [:id :name :code :billed :price]]
                   [:property [:id :name]]
                   [:payments [:id :amount]]]]]
@@ -51,8 +53,9 @@
                  [:history/fetch order-id]]
     :graphql    {:query
                  [[:order {:id order-id}
-                   [:id :price :created :quantity :name :desc :status
+                   [:id :price :created :quantity :name :request :summary :status
                     :billed_on :fulfilled_on :projected_fulfillment :cost
+                    [:line_items [:id :desc :cost :price]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
                     [:service [:id :name :desc :code :cost :billed :price]]

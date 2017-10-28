@@ -1,16 +1,31 @@
 (ns user
-  (:require [clojure.spec.test :as stest]
-            [clojure.tools.namespace.repl :refer [refresh]]
-            [datomic.api :as d]
-            [figwheel-sidecar.repl-api :as ra]
-            [mount.core :as mount :refer [defstate]]
-            [odin.datomic :refer [conn]]
-            [odin.config :as config :refer [config]]
-            [odin.core]
-            [odin.seed :as seed]
-            [reactor.reactor :as reactor]
-            [taoensso.timbre :as timbre]
-            [clojure.core.async :as a]))
+  (:require
+   [blueprints.models.account :as account]
+   [blueprints.models.application :as application]
+   [blueprints.models.customer :as customer]
+   [blueprints.models.events :as events]
+   [blueprints.models.license :as lincese]
+   [blueprints.models.member-license :as ml]
+   [blueprints.models.note :as note]
+   [blueprints.models.order :as order]
+   [blueprints.models.payment :as payment]
+   [blueprints.models.promote :as promote]
+   [blueprints.models.property :as property]
+   [blueprints.models.security-deposit :as deposit]
+   [blueprints.models.service :as service]
+   [blueprints.models.unit :as unit]
+   [clojure.spec.test :as stest]
+   [clojure.tools.namespace.repl :refer [refresh]]
+   [datomic.api :as d]
+   [figwheel-sidecar.repl-api :as ra]
+   [mount.core :as mount :refer [defstate]]
+   [odin.datomic :refer [conn]]
+   [odin.config :as config :refer [config]]
+   [odin.core]
+   [odin.seed :as seed]
+   [reactor.reactor :as reactor]
+   [taoensso.timbre :as timbre]
+   [clojure.core.async :as a]))
 
 
 (timbre/refer-timbre)

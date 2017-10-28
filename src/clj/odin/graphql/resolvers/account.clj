@@ -84,25 +84,31 @@
 ;; =============================================================================
 
 
-(defn arg-role->role [arg-role]
-  (if (#{:all} arg-role)
-    [:account.role/admin
-     :account.role/member
-     :account.role/onboarding
-     :account.role/applicant]
-    [(keyword "account.role" (name arg-role))]))
+(defn- parse-gql-params
+  [{:keys [roles] :as params}]
+  (tb/assoc-when
+   params
+   :roles (when-some [xs roles]
+            (map #(keyword "account.role" (name %)) xs))))
+
+
+(defn- query-accounts
+  [db params]
+  (timbre/debug (parse-gql-params params))
+  (->> (parse-gql-params params)
+       (apply concat)
+       (apply account/query db)))
 
 
 (defn accounts
   "Query list of accounts."
-  [{conn :conn} args _]
-  (->> (d/q '[:find [?e ...]
-              :in $ [?role ...]
-              :where
-              [?e :account/email _]
-              [?e :account/role ?role]]
-            (d/db conn) (arg-role->role (:role args)))
-       (apply td/entities (d/db conn))))
+  [{conn :conn} {params :params} _]
+  (try
+    (query-accounts (d/db conn) params)
+    (catch Throwable t
+      (timbre/error t "error querying accounts")
+      (resolve/resolve-as nil {:message  (.getMessage t)
+                               :err-data (ex-data t)}))))
 
 
 (defn entry

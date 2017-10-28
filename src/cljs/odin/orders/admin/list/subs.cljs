@@ -18,10 +18,22 @@
 
 
 (def ^:private compfns
-  {:date   {:asc  #(if (and %1 %2)
+  {:date   {:asc  #(cond
+                     (and (some? %1) (some? %2))
                      (.isBefore (js/moment. %1) (js/moment. %2))
-                     false)
-            :desc #(if (and %1 %2) (.isAfter (js/moment. %1) (js/moment. %2)) false)}
+
+                     (and (some? %1) (nil? %2))
+                     true
+
+                     :otherwise false)
+            :desc #(cond
+                     (and (some? %1) (some? %2))
+                     (.isAfter (js/moment. %1) (js/moment. %2))
+
+                     (and (some? %1) (nil? %2))
+                     true
+
+                     :otherwise false)}
    :number {:asc < :desc >}})
 
 
@@ -50,7 +62,7 @@
 (reg-sub
  :admin.orders/statuses
  (fn [db _]
-   [:all :pending :placed :fulfilled :charged :canceled]))
+   [:all :pending :placed :fulfilled :failed :charged :canceled]))
 
 
 (reg-sub
@@ -58,3 +70,24 @@
  :<- [:admin.orders/query-params]
  (fn [params _]
    (:statuses params #{:all})))
+
+
+(reg-sub
+ :admin.orders/members
+ :<- [::orders]
+ (fn [db _]
+   (:accounts db)))
+
+
+(reg-sub
+ :admin.orders.accounts/selected
+ :<- [::orders]
+ (fn [db _]
+   (:selected-accounts db)))
+
+
+(reg-sub
+ :admin.orders.filters/dirty?
+ :<- [:admin.orders/query-params]
+ (fn [params _]
+   (not= params db/default-params)))
