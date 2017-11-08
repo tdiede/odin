@@ -60,7 +60,7 @@
                     [:account [:id :name [:service_source [:id]]]]
                     [:service [:id :name :desc :code :cost :billed :price]]
                     [:property [:id :name]]
-                    [:payments [:id :amount]]]]]
+                    [:payments [:id :amount :description :paid_on]]]]]
                  :on-success [::order-fetch k]
                  :on-failure [:graphql/failure k]}}))
 
