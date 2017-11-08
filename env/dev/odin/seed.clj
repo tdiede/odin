@@ -4,7 +4,6 @@
             [blueprints.models.license :as license]
             [io.rkn.conformity :as cf]
             [datomic.api :as d]
-            [re-frame.db :as db]
             [toolbelt.core :as tb]
             [clj-time.coerce :as c]
             [clj-time.core :as t]))

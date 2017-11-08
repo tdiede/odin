@@ -1,4 +1,4 @@
-(defproject odin "1.2.0"
+(defproject odin "1.2.1-SNAPSHOT"
   :description "The all-dashboard."
   :url "http://my.joinstarcity.com"
   :license {:name "Eclipse Public License"
@@ -44,7 +44,7 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
-                 [starcity/blueprints "1.14.0" :exclusions [com.datomic/datomic-free
+                 [starcity/blueprints "1.14.1" :exclusions [com.datomic/datomic-free
                                                             com.andrewmcveigh/cljs-time
                                                             com.google.guava/guava]]
                  ;; dep resolution
