@@ -124,10 +124,10 @@
       [:p.fs2 (if-some [c (:cost record)] (format/currency c) "N/A")]]
      [:div.column.is-4
       [:p.fs1 [:b "Request Notes"]]
-      [:p.fs2 (get record "request" "N/A")]]
+      [:p.fs2 (get record :request "N/A")]]
      [:div.column.is-4
       [:p.fs1 [:b "Fulfillment Notes"]]
-      [:p.fs2 (get record "summary" "N/A")]]]))
+      [:p.fs2 (get record :summary "N/A")]]]))
 
 
 (defn orders-table []
