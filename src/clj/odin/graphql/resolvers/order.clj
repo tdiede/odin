@@ -197,7 +197,6 @@
         (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))))
 
 
-;; TODO: notify
 (defn place!
   "Place an order."
   [{:keys [requester conn]} {:keys [id projected_fulfillment notify]} _]
@@ -210,11 +209,11 @@
         @(d/transact conn [(tb/assoc-when
                             (order/is-placed id)
                             :order/projected-fulfillment projected_fulfillment)
+                           (events/order-placed requester order notify)
                            (source/create requester)])
         (d/entity (d/db conn) id)))))
 
 
-;; TODO: notify
 (defn fulfill!
   "Fulfill an order."
   [{:keys [conn requester stripe]} {:keys [id fulfilled_on charge notify]} _]
@@ -237,7 +236,8 @@
       :otherwise
       (do
         @(d/transact conn (concat
-                           [(source/create requester)]
+                           [(source/create requester)
+                            (events/order-fulfilled requester order notify)]
                            (if charge
                              [(events/process-order requester order)
                               [:db/add id :order/fulfilled-on fulfilled_on]
@@ -246,7 +246,6 @@
         (d/entity (d/db conn) id)))))
 
 
-;; TODO: notify?
 (defn charge!
   "Charge an order."
   [{:keys [conn requester stripe]} {:keys [id]} _]
@@ -274,11 +273,12 @@
         (d/entity (d/db conn) id)))))
 
 
-;; TODO: notify
 (defn cancel!
   "Cancel a premium service order."
   [{:keys [requester conn]} {:keys [id notify]} _]
-  @(d/transact conn [(order/is-canceled id) (source/create requester)])
+  @(d/transact conn [(order/is-canceled id)
+                     (events/order-canceled requester id notify)
+                     (source/create requester)])
   (d/entity (d/db conn) id))
 
 

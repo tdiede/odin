@@ -18,6 +18,10 @@
        :file     #profile {:dev     "logs/server.log"
                            :default "/var/log/odin/server.log"}}
 
+ :mailgun #profile {:dev {:domain  "sandboxeec004e4d33845edaef9b962843713a7.mailgun.org"
+                          :sender  "Mailgun Sandbox <postmaster@sandboxeec004e4d33845edaef9b962843713a7.mailgun.org>"
+                          :api-key ^:ref [:secrets :mailgun :api-key]}}
+
  :nrepl {:port #or [#env NREPL_PORT 7891]}
 
  :secrets #include #env STARCITY_SECRETS}
