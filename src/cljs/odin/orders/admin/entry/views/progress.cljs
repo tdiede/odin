@@ -151,7 +151,8 @@
                        :disabled  (not (can-charge? order))
                        :on-change #(swap! form assoc :process-charge (.. % -target -checked))}
          "Charge the order now."]]
-       [ant/checkbox {:checked   (:send-notification @form)
+       [ant/checkbox {:style     {:margin-left 0}
+                      :checked   (:send-notification @form)
                       :on-change #(swap! form assoc :send-notification (.. % -target -checked))}
         "Should we notify the member that his/her order has been fulfilled?"]])))
 
