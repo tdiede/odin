@@ -154,7 +154,7 @@
                    [:id :amount :paid_on :description
                     [:account [:name :email]]
                     [:property [:name]]
-                    [:order [:id [:service [:name :billed]]]]]]]
+                    [:order [:id :cost [:service [:name :billed]]]]]]]
                  :on-success [::revenue-chart-success]
                  :on-failure [:graphql/failure k]}})))
 
@@ -168,7 +168,8 @@
     :billed   (get-in order [:service :billed])
     :property (:name property)
     :order-id (:id order)
-    :service  (get-in order [:service :name])}))
+    :service  (get-in order [:service :name])
+    :cost     (:cost order)}))
 
 
 (reg-event-fx
@@ -182,7 +183,7 @@
 
 
 (def ^:private revenue-csv-keys
-  [:id :order-id :property :name :email :amount :billed :service :paid_on :description])
+  [:id :order-id :property :name :email :cost :amount :billed :service :paid_on :description])
 
 
 (reg-event-fx
