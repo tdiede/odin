@@ -130,7 +130,7 @@
             (-order-desc [payment]
               (let [order        (order/by-payment (d/db conn) payment)
                     service-desc (service/name (order/service order))]
-                (or (when-let [d (order/desc order)]
+                (or (when-let [d (order/summary order)]
                       (format "%s (%s)" d service-desc))
                     service-desc)))]
       (case (payment/payment-for payment)
