@@ -16,7 +16,7 @@
     },
     "author": "",
     "license": "ISC",
-    "homepage": "https://my.joinstarcity.com",
+    "homepage": "https://my.starcity.com",
     "dependencies": {
         "antd": "2.13.4",
         "bulma": "0.5.3",
