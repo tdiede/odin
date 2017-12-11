@@ -321,13 +321,14 @@
   [{:keys [stripe conn]} account payment customer source-id]
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
-        amount   (+ (payment/amount payment) (rent-late-fee payment))
+        amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
         desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
-    (rch/create! stripe (cents (payment/amount payment)) source-id
+    (rch/create! stripe amount source-id
                  :email (account/email account)
                  :description desc
-                :customer-id (customer/id customer)
-                :managed-account (member-license/rent-connect-id license))))
+                 :application-fee (int (* (/ (property/ops-fee-rent property) 100) amount))
+                 :customer-id (customer/id customer)
+                 :destination (member-license/rent-connect-id license))))
 
 
 (defn pay-rent!
