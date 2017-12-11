@@ -326,7 +326,7 @@
     (rch/create! stripe amount source-id
                  :email (account/email account)
                  :description desc
-                 :application-fee (int (* (/ (property/ops-fee-rent property) 100) amount))
+                 :application-fee (int (* (/ (property/ops-fee property) 100) amount))
                  :customer-id (customer/id customer)
                  :destination (member-license/rent-connect-id license))))
 
