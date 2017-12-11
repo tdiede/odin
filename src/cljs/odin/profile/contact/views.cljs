@@ -12,7 +12,7 @@
     :first_name "Daffy"
     :last_name  "Duck"
     :phone      "405-555-1234"
-    :email      "me@joinstarcity.com"
+    :email      "me@starcity.com"
     :bio        "Give us a short introduction to yourself! This will help your neighbors in the community to connect with you about mutual interests, etc."))
 
 

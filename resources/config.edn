@@ -8,8 +8,8 @@
                      "datomic:mem://localhost:4334/starcity"]}
 
  :root-domain #profile {:dev   "http://localhost:8080"
-                        :stage "https://staging.joinstarcity.com"
-                        :prod  "https://joinstarcity.com"}
+                        :stage "https://staging.starcity.com"
+                        :prod  "https://starcity.com"}
 
  :log {:level    #profile {:dev     :trace
                            :default :info}
