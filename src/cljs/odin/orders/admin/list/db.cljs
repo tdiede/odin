@@ -1,7 +1,8 @@
 (ns odin.orders.admin.list.db
   (:require [clojure.string :as string]
             [toolbelt.core :as tb]
-            [odin.routes :as routes]))
+            [odin.routes :as routes]
+            [iface.table :as table]))
 
 
 (def path ::orders)
@@ -28,27 +29,24 @@
 
 
 (defn params->route [params]
-  (let [params (-> (tb/transform-when-key-exists
-                       params
-                     {:sort-by    name
-                      :sort-order name
-                      :datekey    name
-                      :from       #(when % (.unix %))
-                      :to         #(when % (.unix %))
-                      :accounts   #(->> (interpose "," %) (apply str))
-                      :statuses   #(->> (map name %)
-                                        (interpose ",")
-                                        (apply str))})
+  (let [params (-> (table/sort-params->query-params params)
+                   (tb/transform-when-key-exists
+                       {:datekey    name
+                        :from       #(when % (.unix %))
+                        :to         #(when % (.unix %))
+                        :accounts   #(->> (interpose "," %) (apply str))
+                        :statuses   #(->> (map name %)
+                                          (interpose ",")
+                                          (apply str))})
                    (remove-empty-vals))]
     (routes/path-for :orders :query-params params)))
 
 
 (defn parse-query-params [params]
-  (tb/transform-when-key-exists params
-    {:sort-by    keyword
-     :sort-order keyword
-     :datekey    keyword
-     :from       #(js/moment. (* (tb/str->int %) 1000))
-     :to         #(js/moment. (* (tb/str->int %) 1000))
-     :accounts   #(->> (string/split % #",") (map tb/str->int))
-     :statuses   #(->> (string/split % #",") (map keyword) set)}))
+  (-> (table/query-params->sort-params params)
+      (tb/transform-when-key-exists {
+         :datekey    keyword
+         :from       #(js/moment. (* (tb/str->int %) 1000))
+         :to         #(js/moment. (* (tb/str->int %) 1000))
+         :accounts   #(->> (string/split % #",") (map tb/str->int))
+         :statuses   #(->> (string/split % #",") (map keyword) set)})))

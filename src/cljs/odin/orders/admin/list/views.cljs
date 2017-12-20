@@ -91,13 +91,13 @@
     :onFilter  (fn [value record]
                  (= value (str (goog.object/getValueByKeys record "account" "id"))))
     :render    (table/wrap-cljs render-member-name)}
-   {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
+   {:title     (table/sort-col-title query-params :created "Created" db/params->route)
     :dataIndex :created
     :render    (table/wrap-cljs render-date)}
-   {:title     (r/as-element [sort-col query-params :billed_on "Billed On" db/params->route])
+   {:title     (table/sort-col-title query-params :billed_on "Billed On" db/params->route)
     :dataIndex :billed_on
     :render    (table/wrap-cljs render-date)}
-   {:title     (r/as-element [sort-col query-params :price "Price" db/params->route])
+   {:title     (table/sort-col-title query-params :price "Price" db/params->route)
     :dataIndex :price
     :render    (table/wrap-cljs render-price)}
    {:title     "#"

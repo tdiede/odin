@@ -1,6 +1,7 @@
 (ns odin.accounts.admin.list.db
   (:require [toolbelt.core :as tb]
-            [odin.routes :as routes]))
+            [odin.routes :as routes]
+            [iface.table :as table]))
 
 
 (def path ::accounts)
@@ -16,9 +17,10 @@
 
 (defn params->route [params]
   ;; TODO:
-  (routes/path-for :accounts/list :query-params params))
+  (let [params (table/sort-params->query-params params)]
+    (routes/path-for :accounts/list :query-params params)))
 
 
 (defn parse-query-params [params]
   ;; TODO:
-  params)
+  (table/query-params->sort-params params))

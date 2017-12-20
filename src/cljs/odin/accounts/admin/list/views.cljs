@@ -4,6 +4,7 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [iface.table :as table]
+            [odin.accounts.admin.list.db :as db]
             [odin.routes :as routes]
             [odin.utils.formatters :as format]))
 
@@ -59,7 +60,7 @@
      (:rent_status license))))
 
 
-(defn- members-columns []
+(defn- members-columns [query-params]
   [{:title     "Name"
     :dataIndex :name
     :render    render-name}
@@ -69,16 +70,16 @@
    {:title     "Phone"
     :dataIndex :phone
     :render    format/phone-number}
-   {:title     "Community"
+   {:title     (table/sort-col-title query-params :property "Community" db/params->route)
     :dataIndex :property
     :render    render-property}
-   {:title     "Unit"
+   {:title     (table/sort-col-title query-params :unit "Unit" db/params->route)
     :dataIndex :unit
     :render    render-unit}
-   {:title     "Term (months)"
+   {:title     (table/sort-col-title query-params :license_term "Term (months)" db/params->route)
     :dataIndex :term
     :render    render-term}
-   {:title     "License Ends"
+   {:title     (table/sort-col-title query-params :license_end "License Ends" db/params->route)
     :dataIndex :term-end
     :render    render-term-end}
    {:title     "Rent Status"
@@ -89,13 +90,16 @@
 (defn accounts-table []
   (let [selected   (subscribe [:admin.accounts.list/selected-role])
         accounts   (subscribe [:admin.accounts/list])
+        params     (subscribe [:admin.accounts.list/query-params])
         is-loading (subscribe [:loading? :accounts/query])]
     [ant/spin
      (tb/assoc-when
       {:tip      "Fetching accounts..."
        :spinning @is-loading}
       :delay (when-not (empty? @accounts) 1000))
-     [ant/table {:columns    (if (= @selected "member") (members-columns) [])
+     [ant/table {:columns    (if (= @selected "member")
+                               (members-columns @params)
+                               [])
                  :dataSource (map-indexed #(assoc %2 :key %1) @accounts)}]]))
 
 

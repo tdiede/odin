@@ -23,7 +23,7 @@
                  [:id :name :email :phone :role
                   [:property [:id :name]]
                   [:active_license [:id :rate :starts :ends :term :status :rent_status
-                                    [:unit [:id :code]]]]
+                                    [:unit [:id :code :number]]]]
                   [:deposit [:id :amount :due :amount_remaining :amount_paid :amount_pending]]]]]
                :on-success [::accounts-query k params]
                :on-failure [:graphql/failure k]}}))

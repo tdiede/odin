@@ -2,7 +2,8 @@
   (:require [odin.orders.admin.list.db :as db]
             [odin.utils.norms :as norms]
             [re-frame.core :refer [reg-sub]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [iface.table :as table]))
 
 (reg-sub
  ::orders
@@ -17,38 +18,10 @@
    (:params db)))
 
 
-(def ^:private compfns
-  {:date   {:asc  #(cond
-                     (and (some? %1) (some? %2))
-                     (.isBefore (js/moment. %1) (js/moment. %2))
-
-                     (and (some? %1) (nil? %2))
-                     true
-
-                     :otherwise false)
-            :desc #(cond
-                     (and (some? %1) (some? %2))
-                     (.isAfter (js/moment. %1) (js/moment. %2))
-
-                     (and (some? %1) (nil? %2))
-                     true
-
-                     :otherwise false)}
-   :number {:asc < :desc >}})
-
-
-(defn sort-compfn
-  [{:keys [sort-by sort-order] :as table}]
-  (-> {:price     :number
-       :created   :date
-       :billed_on :date}
-      (get sort-by)
-      (compfns)
-      (get sort-order)))
-
-
-(defn- sort-orders [params orders]
-  (sort-by (:sort-by params) (sort-compfn params) orders))
+(def sort-fns
+  {:price     table/number-sort-comp
+   :created   table/date-sort-comp
+   :billed_on table/date-sort-comp})
 
 
 (reg-sub
@@ -56,7 +29,7 @@
  :<- [:admin.orders/query-params]
  :<- [:orders]
  (fn [[params orders] _]
-   (sort-orders params orders)))
+   (table/sort-rows params sort-fns orders)))
 
 
 (reg-sub
