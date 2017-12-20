@@ -1,5 +1,6 @@
 (ns odin.orders.admin.list.views
   (:require [antizer.reagent :as ant]
+            [iface.table :as table]
             [iface.typography :as typography]
             [odin.components.order :as order]
             [odin.orders.admin.create :as create]
@@ -22,11 +23,6 @@
 ;; =============================================================================
 ;; Table
 ;; =============================================================================
-
-
-(defn- wrap-cljs [f]
-  (fn [x record]
-    (r/as-element (f x (js->clj record :keywordize-keys true)))))
 
 
 (defn- render-total [_ {:keys [price quantity]}]
@@ -80,7 +76,7 @@
 (defn- columns [query-params orders]
   [{:title     ""
     :dataIndex :status
-    :render    (wrap-cljs render-status)}
+    :render    (table/wrap-cljs render-status)}
    {:title     "Order"
     :dataIndex :name
     :filters   (set (map (fn [{{id :id code :code} :service}] {:text code :value id}) orders))
@@ -94,23 +90,23 @@
     :filters   (set (map (fn [{{id :id name :name} :account}] {:text name :value id}) orders))
     :onFilter  (fn [value record]
                  (= value (str (goog.object/getValueByKeys record "account" "id"))))
-    :render    (wrap-cljs render-member-name)}
+    :render    (table/wrap-cljs render-member-name)}
    {:title     (r/as-element [sort-col query-params :created "Created" db/params->route])
     :dataIndex :created
-    :render    (wrap-cljs render-date)}
+    :render    (table/wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :billed_on "Billed On" db/params->route])
     :dataIndex :billed_on
-    :render    (wrap-cljs render-date)}
+    :render    (table/wrap-cljs render-date)}
    {:title     (r/as-element [sort-col query-params :price "Price" db/params->route])
     :dataIndex :price
-    :render    (wrap-cljs render-price)}
+    :render    (table/wrap-cljs render-price)}
    {:title     "#"
     :dataIndex :quantity
     :render    (fnil format/number 1)}
    {:title     "Total"
     :dataIndex :total
     :className "has-text-right"
-    :render    (wrap-cljs render-total)}])
+    :render    (table/wrap-cljs render-total)}])
 
 
 (defn- expanded [record]

@@ -40,6 +40,10 @@
   {:description "Payment status."
    :values      [:due :canceled :paid :pending :failed :refunded]}
 
+  :rent_status
+  {:description "Rent payment statuses."
+   :values      [:due :overdue :pending :paid]}
+
   :service_billed
   {:description "Different ways a service can be billed."
    :values      [:once :monthly]}}
@@ -124,34 +128,36 @@
 
 
   :license
-  {:fields {:id       {:type    (non-null :Long)
-                       :resolve (:get :db/id)}
-            :rate     {:type        (non-null Float)
-                       :description "The amount paid for rent each month."
-                       :resolve     (:get :member-license/rate)}
-            :payments {:type        (list :payment)
-                       :description "The rent payments for this license."
-                       :resolve     (:get :member-license/rent-payments)}
-            :starts   {:type        (non-null :Instant)
-                       :description "Start date of the member license (commencement)."
-                       :resolve     (:get :member-license/commencement)}
-            :ends     {:type        (non-null :Instant)
-                       :description "End date of the member license."
-                       :resolve     (:get :member-license/ends)}
-            :term     {:type        (non-null Long)
-                       :description "Term in months of the license."
-                       :resolve     (:get :member-license/license :license/term)}
-            :unit     {:type        (non-null :unit)
-                       :description "The unit that htis license pertains to."
-                       :resolve     (:get :member-license/unit)}
-            :account  {:type        (non-null :account)
-                       :description "Account that owns this license."
-                       :resolve     (:get :account/_license)}
-            :status   {:type    (non-null :license_status)
-                       :resolve :member-license/status}
-            :property {:type        (non-null :property)
-                       :description "Property that this license is for."
-                       :resolve     (:get :member-license/unit :property/_units)}}}
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :rate        {:type        (non-null Float)
+                          :description "The amount paid for rent each month."
+                          :resolve     (:get :member-license/rate)}
+            :payments    {:type        (list :payment)
+                          :description "The rent payments for this license."
+                          :resolve     (:get :member-license/rent-payments)}
+            :starts      {:type        (non-null :Instant)
+                          :description "Start date of the member license (commencement)."
+                          :resolve     (:get :member-license/commencement)}
+            :ends        {:type        (non-null :Instant)
+                          :description "End date of the member license."
+                          :resolve     (:get :member-license/ends)}
+            :term        {:type        (non-null Long)
+                          :description "Term in months of the license."
+                          :resolve     (:get :member-license/license :license/term)}
+            :unit        {:type        (non-null :unit)
+                          :description "The unit that htis license pertains to."
+                          :resolve     (:get :member-license/unit)}
+            :account     {:type        (non-null :account)
+                          :description "Account that owns this license."
+                          :resolve     (:get :account/_license)}
+            :status      {:type    (non-null :license_status)
+                          :resolve :member-license/status}
+            :rent_status {:type    (non-null :rent_status)
+                          :resolve :member-license/rent-status}
+            :property    {:type        (non-null :property)
+                          :description "Property that this license is for."
+                          :resolve     (:get :member-license/unit :property/_units)}}}
 
 
   :order

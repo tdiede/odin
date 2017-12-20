@@ -11,7 +11,10 @@
 
 (def app-routes
   [""
-   [["/metrics" :metrics]
+   [["/accounts" [["" :accounts/list]
+                  [["/" :account-id] :accounts/entry]]]
+
+    ["/metrics" :metrics]
 
     ["/orders" [["" :orders]
                 [["/" :order-id] :orders/entry]]]

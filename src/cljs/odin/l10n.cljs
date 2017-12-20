@@ -20,8 +20,8 @@
 
         ;; NOTE: Cannot nest keys indefinitely. We'll need a function if we want
         ;; to go more than one level deep.
-        :people {:admin  "People"
-                 :member "Neighbors"}
+        :accounts {:admin  "People"
+                   :member "Neighbors"}
 
         :communities {:admin  "Communities"
                       :member "Community"}

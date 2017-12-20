@@ -1,7 +1,6 @@
 (ns odin.subs
   (:require [odin.global.subs]
-            [odin.account.list.subs]
-            [odin.account.entry.subs]
+            [odin.accounts.subs]
             [odin.history.subs]
             [odin.metrics.subs]
             [odin.orders.subs]

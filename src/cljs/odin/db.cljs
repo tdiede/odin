@@ -1,6 +1,6 @@
 (ns odin.db
   (:require [odin.global.db :as global]
-            [odin.account.db :as accounts]
+            [odin.accounts.db :as accounts]
             [odin.components.modals :as modals]
             [odin.history.db :as history]
             [odin.profile.db :as profile]
@@ -21,15 +21,17 @@
      :uri     "/profile"}]
    :account.role/admin
    [#_{:feature :home
-     :uri     "/"}
+       :uri     "/"}
     {:feature :metrics
      :uri     "/metrics"}
+    {:feature :accounts
+     :uri     "/accounts"}
     {:feature :orders
      :uri     "/orders"}
     {:feature :kami
      :uri     "/kami"}
     #_{:feature :communities
-       :uri     "/communities"}]})
+     :uri     "/communities"}]})
 
 
 (defn- menu-items [config]

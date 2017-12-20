@@ -60,7 +60,7 @@
    :features
    {:home        {}
     :profile     {}
-    :people      {}
+    :accounts    {}
     :metrics     {}
     :communities {}
     :kami        {}
