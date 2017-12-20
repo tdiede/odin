@@ -1,8 +1,15 @@
 {:enums
- {;; accounts
-  :role
+ {:role
   {:description "Account roles."
    :values      [:member :onboarding :applicant :admin]}
+
+  :application_status
+  {:description "Application statuses."
+   :values      [:in_progress :approved :rejected :submitted]}
+
+  :application_pet_type
+  {:description "Allowed types of pets."
+   :values      [:cat :dog]}
 
   :deposit_refund_status
   {:description "Possible statuses of the security deposit refund."
@@ -58,6 +65,8 @@
   {:implements [:person]
    :fields     {:id                {:type    (non-null :Long)
                                     :resolve (:get :db/id)}
+                :application       {:type    :application
+                                    :resolve (:get :account/application)}
                 :name              {:type    (non-null String)
                                     :resolve :person/short-name}
                 :full_name         {:type    (non-null String)
@@ -85,6 +94,68 @@
                 :deposit           {:type        :deposit
                                     :description "Security deposit for this account."
                                     :resolve     :account/deposit}}}
+
+
+  :application
+  {:fields {:id        {:type    (non-null :Long)
+                        :resolve (:get :db/id)}
+            :term      {:type        :Long
+                        :resolve     :application/term
+                        :description "Desired term."}
+            :move_in   {:type        :Instant
+                        :resolve     (:get :application/move-in)
+                        :description "Desired move-in date."}
+            :has_pet   {:type    Boolean
+                        :resolve (:get :application/has-pet)}
+            :pet       {:type    :application_pet
+                        :resolve (:get :application/pet)}
+            :fitness   {:type    :application_fitness
+                        :resolve (:get :application/fitness)}
+            :status    {:type    :application_status
+                        :resolve :application/status}
+            :submitted {:type    :Instant
+                        :resolve (:get :application/submitted-at)}
+            :created   {:type    (non-null :Instant)
+                        :resolve :entity/created}
+            :updated   {:type    (non-null :Instant)
+                        :resolve :application/updated}}}
+
+
+  :application_pet
+  {:fields {:type         {:type        :application_pet_type
+                           :resolve     (:get :pet/type)
+                           :description "The type of pet."}
+            :breed        {:type        String
+                           :resolve     (:get :pet/breed)
+                           :description "The pet's breed."}
+            :weight       {:type        Long
+                           :resolve     (:get :pet/weight)
+                           :description "The pet's weight."}
+            :sterile      {:type        Boolean
+                           :resolve     (:get :pet/sterile)
+                           :description "Has the pet been sterilized (spayed/neutered)?"}
+            :vaccines     {:type        Boolean
+                           :resolve     (:get :pet/vaccines)
+                           :description "Are the pet's vaccines, licenses and inoculations current?"}
+            :demeanor     {:type        String
+                           :resolve     (:get :pet/demeanor)
+                           :description "Description of the pet's demeanor."}
+            :daytime_care {:type        String
+                           :resolve     (:get :pet/daytime-care)
+                           :description "Description of how the pet will be taken care of during the day."}}}
+
+
+  :application_fitness
+  {:fields {:experience   {:type    String
+                           :resolve (:get :fitness/experience)}
+            :skills       {:type    String
+                           :resolve (:get :fitness/skills)}
+            :free_time    {:type    String
+                           :resolve (:get :fitness/free-time)}
+            :interested   {:type    String
+                           :resolve (:get :fitness/interested)}
+            :dealbreakers {:type    String
+                           :resolve (:get :fitness/dealbreakers)}}}
 
 
   :emergency_contact

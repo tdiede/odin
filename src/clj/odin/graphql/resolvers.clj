@@ -1,6 +1,7 @@
 (ns odin.graphql.resolvers
   (:require [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.account :as account]
+            [odin.graphql.resolvers.application :as application]
             [odin.graphql.resolvers.deposit :as deposit]
             [odin.graphql.resolvers.member-license :as member-license]
             [odin.graphql.resolvers.metrics :as metrics]
@@ -15,6 +16,7 @@
 
 (def ^:private util-resolvers
   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
+   :keyword/name   (fn [_ _ k] (keyword (name k)))
    :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
    :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))})
 
@@ -22,6 +24,7 @@
 (defn resolvers []
   (->> (merge
         account/resolvers
+        application/resolvers
         deposit/resolvers
         payment/resolvers
         source/resolvers

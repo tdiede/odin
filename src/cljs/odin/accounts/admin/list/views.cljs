@@ -86,6 +86,17 @@
     :dataIndex :rent-status
     :render    render-rent-status}])
 
+(defn- applicant-columns [query-params]
+  [{:title     "Name"
+    :dataIndex :name
+    :render    render-name}
+   {:title     "Email"
+    :dataIndex :email
+    :render    render-email}
+   {:title     "Phone"
+    :dataIndex :phone
+    :render    format/phone-number}])
+
 
 (defn accounts-table []
   (let [selected   (subscribe [:admin.accounts.list/selected-role])
@@ -99,7 +110,7 @@
       :delay (when-not (empty? @accounts) 1000))
      [ant/table {:columns    (if (= @selected "member")
                                (members-columns @params)
-                               [])
+                               (applicant-columns @params))
                  :dataSource (map-indexed #(assoc %2 :key %1) @accounts)}]]))
 
 
