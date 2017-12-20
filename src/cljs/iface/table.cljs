@@ -13,6 +13,14 @@
     (r/as-element (f x (js->clj record :keywordize-keys true)))))
 
 
+(defn maybe-render
+  ([f]
+   (maybe-render f "N/A"))
+  ([f placeholder]
+   (fn [x]
+     (r/as-element (if (some? x) (f x) placeholder)))))
+
+
 ;; sorting ======================================================================
 
 
@@ -36,13 +44,13 @@
 
 
 (defn sort-params->query-params [params]
-  (-> (tb/update-in-when params [:sort-by] name)
-      (tb/update-in-when [:sort-order] name)))
+  (tb/transform-when-key-exists params
+    {:sort-by name :sort-order name}))
 
 
 (defn query-params->sort-params [query-params]
-  (-> (tb/update-in-when query-params [:sort-by] keyword)
-      (tb/update-in-when [:sort-order] keyword)))
+  (tb/transform-when-key-exists query-params
+    {:sort-by keyword :sort-order keyword}))
 
 
 (def date-sort-comp

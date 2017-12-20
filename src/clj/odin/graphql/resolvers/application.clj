@@ -1,7 +1,11 @@
 (ns odin.graphql.resolvers.application
   (:require [blueprints.models.account :as account]
             [blueprints.models.application :as application]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [blueprints.models.license :as license]
+            [datomic.api :as d]
+            [clj-time.core :as t]
+            [toolbelt.datomic :as td]))
 
 
 ;; ==============================================================================
@@ -11,17 +15,25 @@
 
 (defn status
   [_ _ application]
-  :in_progress)
+  (let [status (application/status application)]
+    (if (= status :application.status/in-progress)
+      :in_progress
+      (keyword (name status)))))
 
 
 (defn term
   [{conn :conn} _ application]
-  3)
+  (license/term (application/desired-license application)))
 
 
 (defn last-updated
   [{conn :conn} _ application]
-  (java.util.Date.))
+  (->> [application
+        (application/community-fitness application)
+        (application/pet application)]
+       (remove nil?)
+       (map (partial td/updated-at (d/db conn)))
+       (t/latest)))
 
 
 ;; ==============================================================================

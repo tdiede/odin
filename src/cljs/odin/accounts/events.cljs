@@ -22,6 +22,8 @@
                [[:accounts {:params (accounts-query-params params)}
                  [:id :name :email :phone :role
                   [:property [:id :name]]
+                  [:application [:id :move_in :created :updated :submitted :status
+                                 [:communities [:id :name]]]]
                   [:active_license [:id :rate :starts :ends :term :status :rent_status
                                     [:unit [:id :code :number]]]]
                   [:deposit [:id :amount :due :amount_remaining :amount_paid :amount_pending]]]]]

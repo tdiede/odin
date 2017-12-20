@@ -97,28 +97,30 @@
 
 
   :application
-  {:fields {:id        {:type    (non-null :Long)
-                        :resolve (:get :db/id)}
-            :term      {:type        :Long
-                        :resolve     :application/term
-                        :description "Desired term."}
-            :move_in   {:type        :Instant
-                        :resolve     (:get :application/move-in)
-                        :description "Desired move-in date."}
-            :has_pet   {:type    Boolean
-                        :resolve (:get :application/has-pet)}
-            :pet       {:type    :application_pet
-                        :resolve (:get :application/pet)}
-            :fitness   {:type    :application_fitness
-                        :resolve (:get :application/fitness)}
-            :status    {:type    :application_status
-                        :resolve :application/status}
-            :submitted {:type    :Instant
-                        :resolve (:get :application/submitted-at)}
-            :created   {:type    (non-null :Instant)
-                        :resolve :entity/created}
-            :updated   {:type    (non-null :Instant)
-                        :resolve :application/updated}}}
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :term        {:type        :Long
+                          :resolve     :application/term
+                          :description "Desired term."}
+            :communities {:type    (list :property)
+                          :resolve (:get :application/communities)}
+            :move_in     {:type        :Instant
+                          :resolve     (:get :application/move-in)
+                          :description "Desired move-in date."}
+            :has_pet     {:type    Boolean
+                          :resolve (:get :application/has-pet)}
+            :pet         {:type    :application_pet
+                          :resolve (:get :application/pet)}
+            :fitness     {:type    :application_fitness
+                          :resolve (:get :application/fitness)}
+            :status      {:type    :application_status
+                          :resolve :application/status}
+            :submitted   {:type    :Instant
+                          :resolve (:get :application/submitted-at)}
+            :created     {:type    (non-null :Instant)
+                          :resolve :entity/created}
+            :updated     {:type    (non-null :Instant)
+                          :resolve :application/updated}}}
 
 
   :application_pet

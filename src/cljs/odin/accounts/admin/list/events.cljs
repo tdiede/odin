@@ -36,4 +36,7 @@
  :admin.accounts.list/select-role
  [(path db/path)]
  (fn [{db :db} [_ role]]
-   {:route (-> (:params db) (assoc :selected-role role) (db/params->route))}))
+   {:route (-> (:params db)
+               (assoc :selected-role role)
+               (dissoc :sort-by :sort-order)
+               (db/params->route))}))

@@ -6,7 +6,8 @@
             [iface.table :as table]
             [odin.accounts.admin.list.db :as db]
             [odin.routes :as routes]
-            [odin.utils.formatters :as format]))
+            [odin.utils.formatters :as format]
+            [reagent.core :as r]))
 
 
 (defn role-menu []
@@ -86,6 +87,17 @@
     :dataIndex :rent-status
     :render    render-rent-status}])
 
+
+(def render-communities
+  (table/wrap-cljs
+   (fn [_ account]
+     (r/as-element
+      (->> (for [c (get-in account [:application :communities])]
+             [:small.fs1 [:a {:href ""} (:name c)]])
+           (interpose ", ")
+           (into [:div]))))))
+
+
 (defn- applicant-columns [query-params]
   [{:title     "Name"
     :dataIndex :name
@@ -95,7 +107,22 @@
     :render    render-email}
    {:title     "Phone"
     :dataIndex :phone
-    :render    format/phone-number}])
+    :render    format/phone-number}
+   {:title     (table/sort-col-title query-params :move_in "Move-in" db/params->route)
+    :dataIndex [:application :move_in]
+    :render    (table/maybe-render format/date-time-short)}
+   {:title     (table/sort-col-title query-params :created "Started" db/params->route)
+    :dataIndex [:application :created]
+    :render    (table/maybe-render format/date-time-short)}
+   {:title     (table/sort-col-title query-params :updated "Last Activity" db/params->route)
+    :dataIndex [:application :updated]
+    :render    (table/maybe-render format/date-time-short)}
+   {:title     (table/sort-col-title query-params :submitted "Submitted" db/params->route)
+    :dataIndex [:application :submitted]
+    :render    (table/maybe-render format/date-time-short)}
+   {:title     "Communities"
+    :dataIndex [:application :communities]
+    :render    render-communities}])
 
 
 (defn accounts-table []
