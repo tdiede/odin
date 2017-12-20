@@ -8,7 +8,9 @@
 
 
 (def default-params
-  {:selected-role "member"})
+  {:selected-role "member"
+   :sort-order    :desc
+   :sort-by       :license_end})
 
 
 (def default-value

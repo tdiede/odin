@@ -25,17 +25,15 @@
    (get-in db [:params :selected-role])))
 
 
-(def unit-comp
-  {:path [:active_license :unit :number]})
-
-
 (reg-sub
  :admin.accounts/list
  :<- [:admin.accounts.list/query-params]
  :<- [:accounts]
  (fn [[params accounts] _]
-   (let [compfns {:property     {:path [:property :name]}
-                  :unit         {:path [:active_license :unit :number]}
-                  :license_end  (assoc table/date-sort-comp :path [:active_license :ends])
-                  :license_term {:path [:active_license :term]}}]
-     (table/sort-rows params compfns accounts))))
+   (if (or (nil? (:sort-by params)) (nil? (:sort-order params)))
+     accounts
+     (let [compfns {:property     {:path [:property :name]}
+                    :unit         {:path [:active_license :unit :number]}
+                    :license_end  (assoc table/date-sort-comp :path [:active_license :ends])
+                    :license_term {:path [:active_license :term]}}]
+       (table/sort-rows params compfns accounts)))))
