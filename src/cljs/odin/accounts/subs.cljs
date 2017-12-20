@@ -18,8 +18,9 @@
    (norms/denormalize db :accounts/norms)))
 
 
-(reg-sub
- :account
- :<- [db/path]
- (fn [db [_ account-id]]
-   (norms/get-norm db :accounts/norms account-id)))
+;; TODO: Conflicts in `odin.subs`
+;; (reg-sub
+;;  :account
+;;  :<- [db/path]
+;;  (fn [db [_ account-id]]
+;;    (norms/get-norm db :accounts/norms account-id)))

@@ -65,12 +65,16 @@
 (defn phone-number
   "Uses Google's libphonenumber to format the provided phone number."
   [number]
-  (let [pu        (pnu/getInstance)
-        num       number
-        country   "US"
-        parsed    (.parse pu num country)
-        formatted (.format pu parsed pnf/NATIONAL)]
-    (str formatted)))
+  (try
+    (let [pu        (pnu/getInstance)
+          num       number
+          country   "US"
+          parsed    (.parse pu num country)
+          formatted (.format pu parsed pnf/NATIONAL)]
+      (str formatted))
+    (catch js/Error e
+      (tb/error e)
+      (if (string/blank? number) "N/A" number))))
 
 
 (defn email-link
