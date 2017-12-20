@@ -37,15 +37,19 @@
 
 
 (defn- accounts [db]
-  (let [license  (license/by-term db 3)
-        property (d/entity db [:property/internal-name "2072mission"])
-        members  (->> (range 13)
-                      (map (fn [_] (accounts/member (rand-unit property) (:db/id license))))
-                      (distinct-by (comp :account/email #(tb/find-by :account/email %))))]
+  (let [license    (license/by-term db 3)
+        property   (d/entity db [:property/internal-name "2072mission"])
+        distinct   (fn [coll] (distinct-by (comp :account/email #(tb/find-by :account/email %)) coll))
+        members    (->> (repeatedly #(accounts/member (rand-unit property) (:db/id license)))
+                        (take 13)
+                        distinct
+                        (apply concat))
+        applicants (->> (repeatedly #(accounts/applicant)) (take 15) distinct)]
     (apply concat
            (accounts/member [:unit/name "52gilbert-1"] (:db/id license) :email "member@test.com")
            (accounts/admin :email "admin@test.com")
-           members)))
+           members
+           applicants)))
 
 
 (defn- rand-date []
