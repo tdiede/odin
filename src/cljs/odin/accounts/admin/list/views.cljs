@@ -70,7 +70,7 @@
     :render    render-email}
    {:title     "Phone"
     :dataIndex :phone
-    :render    format/phone-number}
+    :render    (table/maybe-render format/phone-number)}
    {:title     (table/sort-col-title query-params :property "Community" db/params->route)
     :dataIndex :property
     :render    render-property}
@@ -107,7 +107,7 @@
     :render    render-email}
    {:title     "Phone"
     :dataIndex :phone
-    :render    format/phone-number}
+    :render    (table/maybe-render format/phone-number)}
    {:title     (table/sort-col-title query-params :move_in "Move-in" db/params->route)
     :dataIndex [:application :move_in]
     :render    (table/maybe-render format/date-time-short)}

@@ -74,7 +74,7 @@
       (str formatted))
     (catch js/Error e
       (tb/error e)
-      (if (string/blank? number) "N/A" number))))
+      number)))
 
 
 (defn email-link
