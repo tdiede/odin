@@ -40,6 +40,7 @@
   [:li {:class (when is-active "is-active")}
       [:a {:href "#"} [ant/icon {:type icon}] [:span.nav-label text]]])
 
+
 (defn mobile-nav []
   [:div.mobile-nav-container
    [:ul.mobile-page-nav
@@ -54,8 +55,6 @@
      [:li.is-active [:a
                      [ant/icon {:type "credit-card"}]
                      [:span "Payment Methods"]]]]]])
-
-
 
 
 (defn content

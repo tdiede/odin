@@ -7,6 +7,7 @@
             [odin.metrics.events]
             [odin.orders.events]
             [odin.payments.events]
+            [odin.payment-sources.events]
             [odin.profile.events]
             [odin.kami.events]
             [clojure.string :as string]

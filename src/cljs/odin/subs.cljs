@@ -5,6 +5,7 @@
             [odin.metrics.subs]
             [odin.orders.subs]
             [odin.payments.subs]
+            [odin.payment-sources.subs]
             [odin.profile.subs]
             [odin.kami.subs]
             [re-frame.core :refer [reg-sub]]

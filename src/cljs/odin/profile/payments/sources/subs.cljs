@@ -1,6 +1,6 @@
 (ns odin.profile.payments.sources.subs
   (:require [odin.profile.payments.sources.db :as db]
-            [re-frame.core :refer [reg-sub]]
+            [re-frame.core :as rf :refer [reg-sub]]
             [toolbelt.core :as tb]))
 
 
@@ -17,18 +17,20 @@
 
 (reg-sub
  :payment/sources
- :<- [::sources]
- (fn [db [_ type]]
-   (if (nil? type)
-     (:sources db)
-     (filter #(= (:type %) type) (:sources db)))))
+ :<- [:auth]
+ :<- [:payment-sources]
+ (fn [[auth sources] [_ type]]
+   (let [sources (filter #(= (:id auth) (get-in % [:account :id])) sources)]
+     (if (some? type)
+       (filter #(= (:type %) type) sources)
+       sources))))
 
 
 (reg-sub
  :payment.sources/service-source
- :<- [::sources]
- (fn [db _]
-   (tb/find-by #(and (:default %) (= :card (:type %))) (:sources db))))
+ :<- [:payment/sources]
+ (fn [sources _]
+   (tb/find-by #(and (:default %) (= :card (:type %))) sources)))
 
 
 (reg-sub
@@ -124,6 +126,7 @@
  :payment.sources/autopay-source
  :<- [:payment/sources]
  (fn [sources _]
+   (tb/log sources)
    (tb/find-by :autopay sources)))
 
 

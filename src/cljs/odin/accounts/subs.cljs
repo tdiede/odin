@@ -24,3 +24,10 @@
  :<- [db/path]
  (fn [db [_ account-id]]
    (norms/get-norm db :accounts/norms account-id)))
+
+
+(reg-sub
+ :account/application
+ :<- [db/path]
+ (fn [db [_ account-id]]
+   (:application (norms/get-norm db :accounts/norms account-id))))

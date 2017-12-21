@@ -53,13 +53,9 @@
  :payment.sources/fetch
  (fn [{:keys [db]} [k change-route?]]
    (let [account-id (get-in db [:config :account :id])]
-     {:dispatch [:loading k true]
-      :graphql  {:query
-                 [[:payment_sources {:account account-id}
-                   [:id :last4 :customer :type :name :status :default :autopay :expires
-                    [:payments [:id :method :type :autopay :amount :status :pstart :pend :paid_on :description]]]]]
-                 :on-success [:payment.sources.fetch/success k change-route?]
-                 :on-failure [:graphql/failure k]}})))
+     {:dispatch-n [[:loading k true]
+                   [:payment-sources/fetch account-id
+                    {:on-success [:payment.sources.fetch/success k change-route?]}]]})))
 
 
 (defn- active-source-should-change? [db sources]
@@ -69,9 +65,8 @@
 (reg-event-fx
  :payment.sources.fetch/success
  [(path db/path)]
- (fn [{:keys [db]} [_ k change-route? response]]
-   (let [sources (get-in response [:data :payment_sources])
-         route   (when (and change-route? (active-source-should-change? db sources))
+ (fn [{:keys [db]} [_ k change-route? sources :as v]]
+   (let [route   (when (and change-route? (active-source-should-change? db sources))
                    (routes/path-for :profile.payment/sources
                                     :query-params {:source-id (:id (first sources))}))]
      (tb/assoc-when

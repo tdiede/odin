@@ -55,8 +55,8 @@
           [:span.fs3 {:style {:margin-left 4}} "Unverified"]]
          [:span
           (payments-ui/payment-source-icon (or type :bank))
-          (when autopay [ant/icon {:type :sync}])
-          (when default [ant/icon {:type :check-circle}])])]]]))
+          (when autopay [ant/icon {:type :sync :style {:margin-left "8px"}}])
+          (when default [ant/icon {:type :check-circle :style {:margin-left "10px"}}])])]]]))
 
 
 (defn source-list

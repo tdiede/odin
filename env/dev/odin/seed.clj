@@ -24,6 +24,7 @@
   (-> property :property/units vec rand-nth :db/id))
 
 
+;; TODO: Add to toolbelt
 (defn distinct-by
   "Returns elements of xs which return unique values according to f. If multiple
   elements of xs return the same value under f, the first is returned"
@@ -36,6 +37,7 @@
           x))))
 
 
+;; TODO: Seed each application with a full application.
 (defn- accounts [db]
   (let [license    (license/by-term db 3)
         property   (d/entity db [:property/internal-name "2072mission"])

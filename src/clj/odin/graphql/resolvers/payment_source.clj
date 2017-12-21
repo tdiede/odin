@@ -45,14 +45,28 @@
         :ret string?)
 
 
+(defn- source-customer [db source]
+  (let [customer-id (d/q '[:find ?e .
+                           :in $ ?customer-id
+                           :where
+                           [?e :stripe-customer/customer-id ?customer-id]]
+                         db (:customer source))]
+    (d/entity db [:stripe-customer/customer-id (:customer source)])))
+
+
+(defn- source-account [db source]
+  (customer/account (source-customer db source)))
+
+
 (defn- autopay-source
   "Fetch the autopay source for the requesting user, if there is one."
-  [{:keys [stripe requester conn]}]
-  (when-let [customer (customer/autopay (d/db conn) requester)]
-    (when-some [source-id (customer/bank-token customer)]
-      (let [managed (property/rent-connect-id (customer/managing-property customer))]
-        (rcu/fetch-source stripe (customer/id customer) source-id
-                          :managed-account managed)))))
+  [{:keys [stripe conn]} source]
+  (let [account (source-account (d/db conn) source)]
+    (when-let [customer (customer/autopay (d/db conn) account)]
+      (when-some [source-id (customer/bank-token customer)]
+        (let [managed (property/rent-connect-id (customer/managing-property customer))]
+          (rcu/fetch-source stripe (customer/id customer) source-id
+                            :managed-account managed))))))
 
 (s/fdef autopay-source
         :args (s/cat :ctx context?)
@@ -76,7 +90,7 @@
   "Is `source` used as the autopay source?"
   [ctx source]
   (go-try
-   (if-let [c (autopay-source ctx)]
+   (if-let [c (autopay-source ctx source)]
      (let [autopay-source (<!? c)]
        [(= (:fingerprint source) (:fingerprint autopay-source)) autopay-source])
      [false nil])))
@@ -89,6 +103,17 @@
 ;; =============================================================================
 ;; Fields
 ;; =============================================================================
+
+
+(defn account
+  "The account that owns this payment source."
+  [{conn :conn} _ source]
+  ;; find a payment that was used with this source
+  (try
+    (source-account (d/db conn) source)
+    (catch Throwable t
+      (timbre/error t)
+      (resolve/resolve-as nil {:message "Something went wrong!"}))))
 
 
 (defn autopay?
@@ -108,13 +133,13 @@
 
 (defn default?
   "Is this source the default source?"
-  [{:keys [conn requester stripe]} _ source]
+  [{:keys [conn stripe]} _ source]
   (let [result (resolve/resolve-promise)]
     (if-let [customer (::customer source)]
       (resolve/deliver! result (= (:id source) (:default_source customer)))
       (go
         (try
-          (let [cus-ent  (customer/by-account (d/db conn) requester)
+          (let [cus-ent  (source-customer (d/db conn) source)
                 customer (<!? (rcu/fetch stripe (customer/id cus-ent)))]
             (resolve/deliver! result (= (:id source) (:default_source customer))))
           (catch Throwable t
@@ -261,9 +286,9 @@
 (defn delete-bank-source!
   "Delete a bank source. Produces a channel that will contain an exception in
   the event of failure."
-  [{:keys [requester] :as ctx} source]
+  [ctx source]
   (go-try
-   (if-let [c (autopay-source ctx)]
+   (if-let [c (autopay-source ctx source)]
      (if (= (:fingerprint source) (:fingerprint (<!? c)))
        ;; if the fingerprints are equal, `source` is being used for autopay
        (throw (ex-info "Cannot delete source, as it's being used for autopay!"
@@ -590,6 +615,7 @@
 (def resolvers
   {;; fields
    :payment.source/autopay?        autopay?
+   :payment.source/account         account
    :payment.source/type            type
    :payment.source/name            name
    :payment.source/payments        payments

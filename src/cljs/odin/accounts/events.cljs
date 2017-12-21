@@ -49,9 +49,15 @@
     :graphql    {:query
                  [[:account {:id account-id}
                    [:id :name :email :phone :role :dob
-                    [:application [:id :term]]
+                    [:deposit [:amount :due :status]]
                     [:property [:id :name]]
-                    [:active_license [:id
+                    ;; TODO: Move to separate query
+                    [:application [:id :move_in :created :updated :submitted :status
+                                   [:communities [:id :name]]]]
+                    ;; TODO: Move to separate query
+                    [:active_license [:id :rate :starts :ends :term :status :rent_status
+                                      [:property [:id :cover_image_url :name]]
+
                                       [:unit [:id :code :number]]]]]]]
                  :on-success [::account-fetch k]
                  :on-failure [:graphql/failure k]}}))

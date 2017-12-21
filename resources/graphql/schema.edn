@@ -11,6 +11,10 @@
   {:description "Allowed types of pets."
    :values      [:cat :dog]}
 
+  :deposit_status
+  {:description "Security deposit statuses."
+   :values      [:pending :paid :overdue :unpaid :partial]}
+
   :deposit_refund_status
   {:description "Possible statuses of the security deposit refund."
    :values      [:initiated :successful :failed]}
@@ -188,6 +192,8 @@
             :payments         {:type        (list :payment)
                                :description "Payments made towards the security deposit."
                                :resolve     (:get :deposit/payments)}
+            :status           {:type    (non-null :deposit_status)
+                               :resolve :deposit/status}
             :amount_remaining {:type        (non-null Float)
                                :description "The amount remaining to be paid."
                                :resolve     :deposit/amount-remaining}
@@ -337,6 +343,8 @@
   :payment_source
   {:fields {:id       {:type    (non-null String)
                        :resolve (:get :id)}
+            :account  {:type    (non-null :account)
+                       :resolve :payment.source/account}
             :last4    {:type    (non-null String)
                        :resolve (:get :last4)}
             :default  {:type    (non-null Boolean)

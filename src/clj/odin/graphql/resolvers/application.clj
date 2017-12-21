@@ -23,7 +23,8 @@
 
 (defn term
   [{conn :conn} _ application]
-  (license/term (application/desired-license application)))
+  (when-let [license (application/desired-license application)]
+    (license/term license)))
 
 
 (defn last-updated

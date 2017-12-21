@@ -7,6 +7,7 @@
             [odin.metrics.db :as metrics]
             [odin.orders.db :as orders]
             [odin.payments.db :as payments]
+            [odin.payment-sources.db :as payment-sources]
             [odin.profile.db :as profile]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
@@ -53,6 +54,7 @@
    accounts/default-value
    history/default-value
    payments/default-value
+   payment-sources/default-value
    modals/default-value
    orders/default-value
    profile/default-value

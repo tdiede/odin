@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
             [odin.components.payments :as payments-ui]
+            [odin.components.membership :as membership]
             [odin.l10n :as l10n]
             [odin.utils.formatters :as format]
             [odin.utils.time :as t]
@@ -229,31 +230,6 @@
 ;; Membership + License
 ;; =============================================================================
 
-
-(defn card-license-summary []
-  (let [license (subscribe [:member/license])
-        loading (subscribe [:member.license/loading?])
-        {:keys [term rate starts ends property unit]} @license]
-    [ant/card {:loading @loading
-               :class   "is-flush"}
-     (when-not (nil? rate)
-       [ant/card {:loading @loading :class "is-flush"}
-        [:div.card-image
-         [:figure.image
-          [:img {:src (:cover_image_url property)}]]]
-        [:div.card-content
-         [:div.content
-          [:h3.title.is-4 (str (:name property) " #" (:number unit))]
-          [:h4 (str term " months • " (str (format/date-short starts) " - " (format/date-short ends)))]
-          [:p (str (format/currency rate) "/mo.")]]]])]))
-;; If a link to view PDF version of license is provided, show it here
-;;(when-not (nil? (:view-link @license))
-;;[:footer.card-footer
-;; [:a.card-footer-item
-;;  [:span.icon.is-small [:i.fa.fa-file-text]]
-;;  [:span.with-icon "View Agreement"]]]])]))
-
-
 (defn membership-summary []
   [:div
    [:h2 "Status"]
@@ -262,14 +238,19 @@
 
 
 (defn membership []
-  [:div
-   (typography/view-header
-    (l10n/translate :membership))
+  (let [license (subscribe [:member/license])
+        loading (subscribe [:member.license/loading?])]
+    [:div
+     (typography/view-header
+      (l10n/translate :membership)
+      (when (nil? @license)
+        "It looks like you're not a member, so nothing to see here."))
 
-   [:div.columns
-    [:div.column
-     [membership-summary]]
+     (when (some? @license)
+       [:div.columns
+        [:div.column
+         [membership-summary]]
 
-    [:div.column.is-5
-     [:h2 "Rental Agreement"]
-     [card-license-summary]]]])
+        [:div.column.is-5
+         [:h2 "Rental Agreement"]
+         [membership/license-summary @license {:loading @loading}]]])]))
