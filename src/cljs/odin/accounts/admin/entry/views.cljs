@@ -4,11 +4,16 @@
             [toolbelt.core :as tb]
             [iface.loading :as loading]
             [iface.typography :as typography]
-            [antizer.reagent :as ant]))
+            [antizer.reagent :as ant]
+            [odin.components.payments :as payments-ui]))
 
 
 
 (defmulti subheader :role)
+
+
+(defmethod subheader :default [{:keys [role]}]
+  [:span "Is a " [:b role]])
 
 
 (defmethod subheader :member
@@ -33,11 +38,21 @@
 
 (defn view [{{account-id :account-id} :params}]
   (let [{:keys [email phone] :as account} @(subscribe [:account (tb/str->int account-id)])
-        is-loading                        (subscribe [:loading? :account/fetch])]
+        payments                          (subscribe [:payments/by-account-id (tb/str->int account-id)])
+        is-loading                        (subscribe [:loading? :account/fetch])
+        payments-loading                  (subscribe [:loading? :payments/fetch])]
     (if (or @is-loading (nil? account))
       (loading/fullpage :text "Fetching account...")
       [:div
        [:div.columns
         [:div.column.is-three-quarters
          (typography/view-header (:name account) (subheader account))]
-        [:div.column [contact-info account]]]])))
+        [:div.column [contact-info account]]]
+
+       [:div.columns
+        [:div.column
+         ]
+        [:div.column
+         [:p.title.is-5 "Payments"]
+         [ant/card {:class "is-flush"}
+          [payments-ui/payments-table @payments @payments-loading]]]]])))
