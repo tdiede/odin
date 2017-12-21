@@ -67,6 +67,8 @@
                                     :resolve (:get :db/id)}
                 :application       {:type    :application
                                     :resolve (:get :account/application)}
+                :dob               {:type    :Instant
+                                    :resolve (:get :account/dob)}
                 :name              {:type    (non-null String)
                                     :resolve :person/short-name}
                 :full_name         {:type    (non-null String)

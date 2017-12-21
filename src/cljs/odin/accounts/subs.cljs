@@ -2,7 +2,8 @@
   (:require [odin.accounts.db :as db]
             [odin.accounts.admin.subs]
             [odin.utils.norms :as norms]
-            [re-frame.core :refer [reg-sub]]))
+            [re-frame.core :refer [reg-sub]]
+            [toolbelt.core :as tb]))
 
 
 (reg-sub
@@ -18,9 +19,8 @@
    (norms/denormalize db :accounts/norms)))
 
 
-;; TODO: Conflicts in `odin.subs`
-;; (reg-sub
-;;  :account
-;;  :<- [db/path]
-;;  (fn [db [_ account-id]]
-;;    (norms/get-norm db :accounts/norms account-id)))
+(reg-sub
+ :account
+ :<- [db/path]
+ (fn [db [_ account-id]]
+   (norms/get-norm db :accounts/norms account-id)))

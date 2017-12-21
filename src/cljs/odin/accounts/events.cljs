@@ -39,3 +39,28 @@
    {:db       (->> (get-in response [:data :accounts])
                    (norms/normalize db :accounts/norms))
     :dispatch [:loading k false]}))
+
+
+(reg-event-fx
+ :account/fetch
+ [(path db/path)]
+ (fn [{db :db} [k account-id]]
+   {:dispatch [:loading k true]
+    :graphql    {:query
+                 [[:account {:id account-id}
+                   [:id :name :email :phone :role :dob
+                    [:application [:id :term]]
+                    [:property [:id :name]]
+                    [:active_license [:id
+                                      [:unit [:id :code :number]]]]]]]
+                 :on-success [::account-fetch k]
+                 :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::account-fetch
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [account (get-in response [:data :account])]
+     {:db       (norms/assoc-norm db :accounts/norms (:id account) account)
+      :dispatch [:loading k false]})))

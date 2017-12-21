@@ -89,7 +89,7 @@
 
 (defn navbar []
   (let [menu-showing (subscribe [:menu/showing?])
-        account      (subscribe [:account])]
+        account      (subscribe [:auth])]
     [:nav.navbar
      (brand)
      [mobile-nav-backdrop]
@@ -105,8 +105,6 @@
            [ant/avatar (formatters/initials (:name @account))]
            [:span.valign.pad-left
             (:name @account)]]]]]]]]))
-
-
 
 
 (defn error-view []

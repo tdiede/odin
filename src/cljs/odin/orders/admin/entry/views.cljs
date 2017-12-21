@@ -208,7 +208,6 @@
                       :icon     "reload"
                       :loading  @is-loading
                       :on-click #(dispatch [:order/refresh order-id])}]]]
-
        [:div.columns
         [:div.column
          [progress/progress @order]]
