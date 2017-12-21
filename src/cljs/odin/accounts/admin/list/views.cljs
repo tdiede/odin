@@ -110,10 +110,10 @@
     :render    (table/maybe-render format/phone-number)}
    {:title     (table/sort-col-title query-params :move_in "Move-in" db/params->route)
     :dataIndex [:application :move_in]
-    :render    (table/maybe-render format/date-time-short)}
+    :render    (table/maybe-render format/date-short)}
    {:title     (table/sort-col-title query-params :created "Started" db/params->route)
     :dataIndex [:application :created]
-    :render    (table/maybe-render format/date-time-short)}
+    :render    (table/maybe-render format/date-short)}
    {:title     (table/sort-col-title query-params :updated "Last Activity" db/params->route)
     :dataIndex [:application :updated]
     :render    (table/maybe-render format/date-time-short)}

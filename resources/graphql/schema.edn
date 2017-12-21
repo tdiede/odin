@@ -121,12 +121,24 @@
                           :resolve (:get :application/fitness)}
             :status      {:type    :application_status
                           :resolve :application/status}
+            :income      {:type        (list :application_income_file)
+                          :resolve     :application/income
+                          :description "Income file paths."}
             :submitted   {:type    :Instant
                           :resolve (:get :application/submitted-at)}
             :created     {:type    (non-null :Instant)
                           :resolve :entity/created}
             :updated     {:type    (non-null :Instant)
                           :resolve :application/updated}}}
+
+
+  :application_income_file
+  {:fields {:id   {:type    (non-null :Long)
+                   :resolve (:get :db/id)}
+            :name {:type    (non-null String)
+                   :resolve :application.income-file/name}
+            :uri  {:type    (non-null String)
+                   :resolve :application.income-file/uri}}}
 
 
   :application_pet
@@ -145,6 +157,9 @@
             :vaccines     {:type        Boolean
                            :resolve     (:get :pet/vaccines)
                            :description "Are the pet's vaccines, licenses and inoculations current?"}
+            :bitten       {:type        Boolean
+                           :resolve     (:get :pet/bitten)
+                           :description "Has the pet bitten a human before?"}
             :demeanor     {:type        String
                            :resolve     (:get :pet/demeanor)
                            :description "Description of the pet's demeanor."}
@@ -163,7 +178,9 @@
             :interested   {:type    String
                            :resolve (:get :fitness/interested)}
             :dealbreakers {:type    String
-                           :resolve (:get :fitness/dealbreakers)}}}
+                           :resolve (:get :fitness/dealbreakers)}
+            :conflicts    {:type    String
+                           :resolve (:get :fitness/conflicts)}}}
 
 
   :emergency_contact

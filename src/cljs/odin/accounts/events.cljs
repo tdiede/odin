@@ -35,7 +35,6 @@
  ::accounts-query
  [(path db/path)]
  (fn [{db :db} [_ k params response]]
-   (tb/log response)
    {:db       (->> (get-in response [:data :accounts])
                    (norms/normalize db :accounts/norms))
     :dispatch [:loading k false]}))
@@ -46,21 +45,24 @@
  [(path db/path)]
  (fn [{db :db} [k account-id]]
    {:dispatch [:loading k true]
-    :graphql    {:query
-                 [[:account {:id account-id}
-                   [:id :name :email :phone :role :dob
-                    [:deposit [:amount :due :status]]
-                    [:property [:id :name]]
-                    ;; TODO: Move to separate query
-                    [:application [:id :move_in :created :updated :submitted :status
-                                   [:communities [:id :name]]]]
-                    ;; TODO: Move to separate query
-                    [:active_license [:id :rate :starts :ends :term :status :rent_status
-                                      [:property [:id :cover_image_url :name]]
+    :graphql  {:query
+               [[:account {:id account-id}
+                 [:id :name :email :phone :role :dob
+                  [:deposit [:amount :due :status]]
+                  [:property [:id :name]]
+                  ;; TODO: Move to separate query
+                  [:application [:id :move_in :created :updated :submitted :status :term :has_pet
+                                 [:communities [:id :name]]
+                                 [:fitness [:experience :skills :free_time :interested :dealbreakers :conflicts]]
+                                 [:income [:id :uri :name]]
+                                 [:pet [:type :breed :weight :sterile :vaccines :bitten :demeanor :daytime_care]]]]
+                  ;; TODO: Move to separate query
+                  [:active_license [:id :rate :starts :ends :term :status :rent_status
+                                    [:property [:id :cover_image_url :name]]
 
-                                      [:unit [:id :code :number]]]]]]]
-                 :on-success [::account-fetch k]
-                 :on-failure [:graphql/failure k]}}))
+                                    [:unit [:id :code :number]]]]]]]
+               :on-success [::account-fetch k]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx

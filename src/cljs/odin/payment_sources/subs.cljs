@@ -41,7 +41,6 @@
  (fn [[_ account-id]]
    (subscribe [:payment-sources/by-account-id account-id]))
  (fn [sources _]
-   (tb/log sources)
    (boolean (tb/find-by :autopay sources))))
 
 

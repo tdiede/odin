@@ -6,7 +6,8 @@
             [datomic.api :as d]
             [toolbelt.core :as tb]
             [clj-time.coerce :as c]
-            [clj-time.core :as t]))
+            [clj-time.core :as t]
+            [clojure.string :as string]))
 
 
 (defn- referrals []
@@ -37,6 +38,50 @@
           x))))
 
 
+(defn rand-text []
+  (->> ["Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio." "Sed bibendum." "Donec at pede." "Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio." "Pellentesque condimentum, magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque sit amet urna." "Fusce commodo." "Nullam tempus." "Etiam vel tortor sodales tellus ultricies commodo." "Donec at pede." "Nullam rutrum." "Nullam eu ante vel est convallis dignissim." "Aenean in sem ac leo mollis blandit." "Cras placerat accumsan nulla." "Integer placerat tristique nisl." "Phasellus purus." "Nullam eu ante vel est convallis dignissim." "Nullam tristique diam non turpis." "Aliquam erat volutpat." "In id erat non orci commodo lobortis." "Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus." "Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia eros." "Phasellus neque orci, porta a, aliquet quis, semper a, massa." "Lorem ipsum dolor sit amet, consectetuer adipiscing elit." "Donec hendrerit tempor tellus." "Pellentesque condimentum, magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque sit amet urna." "Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus." "Cras placerat accumsan nulla." "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus." "Vivamus id enim." "Mauris mollis tincidunt felis." "Integer placerat tristique nisl." "Nunc eleifend leo vitae magna." "Phasellus neque orci, porta a, aliquet quis, semper a, massa." "Aliquam posuere." "Nunc rutrum turpis sed pede." "Pellentesque dapibus suscipit ligula." "Curabitur vulputate vestibulum lorem." "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus." "Donec pretium posuere tellus." "Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia eros."]
+       (take (rand-int 41))
+       (apply str)))
+
+
+(defn fill-application [db app]
+  (let [pet (when (= (rand-int 2) 0)
+              {:pet/type         :dog
+               :pet/breed        "pitbull"
+               :pet/weight       60
+               :pet/sterile      false
+               :pet/vaccines     false
+               :pet/bitten       true
+               :pet/demeanor     "eats babies"
+               :pet/daytime-care "loves being around children"})]
+    (merge
+     app
+     {:application/communities (take (inc (rand-int 2)) [[:property/internal-name "52gilbert"]
+                                                         [:property/internal-name "2072mission"]])
+      :application/license     (:db/id (license/by-term db (rand-nth [3 6 12])))
+      :application/move-in     (c/to-date (t/plus (t/now) (t/weeks 2)))
+      :application/has-pet     (some? pet)
+      :application/fitness     {:fitness/experience   (rand-text)
+                                :fitness/skills       (rand-text)
+                                :fitness/free-time    (rand-text)
+                                :fitness/conflicts    (rand-text)
+                                :fitness/dealbreakers (rand-text)
+                                :fitness/interested   (rand-text)}
+      :application/address     {:address/lines       "1020 Kearny St."
+                                :address/locality    "San Francisco"
+                                :address/region      "CA"
+                                :address/postal-code "94133"
+                                :address/country     "US"}
+      :application/status      (rand-nth [:application.status/in-progress
+                                          :application.status/submitted])}
+     (when (some? pet) {:application/pet pet}))))
+
+
+(defn- applicant [db]
+  (let [[acct app] (accounts/applicant)]
+    [acct (fill-application db app)]))
+
+
 ;; TODO: Seed each application with a full application.
 (defn- accounts [db]
   (let [license    (license/by-term db 3)
@@ -46,7 +91,7 @@
                         (take 13)
                         distinct
                         (apply concat))
-        applicants (->> (repeatedly #(accounts/applicant)) (take 15) distinct)]
+        applicants (->> (repeatedly #(applicant db)) (take 15) distinct)]
     (apply concat
            (accounts/member [:unit/name "52gilbert-1"] (:db/id license) :email "member@test.com")
            (accounts/admin :email "admin@test.com")

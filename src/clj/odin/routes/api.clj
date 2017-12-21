@@ -1,5 +1,6 @@
 (ns odin.routes.api
   (:require [blueprints.models.account :as account]
+            [buddy.auth.accessrules :refer [restrict]]
             [com.walmartlabs.lacinia :refer [execute]]
             [compojure.core :as compojure :refer [defroutes GET POST]]
             [odin.graphql :as graph]
@@ -9,7 +10,8 @@
             [ring.util.response :as response]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
-            [datomic.api :as d]))
+            [datomic.api :as d]
+            [customs.access :as access]))
 
 ;; =============================================================================
 ;; GraphQL
@@ -163,5 +165,12 @@
 
   (GET "/graphql" [] (graphql-handler graph/schema))
   (POST "/graphql" [] (graphql-handler graph/schema))
+
+  (GET "/income/:file-id" [file-id]
+       (-> (fn [req]
+             (let [file (d/entity (d/db (->conn req)) (tb/str->int file-id))]
+               (response/file-response (:income-file/path file))))
+           (restrict {:handler {:and [access/authenticated-user
+                                      (access/user-isa :account.role/admin)]}})))
 
   (compojure/context "/kami" [] kami/routes))
