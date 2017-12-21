@@ -100,7 +100,7 @@
      [:span (format/date-short paid-on)])])
 
 
-(def ^:private payment-table-columns
+(defn payment-table-columns []
   [
    ;; PAYMENT TYPE ICON
    {:dataIndex :type
@@ -167,7 +167,7 @@
     [ant/table
      {:class        "payments-table"
       :loading      (or loading? false)
-      :columns      payment-table-columns
+      :columns      (payment-table-columns)
       :rowClassName get-payment-row-class
       :dataSource   (map-indexed utils/thing->column payments)
       :locale       {:emptyText (l10n/translate :payment-table-no-payments)}

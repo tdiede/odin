@@ -72,7 +72,7 @@
        (match [path]
          [[:membership]] [membership/membership]
          [[:contact]] [contact/contact-info]
-         [[:payment :history]] [phistory/history]
+         [[:payment :history]] [phistory/history route]
          [[:payment :sources]] [psources/sources]
          [[:settings :change-password]] [settings/change-password]
          :else [:h1 "unmatched"]))]]])

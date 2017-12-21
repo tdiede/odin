@@ -7,6 +7,5 @@
 
 (def default-value
   (merge
-   {path {:payments []
-          :loading  {:payments/list false}}}
+   {path {:loading {:payments/list false}}}
    sources/default-value))

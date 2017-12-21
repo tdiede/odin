@@ -5,12 +5,9 @@
             [re-frame.core :refer [subscribe]]
             [toolbelt.core :as tb]))
 
-(defn sample-modal-content []
-  [:p "Here's some content for a modal."])
 
-
-(defn history [param]
-  (let [payments (subscribe [:payments])
+(defn history [route]
+  (let [payments (subscribe [:payments/by-account-id (get-in route [:requester :id])])
         loading  (subscribe [:loading? :payments/fetch])]
     [:div
      (typography/view-header

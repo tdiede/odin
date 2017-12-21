@@ -1,4 +1,6 @@
-(ns odin.profile.db)
+(ns odin.profile.db
+  (:require [odin.profile.payments.db :as payments]
+            [odin.profile.membership.db :as membership]))
 
 (def path ::profile)
 
@@ -7,8 +9,11 @@
                              :phone      ""})
 
 (def default-value
-  {path {:account nil
-         :contact {:personal  {:current default-info
-                               :new     default-info}
-                   :emergency {:current default-info
-                               :new     default-info}}}})
+  (merge
+   {path {:account nil
+          :contact {:personal  {:current default-info
+                                :new     default-info}
+                    :emergency {:current default-info
+                                :new     default-info}}}}
+   payments/default-value
+   membership/default-value))

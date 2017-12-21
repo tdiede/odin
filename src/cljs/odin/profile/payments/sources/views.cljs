@@ -313,7 +313,8 @@
           (case @type
             :bank    (r/as-element (ant/create-form (forms/bank-account)))
             :card    (r/as-element (ant/create-form (forms/credit-card)))
-            :bitcoin [forms/bitcoin-account])]])})))
+            :bitcoin [forms/bitcoin-account]
+            [:div])]])})))
 
 
 (defn no-sources []
