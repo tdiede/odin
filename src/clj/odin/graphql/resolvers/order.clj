@@ -1,5 +1,6 @@
 (ns odin.graphql.resolvers.order
   (:require [blueprints.models.account :as account]
+            [blueprints.models.approval :as approval]
             [blueprints.models.events :as events]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
@@ -52,14 +53,20 @@
   (order/fulfilled-on order))
 
 
+(defn- property-for-account [db account]
+  (case (account/role account)
+    :account.role/onboarding (-> account approval/by-account approval/property)
+    :account.role/member     (-> account :account/licenses first member-license/property)
+    nil))
+
+
 (defn property
   "The property that the member that placed this order lives in."
   [{conn :conn} _ order]
-  (let [license (-> order order/account :account/licenses first)]
-    (if (some? license)
-      (member-license/property license)
-      (resolve/resolve-as nil {:message  "cannot locate property for this order!"
-                               :order-id (:db/id order)}))))
+  (if-let [p (property-for-account (d/db conn) (order/account order))]
+    p
+    (resolve/resolve-as nil {:message  "cannot locate property for this order!"
+                             :order-id (:db/id order)})))
 
 
 ;; =============================================================================
