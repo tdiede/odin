@@ -1,5 +1,6 @@
 (ns odin.accounts.admin.entry.views
-  (:require [odin.utils.formatters :as format]
+  (:require [odin.accounts.admin.entry.views.actions :as actions]
+            [odin.utils.formatters :as format]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [iface.loading :as loading]
@@ -283,8 +284,7 @@
 
 (defn view [{{account-id :account-id} :params}]
   (let [{:keys [email phone] :as account} @(subscribe [:account (tb/str->int account-id)])
-        is-loading                        (subscribe [:loading? :account/fetch])
-        ]
+        is-loading                        (subscribe [:loading? :account/fetch])]
     (if (or @is-loading (nil? account))
       (loading/fullpage :text "Fetching account...")
       [:div
@@ -293,4 +293,5 @@
          (typography/view-header (:name account) (subheader account))]
         [:div.column [contact-info account]]]
 
+       (actions/actions account)
        (layout account)])))
