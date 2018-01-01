@@ -1,6 +1,5 @@
 (ns odin.graphql.resolvers.account
   (:require [blueprints.models.account :as account]
-            [blueprints.models.customer :as customer]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.security-deposit :as deposit]
             [bouncer.core :as b]
@@ -14,11 +13,10 @@
             [odin.graphql.resolvers.utils :refer [error-message]]
             [odin.models.payment-source :as payment-source]
             [taoensso.timbre :as timbre]
+            [toolbelt.async :refer [<!?]]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [toolbelt.async :refer [<!?]]
-            [toolbelt.validation :as tv]
-            [ribbon.customer :as rcu]))
+            [toolbelt.validation :as tv]))
 
 ;; =============================================================================
 ;; Fields

@@ -105,6 +105,8 @@
   :application
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
+            :account     {:type    (non-null :account)
+                          :resolve :application/account}
             :term        {:type        :Long
                           :resolve     :application/term
                           :description "Desired term."}
@@ -201,7 +203,7 @@
             :amount           {:type        (non-null Float)
                                :description "The total amount of the security deposit."
                                :resolve     (:get :deposit/amount)}
-            :due              {:type        (non-null :Instant)
+            :due              {:type        :Instant
                                :description "The due date of the entire security deposit."
                                :resolve     (:get :deposit/due)}
             :account          {:type    (non-null :account)
@@ -251,7 +253,7 @@
                           :resolve     (:get :account/_license)}
             :status      {:type    (non-null :license_status)
                           :resolve :member-license/status}
-            :rent_status {:type    (non-null :rent_status)
+            :rent_status {:type    :rent_status
                           :resolve :member-license/rent-status}
             :property    {:type        (non-null :property)
                           :description "Property that this license is for."
@@ -439,6 +441,9 @@
             :number   {:type        (non-null Int)
                        :description "Room number."
                        :resolve     :unit/number}
+            :occupant {:type        :account
+                       :description "Account for the person living in this room, if any."
+                       :resolve     :unit/occupant}
             :property {:type    (non-null :property)
                        :resolve (:get :property/_units)}}}
 
@@ -476,7 +481,17 @@
                  :emergency_contact {:type :update_account}}}
 
 
+  :approve_application
+  {:description "Inputs to approve an application."
+   :fields      {:property {:type (non-null :Long)}
+                 :term     {:type (non-null Int)}
+                 :move_in  {:type (non-null :Instant)}
+                 :unit     {:type (non-null :Long)}}}
+
+
   ;;; Orders
+
+
   :orders_query_params
   {:description "Parameters to query for orders."
    :fields
@@ -545,7 +560,14 @@
   {:description "Parameters to query for services."
    :fields
    {:q {:type        String
-        :description "Query term."}}}}
+        :description "Query term."}}}
+
+
+  :units_query_params
+  {:description "Parameters to query for units."
+   :fields
+   {:property {:type        :Long
+               :description "Property to query units within."}}}}
 
 
  ;; =============================================================================
@@ -593,7 +615,12 @@
 
   :services {:type    (list :service)
              :args    {:params {:type :services_query_params}}
-             :resolve :service/query}}
+             :resolve :service/query}
+
+
+  :units {:type    (list :unit)
+          :args    {:params {:type :units_query_params}}
+          :resolve :unit/query}}
 
 
  ;; =============================================================================
@@ -612,6 +639,16 @@
                  :data {:type        (non-null :update_account)
                         :description "The data to update the account with."}}
    :resolve     :account/update!}
+
+
+  :approve_application
+  {:type        :application
+   :description "Approve an application for membership."
+   :args        {:application {:type        (non-null :Long)
+                               :description "The account to approve."}
+                 :params      {:type        (non-null :approve_application)
+                               :description "Required parameters to approve the account"}}
+   :resolve     :application/approve!}
 
 
   :change_password

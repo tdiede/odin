@@ -23,7 +23,9 @@
         [:div.content
          [:h3.title.is-4 (str (:name property) " #" (:number unit))]
          [:h4 (str term " months • " (str (format/date-short starts) " - " (format/date-short ends)))]
-         [:p (str (format/currency rate) "/mo.")]]]])]))
+         [:p (str (format/currency rate) "/mo.")]
+         (when-let [c (:content opts)]
+           (r/as-element c))]]])]))
 
 
 ;; If a link to view PDF version of license is provided, show it here

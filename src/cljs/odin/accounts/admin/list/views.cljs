@@ -58,7 +58,7 @@
 (def render-rent-status
   (table/wrap-cljs
    (fn [_ {license :active_license}]
-     (:rent_status license))))
+     (:rent_status license "N/A"))))
 
 
 (defn- members-columns [query-params]

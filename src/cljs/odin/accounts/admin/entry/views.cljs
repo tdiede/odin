@@ -10,7 +10,6 @@
             [odin.components.membership :as membership]))
 
 
-
 ;; ==============================================================================
 ;; components -------------------------------------------------------------------
 ;; ==============================================================================
@@ -60,11 +59,11 @@
 
 
 (def status-icon-off
-  {:class "text-grey" :style {:fontSize "24px"}})
+  {:class "text-grey" :style {:fontSize "20px"}})
 
 
 (def status-icon-on
-  {:class "text-blue" :style {:fontSize "24px"}})
+  {:class "text-blue" :style {:fontSize "20px"}})
 
 
 (defn status-icon [type {:keys [style class]}]
@@ -99,7 +98,7 @@
         :overdue {:class "text-red"}
         :pending {:class "text-blue"}
         {})
-      (assoc :style {:fontSize "24px"})))
+      (assoc :style {:fontSize "20px"})))
 
 
 (defn- deposit-tooltip [deposit-status]
@@ -120,7 +119,7 @@
         :unpaid  {:class "text-grey"}
         :pending {:class "text-blue"}
         {})
-      (assoc :style {:fontSize "24px"})))
+      (assoc :style {:fontSize "20px"})))
 
 
 (defn status-bar [account]
@@ -222,22 +221,23 @@
 (defn application-info [account]
   (let [{:keys [fitness has_pet pet] :as application}
         @(subscribe [:account/application (:id account)])]
-    (tb/log application)
-    [ant/card {:class "is-flush"}
-     [ant/collapse {:bordered false :default-active-key ["overview"]}
-      [ant/collapse-panel {:header "Overview" :key "overview"}
+    [:div
+     [:p.title.is-5 "Application"]
+     [ant/card {:class "is-flush"}
+      [ant/collapse {:bordered false :default-active-key ["overview"]}
+       [ant/collapse-panel {:header "Overview" :key "overview"}
        [overview-panel application]]
-      [ant/collapse-panel {:header   "Pet Info"
-                           :key      "pet"
-                           :disabled (or (empty? pet) (false? has_pet))}
+       [ant/collapse-panel {:header   "Pet Info"
+                            :key      "pet"
+                            :disabled (or (empty? pet) (false? has_pet))}
        [pet-panel-content pet]]
-      [ant/collapse-panel {:header   "Community fitness profile"
-                           :key      "fitness"
-                           :disabled (empty? fitness)}
+       [ant/collapse-panel {:header   "Community fitness profile"
+                            :key      "fitness"
+                            :disabled (empty? fitness)}
        [ant/collapse
         (for [k [:interested :free_time :dealbreakers :experience :skills :conflicts]]
           [ant/collapse-panel {:header (get fitness-headers k) :key k :disabled (nil? (get fitness k))}
-           [:p (get fitness k)]])]]]]))
+           [:p (get fitness k)]])]]]]]))
 
 
 ;; payments =====================================================================
@@ -248,6 +248,14 @@
         is-loading (subscribe [:loading? :payments/fetch])]
     [ant/card {:class "is-flush"}
      [payments-ui/payments-table @payments @is-loading]]))
+
+
+;; notes ========================================================================
+
+
+(defn notes [account]
+  (let []
+    ))
 
 
 ;; ==============================================================================
@@ -273,8 +281,8 @@
 (defmethod layout :member [account]
   [:div.columns
    [:div.column
-    [status-bar account]
-    [membership/license-summary (:active_license account)]
+    [membership/license-summary (:active_license account)
+     {:content [status-bar account]}]
     [:div.mt3
      [:p.title.is-5 "Payments"]
      [payments-table account]]]

@@ -18,17 +18,13 @@
 (defn rent-status
   "What's the status of this license owner's rent?"
   [{:keys [conn]} _ license]
-  (try
-    (let [payment (member-license/current-payment (d/db conn) license)]
-      (cond
-        (nil? payment)             :due
-        (payment/overdue? payment) :overdue
-        (payment/paid? payment)    :paid
-        (payment/pending? payment) :pending
-        :otherwise                 :due))
-    (catch Throwable t
-      (resolve/resolve-as :due {:message  (.getMessage t)
-                                :err-data (ex-data t)}))))
+  (when-some [payment (member-license/payment-within (d/db conn) license (java.util.Date.))]
+    (cond
+      (nil? payment)             :due
+      (payment/overdue? payment) :overdue
+      (payment/paid? payment)    :paid
+      (payment/pending? payment) :pending
+      :otherwise                 :due)))
 
 
 (defn status
