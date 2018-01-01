@@ -208,13 +208,12 @@
                       :icon     "reload"
                       :loading  @is-loading
                       :on-click #(dispatch [:order/refresh order-id])}]]]
+
        [:div.columns
         [:div.column
          [progress/progress @order]]
         [:div.column
-         [order-card @order]]]
-       [:div.columns
-        [:div.column.is-half]
-        [:div.column
+         [order-card @order]
+
          [ant/card {:class "is-flush"}
           [payments-ui/payments-table (:payments @order) @is-loading]]]]])))
