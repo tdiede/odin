@@ -9,8 +9,24 @@
             [blueprints.models.events :as events]))
 
 
-(defn account [_ _ account]
-  (note/account account))
+(defn- get-account [note]
+  (if-let [parent (note/parent note)]
+    (get-account parent)
+    (note/account note)))
+
+
+(defn account [_ _ note]
+  (get-account note))
+
+
+(defn add-comment!
+  [{:keys [conn requester]} {:keys [note text]} _]
+  (let [parent  (d/entity (d/db conn) note)
+        comment (note/create-comment requester text)]
+    @(d/transact conn [(note/add-comment parent comment)
+                       (events/note-comment-created note comment)
+                       (source/create requester)])
+    (note/by-uuid (d/db conn) (note/uuid comment))))
 
 
 (defn create!
@@ -51,10 +67,15 @@
     (and (account/admin? account) (= (:db/id account) (-> note :note/author :db/id)))))
 
 
+(defmethod authorization/authorized? :note/add-comment! [_ account _]
+  (account/admin? account))
+
+
 (def resolvers
   {;; fields
-   :note/account account
+   :note/account      account
    ;; mutations
-   :note/create! create!
-   :note/delete! delete!
-   :note/update! update!})
+   :note/add-comment! add-comment!
+   :note/create!      create!
+   :note/delete!      delete!
+   :note/update!      update!})

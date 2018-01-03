@@ -723,6 +723,13 @@
    :args        {:note {:type (non-null :Long)}}
    :resolve     :note/delete!}
 
+  :add_note_comment
+  {:type        :note
+   :description "Add a comment to a note."
+   :args        {:note {:type (non-null :Long)}
+                 :text {:type (non-null String)}}
+   :resolve     :note/add-comment!}
+
   ;;; Orders
 
 

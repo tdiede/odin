@@ -64,3 +64,17 @@
      (->> notes
           (drop (* (dec page) size))
           (take size)))))
+
+
+(reg-sub
+ :admin.accounts.entry.note/comment-form-shown?
+ :<- [db/path]
+ (fn [db [_ note-id]]
+   (boolean (get-in db [:commenting-notes note-id :shown]))))
+
+
+(reg-sub
+ :admin.accounts.entry.note/comment-text
+ :<- [db/path]
+ (fn [db [_ note-id]]
+   (get-in db [:commenting-notes note-id :text])))
