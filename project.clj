@@ -23,7 +23,7 @@
                  ;; Other
                  [kami "0.1.0"]
                  ;; GraphQL
-                 [com.walmartlabs/lacinia "0.20.0"]
+                 [com.walmartlabs/lacinia "0.21.0"]
                  [vincit/venia "0.2.3"]
                  ;; CLJS
                  [tongue "0.2.2"]       ; i18n

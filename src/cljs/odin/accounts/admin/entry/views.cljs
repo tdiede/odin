@@ -7,7 +7,9 @@
             [iface.typography :as typography]
             [antizer.reagent :as ant]
             [odin.components.payments :as payments-ui]
-            [odin.components.membership :as membership]))
+            [odin.components.membership :as membership]
+            [reagent.core :as r]
+            [clojure.string :as string]))
 
 
 ;; ==============================================================================
@@ -226,18 +228,18 @@
      [ant/card {:class "is-flush"}
       [ant/collapse {:bordered false :default-active-key ["overview"]}
        [ant/collapse-panel {:header "Overview" :key "overview"}
-       [overview-panel application]]
+        [overview-panel application]]
        [ant/collapse-panel {:header   "Pet Info"
                             :key      "pet"
                             :disabled (or (empty? pet) (false? has_pet))}
-       [pet-panel-content pet]]
+        [pet-panel-content pet]]
        [ant/collapse-panel {:header   "Community fitness profile"
                             :key      "fitness"
                             :disabled (empty? fitness)}
-       [ant/collapse
-        (for [k [:interested :free_time :dealbreakers :experience :skills :conflicts]]
-          [ant/collapse-panel {:header (get fitness-headers k) :key k :disabled (nil? (get fitness k))}
-           [:p (get fitness k)]])]]]]]))
+        [ant/collapse
+         (for [k [:interested :free_time :dealbreakers :experience :skills :conflicts]]
+           [ant/collapse-panel {:header (get fitness-headers k) :key k :disabled (nil? (get fitness k))}
+            [:p (get fitness k)]])]]]]]))
 
 
 ;; payments =====================================================================
@@ -253,9 +255,137 @@
 ;; notes ========================================================================
 
 
-(defn notes [account]
-  (let []
-    ))
+(defn- note-form
+  [{:keys [subject content notify on-change is-loading disabled on-submit on-cancel
+           button-text]
+    :or   {on-change identity, on-submit identity, button-text "Save"}}]
+  [:form {:on-submit #(do
+                        (.preventDefault %)
+                        (on-submit))}
+   [ant/form-item {:label "Subject"}
+    [ant/input {:type        :text
+                :placeholder "Note subject"
+                :value       subject
+                :on-change   #(on-change :subject (.. % -target -value))}]]
+   [ant/form-item {:label "Content"}
+    [ant/input {:type        :textarea
+                :rows        5
+                :placeholder "Note content"
+                :value       content
+                :on-change   #(on-change :content (.. % -target -value))}]]
+   (when (some? notify)
+     [ant/form-item
+      [ant/checkbox {:checked   notify
+                     :on-change #(on-change :notify (.. % -target -checked))}
+       "Send Slack notification"]])
+   [ant/form-item
+    [ant/button
+     {:type      "primary"
+      :html-type :submit
+      :loading   is-loading
+      :disabled  disabled}
+     button-text]
+
+    (when (some? on-cancel)
+      [ant/button {:on-click on-cancel} "Cancel"])]])
+
+
+(defn- new-note-form [account]
+  (let [form        (subscribe [:admin.accounts.entry.create-note/form-data])
+        can-create  (subscribe [:admin.accounts.entry/can-create-note?])
+        is-creating (subscribe [:loading? :admin.accounts.entry/create-note!])]
+    (fn [account]
+      [ant/card {:title "New Note"}
+       [note-form
+        {:subject     (:subject @form)
+         :content     (:content @form)
+         :notify      (:notify @form)
+         :on-change   (fn [k v] (dispatch [:admin.accounts.entry.create-note/update k v]))
+         :is-loading  @is-creating
+         :disabled    (not @can-create)
+         :on-submit   #(dispatch [:admin.accounts.entry/create-note! (:id account) @form])
+         :button-text "Create"}]])))
+
+
+(defn- edit-note-form [note]
+  (let [form      (r/atom (select-keys note [:subject :content]))
+        is-saving (subscribe [:loading? :admin.accounts.entry/update-note!])]
+    (fn [note]
+      [ant/card {:class "note"}
+       [note-form
+        {:subject    (:subject @form)
+         :content    (:content @form)
+         :is-loading @is-saving
+         :on-change  (fn [k v] (swap! form assoc k v))
+         :on-cancel  #(dispatch [:admin.accounts.entry.note/toggle-editing (:id note)])
+         :on-submit  #(dispatch [:admin.accounts.entry/update-note! (:id note) @form])}]])))
+
+
+(defn- note [{:keys [id subject content created updated author] :as note}]
+  (let [account     (subscribe [:auth])
+        is-editing  (subscribe [:admin.accounts.entry.note/editing id])
+        is-deleting (subscribe [:loading? :admin.accounts.entry.note/delete])]
+    (fn [{:keys [id subject content created updated author] :as note}]
+      (let [updated (when (not= created updated) updated)]
+        (if-not @is-editing
+          ;; not editing
+          [ant/card {:class "note"}
+           [:p.subject subject]
+           [:p.byline (str "by " (:name author) " at "
+                           (format/date-time-short created)
+                           (when-some [d updated]
+                             (str " (updated at " (format/date-time-short d) ")")))]
+           [:p.body {:dangerouslySetInnerHTML {:__html (format/newlines->line-breaks content)}}]
+           [:p.buttons
+            (when (= (:id author) (:id @account))
+              [ant/button
+               {:size     :small
+                :type     :ghost
+                :on-click #(dispatch [:admin.accounts.entry.note/toggle-editing id])}
+               "Edit"])
+            (when (= (:id author) (:id @account))
+              [ant/button
+               {:size     :small
+                :type     :danger
+                :on-click (fn []
+                            (ant/modal-confirm
+                             {:title     "Are you sure?"
+                              :content   "This cannot be undone!"
+                              :on-ok     #(dispatch [:admin.accounts.entry.note/delete! id])}))}
+               "Delete"])]]
+          ;; is editing
+          [edit-note-form note])))))
+
+
+(defn- pagination []
+  (let [pagination (subscribe [:admin.accounts.entry.notes/pagination])]
+    [:div.mt3
+     [ant/pagination
+      {:show-size-changer   true
+       :on-show-size-change #(dispatch [:admin.accounts.entry.notes/change-pagination %1 %2])
+       :default-current     (:page @pagination)
+       :total               (:total @pagination)
+       :show-total          (fn [total range]
+                              (format/format "%s-%s of %s notes"
+                                             (first range) (second range) total))
+       :page-size-options   ["5" "10" "15" "20"]
+       :default-page-size   (:size @pagination)
+       :on-change           #(dispatch [:admin.accounts.entry.notes/change-pagination %1 %2])}]]))
+
+
+(defn- notes [account]
+  (let [notes (subscribe [:admin.accounts.entry/notes])]
+    [:div.columns
+     [:div.column.is-one-third
+      [new-note-form account]]
+     [:div.column
+      (doall
+       (map-indexed
+        #(with-meta [note %2] {:key %1})
+        @notes))
+
+      (when-not (empty? @notes)
+        [pagination])]]))
 
 
 ;; ==============================================================================
@@ -263,35 +393,45 @@
 ;; ==============================================================================
 
 
-(defmulti layout :role)
+(defn menu []
+  (let [selected (subscribe [:admin.accounts.entry/selected-tab])]
+    [ant/menu {:mode :horizontal
+               :selected-keys [@selected]
+               :on-click      #(dispatch [:admin.accounts.entry/select-tab (aget % "key")])}
+     [ant/menu-item {:key "overview"} "Overview"]
+     [ant/menu-item {:key "notes"} "Notes"]]))
 
 
-(defmethod layout :default [{role :role}]
+(defmulti overview :role)
+
+
+(defmethod overview :default [{role :role}]
   [:div "nothing to see for role " role])
 
 
-(defmethod layout :applicant [account]
+(defmethod overview :applicant [account]
   [:div.columns
    [:div.column
-    [application-info account]]
-   [:div.column
-    ]])
+    [application-info account]]])
 
 
-(defmethod layout :member [account]
+(defmethod overview :member [account]
   [:div.columns
    [:div.column
     [membership/license-summary (:active_license account)
-     {:content [status-bar account]}]
-    [:div.mt3
+     {:content [status-bar account]}]]
+
+   [:div.column
+    [:div
      [:p.title.is-5 "Payments"]
-     [payments-table account]]]
+     [payments-table account]]
+    [:div.mt3
+     [application-info account]]]])
 
-   [:div.column]])
 
-
-(defn view [{{account-id :account-id} :params}]
+(defn view [{{account-id :account-id} :params, path :path}]
   (let [{:keys [email phone] :as account} @(subscribe [:account (tb/str->int account-id)])
+        selected                          (subscribe [:admin.accounts.entry/selected-tab])
         is-loading                        (subscribe [:loading? :account/fetch])]
     (if (or @is-loading (nil? account))
       (loading/fullpage :text "Fetching account...")
@@ -301,5 +441,12 @@
          (typography/view-header (:name account) (subheader account))]
         [:div.column [contact-info account]]]
 
-       (actions/actions account)
-       (layout account)])))
+       [:div.columns
+        [:div.column
+         [menu]]]
+       (case @selected
+         "overview" [overview account]
+         "notes"    [notes account]
+         [:div])
+
+       (actions/actions account)])))

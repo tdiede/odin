@@ -5,6 +5,7 @@
             [odin.graphql.resolvers.deposit :as deposit]
             [odin.graphql.resolvers.member-license :as member-license]
             [odin.graphql.resolvers.metrics :as metrics]
+            [odin.graphql.resolvers.note :as note]
             [odin.graphql.resolvers.order :as order]
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
@@ -29,10 +30,11 @@
         payment/resolvers
         source/resolvers
         member-license/resolvers
-        unit/resolvers
+        note/resolvers
         order/resolvers
         service/resolvers
-        metrics/resolvers)
+        metrics/resolvers
+        unit/resolvers)
        (reduce
         (fn [acc [k v]]
           (if (contains? (methods authorization/authorized?) k)

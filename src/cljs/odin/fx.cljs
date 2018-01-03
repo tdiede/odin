@@ -34,3 +34,25 @@
        (tb/error e)
        (when (some? on-failure)
          (dispatch (conj on-failure e)))))))
+
+
+(defn- inject-css! [href]
+  (let [element (.getElementById js/document href)]
+    (when (nil? element)
+      (let [head (aget (.getElementsByTagName js/document "head") 0)
+            link (.createElement js/document "link")]
+        (aset link "id" href)
+        (aset link "rel" "stylesheet")
+        (aset link "type" "text/css")
+        (aset link "href" href)
+        (aset link "media" "all")
+        (.appendChild head link)))))
+
+
+(reg-fx
+ :inject-css
+ (fn [stylesheets]
+   (cond
+     (sequential? stylesheets) (doseq [s stylesheets] (inject-css! s))
+     (string? stylesheets)     (inject-css! stylesheets)
+     :otherwise                (throw (js/Error. "must provide string or seq of strings as css hrefs.")))))

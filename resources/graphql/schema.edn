@@ -69,37 +69,39 @@
   {:implements [:person]
    :fields     {:id                {:type    (non-null :Long)
                                     :resolve (:get :db/id)}
-                :application       {:type    :application
-                                    :resolve (:get :account/application)}
-                :dob               {:type    :Instant
-                                    :resolve (:get :account/dob)}
-                :name              {:type    (non-null String)
-                                    :resolve :person/short-name}
-                :full_name         {:type    (non-null String)
-                                    :resolve :person/full-name}
-                :first_name        {:type    (non-null String)
-                                    :resolve (:get :person/first-name)}
-                :last_name         {:type    (non-null String)
-                                    :resolve (:get :person/last-name)}
-                :email             {:type    (non-null String)
-                                    :resolve (:get :account/email)}
-                :phone             {:type    String
-                                    :resolve (:get :person/phone-number)}
-                :role              {:type    (non-null :role)
-                                    :resolve :account/role}
-                :property          {:type    :property
-                                    :resolve :account/property}
-                :emergency_contact {:type    :emergency_contact
-                                    :resolve :account/emergency-contact}
                 :active_license    {:type        :license
                                     :description "The active member license for this account."
                                     :resolve     :account/active-license}
-                :service_source    {:type        :payment_source
-                                    :description "The source to use to pay for premium service orders."
-                                    :resolve     :account/service-source}
+                :application       {:type    :application
+                                    :resolve (:get :account/application)}
                 :deposit           {:type        :deposit
                                     :description "Security deposit for this account."
-                                    :resolve     :account/deposit}}}
+                                    :resolve     :account/deposit}
+                :dob               {:type    :Instant
+                                    :resolve (:get :account/dob)}
+                :email             {:type    (non-null String)
+                                    :resolve (:get :account/email)}
+                :emergency_contact {:type    :emergency_contact
+                                    :resolve :account/emergency-contact}
+                :first_name        {:type    (non-null String)
+                                    :resolve (:get :person/first-name)}
+                :full_name         {:type    (non-null String)
+                                    :resolve :person/full-name}
+                :last_name         {:type    (non-null String)
+                                    :resolve (:get :person/last-name)}
+                :name              {:type    (non-null String)
+                                    :resolve :person/short-name}
+                :notes             {:type    (list :note)
+                                    :resolve :account/notes}
+                :phone             {:type    String
+                                    :resolve (:get :person/phone-number)}
+                :property          {:type    :property
+                                    :resolve :account/property}
+                :role              {:type    (non-null :role)
+                                    :resolve :account/role}
+                :service_source    {:type        :payment_source
+                                    :description "The source to use to pay for premium service orders."
+                                    :resolve     :account/service-source}}}
 
 
   :application
@@ -258,6 +260,25 @@
             :property    {:type        (non-null :property)
                           :description "Property that this license is for."
                           :resolve     (:get :member-license/unit :property/_units)}}}
+
+
+  :note
+  {:fields {:id       {:type    (non-null :Long)
+                       :resolve (:get :db/id)}
+            :author   {:type    :account
+                       :resolve (:get :note/author)}
+            :account  {:type    :account
+                       :resolve :note/account}
+            :subject  {:type    String
+                       :resolve (:get :note/subject)}
+            :content  {:type    (non-null String)
+                       :resolve (:get :note/content)}
+            :comments {:type    (list :note)
+                       :resolve (:get :note/children)}
+            :created  {:type    (non-null :Instant)
+                       :resolve :entity/created}
+            :updated  {:type    (non-null :Instant)
+                       :resolve :entity/updated}}}
 
 
   :order
@@ -556,6 +577,26 @@
                :default-value :created
                :description   "Specifies which date attribute to use for date params."}}}
 
+
+  :create_note_params
+  {:description "Parameters to create a new note."
+   :fields
+   {:account {:type        (non-null :Long)
+              :description "ID of the account to create this note for."}
+    :subject {:type (non-null String)}
+    :content {:type (non-null String)}
+    :notify  {:type Boolean}}}
+
+
+  :update_note_params
+  {:description "Parameters to update a note."
+   :fields
+   {:note    {:type        (non-null :Long)
+              :description "ID of the note to update."}
+    :subject {:type String}
+    :content {:type String}}}
+
+
   :services_query_params
   {:description "Parameters to query for services."
    :fields
@@ -659,6 +700,28 @@
                  :new_password_2 {:type (non-null String)}}
    :resolve     :account/change-password!}
 
+
+  ;;; Notes
+
+
+  :create_note
+  {:type        :note
+   :description "Create a new note."
+   :args        {:params {:type :create_note_params}}
+   :resolve     :note/create!}
+
+
+  :update_note
+  {:type        :note
+   :description "Update a note."
+   :args        {:params {:type :update_note_params}}
+   :resolve     :note/update!}
+
+  :delete_note
+  {:type        :Keyword
+   :description "Delete a note."
+   :args        {:note {:type (non-null :Long)}}
+   :resolve     :note/delete!}
 
   ;;; Orders
 

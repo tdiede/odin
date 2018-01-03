@@ -5,4 +5,12 @@
 
 
 (def default-value
-  {path {:units []}})
+  {path {:units            []
+         :tab              "overview"
+         :notes            []
+         :notes-pagination {:size 5
+                            :page 1}
+         :editing-notes    {}
+         :create-form      {:subject ""
+                            :content ""
+                            :notify  true}}})

@@ -64,7 +64,7 @@
      (tb/error response)
      (case (:status response)
        401 {:route "/logout"}
-       403 {:route "/logout"}
+       ;; 403 {:route "/logout"}
        500 (do
              (ant/notification-error {:message     "Server error!"
                                       :description "Something unexpected happened."})

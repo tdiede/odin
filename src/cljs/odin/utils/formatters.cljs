@@ -128,4 +128,4 @@
 
 
 (defn newlines->line-breaks [s]
-  (string/replace s #"\\n" "<br>"))
+  (string/replace s #"\\n|\n" "<br>"))

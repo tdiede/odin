@@ -77,6 +77,11 @@
     result))
 
 
+(defn notes
+  [_ _ account]
+  (:account/notes account))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -211,6 +216,10 @@
   (or (account/admin? account) (= (:id params) (:db/id account))))
 
 
+(defmethod authorization/authorized? :account/notes [_ account _]
+  (account/admin? account))
+
+
 (def resolvers
   {;; fields
    :account/active-license    active-license
@@ -221,6 +230,7 @@
    :person/full-name          full-name
    :account/emergency-contact emergency-contact
    :account/service-source    service-source
+   :account/notes             notes
    ;; mutations
    :account/update!           update!
    :account/change-password!  change-password!

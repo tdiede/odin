@@ -3,6 +3,7 @@
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [cheshire.core :as json]
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia.util :as util]
             [datomic.api :as d]
