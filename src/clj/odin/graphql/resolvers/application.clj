@@ -1,16 +1,16 @@
 (ns odin.graphql.resolvers.application
-  (:require [blueprints.models.application :as application]
+  (:require [blueprints.models.account :as account]
+            [blueprints.models.application :as application]
             [blueprints.models.approval :as approval]
+            [blueprints.models.events :as events]
             [blueprints.models.income-file :as income-file]
             [blueprints.models.license :as license]
+            [blueprints.models.source :as source]
             [clj-time.core :as t]
             [clojure.string :as string]
-            [datomic.api :as d]
-            [toolbelt.datomic :as td]
-            [blueprints.models.account :as account]
             [com.walmartlabs.lacinia.resolve :as resolve]
-            [blueprints.models.events :as events]
-            [blueprints.models.source :as source]))
+            [datomic.api :as d]
+            [toolbelt.datomic :as td]))
 
 ;; ==============================================================================
 ;; fields -----------------------------------------------------------------------
@@ -20,6 +20,23 @@
 (defn account
   [_ _ application]
   (application/account application))
+
+
+(defn approved-by
+  [_ _ application]
+  (when-let [approval (approval/by-account (application/account application))]
+    (approval/approver approval)))
+
+
+(defn approved-at
+  [{conn :conn} _ application]
+  (when (application/approved? application)
+    (d/q '[:find ?t .
+           :in $ ?app
+           :where
+           [?app :application/status :application.status/approved ?tx]
+           [?tx :db/txInstant ?t]]
+         (d/db conn) (td/id application))))
 
 
 (defn status
@@ -96,6 +113,8 @@
 
 (def resolvers
   {:application/account          account
+   :application/approved-by      approved-by
+   :application/approved-at      approved-at
    :application/status           status
    :application/term             term
    :application/updated          last-updated

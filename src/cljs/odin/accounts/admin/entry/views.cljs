@@ -1,5 +1,7 @@
 (ns odin.accounts.admin.entry.views
-  (:require [odin.accounts.admin.entry.views.actions :as actions]
+  (:require [odin.accounts.admin.entry.db :as db]
+            [odin.accounts.admin.entry.views.application :as application]
+            [odin.accounts.admin.entry.views.notes :as notes]
             [odin.utils.formatters :as format]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
@@ -140,106 +142,15 @@
        (deposit-style deposit-status)])]))
 
 
-;; application info =============================================================
-
-
-(def fitness-headers
-  {:interested   "Please tell the members why you want to join their community."
-   :free_time    "What do you like to do in your free time?"
-   :dealbreakers "Do you have any dealbreakers?"
-   :experience   "Describe your past experience(s) living in shared spaces."
-   :skills       "How will you contribute to the community?"
-   :conflicts    "Please describe how you would resolve a conflict between yourself and another member of the home."})
-
-
-(defn- pet-panel-content
-  [{:keys [type breed weight vaccines sterile bitten demeanor daytime_care] :as pet}]
-  (tb/log pet)
-  [:div
-   [:div.columns
-    [:div.column
-     [:p [:b "Type"]]
-     [:p (name type)]]
-    [:div.column
-     [:p [:b "Breed"]]
-     [:p breed]]
-    [:div.column
-     [:p [:b "Weight"]]
-     [:p (str weight "lbs")]]]
-
-   [:div.columns
-    [:div.column
-     [:p [:b "Vaccinated?"]]
-     [ant/checkbox {:disabled true :checked vaccines}]]
-    [:div.column
-     [:p [:b "Sterile?"]]
-     [ant/checkbox {:disabled true :checked sterile}]]
-    [:div.column
-     [:p [:b "Bitey?"]]
-     [ant/checkbox {:disabled true :checked bitten}]]]
-
-   [:div.columns
-    [:div.column
-     [:p [:b "Demeanor"]]
-     [:p (or demeanor "N/A")]]]
-   [:div.columns
-    [:div.column
-     [:p [:b "Daytime care"]]
-     [:p (or daytime_care "N/A")]]]])
-
-
-(defn- income-file [{:keys [id uri name]}]
-  [:li [:a {:href uri :download name} name]])
-
-
-(defn- overview-panel
-  [{:keys [communities move_in term fitness has_pet pet income] :as application}]
-  [:div
-   [:div.columns
-    [:div.column
-     [:p [:b "Desired communities"]]
-     [:p (if (empty? communities)
-           "N/A"
-           (->> (for [c communities]
-                  [:a {:href ""} (:name c)])
-                (interpose ", ")
-                (into [:span])))]]
-    [:div.column
-     [:p [:b "Ideal move-in date"]]
-     [:p (if (nil? move_in) "N/A" (format/date-short move_in))]]]
-
-   [:div.columns
-    [:div.column
-     [:p [:b "Desired length of stay"]]
-     [:p (if (nil? term) "N/A" (str term " months"))]]
-    [:div.column
-     [:p [:b "Income Files"]]
-     (if (empty? income)
-       "N/A"
-       [:ul
-        (map-indexed #(with-meta (income-file %2) {:key %1}) income)])]]])
-
-
-(defn application-info [account]
+(defn application-view [account]
   (let [{:keys [fitness has_pet pet] :as application}
         @(subscribe [:account/application (:id account)])]
-    [:div
-     [:p.title.is-5 "Application"]
-     [ant/card {:class "is-flush"}
-      [ant/collapse {:bordered false :default-active-key ["overview"]}
-       [ant/collapse-panel {:header "Overview" :key "overview"}
-        [overview-panel application]]
-       [ant/collapse-panel {:header   "Pet Info"
-                            :key      "pet"
-                            :disabled (or (empty? pet) (false? has_pet))}
-        [pet-panel-content pet]]
-       [ant/collapse-panel {:header   "Community fitness profile"
-                            :key      "fitness"
-                            :disabled (empty? fitness)}
-        [ant/collapse
-         (for [k [:interested :free_time :dealbreakers :experience :skills :conflicts]]
-           [ant/collapse-panel {:header (get fitness-headers k) :key k :disabled (nil? (get fitness k))}
-            [:p (get fitness k)]])]]]]]))
+    [:div.columns
+     [:div.column
+      [application/overview-card account application]
+      [application/pet-card application]]
+     [:div.column
+      [application/community-fitness-card application]]]))
 
 
 ;; payments =====================================================================
@@ -255,217 +166,29 @@
 ;; notes ========================================================================
 
 
-(defn- note-form
-  [{:keys [subject content notify on-change is-loading disabled on-submit on-cancel
-           button-text is-comment]
-    :or   {on-change identity, on-submit identity, button-text "Save"}}]
-  [:form {:on-submit #(do
-                        (.preventDefault %)
-                        (on-submit))}
-   (when-not is-comment
-     [ant/form-item {:label "Subject"}
-      [ant/input {:type        :text
-                  :placeholder "Note subject"
-                  :value       subject
-                  :on-change   #(on-change :subject (.. % -target -value))}]])
-   [ant/form-item (when-not is-comment {:label "Content"})
-    [ant/input {:type        :textarea
-                :rows        5
-                :placeholder "Note content"
-                :value       content
-                :on-change   #(on-change :content (.. % -target -value))}]]
-   (when (some? notify)
-     [ant/form-item
-      [ant/checkbox {:checked   notify
-                     :on-change #(on-change :notify (.. % -target -checked))}
-       "Send Slack notification"]])
-   [ant/form-item
-    [ant/button
-     {:type      "primary"
-      :html-type :submit
-      :loading   is-loading
-      :disabled  disabled}
-     button-text]
-
-    (when (some? on-cancel)
-      [ant/button {:on-click on-cancel} "Cancel"])]])
-
-
-(defn- new-note-form [account]
-  (let [form        (subscribe [:admin.accounts.entry.create-note/form-data])
-        can-create  (subscribe [:admin.accounts.entry/can-create-note?])
-        is-creating (subscribe [:loading? :admin.accounts.entry/create-note!])]
-    (fn [account]
-      [ant/card {:title "New Note"}
-       [note-form
-        {:subject     (:subject @form)
-         :content     (:content @form)
-         :notify      (:notify @form)
-         :on-change   (fn [k v] (dispatch [:admin.accounts.entry.create-note/update k v]))
-         :is-loading  @is-creating
-         :disabled    (not @can-create)
-         :on-submit   #(dispatch [:admin.accounts.entry/create-note! (:id account) @form])
-         :button-text "Create"}]])))
-
-
-(defn- edit-note-form
-  ([note]
-   [edit-note-form note false])
-  ([note is-comment]
-   (let [form      (r/atom (select-keys note [:subject :content]))
-         is-saving (subscribe [:loading? :admin.accounts.entry/update-note!])]
-     (fn [note is-comment]
-       [note-form
-        {:subject    (:subject @form)
-         :content    (:content @form)
-         :is-comment is-comment
-         :is-loading @is-saving
-         :on-change  (fn [k v] (swap! form assoc k v))
-         :on-cancel  #(dispatch [:admin.accounts.entry.note/toggle-editing (:id note)])
-         :on-submit  #(dispatch [:admin.accounts.entry/update-note! (:id note) @form])}]))))
-
-
-(defn note-action [props text]
-  [:a (merge {:href ""} props)
-   text])
-
-
-(defn- note-actions
-  ([note]
-   [note-actions note false])
-  ([{:keys [id subject content created updated author] :as note} is-comment]
-   (let [is-deleting   (subscribe [:loading? :admin.accounts.entry.note/delete])
-         is-commenting (subscribe [:admin.accounts.entry.note/comment-form-shown? id])
-         account       (subscribe [:auth])
-         is-author     (= (:id author) (:id @account))]
-     [:div.actions
-      (when-not is-comment
-        [note-action
-         {:on-click #(dispatch [:admin.accounts.entry.note/toggle-comment-form id])}
-         [:span
-          [ant/icon {:type (if @is-commenting "up" "down")}]
-          " Comment"]])
-      (when is-author
-        [note-action
-         {:on-click #(dispatch [:admin.accounts.entry.note/toggle-editing id])}
-         "Edit"])
-      (when is-author
-        [note-action
-         {:class    "text-red"
-          :on-click (fn []
-                      (ant/modal-confirm
-                       {:title   "Are you sure?"
-                        :content "This cannot be undone!"
-                        :on-ok   #(dispatch [:admin.accounts.entry.note/delete! id])}))}
-         "Delete"])])))
-
-
-(defn- note-byline [{:keys [created updated author]}]
-  (let [updated (when (not= created updated) updated)]
-    [:p.byline
-     (str "by " (:name author) " at "
-          (format/date-time-short created)
-          (when-some [d updated]
-            (str " (updated at " (format/date-time-short d) ")")))]))
-
-
-(defn- comment-form [note]
-  (let [text          (subscribe [:admin.accounts.entry.note/comment-text (:id note)])
-        is-commenting (subscribe [:loading? :admin.accounts.entry.note/add-comment!])]
-    [:article.media
-     [:figure.media-left [ant/icon {:type "message"}]]
-     [:div.media-content
-      [:form
-       {:on-submit
-        #(do
-           (.preventDefault %)
-           (dispatch [:admin.accounts.entry.note/add-comment! (:id note) @text]))}
-       [ant/form-item
-        [ant/input
-         {:type        :textarea
-          :cols        3
-          :placeholder "Enter your comment here."
-          :value       @text
-          :on-change   #(dispatch [:admin.accounts.entry.note.comment/update
-                                   (:id note) (.. % -target -value)])}]]
-       [ant/form-item
-        [ant/button
-         {:type      :primary
-          :html-type :submit
-          :disabled  (string/blank? @text)
-          :loading   @is-commenting}
-         "Comment"]]]]]))
-
-
-(declare note-content)
-
-
-(defn- note-body
-  ([note]
-   [note-body note false])
-  ([{:keys [id subject content comments] :as note} is-comment]
-   (let [is-commenting (subscribe [:admin.accounts.entry.note/comment-form-shown? id])]
-     [:article.media
-      (when is-comment
-        [:figure.media-left [ant/icon {:type "message"}]])
-      [:div.media-content
-       (when (some? subject) [:p.subject subject])
-       [:p.body {:dangerouslySetInnerHTML {:__html (format/newlines->line-breaks content)}}]
-       (note-byline note)
-       [note-actions note is-comment]
-       (when @is-commenting
-         [comment-form note])
-       (map-indexed
-        #(with-meta [note-content %2 true] {:key %1})
-        comments)]])))
-
-
-(defn- note-content
-  ([note]
-   [note-content note false])
-  ([note is-comment]
-   (let [is-editing (subscribe [:admin.accounts.entry.note/editing (:id note)])]
-     (if-not @is-editing
-       ;; not editing
-       [note-body note is-comment]
-       ;; is editing
-       [edit-note-form note is-comment]))))
-
-
-(defn- note-card [note]
-  [ant/card {:class "note"}
-   [note-content note]])
-
-
-(defn- pagination []
-  (let [pagination (subscribe [:admin.accounts.entry.notes/pagination])]
-    [:div.mt3
-     [ant/pagination
-      {:show-size-changer   true
-       :on-show-size-change #(dispatch [:admin.accounts.entry.notes/change-pagination %1 %2])
-       :default-current     (:page @pagination)
-       :total               (:total @pagination)
-       :show-total          (fn [total range]
-                              (format/format "%s-%s of %s notes"
-                                             (first range) (second range) total))
-       :page-size-options   ["5" "10" "15" "20"]
-       :default-page-size   (:size @pagination)
-       :on-change           #(dispatch [:admin.accounts.entry.notes/change-pagination %1 %2])}]]))
-
-
-(defn- notes [account]
+(defn notes-view [account]
   (let [notes (subscribe [:admin.accounts.entry/notes])]
     [:div.columns
      [:div.column.is-one-third
-      [new-note-form account]]
+      [notes/new-note-form account]]
      [:div.column
       (doall
        (map-indexed
-        #(with-meta [note-card %2] {:key %1})
+        #(with-meta [notes/note-card %2] {:key %1})
         @notes))
-
       (when-not (empty? @notes)
-        [pagination])]]))
+        [notes/pagination])]]))
+
+
+;; membership ===================================================================
+
+
+(defn membership-view [account]
+  [:div.columns
+   [:div.column
+    [membership/license-summary (:active_license account)
+     {:content [status-bar account]}]]
+   [:div.column]])
 
 
 ;; ==============================================================================
@@ -473,40 +196,20 @@
 ;; ==============================================================================
 
 
-(defn menu []
+(defn- menu-item [role key]
+  [ant/menu-item
+   {:key key :disabled (not (db/allowed? role key))}
+   (string/capitalize key)])
+
+
+(defn menu [{role :role}]
   (let [selected (subscribe [:admin.accounts.entry/selected-tab])]
-    [ant/menu {:mode :horizontal
+    [ant/menu {:mode          :horizontal
                :selected-keys [@selected]
                :on-click      #(dispatch [:admin.accounts.entry/select-tab (aget % "key")])}
-     [ant/menu-item {:key "overview"} "Overview"]
-     [ant/menu-item {:key "notes"} "Notes"]]))
-
-
-(defmulti overview :role)
-
-
-(defmethod overview :default [{role :role}]
-  [:div "nothing to see for role " role])
-
-
-(defmethod overview :applicant [account]
-  [:div.columns
-   [:div.column
-    [application-info account]]])
-
-
-(defmethod overview :member [account]
-  [:div.columns
-   [:div.column
-    [membership/license-summary (:active_license account)
-     {:content [status-bar account]}]]
-
-   [:div.column
-    [:div
-     [:p.title.is-5 "Payments"]
-     [payments-table account]]
-    [:div.mt3
-     [application-info account]]]])
+     (map
+      (partial menu-item role)
+      ["membership" "application" "notes"])]))
 
 
 (defn view [{{account-id :account-id} :params, path :path}]
@@ -523,10 +226,10 @@
 
        [:div.columns
         [:div.column
-         [menu]]]
-       (case @selected
-         "overview" [overview account]
-         "notes"    [notes account]
-         [:div])
+         [menu account]]]
 
-       (actions/actions account)])))
+       (case @selected
+         "membership"  [membership-view account]
+         "application" [application-view account]
+         "notes"       [notes-view account]
+         [:div])])))

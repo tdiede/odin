@@ -109,6 +109,10 @@
                           :resolve (:get :db/id)}
             :account     {:type    (non-null :account)
                           :resolve :application/account}
+            :approved_at {:type    :Instant
+                          :resolve :application/approved-at}
+            :approved_by {:type    :account
+                          :resolve :application/approved-by}
             :term        {:type        :Long
                           :resolve     :application/term
                           :description "Desired term."}

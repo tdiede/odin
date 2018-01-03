@@ -9,12 +9,40 @@
             [devtools.defaults :as d]))
 
 
+;; (dispatch [:admin.accounts.entry/select-tab (aget % "key")])
+
+
 (defmethod routes/dispatches :admin.accounts/entry [route]
   (let [account-id (tb/str->int (get-in route [:params :account-id]))]
-    [[:account/fetch account-id]
+    [[:account/fetch account-id {:on-success [::on-fetch-account]}]
      [:payments/fetch account-id]
      [:payment-sources/fetch account-id]
      [:admin.accounts.entry/fetch-notes account-id]]))
+
+
+(defn- tab-for-role [role]
+  (case role
+    :member    "membership"
+    :applicant "application"
+    "notes"))
+
+
+(reg-event-fx
+ ::on-fetch-account
+ [(path db/path)]
+ (fn [{db :db} [_ account]]
+   (let [current (:tab db)]
+     (when (or (nil? current) (not (db/allowed? (:role account) current)))
+       {:dispatch [:admin.accounts.entry/select-tab (tab-for-role (:role account))]}))))
+
+
+;; (reg-event-fx
+;;  :admin.accounts.entry/select-initial-tab
+;;  [(path db/path)]
+;;  (fn [{db :db} [_ tab]]
+;;    (let [current (:tab db)]
+;;      (when (or (nil? current) (not (allowed? current)))
+;;        {:dispatch [:admin.accounts.entry/select-tab tab]}))))
 
 
 (reg-event-db

@@ -6,7 +6,7 @@
 
 (def default-value
   {path {:units            []
-         :tab              "overview"
+         :tab              nil
          :notes            []
          :notes-pagination {:size 5
                             :page 1}
@@ -15,3 +15,14 @@
          :create-form      {:subject ""
                             :content ""
                             :notify  true}}})
+
+
+(defn allowed?
+  "Is `role` allowed to navigate to `tab`?"
+  [role tab]
+  (boolean
+   ((get {:member     #{"membership" "application" "notes"}
+          :applicant  #{"application" "notes"}
+          :onboarding #{"application" "notes"}}
+         role #{"notes"})
+    tab)))

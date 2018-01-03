@@ -43,7 +43,7 @@
 (reg-event-fx
  :account/fetch
  [(path db/path)]
- (fn [{db :db} [k account-id]]
+ (fn [{db :db} [k account-id opts]]
    {:dispatch [:loading k true]
     :graphql  {:query
                [[:account {:id account-id}
@@ -52,6 +52,8 @@
                   [:property [:id :name]]
                   ;; TODO: Move to separate query
                   [:application [:id :move_in :created :updated :submitted :status :term :has_pet
+                                 :approved_at
+                                 [:approved_by [:id :name]]
                                  [:communities [:id :name]]
                                  [:fitness [:experience :skills :free_time :interested :dealbreakers :conflicts]]
                                  [:income [:id :uri :name]]
@@ -61,14 +63,16 @@
                                     [:property [:id :cover_image_url :name]]
 
                                     [:unit [:id :code :number]]]]]]]
-               :on-success [::account-fetch k]
+               :on-success [::account-fetch k opts]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::account-fetch
  [(path db/path)]
- (fn [{db :db} [_ k response]]
+ (fn [{db :db} [_ k opts response]]
    (let [account (get-in response [:data :account])]
-     {:db       (norms/assoc-norm db :accounts/norms (:id account) account)
-      :dispatch [:loading k false]})))
+     {:db         (norms/assoc-norm db :accounts/norms (:id account) account)
+      :dispatch-n (tb/conj-when
+                   [[:loading k false]]
+                   (when-let [ev (:on-success opts)] (conj ev account)))})))
