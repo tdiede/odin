@@ -156,7 +156,8 @@
       (cond
         (:payment/check payment) :check
         (some? charge)           (charge-method charge)
-        :otherwise               :other))
+        (payment/paid? payment)  :other
+        :otherwise               nil))
     (catch Throwable t
       (resolve/resolve-as :unknown {:message  (.getMessage t)
                                     :err-data (ex-data t)}))))
