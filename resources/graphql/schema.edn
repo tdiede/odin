@@ -194,16 +194,19 @@
                            :resolve (:get :fitness/conflicts)}}}
 
 
-  :emergency_contact
-  {:implements [:person]
-   :fields     {:name       {:type    (non-null String)
-                             :resolve :person/full-name}
-                :first_name {:type    (non-null String)
-                             :resolve (:get :person/first-name)}
-                :last_name  {:type    (non-null String)
-                             :resolve (:get :person/last-name)}
-                :phone      {:type    (non-null String)
-                             :resolve (:get :person/phone-number)}}}
+  :check
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :payment     {:type    (non-null :payment)
+                          :resolve :check/payment}
+            :amount      {:type    (non-null Float)
+                          :resolve (:get :check/amount)}
+            :name        {:type    (non-null String)
+                          :resolve (:get :check/name)}
+            :dated       {:type    (non-null :Instant)
+                          :resolve (:get :check/date)}
+            :received_on {:type    (non-null :Instant)
+                          :resolve (:get :check/received-on)}}}
 
 
   :deposit
@@ -234,6 +237,18 @@
             :refund_status    {:type        :deposit_refund_status
                                :description "The status of the refund, if any."
                                :resolve     :deposit/refund-status}}}
+
+
+  :emergency_contact
+  {:implements [:person]
+   :fields     {:name       {:type    (non-null String)
+                             :resolve :person/full-name}
+                :first_name {:type    (non-null String)
+                             :resolve (:get :person/first-name)}
+                :last_name  {:type    (non-null String)
+                             :resolve (:get :person/last-name)}
+                :phone      {:type    (non-null String)
+                             :resolve (:get :person/phone-number)}}}
 
 
   :license
@@ -346,6 +361,8 @@
   :payment
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
+            :check       {:type    :check
+                          :resolve (:get :payment/check)}
             :uuid        {:type    (non-null String)
                           :resolve (:get :payment/id)}
             :ext_id      {:type        String
@@ -517,6 +534,18 @@
                  :term     {:type (non-null Int)}
                  :move_in  {:type (non-null :Instant)}
                  :unit     {:type (non-null :Long)}}}
+
+
+  ;;; Check
+
+
+  :create_check_params
+  {:description "Inputs to create a check."
+   :fields      {:payment       {:type (non-null :Long)}
+                 :amount        {:type (non-null Float)}
+                 :name          {:type (non-null String)}
+                 :received_date {:type (non-null :Instant)}
+                 :check_date    {:type (non-null :Instant)}}}
 
 
   ;;; Orders
@@ -708,6 +737,16 @@
                  :new_password_1 {:type (non-null String)}
                  :new_password_2 {:type (non-null String)}}
    :resolve     :account/change-password!}
+
+
+  ;;; Checks
+
+
+  :create_check
+  {:type        :check
+   :description "Create a check."
+   :args        {:params {:type :create_check_params}}
+   :resolve     :check/create!}
 
 
   ;;; Notes

@@ -2,6 +2,7 @@
   (:require [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.account :as account]
             [odin.graphql.resolvers.application :as application]
+            [odin.graphql.resolvers.check :as check]
             [odin.graphql.resolvers.deposit :as deposit]
             [odin.graphql.resolvers.member-license :as member-license]
             [odin.graphql.resolvers.metrics :as metrics]
@@ -26,6 +27,7 @@
   (->> (merge
         account/resolvers
         application/resolvers
+        check/resolvers
         deposit/resolvers
         payment/resolvers
         source/resolvers

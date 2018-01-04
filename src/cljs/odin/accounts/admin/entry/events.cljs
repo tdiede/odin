@@ -85,11 +85,40 @@
  ::approve-success
  [(path db/path)]
  (fn [_ [_ k response]]
-   (tb/log response)
    {:dispatch-n
     [[:loading k false]
      [:modal/hide :admin.accounts.approval/modal]
      [:account/fetch (get-in response [:data :approve_application :account :id])]]}))
+
+
+;; check ========================================================================
+
+
+(reg-event-fx
+ :admin.accounts.entry/add-check!
+ [(path db/path)]
+ (fn [_ [_ k {:keys [payment amount name check-date received-date]}]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation
+               [[:create_check {:params {:payment       payment
+                                         :amount        (float amount)
+                                         :name          name
+                                         :received_date received-date
+                                         :check_date    check-date}}
+                 [[:payment [[:account [:id]]]]]]]
+               :on-success [::add-check-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::add-check-success
+ [(path db/path)]
+ (fn [_ [_ k response]]
+   (let [account-id (get-in response [:data :create_check :payment :account :id])]
+     {:dispatch-n
+      [[:loading k false]
+       [:modal/hide k]
+       [:payments/fetch account-id]]})))
 
 
 ;; notes ========================================================================

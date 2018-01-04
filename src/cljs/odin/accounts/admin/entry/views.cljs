@@ -169,14 +169,29 @@
   (let [payments   (subscribe [:payments/by-account-id (:id account)])
         is-loading (subscribe [:loading? :payments/fetch])]
     [ant/card {:class "is-flush"}
-     [payments-ui/payments-table @payments @is-loading]]))
+     [payments-ui/payments-table @payments @is-loading
+      :columns (conj payments-ui/default-columns :add-check :method)]]))
 
 
 (defn payments-view [account]
-  [:div.columns
-   [:div.column
-    [:p.title.is-5 "Payments"]
-    [payments-table account]]])
+  (let [payments  (subscribe [:payments/by-account-id (:id account)])
+        unpaid    (filter #(= :due (:status %)) @payments)
+        modal-key :admin.accounts.entry/add-check-modal]
+    [:div.columns
+     [:div.column
+      [:div.columns
+       [:div.column
+        [:p.title.is-5 "Payments"]]
+       [:div.column.has-text-right
+        [payments-ui/add-check-modal modal-key unpaid
+         :on-submit #(dispatch [:admin.accounts.entry/add-check! modal-key %])]
+        [ant/button
+         {:type     :dashed
+          :on-click #(dispatch [:modal/show modal-key])
+          :disabled (empty? unpaid)
+          :icon     "plus"}
+         "Add Check"]]]
+      [payments-table account]]]))
 
 
 ;; notes ========================================================================

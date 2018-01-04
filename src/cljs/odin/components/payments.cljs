@@ -95,12 +95,12 @@
   [{:keys [paid_on] :as payment}]
   (let [due (when-some [d (:due payment)] (js/moment. d))]
     (cond
+      (some? paid_on)
+      [:span (format/date-short paid_on)]
+
       (and (some? due) (.isAfter (js/moment. paid_on) due))
       [ant/tooltip {:title "This payment was received late."}
        [:span.text-red (format/date-short paid_on)]]
-
-      (some? paid_on)
-      [:span (format/date-short paid_on)]
 
       :otherwise
       [:div.has-text-centered {:dangerouslySetInnerHTML {:__html "&mdash;"}}])))
@@ -131,16 +131,18 @@
          ;;:className "is-narrow width-5"
          :render    (table/wrap-cljs (fn [status] [payment-status status]))}
 
-        ;; reason for payment
-        {:title     "Type"
-         :dataIndex :for
-         :className "is-narrow width-8"
-         :render    (fn [val] (r/as-element [payment-for val]))}
-
+        ;; description
         {:title     (l10n/translate :description)
          :dataIndex :description
          :className "expand"
          :render    (fn [val] (r/as-element [:span.yes-wrap.restrict-width val]))}
+
+        ;; method
+        {:title "Method"
+         :dataIndex :method
+         :render (table/wrap-cljs
+                  (fn [method payment]
+                    [:span.tag.is-hollow method]))}
 
         ;; payment source
         {:title     ""
@@ -166,17 +168,19 @@
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
   [payments loading? & {:keys [columns] :or {columns default-columns}}]
-  (let [payments (if (every? (comp some? :created) payments)
-                   (reverse (sort-by :created payments))
-                   payments)]
+  (let [;; payments (if (every? (comp some? :created) payments)
+        ;;            (reverse (sort-by :created payments))
+        ;;            payments)
+        payments (reverse (sort-by (fn [{:keys [paid_on created]}]
+                                     (or paid_on created))
+                                   payments))]
     [ant/table
      {:class        "payments-table"
       :loading      (or loading? false)
       :columns      (payment-table-columns columns)
       :rowClassName get-payment-row-class
       :dataSource   payments
-      :locale       {:emptyText (l10n/translate :payment-table-no-payments)}
-      :pagination   false}]))
+      :locale       {:emptyText (l10n/translate :payment-table-no-payments)}}]))
 
 
 (defn menu-select-source [sources]
@@ -233,7 +237,7 @@
        [ant/button
         {:size     :large
          :on-click on-cancel}
-        "Cancel"]
+        "cancel"]
        [ant/button
         {:type     :primary
          :size     :large
@@ -242,7 +246,7 @@
                        (on-confirm payment-id source-id e)
                        (on-confirm payment-id e)))
          :loading  loading}
-        "Confirm Payment"]])))
+        "confirm payment"]])))
 
 
 (defn make-payment-modal
@@ -270,3 +274,91 @@
         [:p (l10n/translate :rent-overdue-notification-body (format/currency (get payment :amount)))
          [:a {:on-click #(swap! modal-shown not)} (l10n/translate :rent-overdue-notification-body-cta)]
          [make-payment-modal payment modal-shown]]]])))
+
+
+;; add check ====================================================================
+
+
+(defn- check-payment-option
+  [{:keys [id amount type description]}]
+  [ant/radio {:value id}
+   [:span
+    (format/currency amount)
+    " - "
+    description]])
+
+
+(defn- select-payment
+  ([payments form-data]
+   (select-payment (:payment @form-data) payments form-data))
+  ([payment-id payments form-data]
+   (let [payment (tb/find-by #(= payment-id (:id %)) payments)]
+     {:payment payment-id
+      :amount   (:amount payment)})))
+
+
+(defn add-check-modal-footer
+  [id {:keys [payment amount name received-date check-date] :as data} on-submit]
+  (let [can-submit (and payment amount name received-date check-date)
+        is-loading (subscribe [:loading? id])]
+    [:div
+     [ant/button
+      {:size     :large
+       :on-click #(dispatch [:modal/hide id])}
+      "Cancel"]
+     [ant/button
+      {:type     :primary
+       :size     :large
+       :disabled (not can-submit)
+       :on-click #(on-submit data)
+       :loading  @is-loading}
+      "Add Check"]]))
+
+
+(defn add-check-modal
+  [id payments & {:keys [on-submit] :or {on-submit identity}}]
+  (let [visible (subscribe [:modal/visible? id])
+        data    (r/atom {:payment (:id (first payments))
+                         :amount  (:amount (first payments))
+                         :name    ""})]
+    (fn [id payments]
+      [ant/modal
+       {:title     "Add a Check"
+        :visible   @visible
+        :on-cancel #(dispatch [:modal/hide id])
+        :footer (r/as-element [add-check-modal-footer id @data on-submit])}
+
+       [ant/form-item {:label "Choose Payment"}
+        [ant/radio-group
+         {:on-change #(swap! data merge (select-payment (.. % -target -value) payments data))
+          :value     (:payment @data)}
+         (doall
+          (map-indexed
+           #(with-meta (check-payment-option %2) {:key %1})
+           payments))]]
+
+       [:div.columns
+        [:div.column
+         [ant/form-item {:label "Amount"}
+          [ant/input-number
+           {:value     (:amount @data)
+            :on-change #(swap! data assoc :amount %)
+            :style     {:width "100%"}}]]]
+        [:div.column
+         [ant/form-item {:label "Name on Check"}
+         [ant/input
+          {:value     (:name @data)
+           :on-change #(swap! data assoc :name (.. % -target -value))}]]]]
+
+       [:div.columns
+        [:div.column
+         [ant/form-item {:label "Date on Check"}
+          [ant/date-picker
+           {:value     (when-let [d (:check-date @data)] (js/moment. d))
+            :on-change #(swap! data assoc :check-date (.toISOString %))}]]]
+
+        [:div.column
+         [ant/form-item {:label "Date Received"}
+          [ant/date-picker
+           {:value     (when-let [d (:received-date @data)] (js/moment. d))
+            :on-change #(swap! data assoc :received-date (.toISOString %))}]]] ]])))

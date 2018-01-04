@@ -14,6 +14,7 @@
                [[:payments {:params {:account (tb/str->int account-id)}}
                  [:id :method :type :autopay :amount :status :description
                   :pstart :pend :paid_on :created
+                  [:check [:id]]
                   [:source [:id :name :type :last4]]
                   [:account [:id]]]]]
                :on-success [:payments.fetch/success k]
