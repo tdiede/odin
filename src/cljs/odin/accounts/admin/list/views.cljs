@@ -16,7 +16,8 @@
                :selected-keys [@selected]
                :on-click      #(dispatch [:admin.accounts.list/select-role (aget % "key")])}
      [ant/menu-item {:key "member"} "Members"]
-     [ant/menu-item {:key "applicant"} "Applicants"]]))
+     [ant/menu-item {:key "applicant"} "Applicants"]
+     [ant/menu-item {:key "all"} "All"]]))
 
 
 (def render-name
@@ -45,15 +46,10 @@
 
 (def render-term
   (table/wrap-cljs
-   (fn [_ {license :active_license}]
-     (get-in license [:term]))))
-
-
-(def render-term-end
-  (table/wrap-cljs
-   (fn [_ {license :active_license}]
-     (format/date-short (get-in license [:ends])))))
-
+   (fn [_ {{:keys [term starts ends]} :active_license}]
+     [ant/tooltip {:title (str (format/date-short starts) "-"
+                               (format/date-short ends))}
+      term])))
 
 (def render-rent-status
   (table/wrap-cljs
@@ -61,7 +57,10 @@
      (:rent_status license "N/A"))))
 
 
-(defn- members-columns [query-params]
+(defmulti columns (fn [role _] role))
+
+
+(defmethod columns :member [_ query-params]
   [{:title     "Name"
     :dataIndex :name
     :render    render-name}
@@ -80,9 +79,6 @@
    {:title     (table/sort-col-title query-params :license_term "Term (months)" db/params->route)
     :dataIndex :term
     :render    render-term}
-   {:title     (table/sort-col-title query-params :license_end "License Ends" db/params->route)
-    :dataIndex :term-end
-    :render    render-term-end}
    {:title     "Rent Status"
     :dataIndex :rent-status
     :render    render-rent-status}])
@@ -91,14 +87,13 @@
 (def render-communities
   (table/wrap-cljs
    (fn [_ account]
-     (r/as-element
-      (->> (for [c (get-in account [:application :communities])]
-             [:small.fs1 [:a {:href ""} (:name c)]])
-           (interpose ", ")
-           (into [:div]))))))
+     (->> (for [c (get-in account [:application :communities])]
+            [:small.fs1 [:a {:href ""} (:name c)]])
+          (interpose ", ")
+          (into [:div])))))
 
 
-(defn- applicant-columns [query-params]
+(defmethod columns :applicant [_ query-params]
   [{:title     "Name"
     :dataIndex :name
     :render    render-name}
@@ -123,6 +118,27 @@
    {:title     "Communities"
     :dataIndex [:application :communities]
     :render    render-communities}])
+
+
+(def render-role
+  (table/wrap-cljs
+   (fn [role _]
+     [:div.has-text-right (name role)])))
+
+
+(defmethod columns :all [_ query-params]
+  [{:title     "Name"
+    :dataIndex :name
+    :render    render-name}
+   {:title     "Email"
+    :dataIndex :email
+    :render    render-email}
+   {:title     "Phone"
+    :dataIndex :phone
+    :render    (table/maybe-render format/phone-number)}
+   {:title     "Role"
+    :dataIndex :role
+    :render    render-role}])
 
 
 (defn accounts-search []
@@ -150,9 +166,7 @@
        {:tip      "Fetching accounts..."
         :spinning @is-loading}
        :delay (when-not (empty? @accounts) 1000))
-      [ant/table {:columns    (if (= @selected "member")
-                                (members-columns @params)
-                                (applicant-columns @params))
+      [ant/table {:columns    (columns (keyword @selected) @params)
                   :dataSource (map-indexed #(assoc %2 :key %1) @accounts)}]]]))
 
 

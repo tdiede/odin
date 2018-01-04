@@ -20,16 +20,16 @@
    {:route (db/params->route (:params db))}))
 
 
-(defn- accounts-query-params [params]
-  {:roles [(keyword (:selected-role params))]
-   :q     (:q params)})
+(defn- accounts-query-params [{:keys [selected-role q] :as query-params}]
+  (let [roles (when-not (= "all" selected-role)
+                [(keyword selected-role)])]
+    (tb/assoc-when {:q q} :roles roles)))
 
 
 (reg-event-fx
  :admin.accounts.list/fetch
  [(path db/path)]
  (fn [{db :db} [k query-params]]
-   (tb/log :query-params query-params)
    {:dispatch [:accounts/query (accounts-query-params query-params)]
     :db       (assoc db :params query-params)}))
 

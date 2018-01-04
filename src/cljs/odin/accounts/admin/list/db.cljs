@@ -7,7 +7,9 @@
 
 
 (def default-params
-  {:selected-role "member"})
+  {:selected-role "member"
+   :sort-order    :asc
+   :sort-by       :unit})
 
 
 (def default-value
@@ -23,8 +25,16 @@
    m))
 
 
+(defn update-roles [params]
+  (let [role (:selected-role params)]
+    (if (= role "all")
+      (dissoc params :role)
+      params)))
+
+
 (defn params->route [params]
   (let [params' (-> (table/sort-params->query-params params)
+                    ;; (update-roles)
                     (remove-empty-vals))]
     (routes/path-for :accounts/list :query-params params')))
 

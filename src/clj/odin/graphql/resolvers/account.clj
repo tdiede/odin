@@ -60,6 +60,7 @@
 
 (defn role
   [_ _ account]
+  (println (account/role account) (d/touch account))
   (keyword (name (account/role account))))
 
 
