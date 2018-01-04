@@ -26,14 +26,13 @@
 
 (defn deposit-status
   [_ _ dep]
-  (let [is-overdue (t/before? (t/now) (c/to-date-time (deposit/due dep)))
-        ]
+  (let [is-overdue (t/before? (t/now) (c/to-date-time (deposit/due dep)))]
     (cond
       (> (deposit/amount-pending dep) 0)                           :pending
       (= (deposit/amount dep) (deposit/amount-paid dep))           :paid
-      (and is-overdue (> (deposit/amount-remaining dep) 0))        :overdue
       (= (deposit/amount-paid dep) 0)                              :unpaid
       (> (deposit/amount-remaining dep) (deposit/amount-paid dep)) :partial
+      (and is-overdue (> (deposit/amount-remaining dep) 0))        :overdue
       :otherwise                                                   :pending)))
 
 
