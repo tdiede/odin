@@ -36,11 +36,25 @@
    :submitted    (assoc table/date-sort-comp :path [:application :submitted])})
 
 
+(defn- sort-accounts
+  [{:keys [sort-by sort-order] :as params} accounts]
+  (if (or (nil? sort-by) (nil? sort-order))
+    accounts
+    (table/sort-rows params sortfns accounts)))
+
+
+(defn- role-filter
+  [{selected-role :selected-role} accounts]
+  (if (= selected-role "member")
+    (filter (comp some? :active_license) accounts)
+    accounts))
+
+
 (reg-sub
  :admin.accounts/list
  :<- [:admin.accounts.list/query-params]
  :<- [:accounts]
  (fn [[params accounts] _]
-   (if (or (nil? (:sort-by params)) (nil? (:sort-order params)))
-     accounts
-     (table/sort-rows params sortfns accounts))))
+   (->> accounts
+        (role-filter params)
+        (sort-accounts params))))

@@ -98,6 +98,7 @@
         :payment-table-no-payments "No payments to show."
         :amount                    "Amount"
         :date                      "Date"
+        :paid-on                   "Paid On"
         :description               "Description"
 
         :autopay                "Autopay"

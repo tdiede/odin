@@ -122,8 +122,12 @@
 
 (def render-role
   (table/wrap-cljs
-   (fn [role _]
-     [:div.has-text-right (name role)])))
+   (fn [role {:keys [active_license] :as acct}]
+     ;; TODO: Quick hack
+     [:div.has-text-right
+      (if (and (= role "member") (nil? active_license))
+        (str (name role) " (inactive)")
+        (name role))])))
 
 
 (defmethod columns :all [_ query-params]

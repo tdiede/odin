@@ -14,6 +14,11 @@
             [clojure.string :as string]))
 
 
+(defn- most-current-license [account]
+  (or (tb/find-by (comp #{:active} :status) (:licenses account))
+      (first (:licenses account))))
+
+
 ;; ==============================================================================
 ;; components -------------------------------------------------------------------
 ;; ==============================================================================
@@ -36,9 +41,13 @@
    [:b (format/date-time (:updated application))]])
 
 
-(defmethod subheader :member
-  [{{unit :unit} :active_license, property :property}]
-  [:span "Lives in " [:a {:href ""} (:name property)] " in room #" [:b (:number unit)]])
+(defmethod subheader :member [account]
+  (let [{:keys [status property unit]} (most-current-license account)]
+    [:span
+     (if (= status :active) "Lives" [:i "Lived"])
+     " in " [:a {:href ""} (:name property)]
+     " in room #"
+     [:b (:number unit)]]))
 
 
 ;; contact info =================================================================
@@ -130,7 +139,7 @@
   (let [autopay-on     (subscribe [:payment-sources/autopay-on? (:id account)])
         has-bank       (subscribe [:payment-sources/has-verified-bank? (:id account)])
         has-card       (subscribe [:payment-sources/has-card? (:id account)])
-        rent-status    (get-in account [:active_license :rent_status])
+        rent-status    (:rent_status (most-current-license account))
         deposit-status (get-in account [:deposit :status])]
     [:div.level.is-mobile
      (status-icons
@@ -191,11 +200,14 @@
 
 
 (defn membership-view [account]
-  [:div.columns
-   [:div.column
-    [membership/license-summary (:active_license account)
-     {:content [status-bar account]}]]
-   [:div.column]])
+  (let [license (most-current-license account)]
+    [:div.columns
+     [:div.column
+     [membership/license-summary license
+      {:content (if (= :active (:status license))
+                  [status-bar account]
+                  [:div])}]]
+    [:div.column]]))
 
 
 ;; ==============================================================================

@@ -89,6 +89,9 @@
                                     :resolve :person/full-name}
                 :last_name         {:type    (non-null String)
                                     :resolve (:get :person/last-name)}
+                :licenses          {:type        (list :license)
+                                    :description "All licenses belonging to this account."
+                                    :resolve     (:get :account/licenses)}
                 :name              {:type    (non-null String)
                                     :resolve :person/short-name}
                 :notes             {:type    (list :note)
@@ -381,7 +384,9 @@
             :account     {:type    (non-null :account)
                           :resolve (:get :payment/account)}
             :source      {:type    :payment_source
-                          :resolve :payment/source}}}
+                          :resolve :payment/source}
+            :created     {:type    (non-null :Instant)
+                          :resolve :entity/created}}}
 
 
   :payment_source

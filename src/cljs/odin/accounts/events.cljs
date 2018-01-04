@@ -60,10 +60,10 @@
                                  [:income [:id :uri :name]]
                                  [:pet [:type :breed :weight :sterile :vaccines :bitten :demeanor :daytime_care]]]]
                   ;; TODO: Move to separate query
-                  [:active_license [:id :rate :starts :ends :term :status :rent_status
-                                    [:property [:id :cover_image_url :name]]
+                  [:licenses [:id :rate :starts :ends :term :status :rent_status
+                              [:property [:id :cover_image_url :name]]
 
-                                    [:unit [:id :code :number]]]]]]]
+                              [:unit [:id :code :number]]]]]]]
                :on-success [::account-fetch k opts]
                :on-failure [:graphql/failure k]}}))
 

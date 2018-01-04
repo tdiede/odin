@@ -91,13 +91,19 @@
   [:span (format/date-short paid_on)])
 
 
-(defn render-late-payment-date
-  [paid-on is-late]
-  [:span
-   (if is-late
-     [ant/tooltip {:title "This payment was received late."}
-      [:span.text-red (format/date-short paid-on)]]
-     [:span (format/date-short paid-on)])])
+(defn render-paid-on
+  [{:keys [paid_on] :as payment}]
+  (let [due (when-some [d (:due payment)] (js/moment. d))]
+    (cond
+      (and (some? due) (.isAfter (js/moment. paid_on) due))
+      [ant/tooltip {:title "This payment was received late."}
+       [:span.text-red (format/date-short paid_on)]]
+
+      (some? paid_on)
+      [:span (format/date-short paid_on)]
+
+      :otherwise
+      [:div.has-text-centered {:dangerouslySetInnerHTML {:__html "&mdash;"}}])))
 
 
 (defn payment-table-columns [columns]
@@ -107,14 +113,12 @@
          :render    (table/wrap-cljs (fn [type] [payment-for-icon type]))}
 
         ;; date paid
-        {:title     (l10n/translate :date)
+        {:title     (l10n/translate :paid-on)
          :dataIndex :paid_on
          :className "width-6"
          :render    (table/wrap-cljs
-                     (fn [paid payment]
-                       (let [due     (when-some [d (aget payment "due")] (js/moment. d))
-                             is-late (if (some? due) (.isAfter (js/moment. paid) due) false)]
-                         [render-late-payment-date paid is-late])))}
+                     (fn [_ payment]
+                       [render-paid-on payment]))}
 
         ;; amount
         {:title     (l10n/translate :amount)
@@ -128,7 +132,7 @@
          :render    (table/wrap-cljs (fn [status] [payment-status status]))}
 
         ;; reason for payment
-        {:title    "Type"
+        {:title     "Type"
          :dataIndex :for
          :className "is-narrow width-8"
          :render    (fn [val] (r/as-element [payment-for val]))}
@@ -139,7 +143,7 @@
          :render    (fn [val] (r/as-element [:span.yes-wrap.restrict-width val]))}
 
         ;; payment source
-        {:title     "Source"
+        {:title     ""
          :dataIndex :source
          :className "align-right light"
          :render    (fn [val item _] (source-name (js->clj val :keywordize-keys true)))}]
@@ -162,7 +166,9 @@
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
   [payments loading? & {:keys [columns] :or {columns default-columns}}]
-  (let [payments (filter #(not= (:status %) :due) payments)]
+  (let [payments (if (every? (comp some? :created) payments)
+                   (reverse (sort-by :created payments))
+                   payments)]
     [ant/table
      {:class        "payments-table"
       :loading      (or loading? false)

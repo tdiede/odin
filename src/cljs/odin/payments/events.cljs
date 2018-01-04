@@ -13,7 +13,7 @@
     :graphql  {:query
                [[:payments {:params {:account (tb/str->int account-id)}}
                  [:id :method :type :autopay :amount :status :description
-                  :pstart :pend :paid_on
+                  :pstart :pend :paid_on :created
                   [:source [:id :name :type :last4]]
                   [:account [:id]]]]]
                :on-success [:payments.fetch/success k]
