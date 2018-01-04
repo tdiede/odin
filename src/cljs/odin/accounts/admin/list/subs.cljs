@@ -19,10 +19,10 @@
 
 
 (reg-sub
- :admin.accounts.list/selected-role
+ :admin.accounts.list/selected-view
  :<- [db/path]
  (fn [db _]
-   (get-in db [:params :selected-role])))
+   (get-in db [:params :selected-view])))
 
 
 (def sortfns
@@ -44,8 +44,8 @@
 
 
 (defn- role-filter
-  [{selected-role :selected-role} accounts]
-  (if (= selected-role "member")
+  [{selected-view :selected-view} accounts]
+  (if (= selected-view "member")
     (filter (comp some? :active_license) accounts)
     accounts))
 

@@ -21,7 +21,7 @@
    {:dispatch [:loading k true]
     :graphql  {:query
                [[:accounts {:params (accounts-query-params params)}
-                 [:id :name :email :phone :role
+                 [:id :name :email :phone :role :created
                   [:property [:id :name]]
                   [:application [:id :move_in :created :updated :submitted :status
                                  [:communities [:id :name]]]]

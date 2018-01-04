@@ -7,7 +7,7 @@
 
 
 (def default-params
-  {:selected-role "member"
+  {:selected-view "member"
    :sort-order    :asc
    :sort-by       :unit})
 
@@ -25,8 +25,25 @@
    m))
 
 
+(defmulti default-sort-params identity)
+
+(defmethod default-sort-params :default [_] {})
+
+(defmethod default-sort-params "member" [_]
+  {:sort-order :asc
+   :sort-by    :unit})
+
+(defmethod default-sort-params "applicant" [_]
+  {:sort-order :desc
+   :sort-by    :submitted})
+
+(defmethod default-sort-params "all" [_]
+  {:sort-order :desc
+   :sort-by    :created})
+
+
 (defn update-roles [params]
-  (let [role (:selected-role params)]
+  (let [role (:selected-view params)]
     (if (= role "all")
       (dissoc params :role)
       params)))

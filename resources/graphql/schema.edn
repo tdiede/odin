@@ -74,6 +74,8 @@
                                     :resolve     :account/active-license}
                 :application       {:type    :application
                                     :resolve (:get :account/application)}
+                :created           {:type    (non-null :Instant)
+                                    :resolve :entity/created}
                 :deposit           {:type        :deposit
                                     :description "Security deposit for this account."
                                     :resolve     :account/deposit}
@@ -136,7 +138,7 @@
                           :resolve     :application/income
                           :description "Income file paths."}
             :submitted   {:type    :Instant
-                          :resolve (:get :application/submitted-at)}
+                          :resolve :application/submitted-at}
             :created     {:type    (non-null :Instant)
                           :resolve :entity/created}
             :updated     {:type    (non-null :Instant)

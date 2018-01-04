@@ -11,10 +11,10 @@
 
 
 (defn role-menu []
-  (let [selected (subscribe [:admin.accounts.list/selected-role])]
+  (let [selected (subscribe [:admin.accounts.list/selected-view])]
     [ant/menu {:mode          :horizontal
                :selected-keys [@selected]
-               :on-click      #(dispatch [:admin.accounts.list/select-role (aget % "key")])}
+               :on-click      #(dispatch [:admin.accounts.list/select-view (aget % "key")])}
      [ant/menu-item {:key "member"} "Members"]
      [ant/menu-item {:key "applicant"} "Applicants"]
      [ant/menu-item {:key "all"} "All"]]))
@@ -49,12 +49,12 @@
    (fn [_ {{:keys [term starts ends]} :active_license}]
      [ant/tooltip {:title (str (format/date-short starts) "-"
                                (format/date-short ends))}
-      term])))
+      [:div.has-text-centered term]])))
 
 (def render-rent-status
   (table/wrap-cljs
    (fn [_ {license :active_license}]
-     (:rent_status license "N/A"))))
+     [:div.has-text-right (:rent_status license "N/A")])))
 
 
 (defmulti columns (fn [role _] role))
@@ -90,7 +90,7 @@
      (->> (for [c (get-in account [:application :communities])]
             [:small.fs1 [:a {:href ""} (:name c)]])
           (interpose ", ")
-          (into [:div])))))
+          (into [:div.has-text-right])))))
 
 
 (defmethod columns :applicant [_ query-params]
@@ -140,6 +140,9 @@
    {:title     "Phone"
     :dataIndex :phone
     :render    (table/maybe-render format/phone-number)}
+   {:title     (table/sort-col-title query-params :created "Created" db/params->route)
+    :dataIndex :created
+    :render    format/date-time-short}
    {:title     "Role"
     :dataIndex :role
     :render    render-role}])
@@ -156,7 +159,7 @@
 
 
 (defn accounts-table []
-  (let [selected   (subscribe [:admin.accounts.list/selected-role])
+  (let [selected   (subscribe [:admin.accounts.list/selected-view])
         accounts   (subscribe [:admin.accounts/list])
         params     (subscribe [:admin.accounts.list/query-params])
         is-loading (subscribe [:loading? :accounts/query])]

@@ -20,9 +20,9 @@
    {:route (db/params->route (:params db))}))
 
 
-(defn- accounts-query-params [{:keys [selected-role q] :as query-params}]
-  (let [roles (when-not (= "all" selected-role)
-                [(keyword selected-role)])]
+(defn- accounts-query-params [{:keys [selected-view q] :as query-params}]
+  (let [roles (when-not (= "all" selected-view)
+                [(keyword selected-view)])]
     (tb/assoc-when {:q q} :roles roles)))
 
 
@@ -35,12 +35,12 @@
 
 
 (reg-event-fx
- :admin.accounts.list/select-role
+ :admin.accounts.list/select-view
  [(path db/path)]
- (fn [{db :db} [_ role]]
+ (fn [{db :db} [_ view]]
    {:route (-> (:params db)
-               (assoc :selected-role role)
-               (dissoc :sort-by :sort-order)
+               (assoc :selected-view view)
+               (merge (db/default-sort-params view))
                (db/params->route))}))
 
 

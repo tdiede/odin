@@ -79,6 +79,15 @@
   (str "/api/income/" (:db/id income-file)))
 
 
+(defn submitted-at
+  [{conn :conn} _ application]
+  (d/q '[:find ?t .
+         :in $ ?app
+         :where
+         [?app :application/status :application.status/submitted ?tx]
+         [?tx :db/txInstant ?t]]
+       (d/db conn) (td/id application)))
+
 
 ;; ==============================================================================
 ;; mutations --------------------------------------------------------------------
@@ -113,12 +122,13 @@
 
 (def resolvers
   {:application/account          account
-   :application/approved-by      approved-by
    :application/approved-at      approved-at
-   :application/status           status
-   :application/term             term
-   :application/updated          last-updated
+   :application/approved-by      approved-by
    :application/income           income
+   :application/term             term
+   :application/status           status
+   :application/submitted-at     submitted-at
+   :application/updated          last-updated
    ;; mutations
    :application/approve!         approve!
    ;; income file
