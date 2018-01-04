@@ -1,6 +1,5 @@
 (ns odin.components.payments
   (:require [odin.l10n :as l10n]
-            [odin.utils.toolbelt :as utils]
             [odin.utils.formatters :as format]
             [odin.utils.time :as time]
             [odin.components.notifications :as notification]
@@ -8,7 +7,8 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [reagent.core :as r]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [iface.table :as table]))
 
 
 (defn stripe-icon-link
@@ -100,76 +100,75 @@
      [:span (format/date-short paid-on)])])
 
 
-(defn payment-table-columns []
-  [
-   ;; PAYMENT TYPE ICON
-   {:dataIndex :type
-    :className "is-narrow width-2"
-    :render    (fn [val]
-                 (r/as-element [payment-for-icon val]))}
+(defn payment-table-columns [columns]
+  (->> [;; payment type icon
+        {:dataIndex :type
+         :className "is-narrow width-2"
+         :render    (table/wrap-cljs (fn [type] [payment-for-icon type]))}
 
-   ;; DATE PAID
-   {:title     (l10n/translate :date)
-    :dataIndex :paid_on
-    :className "width-6"
-    :render    (fn [paid item _]
-                 (let [due     (when-some [d (aget item "due")] (js/moment. d))
-                       is-late (if (some? due) (.isAfter (js/moment. paid) due) false)]
-                   (r/as-element [render-late-payment-date paid is-late])))}
+        ;; date paid
+        {:title     (l10n/translate :date)
+         :dataIndex :paid_on
+         :className "width-6"
+         :render    (table/wrap-cljs
+                     (fn [paid payment]
+                       (let [due     (when-some [d (aget payment "due")] (js/moment. d))
+                             is-late (if (some? due) (.isAfter (js/moment. paid) due) false)]
+                         [render-late-payment-date paid is-late])))}
 
-   ;; AMOUNT
-   {:title     (l10n/translate :amount)
-    :dataIndex :amount
-    :className "td-bold width-4 text-larger"
-    :render    (fn [val]
-                 (format/currency val))}
+        ;; amount
+        {:title     (l10n/translate :amount)
+         :dataIndex :amount
+         :className "td-bold width-4 text-larger"
+         :render    (table/wrap-cljs (fn [amount] (format/currency amount)))}
 
-   ;; STATUS OF PAYMENT
-   {:dataIndex :status
-    ;;:className "is-narrow width-5"
-    :render    (fn [val]
-                 (r/as-element [payment-status val]))}
+        ;; status of payment
+        {:dataIndex :status
+         ;;:className "is-narrow width-5"
+         :render    (table/wrap-cljs (fn [status] [payment-status status]))}
 
-   ;; REASON FOR PAYMENT
-   ;;{:title     "Type"
-   ;; :dataIndex :for
-   ;; :className "is-narrow width-8"
-   ;; :render    (fn [val]
-   ;;              (r/as-element [payment-for val]))}
+        ;; reason for payment
+        {:title    "Type"
+         :dataIndex :for
+         :className "is-narrow width-8"
+         :render    (fn [val] (r/as-element [payment-for val]))}
 
-   {:title     (l10n/translate :description)
-    :dataIndex :description
-    :className "expand"
-    :render    (fn [val]
-                 (r/as-element [:span.yes-wrap.restrict-width val]))}
+        {:title     (l10n/translate :description)
+         :dataIndex :description
+         :className "expand"
+         :render    (fn [val] (r/as-element [:span.yes-wrap.restrict-width val]))}
 
-   ;; PAYMENT SOURCE
-   {:title     ""
-    :dataIndex :source
-    :className "align-right light"
-    :render    (fn [val item _]
-                 (source-name (js->clj val :keywordize-keys true)))}])
+        ;; payment source
+        {:title     "Source"
+         :dataIndex :source
+         :className "align-right light"
+         :render    (fn [val item _] (source-name (js->clj val :keywordize-keys true)))}]
+       (filter (comp columns :dataIndex))))
 
 
 (defn get-payment-row-class
   "Returns a String class name for highlighting pending and due payments."
   [payment]
   (case (aget payment "status")
-    ;; "due"     "warning"
+    "due"     "warning"
     "pending" "info"
     "default"))
 
 
+(def default-columns
+  #{:type :paid_on :amount :status :description :source})
+
+
 (defn payments-table
   "Receives a vector of transactions, and displays them as a list."
-  [payments loading?]
+  [payments loading? & {:keys [columns] :or {columns default-columns}}]
   (let [payments (filter #(not= (:status %) :due) payments)]
     [ant/table
      {:class        "payments-table"
       :loading      (or loading? false)
-      :columns      (payment-table-columns)
+      :columns      (payment-table-columns columns)
       :rowClassName get-payment-row-class
-      :dataSource   (map-indexed utils/thing->column payments)
+      :dataSource   payments
       :locale       {:emptyText (l10n/translate :payment-table-no-payments)}
       :pagination   false}]))
 
@@ -252,7 +251,7 @@
                 :footer    (let [opts (merge {:on-cancel on-cancel} opts)]
                              (r/as-element
                               [make-payment-modal-footer (:id payment) opts]))}
-    [payment-box payment desc]]))
+     [payment-box payment desc]]))
 
 
 (defn rent-overdue-notification
