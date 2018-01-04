@@ -36,15 +36,6 @@
        {:dispatch [:admin.accounts.entry/select-tab (tab-for-role (:role account))]}))))
 
 
-;; (reg-event-fx
-;;  :admin.accounts.entry/select-initial-tab
-;;  [(path db/path)]
-;;  (fn [{db :db} [_ tab]]
-;;    (let [current (:tab db)]
-;;      (when (or (nil? current) (not (allowed? current)))
-;;        {:dispatch [:admin.accounts.entry/select-tab tab]}))))
-
-
 (reg-event-db
  :admin.accounts.entry/select-tab
  [(path db/path)]

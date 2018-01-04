@@ -163,6 +163,13 @@
      [payments-ui/payments-table @payments @is-loading]]))
 
 
+(defn payments-view [account]
+  [:div.columns
+   [:div.column
+    [:p.title.is-5 "Payments"]
+    [payments-table account]]])
+
+
 ;; notes ========================================================================
 
 
@@ -209,7 +216,7 @@
                :on-click      #(dispatch [:admin.accounts.entry/select-tab (aget % "key")])}
      (map
       (partial menu-item role)
-      ["membership" "application" "notes"])]))
+      ["membership" "payments" "application" "notes"])]))
 
 
 (defn view [{{account-id :account-id} :params, path :path}]
@@ -230,6 +237,7 @@
 
        (case @selected
          "membership"  [membership-view account]
+         "payments"    [payments-view account]
          "application" [application-view account]
          "notes"       [notes-view account]
          [:div])])))

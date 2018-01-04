@@ -21,8 +21,8 @@
   "Is `role` allowed to navigate to `tab`?"
   [role tab]
   (boolean
-   ((get {:member     #{"membership" "application" "notes"}
+   ((get {:member     #{"membership" "payments" "application" "notes"}
           :applicant  #{"application" "notes"}
-          :onboarding #{"application" "notes"}}
+          :onboarding #{"application" "payments ""notes"}}
          role #{"notes"})
     tab)))
