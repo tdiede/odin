@@ -185,7 +185,7 @@
 (defn- controls []
   (let [params        (subscribe [:admin.orders/query-params])
         filters-dirty (subscribe [:admin.orders.filters/dirty?])]
-    [:div.chart-controls
+    [:div.table-controls
      [:div.columns
       [:div.column.is-3
        [ant/form-item {:label "Filter by Members"}

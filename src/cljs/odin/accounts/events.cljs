@@ -7,10 +7,11 @@
 
 
 (defn- accounts-query-params
-  [{:keys [roles]}]
+  [{:keys [roles q]}]
   (tb/assoc-when
    {}
-   :roles (when-some [rs roles] (vec rs))))
+   :roles (when-some [rs roles] (vec rs))
+   :q q))
 
 
 (reg-event-fx

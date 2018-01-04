@@ -21,13 +21,15 @@
 
 
 (defn- accounts-query-params [params]
-  {:roles [(keyword (:selected-role params))]})
+  {:roles [(keyword (:selected-role params))]
+   :q     (:q params)})
 
 
 (reg-event-fx
  :admin.accounts.list/fetch
  [(path db/path)]
  (fn [{db :db} [k query-params]]
+   (tb/log :query-params query-params)
    {:dispatch [:accounts/query (accounts-query-params query-params)]
     :db       (assoc db :params query-params)}))
 
@@ -40,3 +42,21 @@
                (assoc :selected-role role)
                (dissoc :sort-by :sort-order)
                (db/params->route))}))
+
+
+(reg-event-fx
+ :admin.accounts.list/search-accounts
+ [(path db/path)]
+ (fn [{db :db} [k q]]
+   {:dispatch-throttle {:id              k
+                        :window-duration 500
+                        :leading?        false
+                        :trailing?       true
+                        :dispatch        [::search-accounts q]}}))
+
+
+(reg-event-fx
+ ::search-accounts
+ [(path db/path)]
+ (fn [{db :db} [_ query]]
+   {:route (db/params->route (assoc (:params db) :q query))}))

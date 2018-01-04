@@ -125,20 +125,35 @@
     :render    render-communities}])
 
 
+(defn accounts-search []
+  (let [is-loading (subscribe [:loading? :accounts/query])]
+    [ant/form-item
+     [ant/input-search
+      {:placeholder "Search by name or email"
+       :style       {:width "100%"}
+       :on-change   #(dispatch [:admin.accounts.list/search-accounts (.. % -target -value)])
+       :prefix      (when @is-loading (r/as-element [ant/icon {:type "loading"}]))}]]))
+
+
 (defn accounts-table []
   (let [selected   (subscribe [:admin.accounts.list/selected-role])
         accounts   (subscribe [:admin.accounts/list])
         params     (subscribe [:admin.accounts.list/query-params])
         is-loading (subscribe [:loading? :accounts/query])]
-    [ant/spin
-     (tb/assoc-when
-      {:tip      "Fetching accounts..."
-       :spinning @is-loading}
-      :delay (when-not (empty? @accounts) 1000))
-     [ant/table {:columns    (if (= @selected "member")
-                               (members-columns @params)
-                               (applicant-columns @params))
-                 :dataSource (map-indexed #(assoc %2 :key %1) @accounts)}]]))
+    [:div
+     [:div.table-controls
+      [:div.columns
+       [:div.column.is-one-third
+        [accounts-search]]]]
+     [ant/spin
+      (tb/assoc-when
+       {:tip      "Fetching accounts..."
+        :spinning @is-loading}
+       :delay (when-not (empty? @accounts) 1000))
+      [ant/table {:columns    (if (= @selected "member")
+                                (members-columns @params)
+                                (applicant-columns @params))
+                  :dataSource (map-indexed #(assoc %2 :key %1) @accounts)}]]]))
 
 
 (defn view []
