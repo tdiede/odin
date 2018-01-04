@@ -5,11 +5,7 @@
                                    reg-event-db
                                    path]]
             [toolbelt.core :as tb]
-            [odin.utils.formatters :as format]
-            [devtools.defaults :as d]))
-
-
-;; (dispatch [:admin.accounts.entry/select-tab (aget % "key")])
+            [odin.utils.formatters :as format]))
 
 
 (defmethod routes/dispatches :admin.accounts/entry [route]
