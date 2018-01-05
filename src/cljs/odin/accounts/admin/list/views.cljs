@@ -28,8 +28,8 @@
 
 (def render-email
   (table/wrap-cljs
-   (fn [email _]
-     [:a {:href (str "mailto:" email)} email])))
+   (fn [email {id :id}]
+     [:a {:href (routes/path-for :accounts/entry :account-id id)} email])))
 
 
 (def render-property
