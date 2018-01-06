@@ -84,15 +84,17 @@
 
 
 (defn status-icons [& icon-specs]
-  (for [[icon-name enabled tooltip opts] icon-specs]
+  (for [[label icon-name enabled tooltip opts] icon-specs]
     ^{:key icon-name}
-    [:div.level-item
-     [ant/tooltip {:title tooltip}
-      (->> (cond
-             (some? opts) opts
-             enabled      status-icon-on
-             :otherwise   status-icon-off)
-           (status-icon icon-name))]]))
+    [:div.level-item.has-text-centered
+     [:div
+      [:p.heading label]
+      [ant/tooltip {:title tooltip}
+       (->> (cond
+              (some? opts) opts
+              enabled      status-icon-on
+              :otherwise   status-icon-off)
+            (status-icon icon-name))]]]))
 
 
 (defn- rent-tooltip [rent-status]
@@ -141,14 +143,15 @@
         has-card       (subscribe [:payment-sources/has-card? (:id account)])
         rent-status    (:rent_status (most-current-license account))
         deposit-status (get-in account [:deposit :status])]
-    [:div.level.is-mobile
-     (status-icons
-      ["fa-refresh" @autopay-on (if @autopay-on "Autopay is on." "Autopay is NOT on.")]
-      ["fa-university" @has-bank (if @has-bank "Bank account is linked." "No bank account linked.")]
-      ["fa-credit-card" @has-card (if @has-card "A credit/debit card is linked." "No credit/debit cards linked.")]
-      ["fa-home" (= rent-status :paid) (rent-tooltip rent-status) (rent-style rent-status)]
-      ["fa-shield" (= deposit-status :paid) (deposit-tooltip deposit-status)
-       (deposit-style deposit-status)])]))
+    [ant/card
+     [:div.level.is-mobile
+      (status-icons
+       ["rent" "fa-home" (= rent-status :paid) (rent-tooltip rent-status) (rent-style rent-status)]
+       ["deposit" "fa-shield" (= deposit-status :paid) (deposit-tooltip deposit-status)
+        (deposit-style deposit-status)]
+       ["autopay" "fa-refresh" @autopay-on (if @autopay-on "Autopay is on." "Autopay is NOT on.")]
+       ["bank account" "fa-university" @has-bank (if @has-bank "Bank account is linked." "No bank account linked.")]
+       ["credit card" "fa-credit-card" @has-card (if @has-card "A credit/debit card is linked." "No credit/debit cards linked.")])]]))
 
 
 (defn application-view [account]
@@ -214,15 +217,93 @@
 ;; membership ===================================================================
 
 
+(defn- reassign-unit-option
+  [{:keys [id code number occupant] :as unit}]
+  [ant/select-option {:value (str id)}
+   (if (some? occupant)
+     (format/format "Unit #%d (occupied by %s until %s)"
+                    number
+                    (:name occupant)
+                    (-> occupant :active_license :ends format/date-short))
+     (str "Unit #" number))])
+
+
+(defn- reassign-modal-footer
+  [account {:keys [rate unit] :as form}]
+  (let [is-loading (subscribe [:loading? :admin.accounts.entry/reassign!])
+        license-id (get-in account [:active_license :id])]
+    [:div
+     [ant/button
+      {:size     :large
+       :on-click #(dispatch [:modal/hide db/reassign-modal-key])}
+      "Cancel"]
+     [ant/button
+      {:type     :primary
+       :size     :large
+       :disabled (or (nil? rate) (nil? unit))
+       :loading  @is-loading
+       :on-click #(dispatch [:admin.accounts.entry/reassign! license-id form])}
+      "Reassign"]]))
+
+
+(defn- reassign-modal [account]
+  (let [is-visible    (subscribe [:modal/visible? db/reassign-modal-key])
+        units-loading (subscribe [:loading? :property/fetch])
+        rate-loading  (subscribe [:loading? :admin.accounts.entry.reassign/fetch-rate])
+        units         (subscribe [:property/units (get-in account [:property :id])])
+        form          (subscribe [:admin.accounts.entry.reassign/form-data])
+        license       (:active_license account)]
+    [ant/modal
+     {:title     (str "Reassign " (:name account))
+      :visible   @is-visible
+      :on-cancel #(dispatch [:modal/hide db/reassign-modal-key])
+      :footer    (r/as-element [reassign-modal-footer account @form])}
+
+     ;; unit selection
+     [ant/form-item {:label "Which unit?"}
+      (if @units-loading
+        [:div.has-text-centered
+         [ant/spin {:tip "Fetching units..."}]]
+        [ant/select
+         {:style     {:width "100%"}
+          :value     (str (:unit @form))
+          :on-change #(dispatch [:admin.accounts.entry.reassign/select-unit % (:term license)])}
+         (doall
+          (map-indexed
+           #(with-meta (reassign-unit-option %2) {:key %1})
+           @units))])]
+
+     ;; rate selection
+     [ant/form-item
+      {:label "What should his/her rate change to?"}
+      (if @rate-loading
+        [:div.has-text-centered
+         [ant/spin {:tip "Fetching current rate..."}]]
+        [ant/input-number
+         {:style     {:width "100%"}
+          :value     (:rate @form)
+          :disabled  (nil? (:unit @form))
+          :on-change #(dispatch [:admin.accounts.entry.reassign/update :rate %])}])]]))
+
+
+(defn membership-actions [account]
+  [:div
+   [reassign-modal account]
+   [ant/button
+    {:icon     "swap"
+     :on-click #(dispatch [:admin.accounts.entry.reassign/show account])}
+    "Reassign"]])
+
+
 (defn membership-view [account]
-  (let [license (most-current-license account)]
+  (let [license   (most-current-license account)
+        is-active (= :active (:status license))]
     [:div.columns
      [:div.column
-     [membership/license-summary license
-      {:content (if (= :active (:status license))
-                  [status-bar account]
-                  [:div])}]]
-    [:div.column]]))
+      [membership/license-summary license
+       (when is-active {:content [membership-actions account]})]]
+     [:div.column
+      (when is-active [status-bar account])]]))
 
 
 ;; ==============================================================================

@@ -91,6 +91,80 @@
      [:account/fetch (get-in response [:data :approve_application :account :id])]]}))
 
 
+;; reassign =====================================================================
+
+
+(reg-event-fx
+ :admin.accounts.entry.reassign/show
+ [(path db/path)]
+ (fn [_ [_ account]]
+   {:dispatch-n [[:modal/show db/reassign-modal-key]
+                 [:property/fetch (get-in account [:property :id])]]}))
+
+
+(reg-event-db
+ :admin.accounts.entry.reassign/update
+ [(path db/path)]
+ (fn [db [_ k v]]
+   (assoc-in db [:reassign-form k] v)))
+
+
+(reg-event-fx
+ :admin.accounts.entry.reassign/select-unit
+ [(path db/path)]
+ (fn [db [_ unit term]]
+   (let [unit (tb/str->int unit)]
+     {:dispatch-n [[:admin.accounts.entry.reassign/update :unit unit]
+                   [:admin.accounts.entry.reassign/fetch-rate unit term]]})))
+
+
+(reg-event-fx
+ :admin.accounts.entry.reassign/fetch-rate
+ [(path db/path)]
+ (fn [_ [k unit-id term]]
+   {:dispatch [:loading k true]
+    :graphql  {:query
+               [[:unit_rate {:unit unit-id
+                             :term term}
+                 [:rate]]]
+               :on-success [::fetch-rate-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::fetch-rate-success
+ [(path db/path)]
+ (fn [_ [_ k response]]
+   (let [rate (get-in response [:data :unit_rate :rate])]
+     {:dispatch-n [[:loading k false]
+                   [:admin.accounts.entry.reassign/update :rate rate]]})))
+
+
+(reg-event-fx
+ :admin.accounts.entry/reassign!
+ [(path db/path)]
+ (fn [_ [k license-id {:keys [unit rate]}]]
+   {:dispatch [:loading k true]
+    :graphql  {:mutation
+               [[:reassign_member_unit {:params {:license license-id
+                                                 :unit    unit
+                                                 :rate    rate}}
+                 [:id [:account [:id]]]]]
+               :on-success [::reassign-unit-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::reassign-unit-success
+ [(path db/path)]
+ (fn [_ [_ k response]]
+   (let [account-id (get-in response [:data :reassign_member_unit :account :id])]
+     {:dispatch-n [[:loading k false]
+                   [:modal/hide db/reassign-modal-key]
+                   [:payment-sources/fetch account-id]
+                   [:account/fetch account-id]]})))
+
+
 ;; check ========================================================================
 
 

@@ -17,11 +17,7 @@
    (:tab db)))
 
 
-(reg-sub
- :admin.accounts.entry.note/editing
- :<- [db/path]
- (fn [db [_ id]]
-   (get-in db [:editing-notes id])))
+;; approval =====================================================================
 
 
 (reg-sub
@@ -30,6 +26,29 @@
  (fn [db _]
    (->> (:units db)
         (sort-by :number))))
+
+
+;; reassignment =================================================================
+
+
+(reg-sub
+ :admin.accounts.entry.reassign/form-data
+ :<- [db/path]
+ (fn [db [_ k]]
+   (let [form (:reassign-form db)]
+     (if (some? k)
+       (get form k)
+       form))))
+
+
+;; notes ========================================================================
+
+
+(reg-sub
+ :admin.accounts.entry.note/editing
+ :<- [db/path]
+ (fn [db [_ id]]
+   (get-in db [:editing-notes id])))
 
 
 (reg-sub

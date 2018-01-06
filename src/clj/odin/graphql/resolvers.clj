@@ -10,6 +10,7 @@
             [odin.graphql.resolvers.order :as order]
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
+            [odin.graphql.resolvers.property :as property]
             [odin.graphql.resolvers.service :as service]
             [odin.graphql.resolvers.unit :as unit]
             [toolbelt.datomic :as td]
@@ -29,11 +30,12 @@
         application/resolvers
         check/resolvers
         deposit/resolvers
-        payment/resolvers
         source/resolvers
         member-license/resolvers
         note/resolvers
         order/resolvers
+        payment/resolvers
+        property/resolvers
         service/resolvers
         metrics/resolvers
         unit/resolvers)

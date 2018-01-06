@@ -237,7 +237,7 @@
        [ant/button
         {:size     :large
          :on-click on-cancel}
-        "cancel"]
+        "Cancel"]
        [ant/button
         {:type     :primary
          :size     :large
@@ -246,7 +246,7 @@
                        (on-confirm payment-id source-id e)
                        (on-confirm payment-id e)))
          :loading  loading}
-        "confirm payment"]])))
+        "Confirm Payment"]])))
 
 
 (defn make-payment-modal

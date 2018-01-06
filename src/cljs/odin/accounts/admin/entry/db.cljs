@@ -4,6 +4,10 @@
 (def path ::account)
 
 
+(def reassign-modal-key
+  ::reassign)
+
+
 (def default-value
   {path {:units            []
          :tab              nil
@@ -14,7 +18,8 @@
          :commenting-notes {}
          :create-form      {:subject ""
                             :content ""
-                            :notify  true}}})
+                            :notify  true}
+         :reassign-form    {}}})
 
 
 (defn allowed?

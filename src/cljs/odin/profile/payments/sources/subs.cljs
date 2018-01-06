@@ -126,7 +126,6 @@
  :payment.sources/autopay-source
  :<- [:payment/sources]
  (fn [sources _]
-   (tb/log sources)
    (tb/find-by :autopay sources)))
 
 

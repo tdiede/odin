@@ -45,27 +45,29 @@
  :account/fetch
  [(path db/path)]
  (fn [{db :db} [k account-id opts]]
-   {:dispatch [:loading k true]
-    :graphql  {:query
-               [[:account {:id account-id}
-                 [:id :name :email :phone :role :dob
-                  [:deposit [:amount :due :status]]
-                  [:property [:id :name]]
-                  ;; TODO: Move to separate query
-                  [:application [:id :move_in :created :updated :submitted :status :term :has_pet
-                                 :approved_at
-                                 [:approved_by [:id :name]]
-                                 [:communities [:id :name]]
-                                 [:fitness [:experience :skills :free_time :interested :dealbreakers :conflicts]]
-                                 [:income [:id :uri :name]]
-                                 [:pet [:type :breed :weight :sterile :vaccines :bitten :demeanor :daytime_care]]]]
-                  ;; TODO: Move to separate query
-                  [:licenses [:id :rate :starts :ends :term :status :rent_status
-                              [:property [:id :cover_image_url :name]]
+   (let [license-selectors [:id :rate :starts :ends :term :status :rent_status
+                            [:property [:id :cover_image_url :name]]
 
-                              [:unit [:id :code :number]]]]]]]
-               :on-success [::account-fetch k opts]
-               :on-failure [:graphql/failure k]}}))
+                            [:unit [:id :code :number]]]]
+     {:dispatch [:loading k true]
+      :graphql   {:query
+                  [[:account {:id account-id}
+                    [:id :name :email :phone :role :dob
+                     [:deposit [:amount :due :status]]
+                     [:property [:id :name]]
+                     ;; TODO: Move to separate query
+                     [:application [:id :move_in :created :updated :submitted :status :term :has_pet
+                                    :approved_at
+                                    [:approved_by [:id :name]]
+                                    [:communities [:id :name]]
+                                    [:fitness [:experience :skills :free_time :interested :dealbreakers :conflicts]]
+                                    [:income [:id :uri :name]]
+                                    [:pet [:type :breed :weight :sterile :vaccines :bitten :demeanor :daytime_care]]]]
+                     [:active_license license-selectors]
+                     ;; TODO: Move to separate query
+                     [:licenses license-selectors]]]]
+                  :on-success [::account-fetch k opts]
+                  :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx

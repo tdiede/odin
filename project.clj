@@ -51,7 +51,7 @@
                  [com.google.guava/guava "21.0"]
                  [cljs-ajax "0.6.0"]
                  ;; Util
-                 [starcity/ribbon "0.7.0"]
+                 [starcity/ribbon "0.8.0"]
                  [com.cemerick/url "0.1.1"]
                  [mount "0.1.11"]
                  [aero "1.1.2"]

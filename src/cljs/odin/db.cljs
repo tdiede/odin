@@ -2,13 +2,14 @@
   (:require [odin.accounts.db :as accounts]
             [odin.components.modals :as modals]
             [odin.global.db :as global]
-            [odin.kami.db :as kami]
             [odin.history.db :as history]
+            [odin.kami.db :as kami]
             [odin.metrics.db :as metrics]
             [odin.orders.db :as orders]
             [odin.payments.db :as payments]
             [odin.payment-sources.db :as payment-sources]
             [odin.profile.db :as profile]
+            [odin.properties.db :as properties]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
 
@@ -58,6 +59,7 @@
    modals/default-value
    orders/default-value
    profile/default-value
+   properties/default-value
    kami/default-value
    metrics/default-value))
 

@@ -2,12 +2,13 @@
   (:require [odin.global.subs]
             [odin.accounts.subs]
             [odin.history.subs]
+            [odin.kami.subs]
             [odin.metrics.subs]
             [odin.orders.subs]
             [odin.payments.subs]
             [odin.payment-sources.subs]
             [odin.profile.subs]
-            [odin.kami.subs]
+            [odin.properties.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 
