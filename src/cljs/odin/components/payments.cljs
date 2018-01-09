@@ -142,7 +142,8 @@
          :dataIndex :method
          :render (table/wrap-cljs
                   (fn [method payment]
-                    [:span.tag.is-hollow method]))}
+                    (when-some [m method]
+                      [:span.tag.is-hollow m])))}
 
         ;; payment source
         {:title     ""
