@@ -49,7 +49,9 @@
 (defn update!
   [{:keys [conn requester]} {{:keys [note subject content]} :params} _]
   (let [note (d/entity (d/db conn) note)]
-    @(d/transact conn [(note/update note :subject subject :content content)])
+    @(d/transact conn [(if (nil? subject)
+                         (note/update note :content content)
+                         (note/update note :subject subject :content content))])
     (d/entity (d/db conn) (:db/id note))))
 
 
