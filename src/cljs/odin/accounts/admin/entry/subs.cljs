@@ -52,18 +52,26 @@
 
 
 (reg-sub
- :admin.accounts.entry.create-note/form-data
+ :admin.accounts.entry.create-note/showing?
  :<- [db/path]
  (fn [db _]
-   (:create-form db)))
+   (get db :showing-create-note)))
+
+
+(reg-sub
+ :admin.accounts.entry.create-note/form-data
+ :<- [db/path]
+ (fn [db [_ account-id]]
+   (get-in db [:create-form account-id])))
 
 
 (reg-sub
  :admin.accounts.entry/can-create-note?
- :<- [:admin.accounts.entry.create-note/form-data]
- (fn [{:keys [subject content]} _]
-   (and (not (string/blank? subject))
-        (not (string/blank? content)))))
+ :<- [db/path]
+ (fn [db [_ account-id]]
+   (let [{:keys [subject content]} (get-in db [:create-form account-id])]
+     (and (not (string/blank? subject))
+          (not (string/blank? content))))))
 
 
 (reg-sub

@@ -202,10 +202,26 @@
 
 
 (reg-event-db
+ :admin.accounts.entry.create-note/toggle
+ [(path db/path)]
+ (fn [db _]
+   (update db :showing-create-note not)))
+
+
+(reg-event-db
  :admin.accounts.entry.create-note/update
  [(path db/path)]
- (fn [db [_ k v]]
-   (assoc-in db [:create-form k] v)))
+ (fn [db [_ account-id k v]]
+   (assoc-in db [:create-form account-id k] v)))
+
+
+(reg-event-db
+ :admin.accounts.entry.create-note/clear
+ [(path db/path)]
+ (fn [db [_ account-id]]
+   (-> (assoc-in db [:create-form account-id :subject] "")
+       (assoc-in [:create-form account-id :content] "")
+       (assoc-in [:create-form account-id :notify] true))))
 
 
 (reg-event-fx
@@ -226,11 +242,11 @@
  ::create-note-success
  [(path db/path)]
  (fn [_ [_ k account-id response]]
-   {:dispatch-n [[:loading k false]
-                 [:admin.accounts.entry/fetch-notes account-id]
-                 [:admin.accounts.entry.create-note/update :subject ""]
-                 [:admin.accounts.entry.create-note/update :content ""]
-                 [:admin.accounts.entry.create-note/update :notify true]]}))
+   {:dispatch-n
+    [[:loading k false]
+     [:admin.accounts.entry/fetch-notes account-id]
+     [:admin.accounts.entry.create-note/toggle]
+     [:admin.accounts.entry.create-note/clear account-id]]}))
 
 
 ;; pagination ===========================

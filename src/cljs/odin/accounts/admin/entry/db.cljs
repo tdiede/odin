@@ -16,9 +16,7 @@
                             :page 1}
          :editing-notes    {}
          :commenting-notes {}
-         :create-form      {:subject ""
-                            :content ""
-                            :notify  true}
+         :create-form      {}
          :reassign-form    {}}})
 
 

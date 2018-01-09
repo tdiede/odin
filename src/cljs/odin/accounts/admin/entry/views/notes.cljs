@@ -15,16 +15,16 @@
                         (on-submit))}
    (when-not is-comment
      [ant/form-item {:label "Subject"}
-      [ant/input {:type        :text
-                  :placeholder "Note subject"
-                  :value       subject
-                  :on-change   #(on-change :subject (.. % -target -value))}]])
+      [ant/input {:type          :text
+                  :placeholder   "Note subject"
+                  :default-value subject
+                  :on-change     #(on-change :subject (.. % -target -value))}]])
    [ant/form-item (when-not is-comment {:label "Content"})
-    [ant/input {:type        :textarea
-                :rows        5
-                :placeholder "Note content"
-                :value       content
-                :on-change   #(on-change :content (.. % -target -value))}]]
+    [ant/input {:type          :textarea
+                :rows          5
+                :placeholder   "Note content"
+                :default-value content
+                :on-change     #(on-change :content (.. % -target -value))}]]
    (when (some? notify)
      [ant/form-item
       [ant/checkbox {:checked   notify
@@ -43,20 +43,30 @@
 
 
 (defn new-note-form [account]
-  (let [form        (subscribe [:admin.accounts.entry.create-note/form-data])
-        can-create  (subscribe [:admin.accounts.entry/can-create-note?])
-        is-creating (subscribe [:loading? :admin.accounts.entry/create-note!])]
+  (let [form        (subscribe [:admin.accounts.entry.create-note/form-data (:id account)])
+        can-create  (subscribe [:admin.accounts.entry/can-create-note? (:id account)])
+        is-creating (subscribe [:loading? :admin.accounts.entry/create-note!])
+        is-showing  (subscribe [:admin.accounts.entry.create-note/showing?])]
     (fn [account]
-      [ant/card {:title "New Note"}
-       [note-form
-        {:subject     (:subject @form)
-         :content     (:content @form)
-         :notify      (:notify @form)
-         :on-change   (fn [k v] (dispatch [:admin.accounts.entry.create-note/update k v]))
-         :is-loading  @is-creating
-         :disabled    (not @can-create)
-         :on-submit   #(dispatch [:admin.accounts.entry/create-note! (:id account) @form])
-         :button-text "Create"}]])))
+      (if @is-showing
+        [ant/card {:title "New Note"}
+         [note-form
+          {:subject     (:subject @form)
+           :content     (:content @form)
+           :notify      (:notify @form)
+           :on-cancel   #(do (dispatch [:admin.accounts.entry.create-note/toggle])
+                             (dispatch [:admin.accounts.entry.create-note/clear (:id account)]))
+           :on-change   (fn [k v] (dispatch [:admin.accounts.entry.create-note/update (:id account) k v]))
+           :is-loading  @is-creating
+           :disabled    (not @can-create)
+           :on-submit   #(dispatch [:admin.accounts.entry/create-note! (:id account) @form])
+           :button-text "Create"}]]
+        [ant/button
+         {:type     :primary
+          :size     :large
+          :icon     :plus
+          :on-click #(dispatch [:admin.accounts.entry.create-note/toggle])}
+         "Create Note"]))))
 
 
 (defn- edit-note-form
@@ -133,12 +143,12 @@
            (dispatch [:admin.accounts.entry.note/add-comment! (:id note) @text]))}
        [ant/form-item
         [ant/input
-         {:type        :textarea
-          :cols        3
-          :placeholder "Enter your comment here."
-          :value       @text
-          :on-change   #(dispatch [:admin.accounts.entry.note.comment/update
-                                   (:id note) (.. % -target -value)])}]]
+         {:type          :textarea
+          :cols          3
+          :placeholder   "Enter your comment here."
+          :default-value @text
+          :on-change     #(dispatch [:admin.accounts.entry.note.comment/update
+                                     (:id note) (.. % -target -value)])}]]
        [ant/form-item
         [ant/button
          {:type      :primary
