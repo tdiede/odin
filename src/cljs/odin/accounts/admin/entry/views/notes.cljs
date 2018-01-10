@@ -53,7 +53,7 @@
          [note-form
           {:subject     (:subject @form)
            :content     (:content @form)
-           :notify      (:notify @form)
+           :notify      (:notify @form true)
            :on-cancel   #(do (dispatch [:admin.accounts.entry.create-note/toggle])
                              (dispatch [:admin.accounts.entry.create-note/clear (:id account)]))
            :on-change   (fn [k v] (dispatch [:admin.accounts.entry.create-note/update (:id account) k v]))
