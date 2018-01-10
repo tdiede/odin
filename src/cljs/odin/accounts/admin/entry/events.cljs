@@ -5,7 +5,8 @@
                                    reg-event-db
                                    path]]
             [toolbelt.core :as tb]
-            [odin.utils.formatters :as format]))
+            [odin.utils.formatters :as format]
+            [clojure.string :as string]))
 
 
 (defmethod routes/dispatches :admin.accounts/entry [route]
@@ -232,7 +233,9 @@
     :graphql  {:mutation
                [[:create_note {:params {:account account-id
                                         :subject subject
-                                        :content (format/escape-newlines content)
+                                        :content (-> (format/escape-newlines content)
+                                                     (string/replace #"\"" "&quot;")
+                                                     (string/replace #"'" "&#39;"))
                                         :notify  notify}}
                  [:id]]]
                :on-success [::create-note-success k account-id]

@@ -202,9 +202,8 @@
 (defn notes-view [account]
   (let [notes (subscribe [:admin.accounts.entry/notes])]
     [:div.columns
-     [:div.column.is-one-third
-      [notes/new-note-form account]]
      [:div.column
+      [:div.mb2 [notes/new-note-form account]]
       (doall
        (map-indexed
         #(with-meta [notes/note-card %2] {:key %1})

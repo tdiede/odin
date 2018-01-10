@@ -21,7 +21,7 @@
                   :on-change     #(on-change :subject (.. % -target -value))}]])
    [ant/form-item (when-not is-comment {:label "Content"})
     [ant/input {:type          :textarea
-                :rows          5
+                :rows          6
                 :placeholder   "Note content"
                 :default-value content
                 :on-change     #(on-change :content (.. % -target -value))}]]
@@ -49,7 +49,7 @@
         is-showing  (subscribe [:admin.accounts.entry.create-note/showing?])]
     (fn [account]
       (if @is-showing
-        [ant/card {:title "New Note"}
+        [ant/card
          [note-form
           {:subject     (:subject @form)
            :content     (:content @form)
