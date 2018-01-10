@@ -1,4 +1,5 @@
-(ns odin.accounts.admin.entry.db)
+(ns odin.accounts.admin.entry.db
+  (:require [toolbelt.core :as tb]))
 
 
 (def path ::account)
@@ -26,6 +27,6 @@
   (boolean
    ((get {:member     #{"membership" "payments" "application" "notes"}
           :applicant  #{"application" "notes"}
-          :onboarding #{"application" "payments ""notes"}}
+          :onboarding #{"application" "payments" "notes"}}
          role #{"notes"})
     tab)))

@@ -191,7 +191,6 @@
         [ant/button
          {:type     :dashed
           :on-click #(dispatch [:modal/show modal-key])
-          :disabled (empty? unpaid)
           :icon     "plus"}
          "Add Check"]]]
       [payments-table account]]]))
