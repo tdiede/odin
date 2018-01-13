@@ -612,6 +612,14 @@
   ;;; Payments
 
 
+  :create_payment_params
+  {:description "Inputs to create a payment."
+   :fields      {:account {:type (non-null :Long)}
+                 :type    {:type (non-null :payment_type)}
+                 :month   {:type :Instant}
+                 :amount  {:type (non-null Float)}}}
+
+
   :payments_query_params
   {:description "Parameters to query for payments."
    :fields
@@ -882,6 +890,13 @@
 
 
   ;;; Payments
+
+
+  :create_payment
+  {:type        :payment
+   :description "Create a payment."
+   :args        {:params {:type :create_payment_params}}
+   :resolve     :payment/create!}
 
 
   :pay_rent_payment

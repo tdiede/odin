@@ -300,6 +300,62 @@
   (int (* 100 x)))
 
 
+
+;; =============================================================================
+;; Create Payments
+
+
+(defmulti create-payment-data (fn [_ params] (:type params)))
+
+
+(defmethod create-payment-data :default [db _] nil)
+
+
+(defn- default-due-date
+  "The default due date is the fifth day of the same month as `start` date.
+  Preserves the original year, month, hour, minute and second of `start` date."
+  [start]
+  (let [st (c/to-date-time start)]
+    (c/to-date (t/date-time (t/year st)
+                            (t/month st)
+                            5
+                            (t/hour st)
+                            (t/minute st)
+                            (t/second st)))))
+
+
+(defmethod create-payment-data :rent [db {:keys [month amount account]}]
+  (when (nil? month)
+    (resolve/resolve-as nil {:message "When payment type is rent, month must be specified."}))
+  (let [account (d/entity db account)
+        ml      (member-license/active db account)
+        tz      (member-license/time-zone ml)
+        start   (date/beginning-of-month month tz)
+        payment (payment/create amount account
+                                :for :payment.for/rent
+                                :pstart start
+                                :pend (date/end-of-month month tz)
+                                :due (-> (default-due-date start) (date/end-of-day tz)))]
+    [payment (member-license/add-rent-payments ml payment)]))
+
+
+(defmethod create-payment-data :deposit [db {:keys [amount account]}]
+  (let [account (d/entity db account)
+        deposit (deposit/by-account account)
+        payment (payment/create amount account :for :payment.for/deposit)]
+    [payment (deposit/add-payment deposit payment)]))
+
+
+(defn create-payment!
+  [{:keys [conn] :as ctx} {params :params} _]
+  (if-let [tx-data (create-payment-data (d/db conn) params)]
+    (do
+      @(d/transact conn tx-data)
+      (payment/by-id (d/db conn) (payment/id (first tx-data))))
+    (resolve/resolve-as nil {:message "Cannot create payment with specified params."
+                             :params  params})))
+
+
 ;; =============================================================================
 ;; Pay Rent
 
@@ -432,6 +488,7 @@
    ;; queries
    :payment/list         payments
    ;; mutations
+   :payment/create!      create-payment!
    :payment/pay-rent!    pay-rent!
    :payment/pay-deposit! pay-deposit!
    })

@@ -165,6 +165,32 @@
                    [:account/fetch account-id]]})))
 
 
+;; payment ======================================================================
+
+
+(reg-event-fx
+ :admin.accounts.entry/add-payment!
+ [(path db/path)]
+ (fn [_ [_ k account-id {:keys [type month amount] :as params}]]
+   {:dispatch [:loading k :true]
+    :graphql  {:mutation
+               [[:create_payment {:params {:account account-id
+                                           :type    (keyword type)
+                                           :month   month
+                                           :amount  (float amount)}}
+                 [:id]]]
+               :on-success [::add-payment-success k params]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::add-payment-success
+ [(path db/path)]
+ (fn [_ [_ k params response]]
+   (let [payment-id (get-in response [:data :create_payment :id])]
+     {:dispatch [:admin.accounts.entry/add-check! k (assoc params :payment payment-id)]})))
+
+
 ;; check ========================================================================
 
 
