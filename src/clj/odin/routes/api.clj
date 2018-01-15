@@ -73,8 +73,9 @@
 (def ^:private member-config
   {:role :member
    :features
-   {:home    {}
-    :profile {}}})
+   {:home     {}
+    :profile  {}
+    :services {}}})
 
 
 (defn make-config [req]

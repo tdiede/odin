@@ -38,6 +38,8 @@
         :profile {:admin  "Profile"
                   :member "Profile"}
 
+        :services {:member "Premium Services"}
+
         ;; See above note--the below won't actually work.
         ;; One idea for role polymorphism
         ;; THING -> Variants -> Role

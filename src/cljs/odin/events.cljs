@@ -11,6 +11,7 @@
             [odin.payment-sources.events]
             [odin.profile.events]
             [odin.properties.events]
+            [odin.services.events]
             [clojure.string :as string]
             [re-frame.core :refer [reg-event-db reg-event-fx]]
             [ajax.core :as ajax]

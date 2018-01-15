@@ -1,8 +1,7 @@
 (ns odin.orders.views
   (:require [odin.content :as content]
             [odin.orders.admin.list.views :as admin-list]
-            [odin.orders.admin.entry.views :as admin-entry]
-            [antizer.reagent :as ant]))
+            [odin.orders.admin.entry.views :as admin-entry]))
 
 
 ;; =============================================================================

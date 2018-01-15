@@ -10,16 +10,17 @@
             [odin.payment-sources.db :as payment-sources]
             [odin.profile.db :as profile]
             [odin.properties.db :as properties]
+            [odin.services.db :as services]
             [odin.routes :as routes]
             [toolbelt.core :as tb]))
 
 
 (def ^:private role->menu-items
   {:account.role/member
-   [{:feature :home
+   [#_{:feature :home
      :uri     "/"}
-    {:feature :profile
-     :uri     "/profile"}]
+    {:feature :services
+     :uri     "/services"}]
    :account.role/admin
    [#_{:feature :home
        :uri     "/"}
@@ -60,6 +61,7 @@
    orders/default-value
    profile/default-value
    properties/default-value
+   services/default-value
    kami/default-value
    metrics/default-value))
 

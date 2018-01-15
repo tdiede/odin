@@ -9,6 +9,7 @@
             [odin.payment-sources.subs]
             [odin.profile.subs]
             [odin.properties.subs]
+            [odin.services.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 
@@ -84,9 +85,7 @@
  :<- [:config/features]
  :<- [:config/role]
  (fn [[menu features role] _]
-   (if (= role :member)
-     []                                 ; NOTE: Only for first release
-     (->> (:items menu) (filter (comp features :feature))))))
+   (->> (:items menu) (filter (comp features :feature)))))
 
 
 (reg-sub
