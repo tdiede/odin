@@ -293,6 +293,10 @@
   ([payments form-data]
    (select-payment (:payment @form-data) payments form-data))
   ([payment-id payments form-data]
+   (if (= payment-id "new")
+     ;; do we need to generate a payment id for a new payment??
+     {:payment "new"
+      :amount 0})
    (let [payment (tb/find-by #(= payment-id (:id %)) payments)]
      {:payment payment-id
       :amount   (:amount payment)})))
@@ -316,18 +320,37 @@
       "Add Check"]]))
 
 
+(defn last-rent-date
+  [payments]
+  (let [rent (filter #(= :rent (:type %)) payments)
+        end-dates (map :pend rent)]
+    (apply max end-dates)))
+
+
+(defn next-rent-date
+  [payments]
+  (if (empty? payments)
+    (js/Date.)
+    (let [last (js/moment (last-rent-date payments))]
+      (.toDate (.add last 1 "months")))))
+
+
 (defn add-check-modal
   [id payments & {:keys [on-submit] :or {on-submit identity}}]
   (let [visible (subscribe [:modal/visible? id])
-        data    (r/atom {:payment (:id (first payments))
-                         :amount  (:amount (first payments))
-                         :name    ""})]
-    (fn [id payments]
+        unpaid  (filter #(= :due (:status %)) payments)
+        data    (r/atom {:payment (:id (first unpaid) "new")
+                         :amount  (:amount (first unpaid))
+                         :name    ""
+                         :type    "rent"
+                         :month   (.toISOString (next-rent-date payments))})]
+
+    (fn [id payments & {:keys [on-submit] :or {on-submit identity}}]
       [ant/modal
        {:title     "Add a Check"
         :visible   @visible
         :on-cancel #(dispatch [:modal/hide id])
-        :footer (r/as-element [add-check-modal-footer id @data on-submit])}
+        :footer    (r/as-element [add-check-modal-footer id @data on-submit])}
 
        [ant/form-item {:label "Choose Payment"}
         [ant/radio-group
@@ -336,7 +359,25 @@
          (doall
           (map-indexed
            #(with-meta (check-payment-option %2) {:key %1})
-           payments))]]
+           unpaid))
+         [ant/radio {:value "new"} "New payment"]]]
+
+       ;; Create new payment
+       (when (= "new" (:payment @data))
+         [ant/form-item {:label "Select Payment Kind"}
+          [ant/radio-group
+           {:on-change #(swap! data assoc :type (.. % -target -value))
+            :value     (:type @data)}
+           [ant/radio {:value "rent"} "Rent"]
+           [ant/radio {:value "deposit"} "Security deposit"]]])
+
+       ;; Select month for rent
+       (when (and(= "new" (:payment @data)) (= "rent" (:type @data)))
+         [ant/form-item {:label "Select Month for Rent"}
+          [ant/date-picker-month-picker
+           {:value         (js/moment (:month @data))
+            :on-change     #(swap! data assoc :month (.toISOString %))
+            :disabled-date #(< (.month %) (.getMonth (next-rent-date payments)))}]])
 
        [:div.columns
         [:div.column
@@ -362,4 +403,4 @@
          [ant/form-item {:label "Date Received"}
           [ant/date-picker
            {:value     (when-let [d (:received-date @data)] (js/moment. d))
-            :on-change #(swap! data assoc :received-date (.toISOString %))}]]] ]])))
+            :on-change #(swap! data assoc :received-date (.toISOString %))}]]]]])))

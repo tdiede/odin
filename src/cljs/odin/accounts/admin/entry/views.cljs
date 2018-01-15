@@ -178,7 +178,6 @@
 
 (defn payments-view [account]
   (let [payments  (subscribe [:payments/by-account-id (:id account)])
-        unpaid    (filter #(= :due (:status %)) @payments)
         modal-key :admin.accounts.entry/add-check-modal]
     [:div.columns
      [:div.column
@@ -186,8 +185,10 @@
        [:div.column
         [:p.title.is-5 "Payments"]]
        [:div.column.has-text-right
-        [payments-ui/add-check-modal modal-key unpaid
-         :on-submit #(dispatch [:admin.accounts.entry/add-check! modal-key %])]
+        [payments-ui/add-check-modal modal-key @payments
+         :on-submit #(if (= "new" (:payment %))
+                       (dispatch [:admin.accounts.entry/add-payment! modal-key (:id account) %])
+                       (dispatch [:admin.accounts.entry/add-check! modal-key %]))]
         [ant/button
          {:type     :dashed
           :on-click #(dispatch [:modal/show modal-key])
