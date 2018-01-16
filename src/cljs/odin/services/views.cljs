@@ -1,7 +1,8 @@
 (ns odin.services.views
   (:require [odin.content :as content]
-            [odin.services.member.views :as member]))
+            [odin.services.member.views :as member]
+            [toolbelt.core :as tb]))
 
 
-(defmethod odin.content/view :member/services [route]
+(defmethod content/view :member/services [route]
   [member/view route])

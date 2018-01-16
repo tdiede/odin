@@ -1,1 +1,33 @@
-(ns odin.services.member.events)
+(ns odin.services.member.events
+  (:require [odin.routes :as routes]
+            [odin.services.member.db :as db]
+            [re-frame.core :refer [reg-event-fx reg-event-db path]]
+            [toolbelt.core :as tb]))
+
+
+(defmethod routes/dispatches :member.services/book [{:keys [params page] :as route}]
+  (if (empty? params)
+    [[:member.services/set-default-route route]]
+    [[:member.services/fetch (db/parse-query-params page params)]]))
+
+
+(reg-event-fx
+ :member.services/set-default-route
+ [(path db/path)]
+ (fn [{db :db} [_ {page :page}]]
+   {:route (db/params->route page (:params db))}))
+
+
+(reg-event-fx
+ :member.services/fetch
+ [(path db/path)]
+ (fn [{db :db} [_ query-params]]
+   {:db (assoc db :params query-params)}))
+
+
+(reg-event-fx
+ :member.services.section/select
+ [(path db/path)]
+ (fn [_ [_ section]]
+   (let [page (if (= section :book) :services/book :services/manage)]
+     {:route (routes/path-for page)})))

@@ -45,9 +45,9 @@
 
 (defn parse-query-params [params]
   (-> (table/query-params->sort-params params)
-      (tb/transform-when-key-exists {
-         :datekey    keyword
-         :from       #(js/moment. (* (tb/str->int %) 1000))
-         :to         #(js/moment. (* (tb/str->int %) 1000))
-         :accounts   #(->> (string/split % #",") (map tb/str->int))
-         :statuses   #(->> (string/split % #",") (map keyword) set)})))
+      (tb/transform-when-key-exists
+          {:datekey    keyword
+           :from       #(js/moment. (* (tb/str->int %) 1000))
+           :to         #(js/moment. (* (tb/str->int %) 1000))
+           :accounts   #(->> (string/split % #",") (map tb/str->int))
+           :statuses   #(->> (string/split % #",") (map keyword) set)})))

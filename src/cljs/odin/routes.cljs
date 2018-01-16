@@ -19,7 +19,8 @@
     ["/orders" [["" :orders]
                 [["/" :order-id] :orders/entry]]]
 
-    ["/services" :services]
+    ["/services" [["/book" :services/book]
+                  ["/manage" :services/manage]]]
 
     ["/kami" :kami]
 

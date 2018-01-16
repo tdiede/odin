@@ -20,7 +20,7 @@
    [#_{:feature :home
      :uri     "/"}
     {:feature :services
-     :uri     "/services"}]
+     :uri     "/services/book"}]
    :account.role/admin
    [#_{:feature :home
        :uri     "/"}

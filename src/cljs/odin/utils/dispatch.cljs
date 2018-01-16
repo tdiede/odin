@@ -27,4 +27,4 @@
      (contains? (methods multimethod) pr1)  pr1
      (contains? (methods multimethod) pr2)  pr2
      (contains? (methods multimethod) page) page
-     :otherwise                             (first path)) ))
+     :otherwise                             (first path))))
