@@ -2,13 +2,21 @@
 <html lang="en">
   <body>
     <div>
-      <h2>Log In</h2>
-      <p>
-        This page is for development only.
-      </p>
+      <h3>Admin Login</h3>
       <form action="/login" method="POST">
         <label for="email">Email</label>
         <input name="email" type="text" value="admin@test.com"/>
+        <label for="password">Password</label>
+        <input name="password" type="password" value="password"/>
+        <button type="submit">Submit</button>
+      </form>
+      <br>
+      <hr>
+      <br>
+      <h3>Member Login</h3>
+      <form action="/login" method="POST">
+        <label for="email">Email</label>
+        <input name="email" type="text" value="member@test.com"/>
         <label for="password">Password</label>
         <input name="password" type="password" value="password"/>
         <button type="submit">Submit</button>
