@@ -14,9 +14,29 @@
    [ant/menu-item {:key "manage"} "Manage services"]])
 
 
+(defn category-icon [label selected]
+  [:div.category-icon.column
+   {:class (when (= label @selected) "is-active")}
+   [:a {:on-click #(reset! selected label)}
+    [:img {:src "http://via.placeholder.com/150x150"}]
+    [:p label]]])
+
+
+(defn categories []
+  (let [categories ["All" "Room Upgrades" "Laundry Services" "Pet Services"]
+        selected   (r/atom (first categories))]
+    (fn []
+      [:div.container
+       [:div.columns
+       (doall
+        (map-indexed
+         #(with-meta [category-icon %2 selected] {:key %1})
+         categories))]])))
+
+
 (defn view [route]
-  [:div
-   (typography/view-header "Premium Services" "Order and manage premium services.")
-   [menu]
-   [:div
-    [ant/avatar {:class "ant-avatar-xl"}]]])
+  (let []
+    [:div
+     (typography/view-header "Premium Services" "Order and manage premium services.")
+     [menu]
+     [categories]]))
