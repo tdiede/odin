@@ -1,5 +1,6 @@
 (ns odin.services.member.db
-  (:require [odin.routes :as routes]))
+  (:require [odin.routes :as routes]
+            [toolbelt.core :as tb]))
 
 
 (def path ::services)
