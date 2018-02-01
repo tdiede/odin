@@ -60,7 +60,8 @@
                  [starcity/toolbelt "0.1.10" :exclusions [com.datomic/datomic-free
                                                           org.apache.httpcomponents/httpclient
                                                           com.andrewmcveigh/cljs-time
-                                                          com.google.guava/guava]]]
+                                                          com.google.guava/guava]]
+                 [enlive "1.1.6"]]
 
   :jvm-opts ["-server"
              "-Xmx4g"

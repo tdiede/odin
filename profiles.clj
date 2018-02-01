@@ -38,4 +38,20 @@
                                      :externs          ["externs/stripe.ext.js"
                                                         "externs/highcharts.ext.js"]
                                      :closure-warnings {:externs-validation :off
+                                                        :non-standard-jsdoc :off}}}
+
+                     {:id           "onboarding"
+                      :source-paths ["src/cljs/onboarding" "src/cljs/iface"]
+                      :jar          true
+                      :compiler     {:main             onboarding.core
+                                     :optimizations    :advanced
+                                     :elide-asserts    true
+                                     :pretty-print     false
+                                     :parallel-build   true
+                                     :asset-path       "/js/cljs/onboarding/out"
+                                     :output-dir       "resources/public/js/cljs/onboarding/out"
+                                     :output-to        "resources/public/js/cljs/onboarding.js"
+                                     :externs          ["externs/stripe.ext.js"
+                                                        "externs/chatlio.ext.js"]
+                                     :closure-warnings {:externs-validation :off
                                                         :non-standard-jsdoc :off}}}]}}}

@@ -1,6 +1,6 @@
 {:server-port     3449
  :css-dirs        ["resources/public/assets/css"]
- :builds-to-start ["odin" "cards"]
+ :builds-to-start ["odin" "cards" "onboarding"]
  :builds
  [{:id           "odin"
    :source-paths ["src/cljs/odin" "src/cljs/iface"]
@@ -19,6 +19,26 @@
                    {:features-to-install    [:formatters :hints]
                     :fn-symbol              "ƒ"
                     :print-config-overrides true}}}}
+
+
+  {:id           "onboarding"
+   :source-paths ["src/cljs/onboarding" "src/cljs/iface"]
+   :figwheel     {:on-jsload onboarding.core/run}
+   :compiler     {:main                 onboarding.core
+                  :preloads             [devtools.preload]
+                  :asset-path           "/js/cljs/onboarding/out"
+                  :output-to            "resources/public/js/cljs/onboarding.js"
+                  :output-dir           "resources/public/js/cljs/onboarding/out"
+                  :verbose              false
+                  :source-map           true
+                  :optimizations        :none
+                  :source-map-timestamp true
+                  :external-config
+                  {:devtools/config
+                   {:features-to-install    [:formatters :hints]
+                    :fn-symbol              "ƒ"
+                    :print-config-overrides true}}}}
+
 
   {:id           "cards"
    :source-paths ["src/cljs"]
