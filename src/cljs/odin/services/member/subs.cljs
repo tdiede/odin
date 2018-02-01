@@ -54,6 +54,42 @@
 
 
 (reg-sub
+ :member.services.add-service/currently-adding
+ :<- [db/path]
+ (fn [db _]
+   {:service {:id          1
+              :title       "Single Dog Walk"
+              :description "Aliquam posuere. Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit."
+              :price       15.0}
+    :fields  [{:id       1
+               :type     :date
+               :key      :date
+               :label    "Select day for dog walk"
+               :required true}
+              {:id       2
+               :type     :time
+               :key      :time
+               :label    "Select time for dog walk"
+               :required true}
+              {:id       3
+               :type     :desc
+               :key      :desc
+               :label    "Include any special instructions here."
+               :required true}
+              {:id       4
+               :type     :variants
+               :key      :dog-size
+               :options  [{:key   :s
+                           :label "Small"}
+                          {:key   :m
+                           :label "Medium"}
+                          {:key   :l
+                           :label "Large"}]
+               :label    "Select your dog size:"
+               :required true}]}))
+
+
+(reg-sub
  :member.services.book/catalogues
  :<- [db/path]
  (fn [db _]
@@ -87,18 +123,18 @@
                  :title "Dry Cleaning"
                  :description "Praesent fermentum tempor tellus. Phasellus purus."
                  :price 30.0}]}
-     {:id 3
-      :code :pet-services
-      :title "Pet Services"
-      :services [{:id 1
-                  :title "Dog boarding"
-                  :description "Etiam vel neque nec dui dignissim bibendum. Curabitur vulputate vestibulum lorem."
-                  :price 50.0}
-                 {:id 2
-                  :title "Single Dog Walk"
-                  :description "Sed bibendum. Vivamus id enim. Nullam tristique diam non turpis."
-                  :price 10.0}
-                 {:id 3
-                  :title "Daily Dog Walk Subscription"
-                  :description "Phasellus neque orci, porta a, aliquet quis, semper a, massa."
-                  :price 50.0}]}]))
+    {:id 3
+     :code :pet-services
+     :title "Pet Services"
+     :services [{:id 1
+                 :title "Dog boarding"
+                 :description "Etiam vel neque nec dui dignissim bibendum. Curabitur vulputate vestibulum lorem."
+                 :price 50.0}
+                {:id 2
+                 :title "Single Dog Walk"
+                 :description "Sed bibendum. Vivamus id enim. Nullam tristique diam non turpis."
+                 :price 10.0}
+                {:id 3
+                 :title "Daily Dog Walk Subscription"
+                 :description "Phasellus neque orci, porta a, aliquet quis, semper a, massa."
+                 :price 50.0}]}]))
