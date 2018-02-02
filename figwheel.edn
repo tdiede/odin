@@ -41,7 +41,7 @@
 
 
   {:id           "cards"
-   :source-paths ["src/cljs"]
+   :source-paths ["src/cljs/cards" "src/cljs/iface"]
    :figwheel     {:devcards true}
    :compiler     {:main       "cards.core"
                   :asset-path "js/cljs/cards/out"

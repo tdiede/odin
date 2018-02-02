@@ -2,7 +2,8 @@
   (:require [odin.history.db :as db]
             [re-frame.core :refer [reg-event-fx path]]
             [ajax.core :as ajax]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [taoensso.timbre :as timbre]))
 
 
 (reg-event-fx
@@ -27,5 +28,5 @@
 (reg-event-fx
  ::on-failure
  (fn [_ [_ k response]]
-   (tb/error response)
+   (timbre/error response)
    {:dispatch [:loading k false]}))

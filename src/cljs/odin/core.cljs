@@ -156,6 +156,6 @@
                   (routes/hook-browser-navigation! config)
                   (render))
        :error-handler (fn [res]
-                        (tb/error res)
+                        (taoensso.timbre/error res)
                         (rf/dispatch-sync [:app/init-error])
                         (render))))

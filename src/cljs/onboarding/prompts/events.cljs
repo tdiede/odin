@@ -75,7 +75,6 @@
 (reg-event-fx
  :orders.fetch/failure
  (fn [{:keys [db]} [_ keypath error]]
-   (tb/log error)
    (ant/message-error {:content "Failed to fetch your orders."})
    {:db (-> (assoc-in db [keypath :orders-loading] false)
             (assoc-in [keypath :error] true))}))
@@ -153,7 +152,6 @@
 (reg-event-fx
  :stripe.bank-account.create-token/failure
  (fn [{:keys [db]} [_ error]]
-   (tb/error "Failed to create Stripe Token:" error)
    (ant/notification-error {:duration    8
                             :message     "Error!"
                             :description "Something went wrong while submitting your bank information. Please check the account and routing number and try again."})
@@ -194,7 +192,6 @@
 (reg-event-fx
  :prompt.save/failure
  (fn [{:keys [db]} [_ keypath error]]
-   (tb/error error)
    (if-let [errors (get-in error [:response :errors])]
      (ant/notification-error {:message     "Error!"
                               :description (first errors)})
@@ -271,7 +268,6 @@
 (reg-event-fx
  :order.delete/failure
  (fn [{:keys [db]} [_ error]]
-   (tb/error error)
    (ant/message-error {:content "Failed to remove order."})
    {:db (assoc db :orders/loading false)}))
 
@@ -304,14 +300,12 @@
 (reg-event-fx
  :finish.review.submit/success
  (fn [{:keys [db]} [_ result]]
-   (tb/log result)
    {:db       (assoc db :finishing false)
     :dispatch [::reload]}))
 
 (reg-event-fx
  :finish.review.submit/failure
  (fn [{:keys [db]} [_ error]]
-   (tb/error error)
    (ant/notification-error {:message     "Whoops!"
                             :description "Something went wrong. Please try again."})
    {:db (assoc db :finishing false)}))

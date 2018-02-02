@@ -19,7 +19,7 @@
             [clj-time.coerce :as c]
             [clj-time.core :as t]
             [clojure.set :as set]
-            [clojure.spec :as s]
+            [clojure.spec.alpha :as s]
             [compojure.core :refer [defroutes GET POST]]
             [datomic.api :as d]
             [ribbon.charge :as rc]
@@ -32,8 +32,7 @@
             [toolbelt.async :refer [<!!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]
-            [toolbelt.predicates :as p]))
+            [toolbelt.datomic :as td]))
 
 
 ;; ==============================================================================
@@ -51,8 +50,8 @@
     (d/entity db id)))
 
 (s/fdef requester
-        :args (s/cat :db p/db? :request map?)
-        :ret (s/or :nothing nil? :entity p/entity?))
+        :args (s/cat :db td/db? :request map?)
+        :ret (s/or :nothing nil? :entity td/entity?))
 
 ;; response =====================================================================
 
@@ -254,8 +253,8 @@
   (fn [db account step] step))
 
 (s/fdef complete?
-        :args (s/cat :db p/db?
-                     :account p/entity?
+        :args (s/cat :db td/db?
+                     :account td/entity?
                      :step ::step)
         :ret (s/or :bool boolean? :nothing nil?))
 
@@ -372,9 +371,9 @@
 
 
 (s/fdef order-params
-        :args (s/cat :db p/db?
-                     :account p/entity?
-                     :catalogue p/entity?)
+        :args (s/cat :db td/db?
+                     :account td/entity?
+                     :catalogue td/entity?)
         :ret ::order-params)
 
 
@@ -390,8 +389,8 @@
    :data     (fdata conn account step)})
 
 (s/fdef fetch
-        :args (s/cat :conn p/conn?
-                     :account p/entity?
+        :args (s/cat :conn td/conn?
+                     :account td/entity?
                      :step ::step)
         :ret (s/or :response (s/keys :req-un [::complete ::data])
                    :nothing nil?))
@@ -430,7 +429,7 @@
   (let [onboard (onboard/by-account account)
         service (service/moving-assistance (d/db conn))
         order   (order/by-account (d/db conn) account service)]
-    {:needed (when (onboard/seen-moving? onboard) (p/entity? order))
+    {:needed (when (onboard/seen-moving? onboard) (td/entity? order))
      :date   (onboard/move-in onboard)
      :time   (onboard/move-in onboard)}))
 
@@ -482,7 +481,7 @@
    steps))
 
 (s/fdef fetch-all
-        :args (s/cat :conn p/conn? :account p/entity?)
+        :args (s/cat :conn td/conn? :account td/entity?)
         :ret map?)
 
 ;; =============================================================================
@@ -495,8 +494,8 @@
   (fn [conn account step data] step))
 
 (s/fdef save!
-        :args (s/cat :conn p/conn?
-                     :account p/entity?
+        :args (s/cat :conn td/conn?
+                     :account td/entity?
                      :step ::step
                      :data ::data))
 
@@ -582,11 +581,11 @@
                       :email (account/email account)
                       :description (format "'%s' security deposit payment" method)
                       :customer-id (customer/id customer)
-                      :managed-account (-> account
-                                           account/approval
-                                           approval/unit
-                                           unit/property
-                                           property/deposit-connect-id)))))
+                      :destination (-> account
+                                       account/approval
+                                       approval/unit
+                                       unit/property
+                                       property/deposit-connect-id)))))
 
 (defmethod save! :deposit/pay
   [conn account step {method :method}]
@@ -604,6 +603,14 @@
                           :deposit/payments (td/id payment)}
                          payment
                          (events/deposit-payment-made account charge-id)]))))
+
+(comment
+
+  (let [account (d/entity (d/db conn) [:account/email "onboard@test.com"])]
+    (rcu/fetch (config/stripe-secret-key config)
+               (:customer/platform-id (customer/by-account (d/db conn) account))))
+
+  )
 
 ;; =============================================================================
 ;; Services
@@ -674,9 +681,9 @@
          (apply concat))))
 
 (s/fdef orders-tx
-        :args (s/cat :db p/db?
-                     :account p/entity?
-                     :catalogue p/entity?
+        :args (s/cat :db td/db?
+                     :account td/entity?
+                     :catalogue td/entity?
                      :params ::order-params)
         :ret vector?)
 

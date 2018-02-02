@@ -1,6 +1,7 @@
 (ns odin.fx
-  (:require [re-frame.core :refer [reg-fx dispatch]]
-            cljsjs.filesaverjs
+  (:require cljsjs.filesaverjs
+            [re-frame.core :refer [reg-fx dispatch]]
+            [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]))
 
 
@@ -31,7 +32,7 @@
      (when (some? on-success)
        (dispatch on-success))
      (catch js/Error e
-       (tb/error e)
+       (timbre/error e)
        (when (some? on-failure)
          (dispatch (conj on-failure e)))))))
 

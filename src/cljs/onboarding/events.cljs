@@ -56,7 +56,6 @@
 (reg-event-fx
  :app.bootstrap/failure
  (fn [{:keys [db]} [_ err]]
-   (tb/error err)
    (ant/notification-error {:duration    8
                             :message     "Uh oh!"
                             :description "We couldn't fetch your progress. Please check your internet connection."})))

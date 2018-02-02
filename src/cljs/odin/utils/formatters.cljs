@@ -5,7 +5,8 @@
             [goog.string.format]
             [i18n.phonenumbers.PhoneNumberUtil :as pnu]
             [i18n.phonenumbers.PhoneNumberFormat :as pnf]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [taoensso.timbre :as timbre]))
 
 ;; TIMES
 (defn moment [arg] (.moment js/window arg))
@@ -73,7 +74,7 @@
           formatted (.format pu parsed pnf/NATIONAL)]
       (str formatted))
     (catch js/Error e
-      (tb/error e)
+      (timbre/error e)
       number)))
 
 

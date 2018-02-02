@@ -1,5 +1,6 @@
 (ns iface.form
   (:require [antizer.reagent :as ant]
+            [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]))
 
 
@@ -19,7 +20,7 @@
   "Given `form-item` specs (TODO: currently undocumented), render a list of form
   items."
   [form-items & {:keys [on-change]}]
-  (let [on-change (or on-change (fn [k] #(tb/log k %)))]
+  (let [on-change (or on-change (fn [k] #(timbre/info k %)))]
     (map-indexed
      (fn [idx {key :key :as form-item}]
       (-> (assoc-in form-item [:input-props :on-change] (on-change key))

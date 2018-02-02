@@ -35,18 +35,27 @@
                                        (response/status 400)))))
 
 
-(defmulti app
+(defmulti page
   (fn [req]
     (let [account (->requester req)]
-      (account/role account))))
+      (:account/role account))))
 
 
-(defmethod app :default [req]
+(defmethod page :account.role/admin [req]
   (facade/app req "odin"
-              :title "Starcity Dashboard"
+              :title "Admin Dashboard"
               :scripts ["https://code.highcharts.com/highcharts.js"
                         "https://code.highcharts.com/modules/exporting.js"
                         "https://code.highcharts.com/modules/drilldown.js"]
+              :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
+              :json [["stripe" {:key (config/stripe-public-key (->config req))}]]
+              :stylesheets [facade/font-awesome]
+              :css-bundles ["antd.css" "styles.css"]))
+
+
+(defmethod page :account.role/member [req]
+  (facade/app req "odin"
+              :title "Member Dashboard"
               :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
               :json [["stripe" {:key (config/stripe-public-key (->config req))}]]
               :stylesheets [facade/font-awesome]
@@ -60,7 +69,7 @@
   [:section] (html/append (snippets/loading-fullscreen)))
 
 
-(defmethod app :account.role/onboarding [req]
+(defmethod page :account.role/onboarding [req]
   (let [account (->requester req)]
     (facade/app req "onboarding"
                 :title "Starcity Onboarding"
@@ -79,9 +88,9 @@
 
 (defn show
   "Handler to render the CLJS app."
-  [{:keys [deps] :as req}]
+  [req]
   (let [render (partial apply str)]
-    (-> (app req)
+    (-> (page req)
         (render)
         (response/response)
         (response/content-type "text/html"))))
