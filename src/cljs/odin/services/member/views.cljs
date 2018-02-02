@@ -4,6 +4,7 @@
             [reagent.core :as r]
             [iface.typography :as typography]
             [toolbelt.core :as tb]
+            [taoensso.timbre :as timbre]
             [odin.routes :as routes]
             [odin.services.member.db :as db]
             [odin.utils.formatters :as format]))
@@ -120,13 +121,12 @@
 (defn add-service-modal-footer [data fields]
   (let [required-fields (into [] (filter #(= true (:required %)) fields))
         can-submit      (reduce (fn [all-defined required-field]
-                                  (and all-defined (get data (:key required-field)))) true required-fields)
+                                  (and all-defined (get @data (:key required-field)))) true required-fields)
         ]
-    (tb/log :data data :fields required-fields :can-submit can-submit)
     [:div
      [ant/button
       {:size     :large
-       :on-click #(dispatch [:modal/hide modal])}
+       :on-click #(dispatch [:member.services.add-service/close modal])}
       "Cancel"]
      [ant/button
       {:type     :primary
@@ -161,7 +161,10 @@
    (fn [field]
      [ant/date-picker
       {:style         {:width "100%"}
-       :on-change     #(swap! data assoc (:key field) (.toISOString %))
+       :value         (when-let [date (get data (:key field))]
+                        (js/moment date))
+       :on-change     #(dispatch [:member.services.add-service.form/update
+                                  (:key field) (.toISOString %)])
        :disabled-date (fn [current]
                         (and current (< (.valueOf current) (.valueOf (js/moment.)))))
        :show-today    false}])])
@@ -171,7 +174,10 @@
   [column-fields fields
    (fn [field]
      [time-picker {:size      :large
-                   :on-change #(swap! data assoc (:key field) (.toISOString %))}])])
+                   ;; :value (when-let [time (get data (:key field))]
+                   ;;          (js/moment time))
+                   :on-change #(dispatch [:member.services.add-service.form/update
+                                          (:key field) (.toISOString %)])}])])
 
 
 (defn variants-fields [data fields]
@@ -183,7 +189,11 @@
        [:div.column
         [ant/form-item {:label (:label field)}
          [ant/radio-group
-          {:on-change #(swap! data assoc (:key field) (.. % -target -value))}
+          {:value     (keyword (get data (:key field)))
+           :on-change #(dispatch [:member.services.add-service.form/update
+                                  (:key field) (.. % -target -value)])
+           ;; :on-change #(swap! data assoc (:key field) (.. % -target -value))
+           }
           (map-indexed
            #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
            (:options field))]]]])
@@ -199,32 +209,34 @@
        [:div.column
         [ant/form-item {:label (:label field)}
          [ant/input
-          {:type :textarea
-           :on-change #(swap! data assoc (:key field) (.. % -target -value))}]]]])
+          {:type      :textarea
+           :value     (get data (:key field))
+           :on-change #(dispatch [:member.services.add-service.form/update
+                                  (:key field) (.. % -target -value)])}]]]])
     fields)])
 
 
 (defn add-service-modal []
   (let [is-visible (subscribe [:modal/visible? :member.services/add-service])
         item       (subscribe [:member.services.add-service/currently-adding])
+        form-data  (subscribe [:member.services.add-service/form])
         fields     (:fields @item)
         data       (r/atom {})]
     (fn []
-      (tb/log fields)
-      (tb/log @data)
+      (timbre/info :form-data @form-data)
       [ant/modal
        {:title     (str "Add " (:title (:service @item)))
         :visible   @is-visible
-        :on-cancel #(dispatch [:modal/hide modal])
-        :footer    (r/as-element [add-service-modal-footer @data fields])}
+        :on-cancel #(dispatch [:member.services.add-service/close modal])
+        :footer    (r/as-element [add-service-modal-footer form-data fields])}
        [:div
         [:p (:description (:service @item))]
         [:br]
         [:form
-         [date-fields data (get-fields :date fields)]
-         [time-fields data (get-fields :time fields)]
-         [variants-fields data (get-fields :variants fields)]
-         [desc-fields data (get-fields :desc fields)]]]])))
+         [date-fields @form-data (get-fields :date fields)]
+         [time-fields @form-data (get-fields :time fields)]
+         [variants-fields @form-data (get-fields :variants fields)]
+         [desc-fields @form-data (get-fields :desc fields)]]]])))
 
 (defmulti content :page)
 
@@ -248,11 +260,15 @@
    [:h3 "Manage some services, yo"]])
 
 
+(defmethod content :services/cart [_]
+  [:div
+   [:h3 "Here's your cart"]])
+
+
 (defn view [route]
   [:div
-   [:div
-    [add-service-modal]
-    (typography/view-header "Premium Services" "Order and manage premium services.")
-    [menu]
-    (content route)
-    ]])
+   [add-service-modal]
+   (typography/view-header "Premium Services" "Order and manage premium services.")
+   [menu]
+   (content route)
+   ])

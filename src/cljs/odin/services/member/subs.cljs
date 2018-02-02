@@ -53,6 +53,12 @@
                      (assoc query-params :category category))))
 
 
+;; (reg-sub
+;;  :member.services.add-service/add
+;;  (fn [db _]
+;;    (:service db)))
+
+
 (reg-sub
  :member.services.add-service/currently-adding
  :<- [db/path]
@@ -75,7 +81,7 @@
                :type     :desc
                :key      :desc
                :label    "Include any special instructions here."
-               :required true}
+               :required false}
               {:id       4
                :type     :variants
                :key      :dog-size
@@ -87,6 +93,20 @@
                            :label "Large"}]
                :label    "Select your dog size:"
                :required true}]}))
+
+
+(reg-sub
+ :member.services.add-service/form
+ :<- [db/path]
+ (fn [db _]
+   (:form-data db)))
+
+
+(reg-sub
+ :member.services.add-service/visible?
+ :<- [:modal/visible? db/modal]
+ (fn [is-visible _]
+   is-visible))
 
 
 (reg-sub
@@ -108,33 +128,33 @@
                  :title       "Coffee Machine"
                  :description "Nunc eleifend leo vitae magna."
                  :price       125.00}]}
-    {:id 2
-     :code :laundry-services
-     :title "Laundry Services"
-     :services [{:id 1
-                 :title "Single wash and fold"
+    {:id       2
+     :code     :laundry-services
+     :title    "Laundry Services"
+     :services [{:id          1
+                 :title       "Single wash and fold"
                  :description "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus."
-                 :price 25.0}
-                {:id 2
-                 :title "Wash and fold subscription"
+                 :price       25.0}
+                {:id          2
+                 :title       "Wash and fold subscription"
                  :description "Aliquam erat volutpat. Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus."
-                 :price 50.0}
-                {:id 3
-                 :title "Dry Cleaning"
+                 :price       50.0}
+                {:id          3
+                 :title       "Dry Cleaning"
                  :description "Praesent fermentum tempor tellus. Phasellus purus."
-                 :price 30.0}]}
-    {:id 3
-     :code :pet-services
-     :title "Pet Services"
-     :services [{:id 1
-                 :title "Dog boarding"
+                 :price       30.0}]}
+    {:id       3
+     :code     :pet-services
+     :title    "Pet Services"
+     :services [{:id          1
+                 :title       "Dog boarding"
                  :description "Etiam vel neque nec dui dignissim bibendum. Curabitur vulputate vestibulum lorem."
-                 :price 50.0}
-                {:id 2
-                 :title "Single Dog Walk"
+                 :price       50.0}
+                {:id          2
+                 :title       "Single Dog Walk"
                  :description "Sed bibendum. Vivamus id enim. Nullam tristique diam non turpis."
-                 :price 10.0}
-                {:id 3
-                 :title "Daily Dog Walk Subscription"
+                 :price       10.0}
+                {:id          3
+                 :title       "Daily Dog Walk Subscription"
                  :description "Phasellus neque orci, porta a, aliquet quis, semper a, massa."
-                 :price 50.0}]}]))
+                 :price       50.0}]}]))
