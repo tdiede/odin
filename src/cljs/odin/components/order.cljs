@@ -3,7 +3,8 @@
             [antizer.reagent :as ant]
             [odin.utils.formatters :as format]
             [reagent.core :as r]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [taoensso.timbre :as timbre]))
 
 
 (defn status-icon
@@ -105,7 +106,7 @@
 
 
 (defn- order-form
-  [svc order {:keys [on-change] :or {on-change tb/log}}]
+  [svc order {:keys [on-change] :or {on-change #(timbre/info %)}}]
   (let [{:keys [quantity cost request variant summary line_items]
          :or   {quantity 1}} order]
     [:div

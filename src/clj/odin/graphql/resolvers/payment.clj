@@ -19,7 +19,6 @@
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
-            [toolbelt.predicates :as p]
             [clj-time.coerce :as c]
             [clj-time.core :as t]))
 
@@ -35,12 +34,12 @@
 
 ;; TODO: add to toolbelt.datomic
 (defn- mapify [entity]
-  (if (p/entityd? entity)
+  (if (td/entityd? entity)
     (assoc (into {} entity) :db/id (:db/id entity))
     entity))
 
 (s/fdef mapify
-        :args (s/cat :entity-or-map (s/or :entity p/entityd? :map map?))
+        :args (s/cat :entity-or-map (s/or :entity td/entityd? :map map?))
         :ret map?)
 
 
@@ -56,7 +55,7 @@
 
 (defn- get-charge [payment]
   (let [v (get payment stripe-charge-key)]
-    (if (p/throwable? v)
+    (if (tb/throwable? v)
       (throw v)
       v)))
 

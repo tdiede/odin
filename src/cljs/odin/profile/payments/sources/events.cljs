@@ -3,7 +3,8 @@
             [odin.routes :as routes]
             [re-frame.core :refer [path reg-event-db reg-event-fx]]
             [toolbelt.core :as tb]
-            [odin.utils.formatters :as format]))
+            [odin.utils.formatters :as format]
+            [taoensso.timbre :as timbre]))
 
 ;; =============================================================================
 ;; Routing/Nav
@@ -125,7 +126,7 @@
  ::create-bank-token-failure
  [(path db/add-path)]
  (fn [{:keys [db]} [_ error]]
-   (tb/error error)
+   (timbre/error error)
    {:dispatch [:loading :payment.sources.add/bank false]}))
 
 

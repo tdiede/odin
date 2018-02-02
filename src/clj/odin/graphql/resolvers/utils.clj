@@ -1,11 +1,12 @@
 (ns odin.graphql.resolvers.utils
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]))
 
 
-(s/def ::conn p/conn?)
-(s/def ::requester p/entityd?)
+(s/def ::conn td/conn?)
+(s/def ::requester td/entityd?)
 (s/def ::stripe ribbon/conn?)
 (s/def ::config map?)
 
@@ -38,5 +39,5 @@
   (or (:message (ex-data t)) (.getMessage t) "Unknown error!"))
 
 (s/fdef error-message
-        :args (s/cat :throwable p/throwable?)
+        :args (s/cat :throwable tb/throwable?)
         :ret string?)

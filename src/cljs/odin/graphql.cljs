@@ -3,6 +3,7 @@
             [toolbelt.core :as tb]
             [ajax.core :as ajax]
             [antizer.reagent :as ant]
+            [taoensso.timbre :as timbre]
             [venia.core :as venia]))
 
 
@@ -50,7 +51,7 @@
 (rf/reg-event-fx
  :graphql/notify-errors!
  (fn [_ [_ response]]
-   (tb/error response)
+   (timbre/error response)
    (doseq [{m :message} (get-in response [:response :errors])]
      (ant/notification-error {:message     "Unhandled Error!"
                               :description m
@@ -61,7 +62,7 @@
  :graphql/failure
  (fn [_ [_ k response]]
    (let [response (if (keyword? k) response k)]
-     (tb/error response)
+     (timbre/error response)
      (case (:status response)
        401 {:route "/logout"}
        ;; 403 {:route "/logout"}

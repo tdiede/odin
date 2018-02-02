@@ -2,9 +2,9 @@
   (:require [blueprints.models.customer :as customer]
             [datomic.api :as d]
             [ribbon.customer :as rcu]
-            [toolbelt.async :refer [<!? go-try]]
+            [toolbelt.async :as ta :refer [<!? go-try]]
             [toolbelt.core :as tb]
-            [toolbelt.predicates :as p]
+            [toolbelt.datomic :as td]
             [ribbon.core :as ribbon]
             [clojure.spec.alpha :as s]))
 
@@ -53,8 +53,8 @@
     (rcu/fetch-source stripe (customer/id customer) source-id)))
 
 (s/fdef fetch-source
-        :args (s/cat :db p/db?
+        :args (s/cat :db td/db?
                      :stripe ribbon/conn?
-                     :account p/entity?
+                     :account td/entity?
                      :source-id string?)
-        :ret p/chan?)
+        :ret ta/chan?)

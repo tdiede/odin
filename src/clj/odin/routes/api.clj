@@ -1,17 +1,20 @@
 (ns odin.routes.api
   (:require [blueprints.models.account :as account]
             [buddy.auth.accessrules :refer [restrict]]
+            [customs.access :as access]
             [com.walmartlabs.lacinia :refer [execute]]
-            [compojure.core :as compojure :refer [defroutes GET POST]]
+            [compojure.core :as compojure :refer [defroutes GET DELETE POST]]
             [odin.graphql :as graph]
             [odin.graphql.resolvers.utils :as gqlu]
             [odin.routes.kami :as kami]
+            [odin.routes.onboarding :as onboarding]
             [odin.routes.util :refer :all]
             [ring.util.response :as response]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [datomic.api :as d]
-            [customs.access :as access]))
+            [customs.access :as access]
+            [blueprints.models.order :as order]))
 
 ;; =============================================================================
 ;; GraphQL
@@ -146,6 +149,34 @@
              :account account))))))
 
 
+;; ==============================================================================
+;; remove ASAP! =================================================================
+;; ==============================================================================
+
+
+(defn fetch-orders [req]
+  (let [account (->requester req)]
+    (-> {:result (->> (order/orders (->db req) account)
+                      (map order/clientize)
+                      (sort-by :price #(if (and %1 %2) (> %1 %2) false)))}
+        (response/response)
+        (response/content-type "application/transit+json"))))
+
+
+(defn delete-order
+  [req order-id]
+  (let [account (->requester req)
+        order   (d/entity (->db req) order-id)]
+    (if (not= (:db/id account) (-> order :order/account :db/id))
+      (-> (response/response {:error "You do not own this order."})
+          (response/content-type "application/transit+json")
+          (response/status 403))
+      (do
+        @(d/transact (->conn req) [[:db.fn/retractEntity order-id]])
+        (-> (response/response {})
+            (response/content-type "application/transit+json"))))))
+
+
 ;; =============================================================================
 ;; Routes
 ;; =============================================================================
@@ -154,14 +185,10 @@
 (defroutes routes
   (GET "/config" [] config-handler)
 
-
-  (GET "/history/:entity-id" [entity-id]
-       (fn [req]
-         (let [db (d/db (->conn req))]
-           (-> (response/response {:data {:history (history db (tb/str->int entity-id))}})
-               (response/content-type "application/transit+json")
-               (response/status 200)))))
-
+  (compojure/context "/onboarding" []
+    (restrict onboarding/routes
+      {:handler  {:and [access/authenticated-user (access/user-isa :account.role/onboarding)]}
+       :on-error (fn [_ _] {:status 403 :body "You are not authorized."})}))
 
   (GET "/graphql" [] (graphql-handler graph/schema))
   (POST "/graphql" [] (graphql-handler graph/schema))
@@ -172,5 +199,21 @@
                (response/file-response (:income-file/path file))))
            (restrict {:handler {:and [access/authenticated-user
                                       (access/user-isa :account.role/admin)]}})))
+
+  (GET "/history/:entity-id" [entity-id]
+       (fn [req]
+         (let [db (d/db (->conn req))]
+           (-> (response/response {:data {:history (history db (tb/str->int entity-id))}})
+               (response/content-type "application/transit+json")))))
+
+
+  ;; TODO: remove! use graphql!
+  (GET "/orders" [] fetch-orders)
+
+  ;; TODO: remove! use graphql!
+  (DELETE "/:order-id" [order-id]
+          (fn [req]
+            (delete-order req (tb/str->int order-id))))
+
 
   (compojure/context "/kami" [] kami/routes))

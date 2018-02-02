@@ -22,10 +22,9 @@
             [ribbon.plan :as rp]
             [ribbon.subscription :as rs]
             [taoensso.timbre :as timbre]
-            [toolbelt.async :refer [<!? go-try]]
+            [toolbelt.async :as ta :refer [<!? go-try]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.predicates :as p]
             [odin.models.autopay :as autopay]
             [odin.models.payment-source :as payment-source]))
 
@@ -42,7 +41,7 @@
   (or (:message (ex-data t)) (.getMessage t)))
 
 (s/fdef error-message
-        :args (s/cat :throwable p/throwable?)
+        :args (s/cat :throwable tb/throwable?)
         :ret string?)
 
 
@@ -235,7 +234,7 @@
 
 (s/fdef delete-bank-source!*
         :args (s/cat :ctx context? :source map?)
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (defn delete-bank-source!
@@ -271,7 +270,7 @@
   (let [result (resolve/resolve-promise)]
     (go
       (let [source (<! (payment-source/fetch-source (d/db conn) stripe requester id))]
-        (if (p/throwable? source)
+        (if (tb/throwable? source)
           (resolve/deliver! result nil {:message  "Could not find source!"
                                         :err-data (ex-data source)})
           (try

@@ -1,0 +1,87 @@
+#onboarding-navbar.nav
+  min-height: 3.25rem
+
+  .container
+    @media (min-width: 768px) and (max-width: 1000px)
+      width: 100%
+
+  .is-brand
+    padding: 0 0.75rem
+
+    img
+      height: 44px
+      max-height: 44px
+
+#onboarding.section
+  flex-grow: 1
+  padding: 5rem 1.5rem
+
+  .prompt-content
+    min-height: 450px
+
+  .prompt
+
+    figure
+      width: 84px
+
+    .community-advisor
+      box-shadow: 0
+      width: 64px
+      -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)
+      transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1)
+
+      &:hover
+        -webkit-box-shadow: 2px 5px 10px 0px rgba(50, 50, 50, 0.75)
+        -moz-box-shadow: 2px 5px 10px 0px rgba(50, 50, 50, 0.75)
+        box-shadow: 2px 5px 10px 0px rgba(50, 50, 50, 0.75)
+        -webkit-transform: scale(1.1, 1.1)
+        transform: scale(1.1, 1.1)
+
+    header
+      margin-bottom: 20px
+      display: flex
+      align-items: center
+
+      .prompt-title
+        font-weight: 300
+        margin-left: 10px
+
+    .date-container
+      width: 250px
+
+    .prompt-controls
+      margin-top: 40px
+
+
+/* ant card
+#onboarding
+
+  .ant-card-head-title
+    font-weight: 900
+
+  .table-card
+    .ant-card-body
+      padding: 0
+
+    .ant-table-small
+      border: none
+
+    .ant-table-footer
+      p
+        font-size: 14px
+
+
+  .width-50
+    width: 50%
+
+  .width-75
+    width: 75%
+
+  .column-right
+    text-align: right !important
+
+  .column-center
+    text-align: center !important
+
+  .no-break
+    word-break: normal !important

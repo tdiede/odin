@@ -50,7 +50,6 @@
  ::search-failure
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (tb/error k response)
    {:dispatch [:loading k false]}))
 
 
@@ -77,9 +76,6 @@
          {datasets :datasets
           criteria :criteria
           scores   :scores} kami])
-    ;; (tb/log (keys datasets))
-    ;; (tb/log (keys criteria))
-    ;; (tb/log (keys scores)))
    {:dispatch [:loading k false]
     :db       (assoc db :report (get-in response [:data :kami]))}))
 
@@ -88,5 +84,4 @@
  ::score-failure
  [(path db/path)]
  (fn [_ [_ k response]]
-   (tb/error k response)
    {:dispatch [:loading k false]}))
