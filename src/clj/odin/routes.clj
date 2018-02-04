@@ -42,7 +42,7 @@
 
 
 (defmethod page :account.role/admin [req]
-  (facade/app req "odin"
+  (facade/app req "admin"
               :title "Admin Dashboard"
               :scripts ["https://code.highcharts.com/highcharts.js"
                         "https://code.highcharts.com/modules/exporting.js"

@@ -49,6 +49,26 @@
                                      :closure-warnings {:externs-validation :off
                                                         :non-standard-jsdoc :off}}}
 
+
+                     {:id           "admin"
+                      :source-paths ["src/cljs/admin" "src/cljs/iface"]
+                      :jar          true
+                      :compiler     {:main             admin.core
+                                     :optimizations    :advanced
+                                     :elide-asserts    true
+                                     :pretty-print     true
+                                     :pseudo-names     true
+                                     :parallel-build   true
+                                     :asset-path       "/js/cljs/out"
+                                     :output-dir       "resources/public/js/cljs/out"
+                                     :output-to        "resources/public/js/cljs/admin.js"
+                                     :source-map       "resources/public/js/cljs/admin.js.map"
+                                     :externs          ["externs/stripe.ext.js"
+                                                        "externs/highcharts.ext.js"]
+                                     :closure-warnings {:externs-validation :off
+                                                        :non-standard-jsdoc :off}}}
+
+
                      {:id           "onboarding"
                       :source-paths ["src/cljs/onboarding" "src/cljs/iface"]
                       :jar          true
