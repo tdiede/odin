@@ -95,7 +95,7 @@
 
 
 (defn ^:export run []
-  ;; TODO: get account from json
-  (rf/dispatch-sync [:app/init {:name "Josh Lehman"}])
-  (iroutes/hook-browser-navigation! routes/app-routes)
-  (render))
+  (let [account (js->clj (aget js/window "account") :keywordize-keys true)]
+    (rf/dispatch-sync [:app/init account])
+    (iroutes/hook-browser-navigation! routes/app-routes)
+    (render)))

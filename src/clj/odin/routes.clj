@@ -15,7 +15,8 @@
             [odin.config :as config]
             [odin.routes.api :as api]
             [odin.routes.util :refer :all]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Login Handler (development only)
@@ -42,15 +43,19 @@
 
 
 (defmethod page :account.role/admin [req]
-  (facade/app req "admin"
-              :title "Admin Dashboard"
-              :scripts ["https://code.highcharts.com/highcharts.js"
-                        "https://code.highcharts.com/modules/exporting.js"
-                        "https://code.highcharts.com/modules/drilldown.js"]
-              :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
-              :json [["stripe" {:key (config/stripe-public-key (->config req))}]]
-              :stylesheets [facade/font-awesome]
-              :css-bundles ["antd.css" "styles.css"]))
+  (let [account (->requester req)]
+    (facade/app req "admin"
+               :title "Admin Dashboard"
+               :scripts ["https://code.highcharts.com/highcharts.js"
+                         "https://code.highcharts.com/modules/exporting.js"
+                         "https://code.highcharts.com/modules/drilldown.js"]
+               :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
+               :json [["stripe"  {:key (config/stripe-public-key (->config req))}]
+                      ["account" {:id    (td/id account)
+                                  :name  (account/short-name account)
+                                  :email (account/email account)}]]
+               :stylesheets [facade/font-awesome]
+               :css-bundles ["antd.css" "styles.css"])))
 
 
 (defmethod page :account.role/member [req]
@@ -75,11 +80,11 @@
                 :title "Starcity Onboarding"
                 :navbar (onboarding-navbar)
                 :content (onboarding-content)
-                :json [["stripe" {:key (config/stripe-public-key (->config req))}]
+                :json [["stripe"  {:key (config/stripe-public-key (->config req))}]
                        ["account" {:move-in      (-> account approval/by-account approval/move-in)
                                    :full-deposit (-> account deposit/by-account deposit/amount)
                                    :llc          (-> account approval/by-account approval/property property/llc)
-                                   :name         (account/full-name account)
+                                   :name         (account/short-name account)
                                    :email        (account/email account)}]]
                 :stylesheets [facade/font-awesome]
                 :css-bundles ["antd.css" "styles.css"]
