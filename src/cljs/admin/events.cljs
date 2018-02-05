@@ -4,6 +4,7 @@
             [admin.kami.events]
             [admin.metrics.events]
             [admin.orders.events]
+            [admin.profile.events]
             [admin.properties.events]
             [re-frame.core :refer [reg-event-db reg-event-fx]]))
 

@@ -7,6 +7,7 @@
             [admin.kami.views]
             [admin.metrics.views]
             [admin.orders.views]
+            [admin.profile.views]
             [admin.routes :as routes]
             [admin.subs]
             [antizer.reagent :as ant]

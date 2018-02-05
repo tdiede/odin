@@ -3,6 +3,7 @@
             [admin.kami.db :as kami]
             [admin.metrics.db :as metrics]
             [admin.orders.db :as orders]
+            [admin.profile.db :as profile]
             [admin.properties.db :as properties]
             [iface.modules.payments :as payments]
             [iface.modules.loading :as loading]))
@@ -35,4 +36,5 @@
    metrics/default-value
    orders/default-value
    payments/default-value
+   profile/default-value
    properties/default-value))
