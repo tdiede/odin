@@ -1,6 +1,6 @@
 (ns admin.profile.settings.events
   (:require [re-frame.core :refer [reg-event-fx]]
-            [odin.routes :as routes]
+            [admin.routes :as routes]
             [antizer.reagent :as ant]))
 
 

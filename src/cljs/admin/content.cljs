@@ -21,7 +21,7 @@
 
 
 ;; This component is rendered when the user navigations to the /logout entpoint.
-;; Because we need a catch-all route in `odin.routes` to prevent from hitting
+;; Because we need a catch-all route in `admin.routes` to prevent from hitting
 ;; the server on un-implemented routes, this component is rendered and
 ;; /immediately/ reloads the window, causing a forced server request.
 (defn- logout! []

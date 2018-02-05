@@ -94,7 +94,7 @@
 
 
 (defn cljs-repl [& [build]]
-  (ra/cljs-repl (or build "odin")))
+  (ra/cljs-repl (or build "member")))
 
 
 (defn go! []

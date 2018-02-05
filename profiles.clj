@@ -31,26 +31,7 @@
                                             :password :env/datomic_password}}
 
            :cljsbuild
-           {:builds [{:id           "odin"
-                      :source-paths ["src/cljs/odin" "src/cljs/iface"]
-                      :jar          true
-                      :compiler     {:main             odin.core
-                                     :optimizations    :advanced
-                                     :elide-asserts    true
-                                     :pretty-print     true
-                                     :pseudo-names     true
-                                     :parallel-build   true
-                                     :asset-path       "/js/cljs/out"
-                                     :output-dir       "resources/public/js/cljs/out"
-                                     :output-to        "resources/public/js/cljs/odin.js"
-                                     :source-map       "resources/public/js/cljs/odin.js.map"
-                                     :externs          ["externs/stripe.ext.js"
-                                                        "externs/highcharts.ext.js"]
-                                     :closure-warnings {:externs-validation :off
-                                                        :non-standard-jsdoc :off}}}
-
-
-                     {:id           "admin"
+           {:builds [{:id           "admin"
                       :source-paths ["src/cljs/admin" "src/cljs/iface"]
                       :jar          true
                       :compiler     {:main             admin.core

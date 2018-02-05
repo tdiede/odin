@@ -2,26 +2,7 @@
  :css-dirs        ["resources/public/assets/css"]
  :builds-to-start ["cards" "onboarding" "admin" "member"]
  :builds
- [{:id           "odin"
-   :source-paths ["src/cljs/odin" "src/cljs/iface"]
-   :figwheel     {:on-jsload odin.core/reload!}
-   :compiler     {:main                 odin.core
-                  :preloads             [devtools.preload]
-                  :asset-path           "/js/cljs/odin/out"
-                  :output-to            "resources/public/js/cljs/odin.js"
-                  :output-dir           "resources/public/js/cljs/odin/out"
-                  :verbose              false
-                  :source-map           true
-                  :optimizations        :none
-                  :source-map-timestamp true
-                  :external-config
-                  {:devtools/config
-                   {:features-to-install    [:formatters :hints]
-                    :fn-symbol              "ƒ"
-                    :print-config-overrides true}}}}
-
-
-  {:id           "admin"
+ [{:id           "admin"
    :source-paths ["src/cljs/admin" "src/cljs/iface"]
    :figwheel     {:on-jsload admin.core/reload!}
    :compiler     {:main                 admin.core
