@@ -34,9 +34,7 @@
 ;; ==============================================================================
 
 
-(loading/install-module!)
-
-(graphql/install-module!
+(graphql/configure
  "/api/graphql"
  {:on-unauthenticated (fn [_]
                         {:route "/logout"})
@@ -63,7 +61,7 @@
         mobile-menu-showing (subscribe [:layout.mobile-menu/showing?])
         active              (subscribe [:route/root])]
     [layout/navbar {:mobile-menu-showing @mobile-menu-showing
-                    :on-menu-click       #(dispatch [:layout.mobile-nav/toggle])}
+                    :on-menu-click       #(dispatch [:layout.mobile-menu/toggle])}
      [layout/navbar-menu-items @menu-items @active]
      [layout/navbar-menu-profile
       (:name @account) [nav-user-menu]]]))

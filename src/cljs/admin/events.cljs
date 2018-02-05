@@ -19,3 +19,9 @@
  :layout.mobile-menu/toggle
  (fn [db _]
    (update-in db [:menu :showing] not)))
+
+
+(reg-event-db
+ :user/update
+ (fn [db [_ data]]
+   (update db :account merge data)))

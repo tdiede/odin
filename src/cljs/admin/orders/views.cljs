@@ -10,7 +10,7 @@
             [iface.components.table :as table]
             [iface.loading :as loading]
             [iface.typography :as typography]
-            [iface.modules.payments :as payments]
+            [iface.components.payments :as payments]
             [iface.utils.formatters :as format]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]

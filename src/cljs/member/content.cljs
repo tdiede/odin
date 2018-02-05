@@ -1,10 +1,9 @@
 (ns member.content
   (:require [antizer.reagent :as ant]
             [iface.loading :as loading]
-            [toolbelt.core :as tb]
-            [odin.utils.dispatch :as dispatch]
+            [iface.utils.routes :as iroutes]
             [reagent.core :as r]
-            [iface.odin.routes :as iroutes]))
+            [toolbelt.core :as tb]))
 
 
 

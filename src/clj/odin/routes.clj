@@ -18,9 +18,8 @@
             [ring.util.response :as response]
             [toolbelt.datomic :as td]))
 
-;; =============================================================================
-;; Login Handler (development only)
-;; =============================================================================
+
+;; dev only =====================================================================
 
 
 (defn- login! [{:keys [params session deps] :as req}]
@@ -34,6 +33,16 @@
                                          (assoc :session session)))
       :otherwise                   (-> (response/response "Invalid credentials")
                                        (response/status 400)))))
+
+
+;; page for role ================================================================
+
+
+(html/defsnippet onboarding-navbar "templates/onboarding/navbar.html" [:nav] [])
+
+
+(html/defsnippet onboarding-content "templates/onboarding.html" [:section] []
+  [:section] (html/append (snippets/loading-fullscreen)))
 
 
 (defmulti page
@@ -50,6 +59,18 @@
                          "https://code.highcharts.com/modules/exporting.js"
                          "https://code.highcharts.com/modules/drilldown.js"]
                :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
+               :json [["account" {:id    (td/id account)
+                                  :name  (account/short-name account)
+                                  :email (account/email account)}]]
+               :stylesheets [facade/font-awesome]
+               :css-bundles ["antd.css" "styles.css"])))
+
+
+(defmethod page :account.role/member [req]
+  (let [account (->requester req)]
+    (facade/app req "member"
+               :title "Member Dashboard"
+               :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
                :json [["stripe"  {:key (config/stripe-public-key (->config req))}]
                       ["account" {:id    (td/id account)
                                   :name  (account/short-name account)
@@ -58,37 +79,27 @@
                :css-bundles ["antd.css" "styles.css"])))
 
 
-(defmethod page :account.role/member [req]
-  (facade/app req "odin"
-              :title "Member Dashboard"
-              :fonts ["https://fonts.googleapis.com/css?family=Work+Sans"]
-              :json [["stripe" {:key (config/stripe-public-key (->config req))}]]
-              :stylesheets [facade/font-awesome]
-              :css-bundles ["antd.css" "styles.css"]))
-
-
-(html/defsnippet onboarding-navbar "templates/onboarding/navbar.html" [:nav] [])
-
-
-(html/defsnippet onboarding-content "templates/onboarding.html" [:section] []
-  [:section] (html/append (snippets/loading-fullscreen)))
-
-
 (defmethod page :account.role/onboarding [req]
-  (let [account (->requester req)]
+  (let [account (->requester req)
+        data    {:move-in      (-> account approval/by-account approval/move-in)
+                 :full-deposit (-> account deposit/by-account deposit/amount)
+                 :llc          (-> account approval/by-account approval/property property/llc)
+                 :name         (account/short-name account)
+                 :email        (account/email account)}]
     (facade/app req "onboarding"
                 :title "Starcity Onboarding"
                 :navbar (onboarding-navbar)
                 :content (onboarding-content)
                 :json [["stripe"  {:key (config/stripe-public-key (->config req))}]
-                       ["account" {:move-in      (-> account approval/by-account approval/move-in)
-                                   :full-deposit (-> account deposit/by-account deposit/amount)
-                                   :llc          (-> account approval/by-account approval/property property/llc)
-                                   :name         (account/short-name account)
-                                   :email        (account/email account)}]]
+                       ["account" data]]
                 :stylesheets [facade/font-awesome]
                 :css-bundles ["antd.css" "styles.css"]
                 :chatlio? true)))
+
+
+;; ==============================================================================
+;; api ==========================================================================
+;; ==============================================================================
 
 
 (defn show

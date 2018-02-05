@@ -2,21 +2,39 @@
   (:require [accountant.core :as accountant]
             [member.content :as content]
             [member.events]
+            [member.profile.views]
             [member.routes :as routes]
             [member.subs]
             [antizer.reagent :as ant]
             [cljsjs.moment]
             [day8.re-frame.http-fx]
             [goog.dom :as gdom]
-            [iface.odin.layout :as layout]
-            [iface.odin.routes :as iroutes]
+            [iface.components.layout :as layout]
+            [iface.modules.graphql :as graphql]
+            [iface.modules.modal]
+            [iface.modules.notification]
+            [iface.modules.payments]
+            [iface.utils.routes :as iroutes]
             [reagent.core :as r]
             [re-frame.core :as rf :refer [dispatch subscribe]]
-            [starcity.re-frame.stripe-fx]
+            [toolbelt.re-frame.fx]
             [taoensso.timbre :as timbre]))
 
 
 (enable-console-print!)
+
+
+;; ==============================================================================
+;; modules ======================================================================
+;; ==============================================================================
+
+
+(graphql/configure
+ "/api/graphql"
+ {:on-unauthenticated (fn [_]
+                        {:route "/logout"})
+  :on-error-fx        (fn [[k _]]
+                        {:dispatch [:ui/loading k false]})})
 
 
 ;; ==============================================================================
@@ -38,7 +56,7 @@
         mobile-menu-showing (subscribe [:layout.mobile-menu/showing?])
         active              (subscribe [:route/root])]
     [layout/navbar {:mobile-menu-showing @mobile-menu-showing
-                    :on-menu-click       #(dispatch [:layout.mobile-nav/toggle])}
+                    :on-menu-click       #(dispatch [:layout.mobile-menu/toggle])}
      [layout/navbar-menu-items @menu-items @active]
      [layout/navbar-menu-profile
       (:name @account) [nav-user-menu]]]))
@@ -70,7 +88,7 @@
 
 
 (defn ^:export run []
-  ;; TODO: get account from json
-  (rf/dispatch-sync [:app/init {:name "Josh Lehman"}])
-  (iroutes/hook-browser-navigation! routes/app-routes)
-  (render))
+  (let [account (js->clj (aget js/window "account") :keywordize-keys true)]
+    (rf/dispatch-sync [:app/init account])
+    (iroutes/hook-browser-navigation! routes/app-routes)
+    (render)))

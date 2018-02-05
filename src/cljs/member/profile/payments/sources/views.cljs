@@ -1,14 +1,14 @@
-(ns odin.profile.payments.sources.views
+(ns member.profile.payments.sources.views
   (:require [antizer.reagent :as ant]
             [iface.media :as media]
             [iface.tooltip :as tooltip]
             [iface.typography :as typography]
-            [odin.components.payments :as payments-ui]
-            [odin.l10n :as l10n]
-            [odin.profile.payments.sources.views.forms :as forms]
-            [odin.routes :as routes]
-            [re-frame.core :refer [dispatch subscribe]]
+            [iface.components.payments :as payments]
+            [member.l10n :as l10n]
+            [member.profile.payments.sources.views.forms :as forms]
+            [member.routes :as routes]
             [reagent.core :as r]
+            [re-frame.core :refer [dispatch subscribe]]
             [toolbelt.core :as tb]))
 
 
@@ -54,7 +54,7 @@
           [ant/icon {:type "exclamation-circle" :style {:font-size ".8rem"}}]
           [:span.fs3 {:style {:margin-left 4}} "Unverified"]]
          [:span
-          (payments-ui/payment-source-icon (or type :bank))
+          (payments/payment-source-icon (or type :bank))
           (when autopay [ant/icon {:type :sync :style {:margin-left "8px"}}])
           (when default [ant/icon {:type :check-circle :style {:margin-left "10px"}}])])]]]))
 
@@ -102,7 +102,7 @@
   (let [{:keys [type name] :as source} @(subscribe [:payment.sources/current])]
     [ant/card {:class "mb2"}
      [:div.flexrow.align-start
-      [payments-ui/payment-source-icon type]
+      [payments/payment-source-icon type]
       [:div.ml1
        [:h3.lh13 name]
        [:p (account-digits source)]]]
@@ -127,7 +127,7 @@
   []
   (let [{:keys [payments name]} @(subscribe [:payment.sources/current])]
     [ant/card {:class "is-flush stripe-style"}
-     [payments-ui/payments-table payments false]]))
+     [payments/payments-table payments false]]))
 
 
 (defn bank-radio-option
@@ -381,7 +381,7 @@
          (doall
           (for [{id :id :as source} @card-sources]
             ^{:key id} [ant/select-option {:value id :disabled (= id (:id @service-source))}
-                        (payments-ui/source-name source)]))])
+                        (payments/source-name source)]))])
       [:span.ml1
        [tooltip/info
         (if (empty? @card-sources)

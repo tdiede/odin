@@ -24,7 +24,7 @@
   (venia/graphql-query {:venia/queries x}))
 
 
-(defn install-module!
+(defn configure
   [endpoint {:keys [on-unauthenticated on-error-fx]
              :or   {on-unauthenticated (constantly {}),
                     on-error-fx        (constantly {})}}]
@@ -91,7 +91,7 @@
 ;;      key
 ;;      interceptors
 ;;      (fn [{db :db} [_ params :as v]]
-;;        {:dispatch [:loading key true]
+;;        {:dispatch [:ui/loading key true]
 ;;         :graphql  (merge
 ;;                    (query-fn db v)
 ;;                    {:on-success [on-success-key params]

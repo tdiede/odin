@@ -1,25 +1,17 @@
 (ns member.db
-  (:require [iface.odin.modules.loading :as loading]))
+  (:require [member.profile.db :as profile]
+            [iface.modules.loading :as loading]))
+
 
 (defn bootstrap [account]
   (merge
    {:lang    :en
     :menu    {:showing false
-              :items   [{:key  :metrics
-                         :name "Metrics"
-                         :uri  "/metrics"}
-                        {:key  :accounts
-                         :name "Accounts"
-                         :uri  "/accounts"}
-                        {:key  :orders
-                         :name "Orders"
-                         :uri  "/orders"}
-                        {:key  :kami
-                         :name "Kami"
-                         :uri  "/kami"}]}
+              :items   []}
     :account account
     :route   {:page      :home
               :path      [:home]
               :params    {}
               :requester account}}
-   loading/db))
+   loading/db
+   profile/default-value))

@@ -1,6 +1,6 @@
 {:server-port     3449
  :css-dirs        ["resources/public/assets/css"]
- :builds-to-start ["odin" "cards" "onboarding" "admin"]
+ :builds-to-start ["cards" "onboarding" "admin" "member"]
  :builds
  [{:id           "odin"
    :source-paths ["src/cljs/odin" "src/cljs/iface"]
@@ -29,6 +29,25 @@
                   :asset-path           "/js/cljs/admin/out"
                   :output-to            "resources/public/js/cljs/admin.js"
                   :output-dir           "resources/public/js/cljs/admin/out"
+                  :verbose              false
+                  :source-map           true
+                  :optimizations        :none
+                  :source-map-timestamp true
+                  :external-config
+                  {:devtools/config
+                   {:features-to-install    [:formatters :hints]
+                    :fn-symbol              "ƒ"
+                    :print-config-overrides true}}}}
+
+
+  {:id           "member"
+   :source-paths ["src/cljs/member" "src/cljs/iface"]
+   :figwheel     {:on-jsload member.core/reload!}
+   :compiler     {:main                 member.core
+                  :preloads             [devtools.preload]
+                  :asset-path           "/js/cljs/member/out"
+                  :output-to            "resources/public/js/cljs/member.js"
+                  :output-dir           "resources/public/js/cljs/member/out"
                   :verbose              false
                   :source-map           true
                   :optimizations        :none
