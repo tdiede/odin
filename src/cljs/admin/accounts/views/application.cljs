@@ -180,7 +180,7 @@
 
 
 (defn- income-file [{:keys [id uri name]}]
-  [:li [:a {:href uri :download name} name]])
+  [:li [:a {:href uri :download name :target "_blank"} name]])
 
 
 (defn overview-card
