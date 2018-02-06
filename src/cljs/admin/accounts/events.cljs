@@ -3,7 +3,7 @@
             [admin.routes :as routes]
             [clojure.string :as string]
             [iface.modules.graphql :as graphql]
-            [odin.utils.formatters :as format]
+            [iface.utils.formatters :as format]
             [iface.utils.norms :as norms]
             [re-frame.core :refer [reg-event-fx
                                    reg-event-db

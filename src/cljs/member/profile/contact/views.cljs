@@ -2,7 +2,7 @@
   (:require [antizer.reagent :as ant]
             [iface.typography :as typography]
             [re-frame.core :refer [dispatch subscribe]]
-            [odin.utils.validators :as validate]
+            [iface.utils.validation :as validate]
             [reagent.core :as r]
             [toolbelt.core :as tb]))
 

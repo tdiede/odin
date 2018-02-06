@@ -72,7 +72,6 @@
 (def optimus-bundles
   {"admin.js"      ["/js/cljs/admin.js"]
    "member.js"     ["/js/cljs/member.js"]
-   "odin.js"       ["/js/cljs/odin.js"]
    "onboarding.js" ["/js/cljs/onboarding.js"]
    "antd.css"      ["/assets/css/antd.css"]
    "styles.css"    ["/assets/css/styles.css"]})
