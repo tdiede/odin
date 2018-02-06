@@ -22,6 +22,11 @@
      [ant/menu-item {:key "manage"} "Manage services"]]))
 
 
+;; -----------------------------------------------------------------------------------------------------
+;; BOOK SERVICES
+;; -----------------------------------------------------------------------------------------------------
+
+
 (defn category-icon [{:keys [category label]}]
   (let [selected (subscribe [:member.services.book/category])
         route    (subscribe [:member.services.book.category/route category])]
@@ -95,6 +100,10 @@
         [ant/button "Submit Request"]]]]])
 
 
+;; -----------------------------------------------------------------------------------------------------------
+;; Add service modal
+
+
 (defn ante-meridiem? [x]
   (< x 12))
 
@@ -120,9 +129,7 @@
 
 (defn add-service-modal-footer [data fields]
   (let [required-fields (into [] (filter #(= true (:required %)) fields))
-        can-submit      (reduce (fn [all-defined required-field]
-                                  (and all-defined (get @data (:key required-field)))) true required-fields)
-        ]
+        can-submit (subscribe [:member.services.add-service/can-submit? required-fields])]
     [:div
      [ant/button
       {:size     :large
@@ -131,7 +138,8 @@
      [ant/button
       {:type     :primary
        :size     :large
-       :disabled (not can-submit)
+       :disabled (not @can-submit)
+       :on-click #(dispatch [:member.services.add-service/add])
        ;; :on-click #(on-submit data)
        ;; :loading  @is-loading
        }
@@ -238,6 +246,54 @@
          [variants-fields @form-data (get-fields :variants fields)]
          [desc-fields @form-data (get-fields :desc fields)]]]])))
 
+
+;; -----------------------------------------------------------------------------------------------------
+;; SHOPPING CART
+;; -----------------------------------------------------------------------------------------------------
+
+
+(defn input-data [data-fields]
+  [column-fields data-fields
+   (fn [data-field]
+     [:div.column.is-2
+      [:p (:label data-field)]]
+     [:div.column.is-4
+      [:p (:start-date data-field)]])])
+
+
+(defn cart-item-data [item]
+  [:div
+   (tb/log item)
+   (tb/log (get-fields :data item))
+   [:hr]
+   [input-data (get-fields :data item)]
+   [ant/button "Edit Item"]])
+
+
+(defn cart-item [item]
+  [ant/card
+   [:div.service
+    [:div.columns
+     [:div.column.is-3
+      [:h4.subtitle.is-5 (:title item)]]
+     [:div.column.is-6
+      [:p.fs3 (:description item)]]
+     [:div.column.is-1
+      [:p.price (format/currency (:price item))]]
+     [:div.column.is-2
+      [ant/button
+       ;; on click must remove item from cart-items
+       ;; {:on-click #(dispatch [:modal/show modal])}
+       "Cancel"]]]
+    (when (not-empty (:data item))
+      [cart-item-data item])]]
+  )
+
+;; -----------------------------------------------------------------------------------------------------
+;; PREMIUM SERVICES CONTENT
+;; -----------------------------------------------------------------------------------------------------
+
+
 (defmulti content :page)
 
 
@@ -261,8 +317,15 @@
 
 
 (defmethod content :services/cart [_]
-  [:div
-   [:h3 "Here's your cart"]])
+  (let [cart-items (subscribe [:member.services.cart/requested-items])
+        ;; first-item (first @cart-items)
+        first-item (last @cart-items)
+        ]
+    [:div
+     [:h1.title.is-3 "Shopping cart"]
+     (doall
+      (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
+     ]))
 
 
 (defn view [route]
