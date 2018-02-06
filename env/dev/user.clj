@@ -4,7 +4,7 @@
    [blueprints.models.application :as application]
    [blueprints.models.customer :as customer]
    [blueprints.models.events :as events]
-   [blueprints.models.license :as lincese]
+   [blueprints.models.license :as license]
    [blueprints.models.member-license :as ml]
    [blueprints.models.note :as note]
    [blueprints.models.order :as order]
@@ -14,8 +14,8 @@
    [blueprints.models.security-deposit :as deposit]
    [blueprints.models.service :as service]
    [blueprints.models.unit :as unit]
-   [clojure.spec.test :as stest]
-   [clojure.tools.namespace.repl :refer [refresh]]
+   [clojure.spec.test.alpha :as stest]
+   [clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]
    [datomic.api :as d]
    [figwheel-sidecar.repl-api :as ra]
    [mount.core :as mount :refer [defstate]]
@@ -25,7 +25,9 @@
    [odin.seed :as seed]
    [reactor.reactor :as reactor]
    [taoensso.timbre :as timbre]
-   [clojure.core.async :as a]))
+   [toolbelt.core]
+   [clojure.core.async :as a]
+   [clojure.java.io :as io]))
 
 
 (timbre/refer-timbre)
@@ -92,7 +94,7 @@
 
 
 (defn cljs-repl [& [build]]
-  (ra/cljs-repl (or build "odin")))
+  (ra/cljs-repl (or build "member")))
 
 
 (defn go! []

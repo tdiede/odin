@@ -105,6 +105,7 @@
 
 (defn seed [conn]
   (let [db          (d/db conn)
+        license     (license/by-term db 3)
         accounts-tx (accounts db)
         member-ids  (->> accounts-tx
                          (filter #(and (:account/email %) (= :account.role/member (:account/role %))))
@@ -112,11 +113,8 @@
     (->> {:seed/accounts  {:txes [accounts-tx]}
           :seed/referrals {:txes [(referrals)]}
           :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
+                           :requires [:seed/accounts]}
+          :seed/onboard   {:txes [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
+                                                    :email "onboard@test.com")]
                            :requires [:seed/accounts]}}
          (cf/ensure-conforms conn))))
-
-
-;; [(->> (orders/gen-orders db member-ids)
-;;       (map #(if (= 1 (rand-int 2))
-;;               (assoc % :order/billed-on (rand-date))
-;;               %)))]

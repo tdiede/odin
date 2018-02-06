@@ -1,15 +1,15 @@
 {:server-port     3449
  :css-dirs        ["resources/public/assets/css"]
- :builds-to-start ["odin" "cards"]
+ :builds-to-start ["cards" "onboarding" "admin" "member"]
  :builds
- [{:id           "odin"
-   :source-paths ["src/cljs/odin" "src/cljs/iface"]
-   :figwheel     {:on-jsload odin.core/reload!}
-   :compiler     {:main                 odin.core
+ [{:id           "admin"
+   :source-paths ["src/cljs/admin" "src/cljs/iface"]
+   :figwheel     {:on-jsload admin.core/reload!}
+   :compiler     {:main                 admin.core
                   :preloads             [devtools.preload]
-                  :asset-path           "/js/cljs/odin/out"
-                  :output-to            "resources/public/js/cljs/odin.js"
-                  :output-dir           "resources/public/js/cljs/odin/out"
+                  :asset-path           "/js/cljs/admin/out"
+                  :output-to            "resources/public/js/cljs/admin.js"
+                  :output-dir           "resources/public/js/cljs/admin/out"
                   :verbose              false
                   :source-map           true
                   :optimizations        :none
@@ -20,10 +20,49 @@
                     :fn-symbol              "ƒ"
                     :print-config-overrides true}}}}
 
+
+  {:id           "member"
+   :source-paths ["src/cljs/member" "src/cljs/iface"]
+   :figwheel     {:on-jsload member.core/reload!}
+   :compiler     {:main                 member.core
+                  :preloads             [devtools.preload]
+                  :asset-path           "/js/cljs/member/out"
+                  :output-to            "resources/public/js/cljs/member.js"
+                  :output-dir           "resources/public/js/cljs/member/out"
+                  :verbose              false
+                  :source-map           true
+                  :optimizations        :none
+                  :source-map-timestamp true
+                  :external-config
+                  {:devtools/config
+                   {:features-to-install    [:formatters :hints]
+                    :fn-symbol              "ƒ"
+                    :print-config-overrides true}}}}
+
+
+  {:id           "onboarding"
+   :source-paths ["src/cljs/onboarding" "src/cljs/iface"]
+   :figwheel     {:on-jsload onboarding.core/run}
+   :compiler     {:main                 onboarding.core
+                  :preloads             [devtools.preload]
+                  :asset-path           "/js/cljs/onboarding/out"
+                  :output-to            "resources/public/js/cljs/onboarding.js"
+                  :output-dir           "resources/public/js/cljs/onboarding/out"
+                  :verbose              false
+                  :source-map           true
+                  :optimizations        :none
+                  :source-map-timestamp true
+                  :external-config
+                  {:devtools/config
+                   {:features-to-install    [:formatters :hints]
+                    :fn-symbol              "ƒ"
+                    :print-config-overrides true}}}}
+
+
   {:id           "cards"
-   :source-paths ["src/cljs"]
+   :source-paths ["src/cljs" "src/cljs/iface"]
    :figwheel     {:devcards true}
-   :compiler     {:main       "cards.core"
+   :compiler     {:main       cards.core
                   :asset-path "js/cljs/cards/out"
                   :output-to  "resources/public/js/cljs/cards.js"
                   :output-dir "resources/public/js/cljs/cards/out"

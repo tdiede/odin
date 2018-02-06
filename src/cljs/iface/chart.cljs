@@ -13,10 +13,9 @@
    {:style {:fontFamily "'Work Sans', 'Fira Sans', sans-serif"}}})
 
 
-(set! js/Highcharts.theme (clj->js chart-theme))
-
-
-(.setOptions js/Highcharts js/Highcharts.theme)
+(when (aget js/window "Highcharts")
+ (set! js/Highcharts.theme (clj->js chart-theme))
+ (.setOptions js/Highcharts js/Highcharts.theme))
 
 
 ;; =============================================================================

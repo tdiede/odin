@@ -16,7 +16,7 @@
             [toolbelt.async :refer [<!?]]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [toolbelt.validation :as tv]))
+            [odin.util.validation :as uv]))
 
 ;; =============================================================================
 ;; Fields
@@ -187,9 +187,9 @@
   [{:keys [conn requester]} params _]
   (let [params  (scrub-password-params params)
         vresult (validate-password-params params requester)]
-    (if-not (tv/valid? vresult)
-      (resolve/resolve-as nil {:message (first (tv/errors vresult))
-                               :errors  (tv/errors vresult)})
+    (if-not (uv/valid? vresult)
+      (resolve/resolve-as nil {:message (first (uv/errors vresult))
+                               :errors  (uv/errors vresult)})
       (do
         @(d/transact conn [(auth/change-password requester (:new_password_1 params))])
         requester))))

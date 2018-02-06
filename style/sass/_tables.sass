@@ -1,130 +1,131 @@
-.table-controls
-  padding: 24px
-  background: #fbfbfb
-  border: 1px solid #d9d9d9
-  border-radius: 6px
-  margin-bottom: 24px
+#odin, #admin, #member
+  .table-controls
+    padding: 24px
+    background: #fbfbfb
+    border: 1px solid #d9d9d9
+    border-radius: 6px
+    margin-bottom: 24px
 
 
-// Styling for basic tables (provided by Bulma)
-// <table class="table"> ... </table>
-table, .table
-  // table-layout: fixed
-  background: white
+  // Styling for basic tables (provided by Bulma)
+  // <table class="table"> ... </table>
+  table, .table
+    // table-layout: fixed
+    background: white
 
-  thead
-    td, th
-      color: $black
-      border-bottom-width: 1px
-      background: $off-white
-
-  tbody
-    tr:last-child
+    thead
       td, th
+        color: $black
         border-bottom-width: 1px
+        background: $off-white
 
-  th, td
-    &.align-center
-      text-align: center
-
-    &.expand
-      width: 100%
-
-    &.yes-wrap
-      white-space: wrap !important
-      word-wrap: break-word !important
-
-    &.restrict-width
-      max-width: 300px
-
-.is-flush .ant-table
-  border: none
-
-// Generate classes for hardcoding width of columns/cells
-// e.g. td.width-1 -- td.width-12
-// $column-size-range: 12
-// $column-widths: ()
-//
-// @for $i from 1 through $column-size-range
-//   $w: #{$i}rem
-//   @if not index($column-widths, $w)
-//     th, td
-//       &.width-#{$i}
-//         width: $w
-//     $column-widths: append( $column-widths, $w, comma)
-
-.td-bold
-  font-weight: bold
-
-
-// SELECTOR REFERENCE FOR ANT TABLES
-// div.ant-table
-//   div.ant-table-content
-//     div.ant-table-body
-//       table
-//         thead.ant-table-thead tr th
-//           ...
-//         tbody.ant-table-body
-//           tr.ant-table-row td
-//             ...
-
-.ant-table
-  font-size:     .85rem
-  border:        1px solid $inner-component-border-color
-  border-radius: $inner-component-border-radius
-  padding:       0
-
-.ant-table-thead, .ant-table-tbody
-  tr
-    th
-      padding:        $table-th-vertical-padding $side-padding
-      background:     $off-white
-      // background:     none
-      /* border-top:     1px solid $inner-component-border-color
-      border-bottom:  1px solid $inner-component-border-color
-      text-transform: uppercase
-      font-weight: bold
-      &:last-child
-        text-align: right
-    td
-      padding:       $table-td-vertical-padding $side-padding
-      border-bottom: 1px solid $inner-component-border-color
-      vertical-align: middle
-
-    // Reduces the width of a column by eliminating right padding.
-    // Use carefully. Works best for columns with an empty header.
-    th.is-narrow, td.is-narrow
-      padding-right: 0
-
-    &:last-child td
-      border-bottom: none
-
-    &:hover
-      td
-        background: none
+    tbody
+      tr:last-child
+        td, th
+          border-bottom-width: 1px
 
     th, td
-      white-space: nowrap
-      // &:last-child
-        // width: 100%
+      &.align-center
+        text-align: center
 
-// Colored Rows
-tr.warning, tr.warning:hover
-  td
-    background:   #ffebef
-    border-color: #ffd1da
+      &.expand
+        width: 100%
 
-tr.info, tr.info:hover
-  td
-    background:   #eff4fb
-    border-color: #dce5f3
+      &.yes-wrap
+        white-space: wrap !important
+        word-wrap: break-word !important
+
+      &.restrict-width
+        max-width: 300px
+
+  .is-flush .ant-table
+    border: none
+
+  // Generate classes for hardcoding width of columns/cells
+  // e.g. td.width-1 -- td.width-12
+  // $column-size-range: 12
+  // $column-widths: ()
+  //
+  // @for $i from 1 through $column-size-range
+  //   $w: #{$i}rem
+  //   @if not index($column-widths, $w)
+  //     th, td
+  //       &.width-#{$i}
+  //         width: $w
+  //     $column-widths: append( $column-widths, $w, comma)
+
+  .td-bold
+    font-weight: bold
 
 
-.is-flush
-  .ant-pagination
-    margin-right: 16px
+  // SELECTOR REFERENCE FOR ANT TABLES
+  // div.ant-table
+  //   div.ant-table-content
+  //     div.ant-table-body
+  //       table
+  //         thead.ant-table-thead tr th
+  //           ...
+  //         tbody.ant-table-body
+  //           tr.ant-table-row td
+  //             ...
+
+  .ant-table
+    font-size:     .85rem
+    border:        1px solid $inner-component-border-color
+    border-radius: $inner-component-border-radius
+    padding:       0
+
+  .ant-table-thead, .ant-table-tbody
+    tr
+      th
+        padding:        $table-th-vertical-padding $side-padding
+        background:     $off-white
+        // background:     none
+        /* border-top:     1px solid $inner-component-border-color
+        border-bottom:  1px solid $inner-component-border-color
+        text-transform: uppercase
+        font-weight: bold
+        &:last-child
+          text-align: right
+      td
+        padding:       $table-td-vertical-padding $side-padding
+        border-bottom: 1px solid $inner-component-border-color
+        vertical-align: middle
+
+      // Reduces the width of a column by eliminating right padding.
+      // Use carefully. Works best for columns with an empty header.
+      th.is-narrow, td.is-narrow
+        padding-right: 0
+
+      &:last-child td
+        border-bottom: none
+
+      &:hover
+        td
+          background: none
+
+      th, td
+        white-space: nowrap
+        // &:last-child
+          // width: 100%
+
+  // Colored Rows
+  tr.warning, tr.warning:hover
+    td
+      background:   #ffebef
+      border-color: #ffd1da
+
+  tr.info, tr.info:hover
+    td
+      background:   #eff4fb
+      border-color: #dce5f3
 
 
-.payments-table
-  .ant-table-body
-    border-bottom: 1px solid #e5e5e5
+  .is-flush
+    .ant-pagination
+      margin-right: 16px
+
+
+  .payments-table
+    .ant-table-body
+      border-bottom: 1px solid #e5e5e5

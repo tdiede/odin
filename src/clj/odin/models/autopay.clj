@@ -10,15 +10,14 @@
             [ribbon.customer :as rcu]
             [ribbon.plan :as rp]
             [ribbon.subscription :as rs]
-            [toolbelt.async :refer [<!? go-try]]
+            [toolbelt.async :as ta :refer [<!? go-try]]
             [toolbelt.date :as date]
-            [clojure.spec :as s]
-            [toolbelt.predicates :as p]
+            [toolbelt.datomic :as td]
+            [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
             [odin.models.payment-source :as payment-source]
             [taoensso.timbre :as timbre]))
 
-;; TODO: What should be returned?
 
 ;; other ========================================================================
 
@@ -34,8 +33,8 @@
                             :managed-account managed))))))
 
 (s/fdef autopay-source
-        :args (s/cat :db p/db? :stripe ribbon/conn? :source map?)
-        :ret (s/or :chan p/chan? :nothing nil?))
+        :args (s/cat :db td/db? :stripe ribbon/conn? :source map?)
+        :ret (s/or :chan ta/chan? :nothing nil?))
 
 
 (defn is-autopay-source?
@@ -49,8 +48,8 @@
 
 
 (s/fdef is-autopay-source?
-        :args (s/cat :db p/db? :stripe ribbon/conn? :source map?)
-        :ret p/chan?)
+        :args (s/cat :db td/db? :stripe ribbon/conn? :source map?)
+        :ret ta/chan?)
 
 
 ;; turn on autopay ==============================================================

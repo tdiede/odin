@@ -1,6 +1,6 @@
 // PAGE LAYOUT
 // ----------------------------
-#odin
+#odin, #admin, #member
   display: flex
   /* margin-left: auto
   /* margin-right: auto
@@ -11,92 +11,88 @@
   padding: 1rem
   @extend .is-centered
 
-.container
-  display: flex
-  flex-direction: column
+  .container
+    display: flex
+    flex-direction: column
 
-  max-width: $infinite
-  width: 100%
-  height: 100%
-  min-height: 100%
+    max-width: $infinite
+    width: 100%
+    height: 100%
+    min-height: 100%
 
-  // Navbar (sized to fit contents)
-  .navbar
-    margin: 0 0 .5rem
-    padding: 0 $side-padding
-    flex: 0 0 auto
+    // Navbar (sized to fit contents)
+    .navbar
+      margin: 0 0 .5rem
+      padding: 0 $side-padding
+      flex: 0 0 auto
 
-  // Page (expands to fill remaining window)
-  .root-section
-    flex: 1 1 auto
+    // Page (expands to fill remaining window)
+    .root-section
+      flex: 1 1 auto
 
-// Top level page layout, for pages with a sidebar
-// .page-container
-  // @extend .flexrow
-
-.column.sidebar
-  flex: 0 0 250px
+  .column.sidebar
+    flex: 0 0 250px
 
 
-section, .section
-  background: none
-  padding: 1.5rem
+  section, .section
+    background: none
+    padding: 1.5rem
 
 
-@media screen and (max-width: $tablet - 1px)
-  .container .navbar, .section
-    padding-left:  0rem
-    padding-right: 0rem
+  @media screen and (max-width: $tablet - 1px)
+    .container .navbar, .section
+      padding-left:  0rem
+      padding-right: 0rem
 
-// COMPONENT LAYOUT
+  // COMPONENT LAYOUT
 
-// The header for a page should be wrapped in this class.
-//  div.view-header > h1 + optional p
-.view-header
-  margin-bottom: 2rem
-  align-items: stretch
-  h1
-    font-size: 2rem
-    margin-bottom: 1.5rem
-  p
-    margin-top: -1.5rem
-    font-size: 1rem
+  // The header for a page should be wrapped in this class.
+  //  div.view-header > h1 + optional p
+  .view-header
+    margin-bottom: 2rem
+    align-items: stretch
+    h1
+      font-size: 2rem
+      margin-bottom: 1.5rem
+    p
+      margin-top: -1.5rem
+      font-size: 1rem
 
-.view-header-controls
-  @extend .flexrow
-  @extend .flex-center
-  @extend .pin-right
-  // flex: 1 1 auto
-  > *
-    margin-left: 2rem
-
-
-$margin-size-range: 11
-$margin-mixins: ()
-
-@for $i from 0 through $margin-size-range
-  $w: #{$i * 0.5}rem
-  @if not index($margin-mixins, $w)
-    .mt#{$i}
-      margin-top: $w !important
-    .mr#{$i}
-      margin-right: $w !important
-    .mb#{$i}
-      margin-bottom: $w !important
-    .ml#{$i}
-      margin-left: $w !important
-  $margin-mixins: append( $margin-mixins, $w, comma)
+  .view-header-controls
+    @extend .flexrow
+    @extend .flex-center
+    @extend .pin-right
+    // flex: 1 1 auto
+    > *
+      margin-left: 2rem
 
 
-$width-size-range: 11
-$width-size-mixins: ()
+  $margin-size-range: 11
+  $margin-mixins: ()
 
-@for $i from 1 through $width-size-range
-  $step: 50
-  $w: #{$i * $step}
-  @if not index($width-size-range, $w)
-    .w#{$w}
-      width: #{$w}px
-    .fw#{$w}
-      flex: 0 0 #{$w}px
-  $width-size-mixins: append( $width-size-mixins, $w, comma)
+  @for $i from 0 through $margin-size-range
+    $w: #{$i * 0.5}rem
+    @if not index($margin-mixins, $w)
+      .mt#{$i}
+        margin-top: $w !important
+      .mr#{$i}
+        margin-right: $w !important
+      .mb#{$i}
+        margin-bottom: $w !important
+      .ml#{$i}
+        margin-left: $w !important
+    $margin-mixins: append( $margin-mixins, $w, comma)
+
+
+  $width-size-range: 11
+  $width-size-mixins: ()
+
+  @for $i from 1 through $width-size-range
+    $step: 50
+    $w: #{$i * $step}
+    @if not index($width-size-range, $w)
+      .w#{$w}
+        width: #{$w}px
+      .fw#{$w}
+        flex: 0 0 #{$w}px
+    $width-size-mixins: append( $width-size-mixins, $w, comma)

@@ -70,9 +70,11 @@
 
 
 (def optimus-bundles
-  {"odin.js"    ["/js/cljs/odin.js"]
-   "antd.css"   ["/assets/css/antd.css"]
-   "styles.css" ["/assets/css/styles.css"]})
+  {"admin.js"      ["/js/cljs/admin.js"]
+   "member.js"     ["/js/cljs/member.js"]
+   "onboarding.js" ["/js/cljs/onboarding.js"]
+   "antd.css"      ["/assets/css/antd.css"]
+   "styles.css"    ["/assets/css/styles.css"]})
 
 
 (defn- assemble-assets []
