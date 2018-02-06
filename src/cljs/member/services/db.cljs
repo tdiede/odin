@@ -1,5 +1,6 @@
 (ns member.services.db
-  (:require [member.routes :as routes]))
+  (:require [member.routes :as routes]
+            [clojure.string :as string]))
 
 
 (def path ::services)
@@ -77,3 +78,15 @@
 
 (defmethod parse-query-params :services/manage [page params]
   params)
+
+
+(defn can-add-service?
+  [form-data fields]
+  (->> (filter :required fields)
+       (reduce
+        (fn [acc field]
+          (let [v (get form-data (:key field))]
+            (and acc (if (string? v)
+                       (not (string/blank? v))
+                       v))))
+        true)))

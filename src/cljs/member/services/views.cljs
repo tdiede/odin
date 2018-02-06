@@ -129,25 +129,6 @@
          (str (int (Math/floor t')) (if (integer? t) ":00" ":30") meridiem)])))])
 
 
-(defn add-service-modal-footer [data fields]
-  (let [required-fields (into [] (filter #(= true (:required %)) fields))
-        can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
-    [:div
-     [ant/button
-      {:size     :large
-       :on-click #(dispatch [:member.services.add-service/close modal])}
-      "Cancel"]
-     [ant/button
-      {:type     :primary
-       :size     :large
-       :disabled (not @can-submit)
-       :on-click #(dispatch [:member.services.add-service/add])
-       ;; :on-click #(on-submit data)
-       ;; :loading  @is-loading
-       }
-      "Add"]]))
-
-
 (defn get-fields [fields type]
   (filter #(= type (:type %)) fields))
 
@@ -233,17 +214,36 @@
    [form-fields :desc form-data fields opts]])
 
 
+(defn add-service-modal-footer
+  [can-submit {:keys [on-cancel on-submit is-loading]}]
+  [:div
+   [ant/button
+    {:size     :large
+     :on-click on-cancel}
+    "Cancel"]
+   [ant/button
+    {:type     :primary
+     :size     :large
+     :disabled (not can-submit)
+     :on-click on-submit
+     :loading  is-loading}
+    "Add"]])
+
 
 (defn add-service-modal []
-  (let [is-visible (subscribe [:modal/visible? :member.services/add-service])
-        item       (subscribe [:member.services.add-service/currently-adding])
-        form-data  (subscribe [:member.services.add-service/form])]
+  (let [is-visible      (subscribe [:modal/visible? :member.services/add-service])
+        item            (subscribe [:member.services.add-service/currently-adding])
+        form-data       (subscribe [:member.services.add-service/form])
+        required-fields (into [] (filter #(= true (:required %)) (:fields @item)))
+        can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
     [ant/modal
      {:title     (str "Add " (:title (:service @item)))
       :visible   @is-visible
       :on-cancel #(dispatch [:member.services.add-service/close modal])
       :footer    (r/as-element
-                  [add-service-modal-footer form-data (:fields @item)])}
+                  [add-service-modal-footer @can-submit
+                   {:on-cancel #(dispatch [:member.services.add-service/close modal])
+                    :on-submit #(dispatch [:member.services.add-service/add])}])}
      [:div
       [:p (:description (:service @item))]
       [:br]
