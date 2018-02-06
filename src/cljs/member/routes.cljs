@@ -5,7 +5,7 @@
 
 (def app-routes
   [""
-   [["/profile" [["" :profile/membership]
+   [["/profile" [["" :profile/membership] ;
                  ;; NOTE: Unnecessary because this is the default
                  ;; ["/membership" :profile/membership]
                  ["/contact" :profile/contact]
@@ -16,6 +16,11 @@
 
                  ["/settings"
                   [["/change-password" :profile.settings/change-password]]]]]
+
+
+    ["/services" [["/book" :services/book]
+                  ["/manage" :services/manage]
+                  ["/cart" :services/cart]]]
 
     ["/logout" :logout]
 

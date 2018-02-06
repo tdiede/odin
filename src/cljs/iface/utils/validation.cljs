@@ -1,4 +1,5 @@
-(ns iface.utils.validation)
+(ns iface.utils.validation
+  (:require [i18n.phonenumbers.PhoneNumberUtil :as pnu]))
 
 ;; not currently used, as there are no definitive standards for acceptable bank
 ;; account or routing numbers.
@@ -36,3 +37,13 @@
 (def credit-card-cvv
   "Accepts a 3-4 digit number."
   "^(\\d{3,4})$")
+
+
+(defn phone?
+  [number]
+  (try
+    (let [pu     (pnu/getInstance)
+          parsed (.parse pu number "US")]
+      (.isValidNumber pu parsed))
+    (catch js/Error _
+      false)))

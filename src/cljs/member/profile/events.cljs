@@ -23,6 +23,7 @@
                :on-success [:profile.fetch/success]
                :on-failure [:graphql/failure k]}}))
 
+
 (def ^:private default-info {:first_name ""
                              :last_name  ""
                              :phone      ""})

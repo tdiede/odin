@@ -4,6 +4,7 @@
             [member.events]
             [member.profile.views]
             [member.routes :as routes]
+            [member.services.views]
             [member.subs]
             [antizer.reagent :as ant]
             [cljsjs.moment]

@@ -2,6 +2,7 @@
   (:require [member.db :as db]
             [member.routes :as routes]
             [member.profile.events]
+            [member.services.events]
             [re-frame.core :refer [reg-event-db reg-event-fx]]))
 
 

@@ -1,5 +1,6 @@
 (ns member.subs
   (:require [member.profile.subs]
+            [member.services.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 

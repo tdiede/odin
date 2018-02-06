@@ -14,7 +14,8 @@
             [iface.utils.formatters :as format]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [taoensso.timbre :as timbre]))
 
 
 
@@ -23,7 +24,7 @@
 ;; ==============================================================================
 
 
-(defn- order-name
+(defn order-name
   [{:keys [name rental]}]
   [:span
    {:dangerouslySetInnerHTML
@@ -117,49 +118,53 @@
     :pagination false}])
 
 
-(defn- order-details
-  [{:keys [service status name line_items billed_on fulfilled_on projected_fulfillment] :as order}]
-  [:div
-   [:h4.svc-title.mb1
-    {:style {:font-weight 600 :margin-bottom 0}}
-    (order-name order)
-    [:div.pull-right
-     [ant/button {:on-click #(dispatch [:order/editing (:id order) true])} "Edit"]]]
+(defn order-details
+  ([order]
+   (order-details order {}))
+  ([{:keys [service status name line_items billed_on fulfilled_on projected_fulfillment] :as order}
+    {:keys [on-click] :or {on-click identity}}]
+   (timbre/info order)
+   [:div
+    [:h4.svc-title.mb1
+     {:style {:font-weight 600 :margin-bottom 0}}
+     (order-name order)
+     [:div.pull-right
+      [ant/button {:on-click on-click} "Edit"]]]
 
-   [:p.svc-desc.fs2.mb1
-    {:dangerouslySetInnerHTML {:__html (:desc service)}}]
+    [:p.svc-desc.fs2.mb1
+     {:dangerouslySetInnerHTML {:__html (:desc service)}}]
 
-   [:div.svc-foot
-    [:div.columns.mb0
-     [:div.column
-      [:p.heading "Price"]
-      [:p (order-price order)]]
-     [:div.column
-      [:p.heading "Cost"]
-      [:p (order-cost order)]]
-     [:div.column.is-one-quarter
-      [:p.heading "Margin"]
-      [:p (order-margin order)]]]
-    (when (or (some? fulfilled_on) (some? projected_fulfillment))
-      [:div.columns
-       (when-some [p projected_fulfillment]
-         [:div.column
-          [:p.heading "Projected Fulfillment"]
-          [:p (format/date-time-short p)]])
-       (when-some [f fulfilled_on]
-         [:div.column
-          [:p.heading "Fulfilled"]
-          [:p (format/date-time-short f)]])
-       (when-some [b billed_on]
-         [:div.column
-          [:p.heading "Billed On"]
-          [:p (format/date-time-short b)]])])
-    (order-text-field "Request Notes" (:request order))
-    (order-text-field "Fulfillment Notes" (:summary order))
-    (when-not (empty? line_items)
-      [:div
-       [:p.heading "Line Items"]
-       (line-items-table line_items)])]])
+    [:div.svc-foot
+     [:div.columns.mb0
+      [:div.column
+       [:p.heading "Price"]
+       [:p (order-price order)]]
+      [:div.column
+       [:p.heading "Cost"]
+       [:p (order-cost order)]]
+      [:div.column.is-one-quarter
+       [:p.heading "Margin"]
+       [:p (order-margin order)]]]
+     (when (or (some? fulfilled_on) (some? projected_fulfillment))
+       [:div.columns
+        (when-some [p projected_fulfillment]
+          [:div.column
+           [:p.heading "Projected Fulfillment"]
+           [:p (format/date-time-short p)]])
+        (when-some [f fulfilled_on]
+          [:div.column
+           [:p.heading "Fulfilled"]
+           [:p (format/date-time-short f)]])
+        (when-some [b billed_on]
+          [:div.column
+           [:p.heading "Billed On"]
+           [:p (format/date-time-short b)]])])
+     (order-text-field "Request Notes" (:request order))
+     (order-text-field "Fulfillment Notes" (:summary order))
+     (when-not (empty? line_items)
+       [:div
+        [:p.heading "Line Items"]
+        (line-items-table line_items)])]]))
 
 
 (defn- order-edit
@@ -196,7 +201,7 @@
                :loading   @is-loading}
      (if @is-editing
        [order-edit order]
-       [order-details order])]))
+       [order-details order {:on-click #(dispatch [:order/editing (:id order) true])}])]))
 
 
 (defn- subheader [order]

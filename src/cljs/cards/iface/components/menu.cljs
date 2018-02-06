@@ -1,5 +1,5 @@
-(ns cards.iface.nav.menu
-  (:require [iface.nav.menu :as menu]
+(ns cards.iface.components.menu
+  (:require [iface.components.menu :as menu]
             [reagent.core :as r])
   (:require-macros [devcards.core :refer [defcard-doc defcard-rg]]))
 
@@ -38,7 +38,8 @@ corresponds to the `key` of an item.
                 :route "#"}]}])
 
 
-(defonce side-menu-state (r/atom {:active :subitem-1}))
+(defonce side-menu-state
+  (r/atom {:active :subitem-1}))
 
 
 (defn side-menu*
