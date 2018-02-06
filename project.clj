@@ -77,7 +77,8 @@
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
                  [starcity/toolbelt-datomic "0.2.0"]
-                 [starcity/toolbelt-re-frame "0.1.0"]
+                 [starcity/toolbelt-re-frame "0.1.0"
+                  :exclusions [org.clojure/clojurescript]]
                  [enlive "1.1.6"]]
 
   :jvm-opts ["-server"

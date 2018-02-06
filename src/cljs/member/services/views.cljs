@@ -131,7 +131,7 @@
 
 (defn add-service-modal-footer [data fields]
   (let [required-fields (into [] (filter #(= true (:required %)) fields))
-        can-submit (subscribe [:member.services.add-service/can-submit? required-fields])]
+        can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
     [:div
      [ant/button
       {:size     :large
@@ -148,7 +148,7 @@
       "Add"]]))
 
 
-(defn get-fields [type fields]
+(defn get-fields [fields type]
   (filter #(= type (:type %)) fields))
 
 
@@ -166,31 +166,33 @@
     (partition 2 2 nil fields))])
 
 
-(defn date-fields [data fields]
-  [column-fields fields
+(defmulti form-fields (fn [k data fields opts] k))
+
+
+(defmethod form-fields :date [k data fields {on-change :on-change}]
+  [column-fields (get-fields fields k)
    (fn [field]
      [ant/date-picker
       {:style         {:width "100%"}
        :value         (when-let [date (get data (:key field))]
                         (js/moment date))
-       :on-change     #(dispatch [:member.services.add-service.form/update
-                                  (:key field) (.toISOString %)])
+       :on-change     #(on-change (:key field) (when-let [x %] (.toISOString x)))
        :disabled-date (fn [current]
                         (and current (< (.valueOf current) (.valueOf (js/moment.)))))
        :show-today    false}])])
 
 
-(defn time-fields [data fields]
-  [column-fields fields
+(defmethod form-fields :time [k data fields {on-change :on-change}]
+  [column-fields (get-fields fields k)
    (fn [field]
      [time-picker {:size      :large
+                   ;; TODO:
                    ;; :value (when-let [time (get data (:key field))]
                    ;;          (js/moment time))
-                   :on-change #(dispatch [:member.services.add-service.form/update
-                                          (:key field) (.toISOString %)])}])])
+                   :on-change #(on-change (:key field) (.toISOString %))}])])
 
 
-(defn variants-fields [data fields]
+(defmethod form-fields :variants [k data fields {on-change :on-change}]
   [:div
    (map-indexed
     (fn [i field]
@@ -200,17 +202,14 @@
         [ant/form-item {:label (:label field)}
          [ant/radio-group
           {:value     (keyword (get data (:key field)))
-           :on-change #(dispatch [:member.services.add-service.form/update
-                                  (:key field) (.. % -target -value)])
-           ;; :on-change #(swap! data assoc (:key field) (.. % -target -value))
-           }
+           :on-change #(on-change (:key field) (.. % -target -value))}
           (map-indexed
            #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
            (:options field))]]]])
-    fields)])
+    (get-fields fields k))])
 
 
-(defn desc-fields [data fields]
+(defmethod form-fields :desc [k data fields {on-change :on-change}]
   [:div
    (map-indexed
     (fn [i field]
@@ -221,32 +220,35 @@
          [ant/input
           {:type      :textarea
            :value     (get data (:key field))
-           :on-change #(dispatch [:member.services.add-service.form/update
-                                  (:key field) (.. % -target -value)])}]]]])
-    fields)])
+           :on-change #(on-change (:key field) (.. % -target -value))}]]]])
+    (get-fields fields k))])
+
+
+(defn add-service-form
+  [form-data fields opts]
+  [:form
+   [form-fields :date form-data fields opts]
+   [form-fields :time form-data fields opts]
+   [form-fields :variants form-data fields opts]
+   [form-fields :desc form-data fields opts]])
+
 
 
 (defn add-service-modal []
   (let [is-visible (subscribe [:modal/visible? :member.services/add-service])
         item       (subscribe [:member.services.add-service/currently-adding])
-        form-data  (subscribe [:member.services.add-service/form])
-        fields     (:fields @item)
-        data       (r/atom {})]
-    (fn []
-      (timbre/info :form-data @form-data)
-      [ant/modal
-       {:title     (str "Add " (:title (:service @item)))
-        :visible   @is-visible
-        :on-cancel #(dispatch [:member.services.add-service/close modal])
-        :footer    (r/as-element [add-service-modal-footer form-data fields])}
-       [:div
-        [:p (:description (:service @item))]
-        [:br]
-        [:form
-         [date-fields @form-data (get-fields :date fields)]
-         [time-fields @form-data (get-fields :time fields)]
-         [variants-fields @form-data (get-fields :variants fields)]
-         [desc-fields @form-data (get-fields :desc fields)]]]])))
+        form-data  (subscribe [:member.services.add-service/form])]
+    [ant/modal
+     {:title     (str "Add " (:title (:service @item)))
+      :visible   @is-visible
+      :on-cancel #(dispatch [:member.services.add-service/close modal])
+      :footer    (r/as-element
+                  [add-service-modal-footer form-data (:fields @item)])}
+     [:div
+      [:p (:description (:service @item))]
+      [:br]
+      [add-service-form @form-data (:fields @item)
+       {:on-change #(dispatch [:member.services.add-service.form/update %1 %2])}]]]))
 
 
 ;; -----------------------------------------------------------------------------------------------------

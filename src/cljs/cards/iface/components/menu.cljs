@@ -1,7 +1,7 @@
 (ns cards.iface.components.menu
+  (:require-macros [devcards.core :refer [defcard-doc defcard-rg]])
   (:require [iface.components.menu :as menu]
-            [reagent.core :as r])
-  (:require-macros [devcards.core :refer [defcard-doc defcard-rg]]))
+            [reagent.core :as r]))
 
 
 (defcard-doc

@@ -63,6 +63,7 @@
    :source-paths ["src/cljs" "src/cljs/iface"]
    :figwheel     {:devcards true}
    :compiler     {:main       cards.core
+                  :preloads   [devtools.preload]
                   :asset-path "js/cljs/cards/out"
                   :output-to  "resources/public/js/cljs/cards.js"
                   :output-dir "resources/public/js/cljs/cards/out"
