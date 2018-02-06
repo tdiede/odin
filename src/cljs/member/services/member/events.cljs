@@ -63,9 +63,8 @@
                  [:modal/hide db/modal]]}))
 
 
-(reg-event-db
- :member.services.add-service/add
- [{path db/path}]
- (fn [db]
-   (tb/log db)
-   (assoc-in db [:cart] "test")))
+;; (reg-event-db
+;;  :member.services.add-service/add
+;;  ;; [{path db/path}]
+;;  (fn [db]
+;;    (assoc-in db [:cart] "test")))

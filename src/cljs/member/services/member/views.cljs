@@ -263,8 +263,6 @@
 
 (defn cart-item-data [item]
   [:div
-   (tb/log item)
-   (tb/log (get-fields :data item))
    [:hr]
    [input-data (get-fields :data item)]
    [ant/button "Edit Item"]])
