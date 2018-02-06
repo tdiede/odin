@@ -56,56 +56,6 @@
 
 
 ;; =============================================================================
-;; Config
-;; =============================================================================
-
-
-(def ^:private admin-config
-  {:role :admin
-   :features
-   {:home        {}
-    :profile     {}
-    :accounts    {}
-    :metrics     {}
-    :communities {}
-    :kami        {}
-    :orders      {}
-    :services    {}}})
-
-
-(def ^:private member-config
-  {:role :member
-   :features
-   {:home     {}
-    :profile  {}
-    :services {}}})
-
-
-(defn make-config [req]
-  (let [account (->requester req)]
-    (case (account/role account)
-      :account.role/admin admin-config
-      :account.role/member member-config)))
-
-
-(defn inject-account [config account]
-  (assoc config :account {:id    (:db/id account)
-                          :name  (format "%s %s"
-                                         (account/first-name account)
-                                         (account/last-name account))
-                          :email (account/email account)
-                          :role  (account/role account)}))
-
-
-(defn config-handler [req]
-  (let [account (->requester req)
-        config  (-> (make-config req) (inject-account account))]
-    (-> (response/response config)
-        (response/content-type "application/transit+json")
-        (response/status 200))))
-
-
-;; =============================================================================
 ;; History
 ;; =============================================================================
 
@@ -184,7 +134,6 @@
 
 
 (defroutes routes
-  (GET "/config" [] config-handler)
 
   (compojure/context "/onboarding" []
     (restrict onboarding/routes
