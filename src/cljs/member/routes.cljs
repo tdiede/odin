@@ -5,9 +5,11 @@
 
 (def app-routes
   [""
-   [["/profile" [["" :profile/membership] ;
+   [["/profile" [["" :profile/membership]
+
                  ;; NOTE: Unnecessary because this is the default
                  ;; ["/membership" :profile/membership]
+
                  ["/contact" :profile/contact]
 
                  ["/payments"
