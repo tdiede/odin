@@ -90,3 +90,10 @@
         :is-loading (:loading @data)}]))
   add-service-state
   {:inspect-data true})
+
+
+
+(defcard-rg test-card
+  "Something goes here"
+  [:div
+   [:h1 "This is text"]])

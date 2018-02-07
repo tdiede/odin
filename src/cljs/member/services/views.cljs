@@ -117,6 +117,7 @@
     true                    (.hour (Math/floor n))
     true                    (.second 0)))
 
+
 (defn moment->hhmm
   [m]
   (.format m "h:mm A"))
@@ -138,17 +139,22 @@
   (let [time-range (range start end (float (/ interval 60)))]
     (map number->time time-range)))
 
+
 ;; TODO: implement on-change, will probably have to ask josh what that thing is
 ;; TODO: actually parameterize start end and interval
-(defn time-picker [{:keys [on-change] :or {on-change identity} :as props}]
-  [ant/select (assoc props on-change (comp on-change identity))
+(defn time-picker
+  [{:keys [on-change start end interval placeholder]
+    :or   {on-change identity
+           start     9
+           end       17
+           interval  30}
+    :as   props}]
+  [ant/select props
    (doall
-    (for [t (generate-time-range 9 21 30)]
-      (let [meridiem (if (ante-meridiem? t) "am" "pm")
-            t'       (if (<= t 12.5) t (- t 12))]
-        ^{:key (str t)}
-        [ant/select-option {:value (str t)}
-         (moment->hhmm t)])))])
+    (for [t (generate-time-range start end interval)]
+      ^{:key (str t)}
+      [ant/select-option {:value t}
+       (moment->hhmm t)]))])
 
 
 (defn get-fields [fields type]
@@ -190,6 +196,11 @@
    (fn [field]
      [time-picker {:size      :large
                    ;; TODO:
+                   :start     9
+                   :end       17
+                   :interval  45
+                   :value nil
+                   :placeholder "Select a time"
                    ;; :value (when-let [time (get data (:key field))]
                    ;;          (js/moment time))
                    :on-change #(on-change (:key field) (.toISOString %))}])])
@@ -258,6 +269,7 @@
         form-data       (subscribe [:member.services.add-service/form])
         required-fields (into [] (filter #(= true (:required %)) (:fields @item)))
         can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
+    (.log js/console @form-data)
     [ant/modal
      {:title     (str "Add " (:title (:service @item)))
       :visible   @is-visible
@@ -294,6 +306,11 @@
    [ant/button "Edit Item"]])
 
 
+(defn test-div [word]
+  [:div
+   [:h1 word]])
+
+
 (defn cart-item [item]
   [ant/card
    [:div.service
@@ -309,7 +326,7 @@
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Cancel"]]]
-    (when (not-empty (:data item))
+    #_(when (not-empty (:data item))
       [cart-item-data item])]]
   )
 
