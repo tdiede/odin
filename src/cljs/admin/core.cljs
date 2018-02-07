@@ -1,8 +1,9 @@
 (ns admin.core
   (:require [accountant.core :as accountant]
+            [admin.accounts.views]
             [admin.content :as content]
             [admin.events]
-            [admin.accounts.views]
+            [admin.fx]
             [admin.history]
             [admin.kami.views]
             [admin.metrics.views]
@@ -23,6 +24,7 @@
             [iface.utils.routes :as iroutes]
             [reagent.core :as r]
             [re-frame.core :as rf :refer [dispatch subscribe]]
+            [starcity.re-frame.stripe-fx]
             [toolbelt.re-frame.fx]
             [taoensso.timbre :as timbre]))
 

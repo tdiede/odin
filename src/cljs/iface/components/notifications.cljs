@@ -1,8 +1,33 @@
 (ns iface.components.notifications
   (:require [antizer.reagent :as ant]
             [reagent.core :as r]
-            [re-frame.core :refer [reg-event-fx]]
+            [re-frame.core :refer [reg-event-fx
+                                   reg-event-db
+                                   reg-sub
+                                   subscribe
+                                   dispatch
+                                   path]]
             [toolbelt.core :as tb]))
+
+
+;; ==============================================================================
+;; util =========================================================================
+;; ==============================================================================
+
+
+(defn create
+  ([key text route]
+   (create text route :info))
+  ([key text route level]
+   {:key   key
+    :text  text
+    :route route
+    :level level}))
+
+
+;; ==============================================================================
+;; views ========================================================================
+;; ==============================================================================
 
 
 (defn level->class-name
@@ -15,6 +40,7 @@
     :info    "is-info"
     ""))
 
+
 (defn banner
   "Renders a notification element on-screen, intended to communicate important messages."
   ([message]
@@ -26,17 +52,21 @@
     (if (= is-cancelable true) [:button.delete])
     message]))
 
+
 (defn banner-danger [message]
   [banner message :danger false])
 
+
 (defn banner-warning [message]
   [banner message :warning false])
+
 
 (defn banner-info
   ([message]
    [banner-info message true])
   ([message cancelable]
    [banner message :info cancelable]))
+
 
 (defn banner-success
   ([message]
@@ -65,3 +95,50 @@
                             :href  uri}
     [banner-icon level]
     [:span message]]))
+
+
+(defn messages
+  [messages]
+  (let [messages (subscribe [::all])]
+    [:div
+     (for [{:keys [text route level]} @messages]
+       ^{:key text} [banner-global text level route])]))
+
+
+;; ==============================================================================
+;; subs =========================================================================
+;; ==============================================================================
+
+
+(reg-sub
+ ::root
+ (fn [db _]
+   (::root db)))
+
+
+(reg-sub
+ ::all
+ :<- [::root]
+ (fn [db _]
+   (:messages db)))
+
+
+;; ==============================================================================
+;; events =======================================================================
+;; ==============================================================================
+
+
+(reg-event-db
+ ::create
+ [(path ::root)]
+ (fn [db [_ msgs]]
+   (update db :messages (if (map? msgs) conj concat) msgs)))
+
+
+(reg-event-db
+ ::clear
+ [(path ::root)]
+ (fn [db [_ key]]
+   (if (some? key)
+     (update db :messages (fn [ms] (filter #(not= (:key %) key) ms)))
+     (assoc db :messages '()))))

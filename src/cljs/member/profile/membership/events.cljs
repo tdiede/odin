@@ -4,7 +4,9 @@
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
                                    path]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [antizer.reagent :as ant]
+            [taoensso.timbre :as timbre]))
 
 
 ;; =============================================================================
@@ -27,17 +29,21 @@
 (reg-event-fx
  :member.license/fetch
  (fn [_ [k account-id]]
-   {:dispatch [:ui/loading k true]
-    :graphql  {:query      [[:account {:id account-id}
-                             [[:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
-                              [:active_license
-                               [:id :rate :starts :ends :status :term
-                                [:unit [:id :number]]
-                                [:property [:id :name :code :cover_image_url]]
-                                [:payments [:id :description :type :amount :late_fee
-                                            :status :due :paid_on :pstart :pend]]]]]]]
-               :on-success [:member.fetch.license/success k]
-               :on-failure [:graphql/failure k]}}))
+   (if (nil? account-id)
+     (do
+       (timbre/error "No account id provided to `:member.license/fetch`")
+       {:dispatch [:notify/failure "Whoops! Something went wrong."]})
+     {:dispatch [:ui/loading k true]
+      :graphql  {:query      [[:account {:id account-id}
+                               [[:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
+                                [:active_license
+                                 [:id :rate :starts :ends :status :term
+                                  [:unit [:id :number]]
+                                  [:property [:id :name :code :cover_image_url]]
+                                  [:payments [:id :description :type :amount :late_fee
+                                              :status :due :paid_on :pstart :pend]]]]]]]
+                 :on-success [:member.fetch.license/success k]
+                 :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
@@ -68,11 +74,11 @@
 (reg-event-fx
  ::make-payment-success
  (fn [{db :db} [_ k modal-id _]]
-   (let [account-id (get-in db [:config :account :id])]
+   (let [account-id (get-in db [:account :id])]
      {:dispatch-n [[:ui/loading k false]
                    [:modal/hide modal-id]
                    [:member.license/fetch account-id]
-                   [:global.messages/clear :rent-due]]})))
+                   [:iface.components.notifications/clear :rent-due]]})))
 
 
 ;; =============================================================================
@@ -92,8 +98,8 @@
 (reg-event-fx
  ::pay-deposit-success
  (fn [{db :db} [_ k modal-id _]]
-   (let [account-id (get-in db [:config :account :id])]
+   (let [account-id (get-in db [:account :id])]
      {:dispatch-n [[:ui/loading k false]
                    [:modal/hide modal-id]
                    [:member.license/fetch account-id]
-                   [:global.messages/clear :deposit-overdue]]})))
+                   [:iface.components.notifications/clear :deposit-overdue]]})))

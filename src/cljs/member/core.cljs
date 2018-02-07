@@ -11,31 +11,19 @@
             [day8.re-frame.http-fx]
             [goog.dom :as gdom]
             [iface.components.layout :as layout]
-            [iface.modules.graphql :as graphql]
+            [iface.components.notifications :as notifs]
             [iface.modules.modal]
             [iface.modules.notification]
             [iface.modules.payments]
             [iface.utils.routes :as iroutes]
             [reagent.core :as r]
             [re-frame.core :as rf :refer [dispatch subscribe]]
+            [starcity.re-frame.stripe-fx]
             [toolbelt.re-frame.fx]
             [taoensso.timbre :as timbre]))
 
 
 (enable-console-print!)
-
-
-;; ==============================================================================
-;; modules ======================================================================
-;; ==============================================================================
-
-
-(graphql/configure
- "/api/graphql"
- {:on-unauthenticated (fn [_]
-                        {:route "/logout"})
-  :on-error-fx        (fn [[k _]]
-                        {:dispatch [:ui/loading k false]})})
 
 
 ;; ==============================================================================
@@ -67,6 +55,7 @@
   (let [route (subscribe [:route/current])]
     [layout/layout
      [navbar]
+     [notifs/messages]
      [layout/content
       [content/view @route]]]))
 

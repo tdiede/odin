@@ -68,11 +68,11 @@
 (reg-event-fx
  ::make-payment-success
  (fn [{db :db} [_ k modal-id _]]
-   (let [account-id (get-in db [:config :account :id])]
+   (let [account-id (get-in db [:account :id])]
      {:dispatch-n [[:ui/loading k false]
                    [:modal/hide modal-id]
                    [:member.license/fetch account-id]
-                   [:global.messages/clear :rent-due]]})))
+                   [:iface.components.notifications/clear :rent-due]]})))
 
 
 ;; =============================================================================
@@ -92,8 +92,8 @@
 (reg-event-fx
  ::pay-deposit-success
  (fn [{db :db} [_ k modal-id _]]
-   (let [account-id (get-in db [:config :account :id])]
+   (let [account-id (get-in db [:account :id])]
      {:dispatch-n [[:ui/loading k false]
                    [:modal/hide modal-id]
                    [:member.license/fetch account-id]
-                   [:global.messages/clear :deposit-overdue]]})))
+                   [:iface.components.notifications/clear :deposit-overdue]]})))
