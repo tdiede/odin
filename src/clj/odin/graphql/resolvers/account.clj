@@ -204,10 +204,6 @@
   (or (account/admin? account) (= (:id params) (:db/id account))))
 
 
-(defmethod authorization/authorized? :account/change-password! [_ account params]
-  (= (:id params) (:db/id account)))
-
-
 (defmethod authorization/authorized? :account/list [_ account _]
   (account/admin? account))
 
