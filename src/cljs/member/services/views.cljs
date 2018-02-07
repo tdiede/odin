@@ -117,8 +117,12 @@
     true                    (.hour (Math/floor n))
     true                    (.second 0)))
 
+(defn moment->hhmm
+  [m]
+  (.format m "h:mm A"))
 
-(defn time-picker [{:keys [on-change] :or {on-change identity} :as props}]
+
+(defn time-picker*** [{:keys [on-change] :or {on-change identity} :as props}]
   [ant/select (assoc props :on-change (comp on-change number->time js/parseFloat))
    (doall
     (for [t (reduce #(conj %1 %2 (+ %2 0.5)) [] (range 9 21))]
@@ -127,6 +131,24 @@
         ^{:key (str t)}
         [ant/select-option {:value (str t)}
          (str (int (Math/floor t')) (if (integer? t) ":00" ":30") meridiem)])))])
+
+
+(defn generate-time-range
+  [start end interval]
+  (let [time-range (range start end (float (/ interval 60)))]
+    (map number->time time-range)))
+
+;; TODO: implement on-change, will probably have to ask josh what that thing is
+;; TODO: actually parameterize start end and interval
+(defn time-picker [{:keys [on-change] :or {on-change identity} :as props}]
+  [ant/select (assoc props on-change (comp on-change identity))
+   (doall
+    (for [t (generate-time-range 9 21 30)]
+      (let [meridiem (if (ante-meridiem? t) "am" "pm")
+            t'       (if (<= t 12.5) t (- t 12))]
+        ^{:key (str t)}
+        [ant/select-option {:value (str t)}
+         (moment->hhmm t)])))])
 
 
 (defn get-fields [fields type]
