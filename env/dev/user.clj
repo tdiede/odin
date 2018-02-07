@@ -57,15 +57,16 @@
 
 
 (defstate reactor
-  :start (let [conf {:mailer          {:api-key (config/mailgun-api-key config)
-                                       :domain  (config/mailgun-domain config)
-                                       :sender  (config/mailgun-sender config)
-                                       :send-to "josh@starcity.com"}
-                     :slack           {:webhook-url (config/slack-webhook-url config)
-                                       :username    (config/slack-username config)
-                                       :channel     "#debug"}
-                     :stripe          {:secret-key (config/stripe-secret-key config)}
-                     :public-hostname "http://localhost:8080"}
+  :start (let [conf {:mailer             {:api-key (config/mailgun-api-key config)
+                                          :domain  (config/mailgun-domain config)
+                                          :sender  (config/mailgun-sender config)
+                                          :send-to "josh@starcity.com"}
+                     :slack              {:webhook-url (config/slack-webhook-url config)
+                                          :username    (config/slack-username config)
+                                          :channel     "#debug"}
+                     :stripe             {:secret-key (config/stripe-secret-key config)}
+                     :public-hostname    "http://localhost:8080"
+                     :dashboard-hostname "http://localhost:8082"}
                chan (a/chan (a/sliding-buffer 512))]
            (reactor/start! conn chan conf))
   :stop (reactor/stop! reactor))

@@ -66,7 +66,7 @@
          {:type     :primary
           :size     :large
           :icon     :plus
-          :on-click #(dispatch [:accounts.entry.create-note/toggle])}
+          :on-click #(dispatch [:accounts.entry.create-note/toggle (:id account)])}
          "Create Note"]))))
 
 

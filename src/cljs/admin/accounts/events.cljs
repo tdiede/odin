@@ -377,8 +377,11 @@
 (reg-event-db
  :accounts.entry.create-note/toggle
  [(path db/path)]
- (fn [db _]
-   (update db :showing-create-note not)))
+ (fn [db [_ account-id]]
+   (if (some? account-id)
+     (-> (update db :showing-create-note not)
+         (assoc-in [:create-form account-id] {:notify true}))
+     (update db :showing-create-note not))))
 
 
 (reg-event-db
