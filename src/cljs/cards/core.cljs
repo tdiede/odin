@@ -6,7 +6,8 @@
             [reagent.core :as r]
             [cards.admin.orders.views]
             [cards.member.services]
-            [cards.iface.components.menu]))
+            [cards.iface.components.menu]
+            [cards.member.services.cart]))
 
 
 (enable-console-print!)
