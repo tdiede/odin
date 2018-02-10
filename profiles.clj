@@ -38,7 +38,7 @@
                                      :pseudo-names     true
                                      :parallel-build   true
                                      :asset-path       "/js/cljs/out"
-                                     :output-dir       "resources/public/js/cljs/out"
+                                     :output-dir       "resources/public/js/cljs/admin/out"
                                      :output-to        "resources/public/js/cljs/admin.js"
                                      :source-map       "resources/public/js/cljs/admin.js.map"
                                      :externs          ["externs/highcharts.ext.js"]
@@ -55,7 +55,7 @@
                                      :pseudo-names     true
                                      :parallel-build   true
                                      :asset-path       "/js/cljs/out"
-                                     :output-dir       "resources/public/js/cljs/out"
+                                     :output-dir       "resources/public/js/cljs/member/out"
                                      :output-to        "resources/public/js/cljs/member.js"
                                      :source-map       "resources/public/js/cljs/member.js.map"
                                      :externs          ["externs/stripe.ext.js"]
