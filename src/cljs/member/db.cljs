@@ -8,9 +8,10 @@
   (merge
    {:lang    :en
     :menu    {:showing false
-              :items   [{:key  :services
-                         :name "Premium Services"
-                         :uri  "/services/book"}]}
+              ;; :items   [{:key  :services
+              ;;            :name "Premium Services"
+              ;;            :uri  "/services/book"}]
+              }
     :account account
     :route   {:page      :home
               :path      [:home]
