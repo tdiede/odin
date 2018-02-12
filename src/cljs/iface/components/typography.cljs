@@ -1,4 +1,4 @@
-(ns iface.typography)
+(ns iface.components.typography)
 
 
 (defn view-header

@@ -9,7 +9,7 @@
             [iface.components.membership :as membership]
             [iface.components.table :as table]
             [iface.loading :as loading]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.components.payments :as payments]
             [iface.utils.formatters :as format]
             [re-frame.core :refer [subscribe dispatch]]

@@ -2,7 +2,7 @@
   (:require [antizer.reagent :as ant]
             [iface.media :as media]
             [iface.tooltip :as tooltip]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.components.payments :as payments]
             [member.l10n :as l10n]
             [member.profile.payments.sources.views.forms :as forms]

@@ -1,6 +1,6 @@
 (ns admin.profile.contact.views
   (:require [antizer.reagent :as ant]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [re-frame.core :refer [dispatch subscribe]]
             [iface.utils.validation :as validate]
             [reagent.core :as r]
