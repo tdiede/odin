@@ -1,6 +1,8 @@
 (ns member.services.views
   (:require [antizer.reagent :as ant]
-            [iface.typography :as typography]
+            [iface.components.form :as form]
+            [iface.components.services :as services]
+            [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [member.content :as content]
             [member.routes :as routes]
@@ -102,187 +104,23 @@
         [ant/button "Submit Request"]]]]])
 
 
-;; -----------------------------------------------------------------------------------------------------------
-;; Add service modal
 
-
-(defn ante-meridiem? [x]
-  (< x 12))
-
-
-(defn number->time [n]
-  (cond-> (js/moment)
-    (= n (Math/floor n))    (.minute 0)
-    (not= n (Math/floor n)) (.minute (* 60 (mod n 1)))
-    true                    (.hour (Math/floor n))
-    true                    (.second 0)))
-
-
-(defn moment->hhmm
-  [m]
-  (.format m "h:mm A"))
-
-
-(defn time-picker*** [{:keys [on-change] :or {on-change identity} :as props}]
-  [ant/select (assoc props :on-change (comp on-change number->time js/parseFloat))
-   (doall
-    (for [t (reduce #(conj %1 %2 (+ %2 0.5)) [] (range 9 21))]
-      (let [meridiem (if (ante-meridiem? t) "am" "pm")
-            t'       (if (<= t 12.5) t (- t 12))]
-        ^{:key (str t)}
-        [ant/select-option {:value (str t)}
-         (str (int (Math/floor t')) (if (integer? t) ":00" ":30") meridiem)])))])
-
-
-(defn generate-time-range
-  [start end interval]
-  (let [time-range (range start end (float (/ interval 60)))]
-    (map number->time time-range)))
-
-
-;; TODO: implement on-change, will probably have to ask josh what that thing is
-;; TODO: actually parameterize start end and interval
-(defn time-picker
-  [{:keys [on-change start end interval placeholder]
-    :or   {on-change identity
-           start     9
-           end       17
-           interval  30}
-    :as   props}]
-  [ant/select props
-   (doall
-    (for [t (generate-time-range start end interval)]
-      ^{:key (str t)}
-      [ant/select-option {:value t}
-       (moment->hhmm t)]))])
-
-
-(defn get-fields [fields type]
-  (filter #(= type (:type %)) fields))
-
-
-(defn- column-fields [fields component-fn]
-  [:div
-   (map-indexed
-    (fn [i row]
-      ^{:key i}
-      [:div.columns
-       (for [field row]
-         ^{:key (:id field)}
-         [:div.column.is-half
-          [ant/form-item {:label (:label field)}
-           (r/as-element (component-fn field))]])])
-    (partition 2 2 nil fields))])
-
-
-(defmulti form-fields (fn [k data fields opts] k))
-
-
-(defmethod form-fields :date [k data fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
-     [ant/date-picker
-      {:style         {:width "100%"}
-       :value         (when-let [date (get data (:key field))]
-                        (js/moment date))
-       :on-change     #(on-change (:key field) (when-let [x %] (.toISOString x)))
-       :disabled-date (fn [current]
-                        (and current (< (.valueOf current) (.valueOf (js/moment.)))))
-       :show-today    false}])])
-
-
-(defmethod form-fields :time [k data fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
-     [time-picker {:size      :large
-                   ;; TODO:
-                   :start     9
-                   :end       17
-                   :interval  45
-                   :value nil
-                   :placeholder "Select a time"
-                   ;; :value (when-let [time (get data (:key field))]
-                   ;;          (js/moment time))
-                   :on-change #(on-change (:key field) (.toISOString %))}])])
-
-
-(defmethod form-fields :variants [k data fields {on-change :on-change}]
-  [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/radio-group
-          {:value     (keyword (get data (:key field)))
-           :on-change #(on-change (:key field) (.. % -target -value))}
-          (map-indexed
-           #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
-           (:options field))]]]])
-    (get-fields fields k))])
-
-
-(defmethod form-fields :desc [k data fields {on-change :on-change}]
-  [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/input
-          {:type      :textarea
-           :value     (get data (:key field))
-           :on-change #(on-change (:key field) (.. % -target -value))}]]]])
-    (get-fields fields k))])
-
-
-(defn add-service-form
-  [form-data fields opts]
-  [:form
-   [form-fields :date form-data fields opts]
-   [form-fields :time form-data fields opts]
-   [form-fields :variants form-data fields opts]
-   [form-fields :desc form-data fields opts]])
-
-
-(defn add-service-modal-footer
-  [can-submit {:keys [on-cancel on-submit is-loading]}]
-  [:div
-   [ant/button
-    {:size     :large
-     :on-click on-cancel}
-    "Cancel"]
-   [ant/button
-    {:type     :primary
-     :size     :large
-     :disabled (not can-submit)
-     :on-click on-submit
-     :loading  is-loading}
-    "Add"]])
-
-
-(defn add-service-modal []
-  (let [is-visible      (subscribe [:modal/visible? :member.services/add-service])
-        item            (subscribe [:member.services.add-service/currently-adding])
-        form-data       (subscribe [:member.services.add-service/form])
-        required-fields (into [] (filter #(= true (:required %)) (:fields @item)))
-        can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
-    (.log js/console @form-data)
-    [ant/modal
-     {:title     (str "Add " (:title (:service @item)))
-      :visible   @is-visible
-      :on-cancel #(dispatch [:member.services.add-service/close modal])
-      :footer    (r/as-element
-                  [add-service-modal-footer @can-submit
-                   {:on-cancel #(dispatch [:member.services.add-service/close modal])
-                    :on-submit #(dispatch [:member.services.add-service/add])}])}
-     [:div
-      [:p (:description (:service @item))]
-      [:br]
-      [add-service-form @form-data (:fields @item)
-       {:on-change #(dispatch [:member.services.add-service.form/update %1 %2])}]]]))
+;; (defn service-modal
+;;   [{:keys [action is-visible currently-adding form-data can-submit on-cancel on-submit on-change]}]
+;;   (.log js/console @form-data)
+;;   [ant/modal
+;;    {:title     (str action " " (get-in @currently-adding [:service :title]))
+;;     :visible   @is-visible
+;;     :on-cancel on-cancel
+;;     :footer    (r/as-element
+;;                 [add-service-modal-footer @can-submit
+;;                  {:on-cancel on-cancel
+;;                   :on-submit on-submit}])}
+;;    [:div
+;;     [:p (get-in @currently-adding [:service :description])]
+;;     [:br]
+;;     [add-service-form @form-data (:fields @currently-adding)
+;;      {:on-change on-change}]]])
 
 
 ;; -----------------------------------------------------------------------------------------------------
@@ -290,19 +128,41 @@
 ;; -----------------------------------------------------------------------------------------------------
 
 
-(defn input-data [data-fields]
-  [column-fields data-fields
-   (fn [data-field]
-     [:div.column.is-2
-      [:p (:label data-field)]]
-     [:div.column.is-4
-      [:p (:start-date data-field)]])])
+(defn- column-fields-2 [fields component-fn]
+  [:div
+   (map-indexed
+    (fn [i row]
+      ^{:key i}
+      [:div.columns
+       (for [field row]
+         ^{:key (:id field)}
+         ;; (.log js/console field " " row)
+         [:div.column.is-half
+          (r/as-element (component-fn field))
+          #_[ant/form-item {:label (:label field)}
+             (r/as-element (component-fn field))]])])
+    (partition 2 2 nil fields))])
 
+
+(defn input-data [data-fields]
+  [column-fields-2 data-fields
+   (fn [data-field]
+     (let [label (name (key data-field))
+           info ((keyword label) data-field)]
+       (.log js/console label (nth data-field 1))
+       [:div]))])
+
+(comment
+  #_[:div.column.is-2
+     [:p (:label data-field)]]
+  #_[:div.column.is-4
+     [:p (:start-date data-field)]]
+  )
 
 (defn cart-item-data [item]
   [:div
    [:hr]
-   [input-data (get-fields :data item)]
+   [input-data (:form item)]
    [ant/button "Edit Item"]])
 
 
@@ -326,7 +186,7 @@
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Cancel"]]]
-    #_(when (not-empty (:data item))
+    (when (not-empty (:form item))
       [cart-item-data item])]]
   )
 
@@ -372,8 +232,16 @@
 
 (defmethod content/view :services [route]
   [:div
-   [add-service-modal]
+   [services/service-modal
+    {:action           "Add"
+     :is-visible       @(subscribe [:modal/visible? :member.services/add-service])
+     :currently-adding @(subscribe [:member.services.add-service/currently-adding])
+     :form-data        @(subscribe [:member.services.add-service/form])
+     :can-submit       @(subscribe [:member.services.add-service/can-submit?])
+     :on-cancel        #(dispatch [:member.services.add-service/close modal])
+     :on-submit        #(dispatch [:member.services.add-service/add])
+     :on-change        #(dispatch [:member.services.add-service.form/update %1 %2])
+     }]
    (typography/view-header "Premium Services" "Order and manage premium services.")
    [menu]
-   (content route)
-   ])
+   (content route)])

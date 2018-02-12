@@ -2,7 +2,7 @@
   (:require [antizer.reagent :as ant]
             [cljsjs.moment]
             [devcards.core]
-            [member.services.views :as view]
+            [iface.components.services :as services]
             [member.services.db :as db]
             [reagent.core :as r])
   (:require-macros [devcards.core :as dc :refer [defcard
@@ -62,7 +62,7 @@
 (defcard-rg add-service-form
   "The form rendered inside of the `add-service-modal`."
   (fn [data _]
-    [view/add-service-form (:form @data) (:fields sample-data)
+    [services/add-service-form (:form @data) (:fields sample-data)
      {:on-change #(swap! add-service-state assoc-in [:form %1] %2)}])
   add-service-state
   {:inspect-data true})
@@ -84,7 +84,7 @@
   "Some docs over here....."
   (fn [data _]
     (let [can-submit (db/can-add-service? (:form @data) (:fields sample-data))]
-      [view/add-service-modal-footer can-submit
+      [services/add-service-modal-footer can-submit
        {:on-cancel  identity
         :on-submit  (on-submit data)
         :is-loading (:loading @data)}]))

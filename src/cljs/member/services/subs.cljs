@@ -1,6 +1,7 @@
 (ns member.services.subs
   (:require [member.services.db :as db]
-            [re-frame.core :refer [reg-sub]]))
+            [re-frame.core :refer [reg-sub]]
+            [toolbelt.core :as tb]))
 
 
 (reg-sub
@@ -110,11 +111,27 @@
 
 
 (reg-sub
+ :member.services.add-service/required-fields
+ :<- [:member.services.add-service/currently-adding]
+ (fn [currently-adding _]
+   (into [] (filter #(= true (:required %)) (:fields currently-adding)))))
+
+
+(reg-sub
  :member.services.add-service/can-submit?
- :<- [db/path]
- (fn [db [_ fields]]
+ :<- [:member.services.add-service/form]
+ :<- [:member.services.add-service/required-fields]
+ (fn [[form required-fields] _]
    (reduce (fn [all-defined field]
-             (and all-defined (get (:form-data db) (:key field)))) true fields)))
+             (and all-defined (get form (:key field)))) true required-fields)))
+
+
+;; (reg-sub
+;;  :member.services.add-service/can-submit?
+;;  :<- [db/path]
+;;  (fn [db [_ fields]]
+;;    (reduce (fn [all-defined field]
+;;              (and all-defined (get (:form-data db) (:key field)))) true fields)))
 
 
 (reg-sub

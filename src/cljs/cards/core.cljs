@@ -6,6 +6,7 @@
             [reagent.core :as r]
             [cards.admin.orders.views]
             [cards.member.services]
+            [cards.iface.components.form]
             [cards.iface.components.menu]
             [cards.member.services.cart]))
 
