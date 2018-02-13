@@ -27,15 +27,15 @@
     (partition 2 2 nil fields))])
 
 
-(defmulti form-fields (fn [k data fields opts] k))
+(defmulti form-fields (fn [k fields opts] k))
 
 
-(defmethod form-fields :date [k data fields {on-change :on-change}]
+(defmethod form-fields :date [k fields {on-change :on-change}]
   [column-fields (get-fields fields k)
    (fn [field]
      [ant/date-picker
       {:style         {:width "100%"}
-       :value         (when-let [date (get data (:key field))]
+       :value         (when-let [date (:value field)]
                         (js/moment date))
        :on-change     #(on-change (:key field) (when-let [x %] (.toISOString x)))
        :disabled-date (fn [current]
@@ -43,7 +43,7 @@
        :show-today    false}])])
 
 
-(defmethod form-fields :time [k data fields {on-change :on-change}]
+(defmethod form-fields :time [k fields {on-change :on-change}]
   [column-fields (get-fields fields k)
    (fn [field]
      [form/time-picker
@@ -52,12 +52,12 @@
        :end         17
        :interval    45
        :placeholder "Select a time"
-       :value       (when-let [time (get data (:key field))]
+       :value       (when-let [time (:value field)]
                       (js/moment time))
        :on-change   #(on-change (:key field) (.toISOString %))}])])
 
 
-(defmethod form-fields :variants [k data fields {on-change :on-change}]
+(defmethod form-fields :variants [k fields {on-change :on-change}]
   [:div
    (map-indexed
     (fn [i field]
@@ -66,7 +66,7 @@
        [:div.column
         [ant/form-item {:label (:label field)}
          [ant/radio-group
-          {:value     (keyword (get data (:key field)))
+          {:value     (keyword (:value field))
            :on-change #(on-change (:key field) (.. % -target -value))}
           (map-indexed
            #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
@@ -74,7 +74,7 @@
     (get-fields fields k))])
 
 
-(defmethod form-fields :desc [k data fields {on-change :on-change}]
+(defmethod form-fields :desc [k fields {on-change :on-change}]
   [:div
    (map-indexed
     (fn [i field]
@@ -84,18 +84,18 @@
         [ant/form-item {:label (:label field)}
          [ant/input
           {:type      :textarea
-           :value     (get data (:key field))
+           :value     (:value field)
            :on-change #(on-change (:key field) (.. % -target -value))}]]]])
     (get-fields fields k))])
 
 
 (defn add-service-form
-  [form-data fields opts]
+  [fields opts]
   [:form
-   [form-fields :date form-data fields opts]
-   [form-fields :time form-data fields opts]
-   [form-fields :variants form-data fields opts]
-   [form-fields :desc form-data fields opts]])
+   [form-fields :date fields opts]
+   [form-fields :time fields opts]
+   [form-fields :variants fields opts]
+   [form-fields :desc fields opts]])
 
 
 (defn add-service-modal-footer
@@ -116,9 +116,9 @@
 
 
 (defn service-modal
-  [{:keys [action is-visible currently-adding form-data can-submit on-cancel on-submit on-change]}]
+  [{:keys [action is-visible service form-fields can-submit on-cancel on-submit on-change]}]
   [ant/modal
-   {:title     (str action " " (get-in currently-adding [:service :title]))
+   {:title     (str action " " (:title service))
     :visible   is-visible
     :on-cancel on-cancel
     :footer    (r/as-element
@@ -126,7 +126,7 @@
                  {:on-cancel on-cancel
                   :on-submit on-submit}])}
    [:div
-    [:p (get-in currently-adding [:service :description])]
+    [:p (:description service)]
     [:br]
-    [add-service-form form-data (:fields currently-adding)
+    [add-service-form form-fields
      {:on-change on-change}]]])
