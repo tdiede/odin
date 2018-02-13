@@ -98,35 +98,9 @@
    (:catalogues db)))
 
 
+;; THOUGHT should this be called "cart" instead?
 (reg-sub
  :services.cart/requested-items
  :<- [db/path]
  (fn [db _]
-   [{:id          1
-     :title       "Full-length Mirror"
-     :description "Integer placerat tristique nisl. Nullam rutrum."
-     :price       25.0
-     :data        []}
-    {:id          2
-     :title       "Dog boarding"
-     :description "Nunc rutrum turpis sed pede. Praesent augue. Nam euismod tellus id erat."
-     :price       50.0
-     :data        [{:label      "Start date"
-                    :start-date "Feb 1, 2018"}
-                   {:label    "End date"
-                    :end-date "Feb 10, 2018"}
-                   {:label    "Dog Size"
-                    :dog-size :m}
-                   {:label     "Additional information"
-                    :more-info "He hates balls, do not play fetch"}]}
-    {:id          3
-     :title       "Single dog walk"
-     :description "Nullam rutrum. Donec posuere augue in quam. Phasellus lacus."
-     :price       10.0
-     :data        [{:label "Date"
-                    :date  "Feb 13, 2018"}
-                   {:label "Time"
-                    :time  "6:00 pm"}
-                   {:label    "Dog size"
-                    :dog-size :m}]}
-    ]))
+   (:cart db)))

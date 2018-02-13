@@ -71,8 +71,11 @@
                  [:modal/hide db/modal]]}))
 
 
-;; (reg-event-db
-;;  :member.services.add-service/add
-;;  ;; [{path db/path}]
-;;  (fn [db]
-;;    (assoc-in db [:cart] "test")))
+(reg-event-fx
+ :services.add-service/add
+ [(path db/path) ]
+ (fn [{db :db} _]
+   (let [service-id (get-in db [:adding :id])
+         adding     (assoc {} :service service-id :fields (:form-data db))]
+     {:db       (assoc db :cart (conj (:cart db) adding))
+      :dispatch [:services.add-service/close]})))
