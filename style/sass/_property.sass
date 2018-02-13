@@ -1,0 +1,47 @@
+$padding: 6px
+
+.admin-property-unit-list
+  .search-bar
+    margin-bottom: $padding
+
+  ul.unit-list
+    a
+      &:first-child
+        margin-top: $padding * 3
+
+      &:last-child
+        margin-bottom: $padding * 3
+
+      li
+        padding: $padding 0
+
+        &.is-active
+          border-right: 3px solid $link-color
+
+          .occupant-name
+            border-bottom: 2px solid $link-color
+
+        &:hover
+          border-right: 3px solid $link-hover
+
+          .occupant-name
+            border-bottom: 2px solid $link-hover
+
+        &:hover, &.is-active
+          .date, .occupant-name
+            color: $text-black
+
+        .unit-name
+          font-weight: 600
+
+        .divider
+          color: $light-grey
+          margin: 0 $padding + 2
+
+        .occupied, .unoccupied
+          color: $text-gray
+          font-size: 0.75rem
+
+        /* .occupant-name
+        /*   color: $link-color
+          /* border-bottom: 2px solid $link-color

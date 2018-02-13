@@ -5,6 +5,7 @@
   (:require [devcards.core]
             [reagent.core :as r]
             [cards.admin.orders.views]
+            [cards.admin.properties.views]
             [cards.member.services]
             [cards.iface.components.form]
             [cards.iface.components.menu]
