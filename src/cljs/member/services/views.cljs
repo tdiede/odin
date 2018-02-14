@@ -106,6 +106,9 @@
 ;; ==============================================================================
 
 
+;; TODO for times and dates convert the moment string back into actual times and dates
+;; TODO render form fields in the intended order
+;; TODO make it look pretty?
 
 (defn- column-fields-2 [fields]
   [:div
@@ -115,10 +118,9 @@
       [:div.columns
        (for [field row]
          ^{:key (:id field)}
-         ;; (.log js/console field " " row)
          [:div.column.is-half
-          [:span [:p (str (name (key field)))]]
-          [:span [:p field]]
+          [:p (:label field)]
+          [:p (:value field)]
           ])])
     (partition 2 2 nil fields))])
 
@@ -126,8 +128,7 @@
 (defn cart-item-data [item]
   [:div
    [:hr]
-   [column-fields-2 (:form item)]
-   #_[input-data (:form item)]
+   [column-fields-2 item]
    [ant/button "Edit Item"]])
 
 
@@ -136,18 +137,18 @@
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 (:title item)]]
+      [:h4.subtitle.is-5 (get-in item [:service :title])]]
      [:div.column.is-6
-      [:p.fs3 (:description item)]]
+      [:p.fs3 (get-in item [:service :description])]]
      [:div.column.is-1
-      [:p.price (format/currency (:price item))]]
+      [:p.price (format/currency (get-in item [:service :price]))]]
      [:div.column.is-2
       [ant/button
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Cancel"]]]
-    (when (not-empty (:form item))
-      [cart-item-data item])]]
+    (when (not-empty (:fields item))
+      [cart-item-data (:fields item)])]]
   )
 
 ;; ==============================================================================
