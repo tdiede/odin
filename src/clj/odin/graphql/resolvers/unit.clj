@@ -1,12 +1,11 @@
 (ns odin.graphql.resolvers.unit
-  (:require [blueprints.models.unit :as unit]
-            [clojure.string :as string]
-            [toolbelt.core :as tb]
+  (:require [blueprints.models.license :as license]
             [blueprints.models.property :as property]
+            [blueprints.models.unit :as unit]
+            [clojure.string :as string]
+            [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
-            [blueprints.models.license :as license]
-            [com.walmartlabs.lacinia.resolve :as resolve]))
-
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Fields
@@ -27,12 +26,13 @@
   (unit/occupied-by (d/db conn) unit))
 
 
-(defn rate
-  [{conn :conn} {:keys [unit term]} _]
-  (let [unit (d/entity (d/db conn) unit)]
-    (if-let [license (license/by-term (d/db conn) term)]
-      {:rate (unit/rate unit license)}
-      (resolve/resolve-as nil {:message (format "%d is not a valid license term" term)}))))
+(defn- available? [license-price]
+  (not (false? (get-in license-price [:license-price/license :license/available]))))
+
+
+;; ==============================================================================
+;; queries ======================================================================
+;; ==============================================================================
 
 
 (defn query
@@ -57,5 +57,4 @@
    :unit/number   number
    :unit/occupant occupant
    ;; queries
-   :unit/rate     rate
    :unit/query    query})

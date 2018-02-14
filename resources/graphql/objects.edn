@@ -377,7 +377,18 @@
             :cover_image_url {:type    (non-null String)
                               :resolve (:get :property/cover-image-url)}
             :units           {:type    (list :unit)
-                              :resolve (:get :property/units)}}}
+                              :resolve (:get :property/units)}
+            :rates           {:type    (list :rate)
+                              :resolve (:get :property/licenses)}}}
+
+
+  :rate
+  {:fields {:id   {:type    (non-null :Long)
+                   :resolve (:get :db/id)}
+            :rate {:type    (non-null Float)
+                   :resolve (:get :license-price/price)}
+            :term {:type    (non-null Int)
+                   :resolve (:get :license-price/license :license/term)}}}
 
 
   :referral
@@ -438,4 +449,6 @@
                        :description "Account for the person living in this room, if any."
                        :resolve     :unit/occupant}
             :property {:type    (non-null :property)
-                       :resolve (:get :property/_units)}}}}}
+                       :resolve (:get :property/_units)}
+            :rates    {:type    (list :rate)
+                       :resolve (:get :unit/licenses)}}}}}
