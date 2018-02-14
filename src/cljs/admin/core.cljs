@@ -9,6 +9,7 @@
             [admin.metrics.views]
             [admin.orders.views]
             [admin.profile.views]
+            [admin.properties.views]
             [admin.routes :as routes]
             [admin.subs]
             [antizer.reagent :as ant]
@@ -35,14 +36,6 @@
 ;; ==============================================================================
 ;; modules ======================================================================
 ;; ==============================================================================
-
-
-(graphql/configure
- "/api/graphql"
- {:on-unauthenticated (fn [_]
-                        {:route "/logout"})
-  :on-error-fx        (fn [[k _]]
-                        {:dispatch [:ui/loading k false]})})
 
 
 ;; ==============================================================================
@@ -97,6 +90,14 @@
 
 (defn ^:export run []
   (let [account (js->clj (aget js/window "account") :keywordize-keys true)]
+    (graphql/configure
+     "/api/graphql"
+     {:on-unauthenticated (fn [_]
+                            {:route "/logout"})
+      :on-error-fx        (fn [[k _]]
+                            {:dispatch [:ui/loading k false]})})
+
+
     (rf/dispatch-sync [:app/init account])
     (iroutes/hook-browser-navigation! routes/app-routes)
     (render)))

@@ -13,6 +13,13 @@
 
 
 (reg-sub
+ :properties/list
+ :<- [db/path]
+ (fn [db _]
+   (norms/denormalize db :properties/norms)))
+
+
+(reg-sub
  :property
  :<- [db/path]
  (fn [db [_ property-id]]
