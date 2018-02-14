@@ -5,11 +5,12 @@
             [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [blueprints.models.source :as source]))
 
-;; =============================================================================
-;; Fields
-;; =============================================================================
+;; ==============================================================================
+;; fields =======================================================================
+;; ==============================================================================
 
 
 (defn number
@@ -22,17 +23,52 @@
 
 
 (defn occupant
+  "The member currently occupying this room."
   [{conn :conn} _ unit]
   (unit/occupied-by (d/db conn) unit))
 
 
-(defn- available? [license-price]
-  (not (false? (get-in license-price [:license-price/license :license/available]))))
+;; ==============================================================================
+;; mutations ====================================================================
+;; ==============================================================================
+
+
+(defn update-existing [lps term rate]
+  (when-let [lp (tb/find-by (comp #{term} :license/term :license-price/license) lps)]
+    {:db/id               (:db/id lp)
+     :license-price/price rate}))
+
+
+(defn create-new [db unit term rate]
+  {:db/id         (:db/id unit)
+   :unit/licenses {:license-price/price   rate
+                   :license-price/license (:db/id (license/by-term db term))}})
+
+
+(def allowed-term?
+  #{3 6 12})
+
+
+(defn set-rate!
+  "Set the rate for a unit for the given term."
+  [{:keys [conn requester]} {:keys [id term rate]} _]
+  (when-not (allowed-term? term)
+    (resolve/resolve-as nil {:message (format "'%s' is not a valid term length!")
+                             :term    term}))
+  (let [unit (d/entity (d/db conn) id)]
+    @(d/transact conn [(or (update-existing unit term rate)
+                           (create-new unit term rate))
+                       (source/create requester)])
+    (d/entity (d/db conn) id)))
 
 
 ;; ==============================================================================
 ;; queries ======================================================================
 ;; ==============================================================================
+
+
+(defn- available? [license-price]
+  (not (false? (get-in license-price [:license-price/license :license/available]))))
 
 
 (defn query
@@ -47,14 +83,16 @@
          (map (partial d/entity (d/db conn))))))
 
 
-;; =============================================================================
-;; Resolvers
-;; =============================================================================
+;; ==============================================================================
+;; resolvers ====================================================================
+;; ==============================================================================
 
 
 (def resolvers
   {;; fields
-   :unit/number   number
-   :unit/occupant occupant
+   :unit/number    number
+   :unit/occupant  occupant
+   ;; mutations
+   :unit/set-rate! set-rate!
    ;; queries
-   :unit/query    query})
+   :unit/query     query})
