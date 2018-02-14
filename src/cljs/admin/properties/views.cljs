@@ -1,6 +1,7 @@
 (ns admin.properties.views
   (:require [admin.content :as content]
             [antizer.reagent :as ant]
+            [cljs.core.match :refer-macros [match]]
             [clojure.string :as string]
             [iface.utils.formatters :as format]
             [reagent.core :as r]
@@ -149,7 +150,35 @@
 
 
 ;; ==============================================================================
-;; page layout ==================================================================
+;; entry layout =================================================================
+;; ==============================================================================
+
+
+(defn menu [property-id selected]
+  [ant/menu {:mode          :horizontal
+             :selected-keys [selected]}
+   [ant/menu-item {:key :entry}
+    [:a {:href (routes/path-for :properties/entry :property-id property-id)}
+     "Overview"]]
+   [ant/menu-item {:key :units}
+    [:a {:href (routes/path-for :properties.entry/units :property-id property-id)}
+     "Units"]]])
+
+
+(defmethod content/view :properties [{:keys [params path]}]
+  (let [property (subscribe [:property (tb/str->int (:property-id params))])]
+    [:div
+     (typography/view-header (:name @property))
+     [menu (:id @property) (last path)]
+     (let [path (vec (rest path))]
+       (match [path]
+         [[:entry]] [:p "entry view"]
+         [[:entry :units]] [:p "units view"]
+         :else [:p "unmatched"]))]))
+
+
+;; ==============================================================================
+;; list layout ==================================================================
 ;; ==============================================================================
 
 
@@ -168,4 +197,4 @@
            [property-card
             {:name            name
              :cover-image-url cover_image_url
-             :href            (routes/path-for :property/entry :property-id id)}]]))])]))
+             :href            (routes/path-for :properties/entry :property-id id)}]]))])]))

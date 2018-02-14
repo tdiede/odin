@@ -65,3 +65,12 @@
 
 (defmethod routes/dispatches :properties/list [_]
   [[:properties/query]])
+
+
+;; ==============================================================================
+;; entry view ===================================================================
+;; ==============================================================================
+
+
+(defmethod routes/dispatches :properties [{:keys [params]}]
+  [[:property/fetch (tb/str->int (:property-id params))]])
