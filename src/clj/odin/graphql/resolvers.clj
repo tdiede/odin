@@ -1,25 +1,24 @@
 (ns odin.graphql.resolvers
-  (:require [odin.graphql.authorization :as authorization]
+  (:require [datomic.api :as d]
+            [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.account :as account]
             [odin.graphql.resolvers.application :as application]
             [odin.graphql.resolvers.check :as check]
             [odin.graphql.resolvers.deposit :as deposit]
             [odin.graphql.resolvers.member-license :as member-license]
-            [odin.graphql.resolvers.metrics :as metrics]
             [odin.graphql.resolvers.note :as note]
             [odin.graphql.resolvers.order :as order]
             [odin.graphql.resolvers.payment :as payment]
             [odin.graphql.resolvers.payment-source :as source]
             [odin.graphql.resolvers.property :as property]
+            [odin.graphql.resolvers.referral :as referral]
             [odin.graphql.resolvers.service :as service]
             [odin.graphql.resolvers.unit :as unit]
-            [toolbelt.datomic :as td]
-            [datomic.api :as d]))
-
+            [toolbelt.datomic :as td]))
 
 (def ^:private util-resolvers
   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
-   :keyword/name   (fn [_ _ k] (keyword (name k)))
+   :keyword/name   (fn [& ks] (fn [_ _ v] (keyword (name (get-in v ks)))))
    :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
    :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))})
 
@@ -37,7 +36,7 @@
         payment/resolvers
         property/resolvers
         service/resolvers
-        metrics/resolvers
+        referral/resolvers
         unit/resolvers)
        (reduce
         (fn [acc [k v]]
