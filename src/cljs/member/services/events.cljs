@@ -76,6 +76,6 @@
  [(path db/path) ]
  (fn [{db :db} _]
    (let [service-id (get-in db [:adding :id])
-         adding     (assoc {} :service service-id :fields (:form-data db))]
-     {:db       (assoc db :cart (conj (:cart db) adding))
+         adding     {:service service-id :fields (:form-data db)}]
+     {:db       (update db :cart conj adding)
       :dispatch [:services.add-service/close]})))

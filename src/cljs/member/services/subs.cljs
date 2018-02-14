@@ -79,7 +79,7 @@
  :services.add-service/required-fields
  :<- [:services.add-service/form]
  (fn [form _]
-   (into [] (filter #(= true (:required %)) form))))
+   (into [] (filter #(:required %) form))))
 
 
 (reg-sub
@@ -100,7 +100,7 @@
 
 ;; THOUGHT should this be called "cart" instead?
 (reg-sub
- :services.cart/requested-items
+ :services.cart/cart
  :<- [db/path]
  (fn [db _]
    (:cart db)))

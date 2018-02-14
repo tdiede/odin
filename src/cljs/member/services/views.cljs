@@ -132,23 +132,23 @@
    [ant/button "Edit Item"]])
 
 
-(defn cart-item [item]
+(defn cart-item [{:keys [service fields]}]
   [ant/card
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 (get-in item [:service :title])]]
+      [:h4.subtitle.is-5 (:title service)]]
      [:div.column.is-6
-      [:p.fs3 (get-in item [:service :description])]]
+      [:p.fs3 (:description service)]]
      [:div.column.is-1
-      [:p.price (format/currency (get-in item [:service :price]))]]
+      [:p.price (format/currency (:price service))]]
      [:div.column.is-2
       [ant/button
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Cancel"]]]
-    (when (not-empty (:fields item))
-      [cart-item-data (:fields item)])]]
+    (when-not (empty? fields)
+      [cart-item-data fields])]]
   )
 
 ;; ==============================================================================
@@ -180,7 +180,7 @@
 
 
 (defmethod content :services/cart [_]
-  (let [cart-items (subscribe [:services.cart/requested-items])
+  (let [cart-items (subscribe [:services.cart/cart])
         ;; first-item (first @cart-items)
         first-item (last @cart-items)
         ]
@@ -196,14 +196,13 @@
   [:div
    [services/service-modal
     {:action      "Add"
-     :is-visible  @(subscribe [:modal/visible? db/modal])
+     :is-visible  @(subscribe [:services.add-service/visible?])
      :service     @(subscribe [:services.add-service/adding])
      :form-fields @(subscribe [:services.add-service/form])
      :can-submit  @(subscribe [:services.add-service/can-submit?])
      :on-cancel   #(dispatch [:services.add-service/close])
      :on-submit   #(dispatch [:services.add-service/add])
-     :on-change   #(dispatch [:services.add-service.form/update %1 %2])
-     }]
+     :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
    (typography/view-header "Premium Services" "Order and manage premium services.")
    [menu]
    (content route)])
