@@ -30,11 +30,9 @@
   :services        {:type    (list :service)
                     :args    {:params {:type :services_query_params}}
                     :resolve :service/query}
+  :unit            {:type    :unit
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve (:entity/fetch :id)}
   :units           {:type    (list :unit)
                     :args    {:params {:type :units_query_params}}
-                    :resolve :unit/query}
-  ;; TODO: Remove
-  :unit_rate       {:type    :unit_rate_response
-                    :args    {:unit {:type (non-null :Long)}
-                              :term {:type (non-null Int)}}
-                    :resolve :unit/rate}}}
+                    :resolve :unit/query}}}

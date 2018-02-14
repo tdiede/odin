@@ -19,8 +19,9 @@
 (def ^:private util-resolvers
   {:get            (fn [& ks] (fn [_ _ v] (get-in v ks)))
    :keyword/name   (fn [& ks] (fn [_ _ v] (keyword (name (get-in v ks)))))
-   :entity/created (fn [{conn :conn} _ entity] (td/created-at (d/db conn) entity))
-   :entity/updated (fn [{conn :conn} _ entity] (td/updated-at (d/db conn) entity))})
+   :entity/fetch   (fn [k] (fn [{conn :conn} ps _] (d/entity (d/db conn) (k ps))))
+   :entity/created (fn [{conn :conn} _ e] (td/created-at (d/db conn) e))
+   :entity/updated (fn [{conn :conn} _ e] (td/updated-at (d/db conn) e))})
 
 
 (defn resolvers []

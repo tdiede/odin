@@ -271,18 +271,22 @@
  (fn [_ [k unit-id term]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query
-               [[:unit_rate {:unit unit-id
-                             :term term}
-                 [:rate]]]
-               :on-success [::fetch-rate-success k]
+               [[:unit {:id unit-id}
+                 [[:rates [:rate :term]]
+                  [:property [[:rates [:rate :term]]]]]]]
+               :on-success [::fetch-rate-success k term]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::fetch-rate-success
  [(path db/path)]
- (fn [_ [_ k response]]
-   (let [rate (get-in response [:data :unit_rate :rate])]
+ (fn [_ [_ k term response]]
+   (let [urates (get-in response [:data :unit :rates])
+         prates (get-in response [:data :unit :property :rates])
+         rate   (->> [urates prates]
+                     (map (comp :rate (partial tb/find-by (comp #{term} :term)))) ; oh my
+                     (apply max))]
      {:dispatch-n [[:ui/loading k false]
                    [:accounts.entry.reassign/update :rate rate]]})))
 
