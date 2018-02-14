@@ -1,13 +1,9 @@
 (ns admin.properties.views
   (:require [antizer.reagent :as ant]
-            [reagent.core :as r]
+            [clojure.string :as string]
             [iface.utils.formatters :as format]
-            [toolbelt.core :as tb]
-            [clojure.string :as string]))
-
-
-;; (defn )
-
+            [reagent.core :as r]
+            [toolbelt.core :as tb]))
 
 ;; What do we want to be able to see in a property's detail view?
 
@@ -47,7 +43,7 @@
       [ant/icon {:type "right"}]]]]])
 
 
-(defn unit-list-item
+(defn- unit-list-item
   [active {:keys [id name href occupant on-click]}]
   [:a.unit-list-item
    (tb/assoc-when
@@ -72,6 +68,12 @@
 
 
 (defn units-list
+  "Display a list of units. Can provide the following:
+
+  - `units`: the units to render
+  - `page-size`: number of units to show per-page
+  - `active`: the `id` of the active unit
+  - `on-click`: callback that will be passed the id of the clicked unit"
   [{:keys [units page-size active on-click]
     :or   {page-size 10, active false}}]
   (let [state (r/atom {:current 1 :q ""})]
@@ -100,3 +102,37 @@
            :total     (count units)
            :showTotal (fn [total] (str total " units"))
            :on-change #(swap! state assoc :current %)}]]))))
+
+
+(defn rate-input
+  "An input for manipulating the rate for a given term."
+  [{:keys [term value on-change]}]
+  [ant/form-item {:label (str term " Month Rate")}
+   [ant/input-number {:formatter #(string/replace (str "$ " %) #"\B(?=(\d{3})+(?!\d))" ",")
+                      :parser    #(string/replace % #"\$\s?|(,*)" "")
+                      :value     value
+                      :on-change on-change}]])
+
+
+(defn rate-form
+  "A form for manipulating the `rates` for multiple terms, for e.g. a property or unit."
+  [{:keys [rates on-change can-submit is-loading]
+    :or   {on-change  (constantly nil)
+           can-submit true}
+    :as   opts}]
+  [ant/card
+   [ant/form
+    [:div.columns
+     (doall
+      (for [{:keys [id term rate]} rates]
+        ^{:key id}
+        [:div.column
+         [rate-input {:value     rate
+                      :term      term
+                      :on-change (fn [amount]
+                                   (on-change id amount))}]]))]
+    [ant/button
+     {:type     :primary
+      :disabled (not can-submit)
+      :loading  is-loading}
+     "Save"]]])
