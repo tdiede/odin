@@ -1,0 +1,64 @@
+{:enums
+ {:role
+  {:description "Account roles."
+   :values      [:member :onboarding :applicant :admin]}
+
+  :application_status
+  {:description "Application statuses."
+   :values      [:in_progress :approved :rejected :submitted]}
+
+  :application_pet_type
+  {:description "Allowed types of pets."
+   :values      [:cat :dog]}
+
+  :deposit_status
+  {:description "Security deposit statuses."
+   :values      [:pending :paid :overdue :unpaid :partial]}
+
+  :deposit_refund_status
+  {:description "Possible statuses of the security deposit refund."
+   :values      [:initiated :successful :failed]}
+
+  :license_status
+  {:description "Possible statuses of a member license."
+   :values      [:active :inactive :canceled :renewal]}
+
+  :order_status
+  {:description "Possible statuses of orders."
+   :values      [:pending :placed :fulfilled :processing :failed :charged :canceled]}
+
+  :payment_method
+  {:description "Methods of payment."
+   :values      [:ach :card :check :other]}
+
+  :payment_type
+  {:description "Different types of payment."
+   :values      [:order :rent :deposit]}
+
+  :payments_date_key
+  {:description "Allowed keys for date-based payment queries."
+   :values      [:created :paid]}
+
+  :orders_date_key
+  {:description "Allowed keys for date-based order queries."
+   :values      [:created :billed :fulfilled]}
+
+  :payment_source_type
+  {:description "Types of payment source."
+   :values      [:bank :card]}
+
+  :payment_status
+  {:description "Payment status."
+   :values      [:due :canceled :paid :pending :failed :refunded]}
+
+  :referral_from
+  {:description "Place within the application that the referral came from."
+   :values      [:apply :tour]}
+
+  :rent_status
+  {:description "Rent payment statuses."
+   :values      [:due :overdue :pending :paid]}
+
+  :service_billed
+  {:description "Different ways a service can be billed."
+   :values      [:once :monthly]}}}
