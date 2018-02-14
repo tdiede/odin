@@ -720,6 +720,11 @@
              :resolve :property/entry}
 
 
+  :properties {:type    (list :property)
+               :args {}
+               :resolve :property/query}
+
+
   ;; TODO: This should return a list of `:referral`, not `:data_point`. See
   ;; above.
   :referrals {:type    (list :data_point)

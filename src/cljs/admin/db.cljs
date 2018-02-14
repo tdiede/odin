@@ -13,12 +13,15 @@
   (merge
    {:lang    :en
     :menu    {:showing false
-              :items   [{:key  :metrics
+              :items   [{:key  :accounts
+                         :name "People"
+                         :uri  "/accounts"}
+                        {:key  :properties
+                         :name "Communities"
+                         :uri  "/properties"}
+                        {:key  :metrics
                          :name "Metrics"
                          :uri  "/metrics"}
-                        {:key  :accounts
-                         :name "Accounts"
-                         :uri  "/accounts"}
                         {:key  :orders
                          :name "Orders"
                          :uri  "/orders"}

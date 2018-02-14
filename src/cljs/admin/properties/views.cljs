@@ -1,9 +1,14 @@
 (ns admin.properties.views
-  (:require [antizer.reagent :as ant]
+  (:require [admin.content :as content]
+            [antizer.reagent :as ant]
             [clojure.string :as string]
             [iface.utils.formatters :as format]
             [reagent.core :as r]
-            [toolbelt.core :as tb]))
+            [re-frame.core :refer [subscribe dispatch]]
+            [toolbelt.core :as tb]
+            [iface.typography :as typography]
+            [admin.routes :as routes]
+            [iface.loading :as loading]))
 
 ;; What do we want to be able to see in a property's detail view?
 
@@ -22,6 +27,11 @@
 
 
 
+;; ==============================================================================
+;; components ===================================================================
+;; ==============================================================================
+
+
 (defn property-card
   "Display a property as a card form."
   [{:keys [name cover-image-url href is-loading]
@@ -33,7 +43,7 @@
     [:figure.image
      [:a {:href href}
       [:img {:src    cover-image-url
-             :height "256px"}]]]]
+             :style {:height "196px"}}]]]]
 
    [:div.card-content
     [:div.content
@@ -136,3 +146,26 @@
       :disabled (not can-submit)
       :loading  is-loading}
      "Save"]]])
+
+
+;; ==============================================================================
+;; page layout ==================================================================
+;; ==============================================================================
+
+
+(defmethod content/view :properties/list [_]
+  (let [properties (subscribe [:properties/list])
+        is-loading (subscribe [:ui/loading? :properties/query])]
+    [:div
+    (typography/view-header "Communities" "Manage and view our communities.")
+     (if @is-loading
+       (loading/fullpage "Loading properties...")
+       [:div.columns
+       (doall
+        (for [{:keys [id name cover_image_url units]} @properties]
+          ^{:key id}
+          [:div.column.is-4
+           [property-card
+            {:name            name
+             :cover-image-url cover_image_url
+             :href            (routes/path-for :property/entry :property-id id)}]]))])]))
