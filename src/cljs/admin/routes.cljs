@@ -9,8 +9,8 @@
                   [["/" :account-id] :accounts/entry]]]
 
     ["/properties" [["" :properties/list]
-                    [["/" :property-id] [["" :property/entry]
-                                         ["/units" :property.entry/units]]]]]
+                    [["/" :property-id] [["" :properties/entry]
+                                         ["/units" :properties.entry/units]]]]]
 
     ["/metrics" :metrics]
 

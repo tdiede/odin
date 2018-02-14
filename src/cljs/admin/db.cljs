@@ -19,12 +19,12 @@
                         {:key  :properties
                          :name "Communities"
                          :uri  "/properties"}
-                        {:key  :metrics
-                         :name "Metrics"
-                         :uri  "/metrics"}
                         {:key  :orders
                          :name "Orders"
                          :uri  "/orders"}
+                        {:key  :metrics
+                         :name "Metrics"
+                         :uri  "/metrics"}
                         {:key  :kami
                          :name "Kami"
                          :uri  "/kami"}]}
