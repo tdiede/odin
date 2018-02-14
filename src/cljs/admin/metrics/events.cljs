@@ -44,28 +44,29 @@
  (fn [{db :db} [_ category]]
    {:dispatch [:ui/loading :metrics.category/fetch true]
     :graphql  {:query
-               [[:referrals
-                 [:percentage :count :label]]]
+               [[:referrals [:source]]]
                :on-success [:metrics.category.fetch/success]
                :on-failure [:graphql/failure :metrics.category/fetch]}}))
 
 
-(defn transform-referral
-  [{:keys [percentage label count]}]
-  {:name  label
-   :count count
-   :y     percentage})
-
-
-(defn transform-metrics [metrics]
-  (tb/transform-when-key-exists
-      metrics
-      {:referrals (partial map transform-referral)}))
+(defn transform-referrals [referrals]
+  (let [total   (count referrals)
+        grouped (group-by :source referrals)]
+    (reduce
+     (fn [acc [name v]]
+       (let [c (count v)]
+         (conj acc {:name  name
+                    :count c
+                    :y     (float (* (/ c total) 100))})))
+     []
+     grouped)))
 
 
 (reg-event-fx
  :metrics.category.fetch/success
  [(path db/path)]
  (fn [{db :db} [_ response]]
-   {:db       (-> (:data response) transform-metrics (merge db))
+   {:db       (->> (get-in response [:data :referrals])
+                   (transform-referrals)
+                   (assoc db :referrals))
     :dispatch [:ui/loading :metrics.category/fetch false]}))
