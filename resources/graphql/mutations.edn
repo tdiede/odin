@@ -1,5 +1,6 @@
 {:mutations
- {;;; Account
+ {;; account ======================================================================
+
 
   :update_account
   {:type        :account
@@ -9,6 +10,18 @@
                  :data {:type        (non-null :update_account)
                         :description "The data to update the account with."}}
    :resolve     :account/update!}
+
+
+  :change_password
+  {:type        :account
+   :description "Change requesting user's password."
+   :args        {:old_password   {:type (non-null String)}
+                 :new_password_1 {:type (non-null String)}
+                 :new_password_2 {:type (non-null String)}}
+   :resolve     :account/change-password!}
+
+
+  ;; application ==================================================================
 
 
   :approve_application
@@ -21,16 +34,7 @@
    :resolve     :application/approve!}
 
 
-  :change_password
-  {:type        :account
-   :description "Change requesting user's password."
-   :args        {:old_password   {:type (non-null String)}
-                 :new_password_1 {:type (non-null String)}
-                 :new_password_2 {:type (non-null String)}}
-   :resolve     :account/change-password!}
-
-
-  ;;; Checks
+  ;; checks =======================================================================
 
 
   :create_check
@@ -40,7 +44,7 @@
    :resolve     :check/create!}
 
 
-  ;;; Licenses
+  ;; licenses =====================================================================
 
 
   :reassign_member_unit
@@ -50,7 +54,7 @@
    :resolve     :member-license/reassign!}
 
 
-  ;;; Notes
+  ;; notes ========================================================================
 
 
   :create_note
@@ -79,7 +83,8 @@
                  :text {:type (non-null String)}}
    :resolve     :note/add-comment!}
 
-  ;;; Orders
+
+  ;; orders =======================================================================
 
 
   :create_order
@@ -140,7 +145,7 @@
    :resolve     :order/cancel!}
 
 
-  ;;; Payments
+  ;; payments =====================================================================
 
 
   :create_payment
@@ -168,7 +173,7 @@
    :resolve     :payment/pay-deposit!}
 
 
-   ;;; Payment Sources
+  ;; payment sources ==============================================================
 
 
   :delete_payment_source
@@ -218,4 +223,36 @@
    :description "Set the source as the default payment source."
    :args        {:id {:type        (non-null String)
                       :description "The Stripe id of the source to use as the defaullt source."}}
-   :resolve     :payment.sources/set-default!}}}
+   :resolve     :payment.sources/set-default!}
+
+
+  ;; properties ===================================================================
+
+
+  :property_set_rate
+  {:type        :property
+   :description "Set a property's rate for a given term."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "The property's id."}
+                 :term {:type        (non-null Int)
+                        :description "The term length (3,6,12)"}
+                 :rate {:type        (non-null Float)
+                        :description "The rate"}}
+   :resolve     :property/set-rate!}
+
+
+  ;; units ========================================================================
+
+
+  :unit_set_rate
+  {:type        :unit
+   :description "Set a unit's rate for a given term."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "The unit's id."}
+                 :term {:type        (non-null Int)
+                        :description "The term length (3,6,12)"}
+                 :rate {:type        (non-null Float)
+                        :description "The rate"}}
+   :resolve     :unit/set-rate!}
+
+  }}
