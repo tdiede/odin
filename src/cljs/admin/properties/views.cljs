@@ -67,8 +67,7 @@
     [:span.divider {:dangerouslySetInnerHTML {:__html "&#10072;"}}]
     (if-let [occupant occupant]
       [:span.occupied
-       [ant/icon {:type :home}]
-       " for" [:span.occupant-name (:name occupant)] " until "
+       [:span.occupant-name (:name occupant)] " until "
        [:span.date (-> occupant :ends format/date-short-num)]]
       [:span.unoccupied "vacant"])]])
 
@@ -92,8 +91,8 @@
          :or   {page-size 10, active false}}]
       (let [{:keys [current q]} @state
             units'               (->> (drop (* (dec current) page-size) units)
-                                     (take (* current page-size))
-                                     (filter (partial matches-query? q)))]
+                                      (take (* current page-size))
+                                      (filter (partial matches-query? q)))]
         [:div.admin-property-unit-list
          [ant/input {:placeholder "search units by name or occupant"
                      :class       "search-bar"
@@ -107,12 +106,13 @@
                 [unit-list-item active (assoc %2 :on-click on-click)]
                 {:key %1})
              units'))]
-         [ant/pagination
-          {:size      "small"
-           :current   current
-           :total     (count units)
-           :showTotal (fn [total] (str total " units"))
-           :on-change #(swap! state assoc :current %)}]]))))
+         [:div.mt1
+          [ant/pagination
+           {:size      "small"
+            :current   current
+            :total     (count units)
+            :showTotal (fn [total] (str total " units"))
+            :on-change #(swap! state assoc :current %)}]]]))))
 
 
 (defn rate-input
@@ -127,25 +127,26 @@
 
 (defn rate-form
   "A form for manipulating the `rates` for multiple terms, for e.g. a property or unit."
-  [{:keys [rates on-change can-submit is-loading]
+  [{:keys [rates on-change on-submit can-submit is-loading]
     :or   {on-change  (constantly nil)
+           on-submit  (constantly nil)
            can-submit true}
     :as   opts}]
   [ant/card
    [ant/form
     [:div.columns
-     (doall
-      (for [{:keys [id term rate]} rates]
-        ^{:key id}
-        [:div.column
-         [rate-input {:value     rate
-                      :term      term
-                      :on-change (fn [amount]
-                                   (on-change id amount))}]]))]
+     (for [{:keys [term rate] :as r} rates]
+       ^{:key term}
+       [:div.column
+        [rate-input {:value     rate
+                     :term      term
+                     :on-change (fn [amount]
+                                  (on-change r amount))}]])]
     [ant/button
      {:type     :primary
       :disabled (not can-submit)
-      :loading  is-loading}
+      :loading  is-loading
+      :on-click on-submit}
      "Save"]]])
 
 
@@ -154,9 +155,55 @@
 ;; ==============================================================================
 
 
-(defn menu [property-id selected]
+(defn- unit->units-list-unit
+  [property-id {:keys [id name number occupant]}]
+  (tb/assoc-when
+   {:id   id
+    :name name
+    :href (routes/path-for :properties.entry.units/entry
+                           :property-id property-id
+                           :unit-id id)}
+   :occupant (when (some? occupant)
+               {:name (:name occupant)
+                :ends (get-in occupant [:active_license :ends])})))
+
+
+(defn- units-rate-form
+  [property-id unit-id]
+  (let [rates      (subscribe [:property.unit/rates property-id unit-id])
+        can-submit (subscribe [:property.unit.rates/can-submit? property-id unit-id])]
+    [:div.column
+     [rate-form
+      {:rates      @rates
+       :can-submit @can-submit
+       :on-change  #(dispatch [:property.unit/update-rate unit-id %1 %2])
+       :on-submit  #(dispatch [:property.unit.rates/update! property-id unit-id])}]]))
+
+
+(defn units-subview
+  [property-id & {:keys [active]}]
+  (let [units (subscribe [:property/units property-id])]
+    [:div.columns
+     [:div.column.is-one-third
+      [units-list
+       {:active active
+        :units  (map (partial unit->units-list-unit property-id) @units)}]]
+     (when (some? active)
+       [units-rate-form property-id active])]))
+
+
+(defn- path->selected
+  [path]
+  (case (vec (rest path))
+    [:entry]               :entry
+    [:entry :units]        :units
+    [:entry :units :entry] :units
+    :entry))
+
+
+(defn menu [property-id path]
   [ant/menu {:mode          :horizontal
-             :selected-keys [selected]}
+             :selected-keys [(path->selected path)]}
    [ant/menu-item {:key :entry}
     [:a {:href (routes/path-for :properties/entry :property-id property-id)}
      "Overview"]]
@@ -165,16 +212,20 @@
      "Units"]]])
 
 
-(defmethod content/view :properties [{:keys [params path]}]
-  (let [property (subscribe [:property (tb/str->int (:property-id params))])]
-    [:div
+(defmethod content/view :properties [{:keys [params path page]}]
+  (let [property-id (tb/str->int (:property-id params))
+        property    (subscribe [:property property-id])]
+    [:div.container
      (typography/view-header (:name @property))
-     [menu (:id @property) (last path)]
-     (let [path (vec (rest path))]
-       (match [path]
-         [[:entry]] [:p "entry view"]
-         [[:entry :units]] [:p "units view"]
-         :else [:p "unmatched"]))]))
+     [menu (:id @property) path]
+     [:div.mt2
+      (let [path (vec (rest path))]
+        (match [path]
+          [[:entry]] [:p "entry view"]
+          [[:entry :units]] [units-subview property-id]
+          [[:entry :units :entry]] [units-subview property-id
+                                    :active (tb/str->int (:unit-id params))]
+          :else [:p "unmatched"]))]]))
 
 
 ;; ==============================================================================
@@ -186,15 +237,15 @@
   (let [properties (subscribe [:properties/list])
         is-loading (subscribe [:ui/loading? :properties/query])]
     [:div
-    (typography/view-header "Communities" "Manage and view our communities.")
+     (typography/view-header "Communities" "Manage and view our communities.")
      (if @is-loading
        (loading/fullpage "Loading properties...")
        [:div.columns
-       (doall
-        (for [{:keys [id name cover_image_url units]} @properties]
-          ^{:key id}
-          [:div.column.is-4
-           [property-card
-            {:name            name
-             :cover-image-url cover_image_url
-             :href            (routes/path-for :properties/entry :property-id id)}]]))])]))
+        (doall
+         (for [{:keys [id name cover_image_url units]} @properties]
+           ^{:key id}
+           [:div.column.is-4
+            [property-card
+             {:name            name
+              :cover-image-url cover_image_url
+              :href            (routes/path-for :properties/entry :property-id id)}]]))])]))

@@ -10,7 +10,8 @@
 
     ["/properties" [["" :properties/list]
                     [["/" :property-id] [["" :properties/entry]
-                                         ["/units" :properties.entry/units]]]]]
+                                         ["/units" [["" :properties.entry/units]
+                                                    [["/" :unit-id] :properties.entry.units/entry]]]]]]]
 
     ["/metrics" :metrics]
 

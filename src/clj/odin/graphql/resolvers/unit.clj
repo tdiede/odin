@@ -13,17 +13,27 @@
 ;; ==============================================================================
 
 
-(defn number
-  "Room number of this room."
-  [_ _ unit]
+(defn- unit-number [unit]
   (-> (unit/code unit)
       (string/split #"-")
       (last)
       (tb/str->int)))
 
 
+(defn unit-name
+  "Human-friendly name of this unit."
+  [_ _ unit]
+  (format "Unit #%s" (unit-number unit)))
+
+
+(defn number
+  "Room number of this unit."
+  [_ _ unit]
+  (unit-number unit))
+
+
 (defn occupant
-  "The member currently occupying this room."
+  "The member currently occupying this unit."
   [{conn :conn} _ unit]
   (unit/occupied-by (d/db conn) unit))
 
@@ -57,7 +67,7 @@
                              :term    term}))
   (let [unit (d/entity (d/db conn) id)]
     @(d/transact conn [(or (update-existing unit term rate)
-                           (create-new unit term rate))
+                           (create-new (d/db conn) unit term rate))
                        (source/create requester)])
     (d/entity (d/db conn) id)))
 
@@ -90,6 +100,7 @@
 
 (def resolvers
   {;; fields
+   :unit/name      unit-name
    :unit/number    number
    :unit/occupant  occupant
    ;; mutations
