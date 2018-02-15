@@ -6,7 +6,9 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [toolbelt.core :as tb]
-            [blueprints.models.source :as source]))
+            [blueprints.models.source :as source]
+            [odin.graphql.authorization :as authorization]
+            [blueprints.models.account :as account]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -96,6 +98,10 @@
 ;; ==============================================================================
 ;; resolvers ====================================================================
 ;; ==============================================================================
+
+
+(defmethod authorization/authorized? :unit/set-rate! [_ account _]
+  (account/admin? account))
 
 
 (def resolvers

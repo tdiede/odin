@@ -7,7 +7,8 @@
 
 
 (def default-value
-  {path {:unit-rates {}}})
+  {path {:unit-rates     {}
+         :property-rates {}}})
 
 
 (defn unit-rates [unit]

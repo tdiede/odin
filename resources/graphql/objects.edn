@@ -379,7 +379,10 @@
             :units           {:type    (list :unit)
                               :resolve (:get :property/units)}
             :rates           {:type    (list :rate)
-                              :resolve :property/license-prices}}}
+                              :resolve :property/license-prices}
+            :tours           {:type        (non-null Boolean)
+                              :description "Is touring enabled?"
+                              :resolve     :property/tours}}}
 
 
   :rate

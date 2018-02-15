@@ -155,6 +155,9 @@
 ;; ==============================================================================
 
 
+;; units subview ================================================================
+
+
 (defn- unit->units-list-unit
   [property-id {:keys [id name number occupant]}]
   (tb/assoc-when
@@ -171,11 +174,13 @@
 (defn- units-rate-form
   [property-id unit-id]
   (let [rates      (subscribe [:property.unit/rates property-id unit-id])
-        can-submit (subscribe [:property.unit.rates/can-submit? property-id unit-id])]
+        can-submit (subscribe [:property.unit.rates/can-submit? property-id unit-id])
+        is-loading (subscribe [:ui/loading? :property.unit.rates/update!])]
     [:div.column
      [rate-form
       {:rates      @rates
        :can-submit @can-submit
+       :is-loading @is-loading
        :on-change  #(dispatch [:property.unit/update-rate unit-id %1 %2])
        :on-submit  #(dispatch [:property.unit.rates/update! property-id unit-id])}]]))
 
@@ -190,6 +195,35 @@
         :units  (map (partial unit->units-list-unit property-id) @units)}]]
      (when (some? active)
        [units-rate-form property-id active])]))
+
+
+;; overview subview =============================================================
+
+
+(defn overview-subview
+  [property-id]
+  (let [property   (subscribe [:property property-id])
+        rates      (subscribe [:property/rates property-id])
+        can-submit (subscribe [:property.rates/can-submit? property-id])
+        is-loading (subscribe [:ui/loading? :property.rates/update!])]
+    [:div.columns
+     [:div.column.is-half
+      [ant/card
+       [:p.title.is-4 "Controls"]
+       [ant/form-item {:label "Touring Enabled"}
+        [ant/switch
+         {:checked   (:tours @property)
+          :on-change #(dispatch [:property.tours/toggle! property-id])}]]]]
+     [:div.column
+      [rate-form
+       {:rates      @rates
+        :can-submit @can-submit
+        :is-loading @is-loading
+        :on-change  #(dispatch [:property/update-rate property-id %1 %2])
+        :on-submit  #(dispatch [:property.rates/update! property-id])}]]]))
+
+
+;; subview management ===========================================================
 
 
 (defn- path->selected
@@ -221,8 +255,8 @@
      [:div.mt2
       (let [path (vec (rest path))]
         (match [path]
-          [[:entry]] [:p "entry view"]
-          [[:entry :units]] [units-subview property-id]
+          [[:entry]]               [overview-subview property-id]
+          [[:entry :units]]        [units-subview property-id]
           [[:entry :units :entry]] [units-subview property-id
                                     :active (tb/str->int (:unit-id params))]
           :else [:p "unmatched"]))]]))
