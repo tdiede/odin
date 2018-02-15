@@ -41,9 +41,14 @@
       edn/read-string))
 
 
+(def entire-schema
+  (->> ["enums" "input-objects" "interfaces" "mutations" "objects" "queries"]
+       (map #(read-resource (format "graphql/%s.edn" %)))
+       (apply merge custom-scalars)))
+
+
 (defstate schema
-  :start (-> (read-resource "graphql/schema.edn")
-             (merge custom-scalars)
+  :start (-> entire-schema
              (util/attach-resolvers (resolvers/resolvers))
              schema/compile))
 

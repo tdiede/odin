@@ -1,0 +1,141 @@
+{:input-objects
+ {;;; Account
+  :accounts_query_params
+  {:description "Parameters to query for accounts."
+   :fields      {:roles      {:type (list :role)}
+                 :q          {:type        String
+                              :description "Query string to search for accounts by name or email."}
+                 :properties {:type (list :Long)}}}
+  :update_account
+  {:description "Inputs to update an account."
+   :fields      {:first_name        {:type String}
+                 :middle_name       {:type String}
+                 :last_name         {:type String}
+                 :phone             {:type String}
+                 :emergency_contact {:type :update_account}}}
+   ;;; Application
+  :approve_application
+  {:description "Inputs to approve an application."
+   :fields      {:property {:type (non-null :Long)}
+                 :term     {:type (non-null Int)}
+                 :move_in  {:type (non-null :Instant)}
+                 :unit     {:type (non-null :Long)}}}
+  ;;; Check
+  :create_check_params
+  {:description "Inputs to create a check."
+   :fields      {:payment       {:type (non-null :Long)}
+                 :amount        {:type (non-null Float)}
+                 :name          {:type (non-null String)}
+                 :received_date {:type (non-null :Instant)}
+                 :check_date    {:type (non-null :Instant)}}}
+  ;;; License
+  :reassign_member_unit_params
+  {:description "Inputs to reassign a member to a new unit."
+   :fields      {:license {:type (non-null :Long)}
+                 :unit    {:type (non-null :Long)}
+                 :rate    {:type (non-null Float)}
+                 ;; :term    {:type (non-null Int)}
+                 }}
+  ;;; Orders
+  :orders_query_params
+  {:description "Parameters to query for orders."
+   :fields
+   {:accounts   {:type        (list :Long)
+                 :description "ID of an account to query orders for."}
+    :billed     {:type (list :service_billed)}
+    :services   {:type (list :Long)}
+    :properties {:type (list :Long)}
+    :statuses   {:type          (list :order_status)
+                 :default-value [:pending :placed :fulfilled :charged :canceled]}
+    :datekey    {:type          :orders_date_key
+                 :default-value :created
+                 :description   "Specifies which date attribute to use for date params."}
+    :from       {:type        :Instant
+                 :description "Orders after."}
+    :to         {:type        :Instant
+                 :description "Orders until."}}}
+
+
+  :mutate_line_item_params
+  {:description "Parameters to create a line item."
+   :fields      {:id    {:type :Long}
+                 :desc  {:type (non-null String)}
+                 :cost  {:type Float}
+                 :price {:type (non-null Float)}}}
+
+
+  :mutate_order_params
+  {:description "Parameters needed to create an order."
+   :fields      {:account    {:type (non-null Long)}
+                 :service    {:type (non-null Long)}
+                 :variant    {:type        Long
+                              :description "Optional variant of the service."}
+                 :price      {:type Float}
+                 :cost       {:type Float}
+                 :quantity   {:type Float}
+                 :request    {:type String}
+                 :summary    {:type String}
+                 :line_items {:type (list :mutate_line_item_params)}}}
+
+
+  ;;; Payments
+
+
+  :create_payment_params
+  {:description "Inputs to create a payment."
+   :fields      {:account {:type (non-null :Long)}
+                 :type    {:type (non-null :payment_type)}
+                 :month   {:type :Instant}
+                 :amount  {:type (non-null Float)}}}
+
+
+  :payments_query_params
+  {:description "Parameters to query for payments."
+   :fields      {:account  {:type        :Long
+                            :description "ID of an account to query payments for."}
+                 :types    {:type          (list :payment_type)
+                            :default-value [:deposit :order :rent]
+                            :description   "List of payment types to query."}
+                 :from     {:type        :Instant
+                            :description "Payments after."}
+                 :to       {:type        :Instant
+                            :description "Payments until."}
+                 :statuses {:type          (list :payment_status)
+                            :default-value [:due :canceled :paid :pending :failed :refunded]
+                            :description   "List of payment statuses to query."}
+                 :datekey  {:type          :payments_date_key
+                            :default-value :created
+                            :description   "Specifies which date attribute to use for date params."}}}
+
+
+  :create_note_params
+  {:description "Parameters to create a new note."
+   :fields      {:account {:type        (non-null :Long)
+                           :description "ID of the account to create this note for."}
+                 :subject {:type (non-null String)}
+                 :content {:type (non-null String)}
+                 :notify  {:type Boolean}}}
+
+
+  :update_note_params
+  {:description "Parameters to update a note."
+   :fields      {:note    {:type        (non-null :Long)
+                           :description "ID of the note to update."}
+                 :subject {:type String}
+                 :content {:type String}}}
+
+
+  :services_query_params
+  {:description "Parameters to query for services."
+   :fields      {:q {:type        String
+                     :description "Query term."}}}
+
+
+  :units_query_params
+  {:description "Parameters to query for units."
+   :fields      {:property {:type        :Long
+                            :description "Property to query units within."}}}
+
+  :unit_rate_response
+  {:description "Response to the `:unit_rate` query."
+   :fields      {:rate {:type (non-null Float)}}}}}

@@ -16,6 +16,7 @@
     (-> (js/moment s)
         (.format (l10n/translate :tongue/format-date-short-num)))))
 
+
 (defn date-month-day
   "Short date (e.g. Jan 1st)"
   [s]
