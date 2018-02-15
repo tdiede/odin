@@ -241,6 +241,14 @@
    :resolve     :property/set-rate!}
 
 
+  :property_toggle_touring
+  {:type        :property
+   :description "Toggle a property's touring attribute on/off."
+   :args        {:id {:type        (non-null :Long)
+                      :description "The property's id."}}
+   :resolve     :property/toggle-touring!}
+
+
   ;; units ========================================================================
 
 

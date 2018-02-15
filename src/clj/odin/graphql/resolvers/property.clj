@@ -4,7 +4,9 @@
             [blueprints.models.source :as source]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [odin.graphql.authorization :as authorization]
+            [blueprints.models.account :as account]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -19,6 +21,12 @@
         (or (:license/available license)
             (nil? (:license/available license))))
      ps)))
+
+
+(defn tours
+  "Is touring enabled?"
+  [_ _ property]
+  (boolean (:property/tours property)))
 
 
 ;; ==============================================================================
@@ -56,6 +64,14 @@
     (d/entity (d/db conn) id)))
 
 
+(defn toggle-touring!
+  "Toggle a property's `:property/tours` attribute on/off."
+  [{:keys [conn requester]} {:keys [id]} _]
+  (let [property (d/entity (d/db conn) id)]
+    @(d/transact conn [[:db/add id :property/tours (not (:property/tours property))]])
+    (d/entity (d/db conn) id)))
+
+
 ;; ==============================================================================
 ;; queries ======================================================================
 ;; ==============================================================================
@@ -81,11 +97,20 @@
 ;; ==============================================================================
 
 
+(defmethod authorization/authorized? :property/set-rate! [_ account _]
+  (account/admin? account))
+
+
+(defmethod authorization/authorized? :property/toggle-touring! [_ account _]
+  (account/admin? account))
+
 (def resolvers
   {;; fields
-   :property/license-prices license-prices
+   :property/license-prices  license-prices
+   :property/tours           tours
    ;; mutations
-   :property/set-rate!      set-rate!
+   :property/set-rate!       set-rate!
+   :property/toggle-touring! toggle-touring!
    ;; queries
-   :property/entry          entry
-   :property/query          query})
+   :property/entry           entry
+   :property/query           query})

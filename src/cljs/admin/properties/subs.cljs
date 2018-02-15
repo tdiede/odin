@@ -36,6 +36,22 @@
 
 
 (reg-sub
+ :property/rates
+ :<- [db/path]
+ (fn [db [_ property-id]]
+   (get-in db [:property-rates property-id])))
+
+
+(reg-sub
+ :property.rates/can-submit?
+ :<- [db/path]
+ (fn [db [_ property-id]]
+   (let [property (norms/get-norm db :properties/norms property-id)]
+     (not= (set (get-in db [:property-rates property-id]))
+           (set (:rates property))))))
+
+
+(reg-sub
  :property.unit/rates
  :<- [db/path]
  (fn [db [_ property-id unit-id]]
