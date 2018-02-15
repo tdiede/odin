@@ -1,10 +1,24 @@
 (ns odin.graphql.resolvers.property
-  (:require [datomic.api :as d]
+  (:require [blueprints.models.license :as license]
             [blueprints.models.property :as property]
-            [blueprints.models.license :as license]
-            [toolbelt.core :as tb]
+            [blueprints.models.source :as source]
             [com.walmartlabs.lacinia.resolve :as resolve]
-            [blueprints.models.source :as source]))
+            [datomic.api :as d]
+            [toolbelt.core :as tb]))
+
+;; ==============================================================================
+;; fields =======================================================================
+;; ==============================================================================
+
+
+(defn license-prices
+  [_ _ property]
+  (let [ps (:property/licenses property)]
+    (filter
+     #(let [license (:license-price/license %)]
+        (or (:license/available license)
+            (nil? (:license/available license))))
+     ps)))
 
 
 ;; ==============================================================================
@@ -69,8 +83,9 @@
 
 (def resolvers
   {;; fields
+   :property/license-prices license-prices
    ;; mutations
-   :property/set-rate! set-rate!
+   :property/set-rate!      set-rate!
    ;; queries
-   :property/entry     entry
-   :property/query     query})
+   :property/entry          entry
+   :property/query          query})

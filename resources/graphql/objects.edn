@@ -379,7 +379,7 @@
             :units           {:type    (list :unit)
                               :resolve (:get :property/units)}
             :rates           {:type    (list :rate)
-                              :resolve (:get :property/licenses)}}}
+                              :resolve :property/license-prices}}}
 
 
   :rate
@@ -439,6 +439,9 @@
   :unit
   {:fields {:id       {:type    (non-null :Long)
                        :resolve (:get :db/id)}
+            :name     {:type        (non-null String)
+                       :description "Human-friendly name of this unit."
+                       :resolve     :unit/name}
             :code     {:type        (non-null String)
                        :description "Internal unit code to identify this unit."
                        :resolve     (:get :unit/name)}
