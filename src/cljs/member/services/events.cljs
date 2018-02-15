@@ -5,28 +5,29 @@
             [toolbelt.core :as tb]))
 
 
-(defmethod routes/dispatches :member.services/book [{:keys [params page] :as route}]
+(defmethod routes/dispatches :services/book
+  [{:keys [params page] :as route}]
   (if (empty? params)
-    [[:member.services/set-default-route route]]
-    [[:member.services/fetch (db/parse-query-params page params)]]))
+    [[:services/set-default-route route]]
+    [[:services/fetch (db/parse-query-params page params)]]))
 
 
 (reg-event-fx
- :member.services/set-default-route
+ :services/set-default-route
  [(path db/path)]
  (fn [{db :db} [_ {page :page}]]
    {:route (db/params->route page (:params db))}))
 
 
 (reg-event-fx
- :member.services/fetch
+ :services/fetch
  [(path db/path)]
  (fn [{db :db} [_ query-params]]
    {:db (assoc db :params query-params)}))
 
 
 (reg-event-fx
- :member.services.section/select
+ :services.section/select
  [(path db/path)]
  (fn [_ [_ section]]
    (let [page (if (= section :book) :services/book :services/manage)]
@@ -34,36 +35,47 @@
 
 
 (reg-event-db
- :member.services.add-service.form/update
+ :services.add-service.form/update
  [(path db/path)]
  (fn [db [_ key value]]
-   (assoc-in db [:form-data key] value)))
+   (update db :form-data
+           (fn [fields]
+             (map
+              (fn [field]
+                (if (= (:key field) key)
+                  (assoc field :value value)
+                  field))
+              fields)))))
 
 
 (reg-event-db
- :member.services.add-service.form/reset
+ :services.add-service.form/reset
  [(path db/path)]
  (fn [db _]
    (dissoc db :form-data)))
 
 
 (reg-event-fx
- :member.services.add-service/show
+ :services.add-service/show
  [(path db/path)]
- (fn [db _]
-   {:dispatch [:modal/show db/modal]}))
+ (fn [{db :db} [_ {:keys [service fields]}]]
+   {:dispatch [:modal/show db/modal]
+    :db       (assoc db :adding service :form-data fields)}))
 
 
 (reg-event-fx
- :member.services.add-service/close
+ :services.add-service/close
  [(path db/path)]
- (fn [{db :db} [_ modal]]
-   {:dispatch-n [[:member.services.add-service.form/reset]
+ (fn [{db :db} _]
+   {:dispatch-n [[:services.add-service.form/reset]
                  [:modal/hide db/modal]]}))
 
 
-;; (reg-event-db
-;;  :member.services.add-service/add
-;;  ;; [{path db/path}]
-;;  (fn [db]
-;;    (assoc-in db [:cart] "test")))
+(reg-event-fx
+ :services.add-service/add
+ [(path db/path) ]
+ (fn [{db :db} _]
+   (let [service-id (get-in db [:adding :id])
+         adding     {:service service-id :fields (:form-data db)}]
+     {:db       (update db :cart conj adding)
+      :dispatch [:services.add-service/close]})))
