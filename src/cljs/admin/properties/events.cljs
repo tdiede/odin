@@ -39,7 +39,7 @@
 (reg-event-fx
  :property/fetch
  [(path db/path)]
- (fn [_ [k property-id]]
+ (fn [_ [k property-id on-success]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query
                [[:property {:id property-id}
@@ -50,17 +50,17 @@
                            [:property [:id [:rates [:rate :term]]]]
                            [:occupant [:id :name
                                        [:active_license [:ends]]]]]]]]]
-               :on-success [::fetch-property-success k]
+               :on-success [::fetch-property-success k on-success]
                :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::fetch-property-success
  [(path db/path)]
- (fn [{db :db} [_ k response]]
+ (fn [{db :db} [_ k on-success response]]
    (let [property (get-in response [:data :property])]
-     {:dispatch [:ui/loading k false]
-      :db       (norms/assoc-norm db :properties/norms (:id property) property)})))
+     {:dispatch-n (tb/conj-when [[:ui/loading k false]] on-success)
+      :db         (norms/assoc-norm db :properties/norms (:id property) property)})))
 
 
 ;; ==============================================================================
@@ -78,8 +78,8 @@
 
 
 (defmethod routes/dispatches :properties [{:keys [params]}]
-  [[:property/fetch (tb/str->int (:property-id params))]
-   [::set-property-rates (tb/str->int (:property-id params))]])
+  [[:property/fetch (tb/str->int (:property-id params))
+    [::set-property-rates (tb/str->int (:property-id params))]]])
 
 
 (defn update-rate [term new-rate rates]
