@@ -246,12 +246,12 @@
      "Units"]]])
 
 
-(defmethod content/view :properties [{:keys [params path page]}]
+(defmethod content/view :properties [{:keys [path params]}]
   (let [property-id (tb/str->int (:property-id params))
         property    (subscribe [:property property-id])]
     [:div.container
      (typography/view-header (:name @property))
-     [menu (:id @property) path]
+     [menu property-id path]
      [:div.mt2
       (let [path (vec (rest path))]
         (match [path]
