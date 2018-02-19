@@ -246,5 +246,5 @@
          [membership-summary]]
 
         [:div.column.is-5
-         [:h2 "Rental Agreement"]
+         [:h2 "Membership Agreement"]
          [membership/license-summary @license {:loading @loading}]]])]))
