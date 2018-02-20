@@ -402,7 +402,7 @@
         [ant/select-option {:key id} name]))]))
 
 
-(defn- controls []
+(defn controls []
   (let [params        (subscribe [:services.orders/query-params])
         filters-dirty (subscribe [:orders.filters/dirty?])]
     [:div.table-controls
@@ -431,10 +431,25 @@
        "Reset Filters"]]]))
 
 
+(defn subview []
+  (let [query-params (subscribe [:services.orders/query-params])]
+    [:div
+     [:div.columns
+     [:div.column
+      [status-filters]]
+     [:div.column
+      [:div.is-pulled-right
+       [create/button {:on-create [:services.orders/query @query-params]}]]]]
+
+     [controls]
+
+     [:div
+      [orders-table]]]))
+
 ;; entrypoint ===================================================================
 
 
-(defmethod content/view :services.orders/list [route]
+#_(defmethod content/view :services.orders/list [route]
   (let [query-params (subscribe [:services.orders/query-params])]
     [:div
      (typography/view-header "Orders" "Manage and view premium service orders.")

@@ -118,17 +118,34 @@
       :dataSource services}]))
 
 
-(defn service-list-main [services] ;;receives services, which is obtained from graphql
+(defn menu []
+  [ant/menu {:mode :horizontal}
+   [ant/menu-item {:key :services}
+    [:a {:href (routes/path-for :services/list)}
+     "Services"]]
+   [ant/menu-item {:key :orders}
+    [:a {:href (routes/path-for :services.orders/list)}
+     "Orders"]]
+   [ant/menu-item {:key :catalogs}
+    [:a {:href "http://homestarrunner.com"}
+     "Catalogs"]]])
+
+(defn service-layout [route] ;;receives services, which is obtained from graphql
   [:div
 
    [create-service-modal]
 
    (typography/view-header "Premium Services" "Manage and view premium service offerings")
 
-   [controls services]
+   [:div.mb2
+    [menu]]
 
-   [:div
-    [services-table services]]])
+   ;; somehow render subviews based on the active menu item
+
+   (case (:page route)
+     :services/list [:h1 "wooo a top-level services table component should go here."]
+     :services.orders/list [orders-views/subview])])
+
 
 
 ;; =====================================================
@@ -149,9 +166,8 @@
 ;; =====================================================
 
 ;; services list
-(defmethod content/view :services/list [route]
-  (let [services (subscribe [:services/list])]
-    [service-list-main @services]))
+(defmethod content/view :services [route]
+  [service-layout route])
 
 ;; services entry
 (defmethod content/view :services/entry [route]
