@@ -10,8 +10,20 @@
 (reg-event-fx
  :services/query
  [(path db/path)]
- (fn [_ _]
-   (js/console.log "hey it is the services route")))
+ (fn [{db :db} [k params]]
+   {:dispatch [:ui/loading k true]
+    :graphql  {:query      [[:services {:params {}}
+                             [:id :name :code :billed :price :cost]]]
+               :on-success [::services-query k params]
+               :on-failure [:graphql/failure k]}}))
+
+(reg-event-fx
+ ::services-query
+ [(path db/path)]
+ (fn [{db :db} [_ k params response]]
+   {:db (->> (get-in response [:data :services])
+             (norms/normalize db :services/norms))
+    :dispatch [:ui/loading k false]}))
 
 
 (defmethod routes/dispatches :services/list

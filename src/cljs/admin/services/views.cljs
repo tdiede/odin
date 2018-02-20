@@ -7,12 +7,25 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [taoensso.timbre :as timbre]
-            [iface.typography :as typography]))
+            [iface.typography :as typography]
+            [iface.utils.formatters :as format]
+            [iface.components.table :as table]
+            [iface.components.service :as service]
+            [iface.loading :as loading]))
 
 ;; ====================================================
 ;; service list
 ;; ====================================================
 
+
+
+;; creating a new premium service is worth some further thought.
+;; one aspect of adding a service is adding that new services'
+;; configuration options, which would  basically mean creating
+;; a form-builder that our staff would use. this may not be a
+;; good idea.
+
+;; let's keep it simple for now, just as a placeholder.
 (defn create-service-form []
   [:div
    [ant/form-item
@@ -56,7 +69,28 @@
    [create-service-form]])
 
 
-(defn service-list-main [] ;;receives services, which is obtained from graphql
+(defn- render-price [_ {price :price}]
+  (if (some? price) (format/currency price) "quote"))
+
+
+(defn services-table [services]
+  (let [columns [{:title     "Name"
+                  :dataIndex "name"
+                  :key       "name"
+                  :render    #(r/as-element
+                               [:a {:href                    (routes/path-for :services/entry :service-id (.-id %2))
+                                    :dangerouslySetInnerHTML {:__html %1}}])}
+                 {:title     "Price"
+                  :dataIndex "price"
+                  :key       "price"
+                  :render    (table/wrap-cljs render-price)}]]
+    [ant/table
+     {:columns    columns
+      :dataSource services}]))
+
+
+(defn service-list-main [services] ;;receives services, which is obtained from graphql
+  (js/console.log services)
   [:div
 
    [create-service-modal]
@@ -73,7 +107,8 @@
 
    [:div "table filter controls here"] ;;TODO - fixme
 
-   [:div "services table here"]]) ;; TODO - fixme
+   [:div
+    [services-table services]]]) ;; TODO - fixme
 
 
 
@@ -82,8 +117,8 @@
 ;; =====================================================
 
 (defmethod content/view :services/list [route]
-  ;; TODO - set up subscription and pass services down
-  [service-list-main])
+  (let [services (subscribe [:services/list])]
+    [service-list-main @services]))
 
 
 (defmethod content/view :services/entry [route]
