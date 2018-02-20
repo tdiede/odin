@@ -172,7 +172,6 @@
 (defn service-detail-main
   [{{service-id :service-id} :params}]
   (let [service (subscribe [:service (tb/str->int service-id)])]
-    (js/console.log "service is " @service)
     [:div
     [:div.columns
      [:div.column.is-three-quarters
