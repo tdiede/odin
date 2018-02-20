@@ -93,7 +93,13 @@
    [:div.columns
     [:div.column.is-3
      [ant/form-item {:label "Filter by Service Name"}
-      [filter-by-name services]]]]])
+      [filter-by-name services]]]
+    [:div.column.has-text-right
+     [ant/button
+      {:type     :primary
+       :icon     "plus"
+       :on-click #(dispatch [:modal/show])}
+      "Add New Service"]]]])
 
 
 (defn services-table [services]
@@ -118,14 +124,6 @@
    [create-service-modal]
 
    (typography/view-header "Premium Services" "Manage and view premium service offerings")
-   [:div.columns
-    [:div.column
-     [:div.is-pulled-right
-      [ant/button
-       {:type     :primary
-        :icon     "plus"
-        :on-click #(dispatch [:modal/show])}
-       "Add New Service"]]]]
 
    [controls services]
 
