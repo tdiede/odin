@@ -431,6 +431,9 @@
        "Reset Filters"]]]))
 
 
+;; entrypoint ===================================================================
+;; rendered by `service-layout` component
+
 (defn subview []
   (let [query-params (subscribe [:services.orders/query-params])]
     [:div
@@ -440,25 +443,6 @@
      [:div.column
       [:div.is-pulled-right
        [create/button {:on-create [:services.orders/query @query-params]}]]]]
-
-     [controls]
-
-     [:div
-      [orders-table]]]))
-
-;; entrypoint ===================================================================
-
-
-#_(defmethod content/view :services.orders/list [route]
-  (let [query-params (subscribe [:services.orders/query-params])]
-    [:div
-     (typography/view-header "Orders" "Manage and view premium service orders.")
-     [:div.columns
-      [:div.column
-       [status-filters]]
-      [:div.column
-       [:div.is-pulled-right
-        [create/button {:on-create [:services.orders/query @query-params]}]]]]
 
      [controls]
 
