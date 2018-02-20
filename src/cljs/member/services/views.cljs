@@ -18,7 +18,7 @@
     [ant/menu {:mode          :horizontal
                :selected-keys [@section]
                :on-click      #(dispatch [:services.section/select
-                                          (keyword (aget % "key"))])}
+                                          (aget % "key")])}
      [ant/menu-item {:key "book"} "Book services"]
      [ant/menu-item {:key "manage"} "Manage services"]]))
 
@@ -66,12 +66,13 @@
 
 (defn catalogue [{:keys [id name items key] :as c}]
   (let [route    (subscribe [:services.book.category/route key])
-        selected (subscribe [:services.book/category])]
+        selected (subscribe [:services.book/category])
+        has-more (subscribe [:services.book.category/has-more? id])]
     [:div.catalogue
      [:div.columns {:style {:margin-bottom "0px"}}
       [:div.column.is-10
        [:h3.title.is-4 name]]
-      (when (and (= @selected :all) (= (count items) 2))
+      (when (and (= @selected :all) @has-more)
         [:div.column.is-2.has-text-right {:style {:display "table"}}
          [:a {:href  @route
               :style {:display        "table-cell"
@@ -84,21 +85,24 @@
 
 
 (defn shopping-cart []
-  [ant/affix {:offsetBottom 20}
-   [:div.has-text-right
-    [ant/button
-     {:size :large
-      :type :primary
-      :class "ant-btn-xl"}
-     "Checkout - $50 (2)"]]
-   #_[:div.shopping-cart
-      [:div.columns
-       [:div.column.is-7
-        [:h4.subtitle.is-5 "X services being requested"]]
-       [:div.column.is-1
-        [:p.price (format/currency 150.0)]]
-       [:div.column.is-4.has-text-right
-        [ant/button "Submit Request"]]]]])
+  (let [item-count (subscribe [:services.cart/item-count])
+        total-cost (subscribe [:services.cart/total-cost])]
+    [ant/affix {:offsetBottom 20}
+     [:div.has-text-right
+      [ant/button
+       {:size :large
+        :type :primary
+        :class "ant-btn-xl"
+        :on-click #(dispatch [:services.section/select "cart"])}
+       "Checkout - $" @total-cost " (" @item-count ")"]]
+     #_[:div.shopping-cart
+        [:div.columns
+         [:div.column.is-7
+          [:h4.subtitle.is-5 "X services being requested"]]
+         [:div.column.is-1
+          [:p.price (format/currency 150.0)]]
+         [:div.column.is-4.has-text-right
+          [ant/button "Submit Request"]]]]]))
 
 
 ;; ==============================================================================
@@ -179,6 +183,9 @@
    [:h3 "Manage some services, yo"]])
 
 
+;; TODO remove menu from shopping cart view
+;; TODO add shopping cart items
+
 (defmethod content :services/cart [_]
   (let [cart-items (subscribe [:services.cart/cart])
         ;; first-item (first @cart-items)
@@ -186,7 +193,7 @@
         ]
     [:div
      [:h1.title.is-3 "Shopping cart"]
-     (doall
+     #_(doall
       (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
      ]))
 

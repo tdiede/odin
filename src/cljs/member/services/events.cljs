@@ -30,7 +30,7 @@
  :services.section/select
  [(path db/path)]
  (fn [_ [_ section]]
-   (let [page (if (= section :book) :services/book :services/manage)]
+   (let [page (keyword (str "services/" section))]
      {:route (routes/path-for page)})))
 
 
@@ -75,7 +75,9 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [service-id (get-in db [:adding :id])
-         adding     {:service service-id :fields (:form-data db)}]
+   (let [{:keys [id price]} (:adding db)
+         adding            {:service id
+                            :price   price
+                            :fields  (:form-data db)}]
      {:db       (update db :cart conj adding)
       :dispatch [:services.add-service/close]})))

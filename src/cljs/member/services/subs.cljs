@@ -54,6 +54,15 @@
                      (assoc query-params :category category))))
 
 
+;; gets a category id and checks if it has more than 2 items in it
+(reg-sub
+ :services.book.category/has-more?
+ :<- [db/path]
+ (fn [db [_ id]]
+   (let [catalogue (first (filter #(= (:id %) id) (:catalogues db)))]
+     (> (count (:items catalogue)) 2))))
+
+
 (reg-sub
  :services.add-service/adding
  :<- [db/path]
@@ -104,3 +113,20 @@
  :<- [db/path]
  (fn [db _]
    (:cart db)))
+
+
+(reg-sub
+ :services.cart/item-count
+ :<- [:services.cart/cart]
+ (fn [db _]
+   (count db)))
+
+;; NOTE when testing be aware that some items and their respective service ids are repeated in
+;;      test data. If we test adding those, the cost of every repeat will be added to the total cost
+
+;; Is there a better way to write this? I feel like all these nested reduces are cringe worthy
+(reg-sub
+ :services.cart/total-cost
+ :<- [:services.cart/cart]
+ (fn [cart _]
+   (reduce #(+ %1 (:price %2)) 0 cart)))
