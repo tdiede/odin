@@ -17,5 +17,10 @@
  :<- [db/path]
  (fn [db _]
    (let [norms (norms/denormalize db :services/norms)]
-     (.log js/console norms)
      norms)))
+
+(reg-sub
+ :service
+ :<- [db/path]
+ (fn [db [_ service-id]]
+   (norms/get-norm db :services/norms service-id)))

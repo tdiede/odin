@@ -3,6 +3,7 @@
             [admin.services.db :as db]
             [admin.routes :as routes]
             [admin.services.orders.views :as orders-views]
+            [admin.services.catalogs.views :as catalogs-views]
             [antizer.reagent :as ant]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
@@ -119,10 +120,10 @@
 
 (defn- path->selected
   [path]
-  (js/console.log "hey the path is currently -> " (vec (rest path)))
   (case (vec (rest path))
-    [:list]         :services
-    [:orders :list] :orders
+    [:list]           :services
+    [:orders :list]   :orders
+    [:catalogs :list] :catalogs
     :services))
 
 (defn menu [route]
@@ -135,10 +136,10 @@
     [:a {:href (routes/path-for :services.orders/list)}
      "Orders"]]
    [ant/menu-item {:key :catalogs}
-    [:a {:href "http://homestarrunner.com"}
+    [:a {:href (routes/path-for :services.catalogs/list)}
      "Catalogs"]]])
 
-(defn subview
+(defn services-subview
   []
   (let [services (subscribe [:services/list])]
     [:div
@@ -158,8 +159,9 @@
 
    ;; render subviews based on the active menu item
    (case (:page route)
-     :services/list        [subview]
-     :services.orders/list [orders-views/subview])])
+     :services/list          [services-subview]
+     :services.orders/list   [orders-views/subview]
+     :services.catalogs/list [catalogs-views/subview])])
 
 
 
@@ -168,11 +170,13 @@
 ;; =====================================================
 
 (defn service-detail-main
-  []
-  [:div
-   [:div.columns
-    [:div.column.is-three-quarters
-     (typography/view-header "Service Detail" "A detailed look at a premium service offering.")]]])
+  [{{service-id :service-id} :params}]
+  (let [service (subscribe [:service (tb/str->int service-id)])]
+    (js/console.log "service is " @service)
+    [:div
+    [:div.columns
+     [:div.column.is-three-quarters
+      (typography/view-header (:name @service) (:desc @service))]]]))
 
 
 
@@ -186,4 +190,4 @@
 
 ;; services entry
 (defmethod content/view :services/entry [route]
-  [service-detail-main])
+  [service-detail-main route])
