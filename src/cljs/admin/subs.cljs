@@ -2,7 +2,6 @@
   (:require [admin.accounts.subs]
             [admin.kami.subs]
             [admin.metrics.subs]
-            [admin.orders.subs]
             [admin.profile.subs]
             [admin.properties.subs]
             [admin.services.subs]

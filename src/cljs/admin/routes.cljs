@@ -15,8 +15,6 @@
 
     ["/metrics" :metrics]
 
-    ["/orders" [["" :orders/list]
-                [["/" :order-id] :orders/entry]]]
 
     ["/services" [["" :services/list]
                   ["/orders" [["" :services.orders/list]

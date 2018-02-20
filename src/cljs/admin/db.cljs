@@ -2,7 +2,6 @@
   (:require [admin.accounts.db :as accounts]
             [admin.kami.db :as kami]
             [admin.metrics.db :as metrics]
-            [admin.orders.db :as orders]
             [admin.profile.db :as profile]
             [admin.properties.db :as properties]
             [admin.services.db :as services]
@@ -23,9 +22,6 @@
                         {:key  :services
                          :name "Premium Services"
                          :uri  "/services"}
-                        {:key  :orders
-                         :name "Orders"
-                         :uri  "/orders"}
                         {:key  :metrics
                          :name "Metrics"
                          :uri  "/metrics"}
@@ -41,7 +37,6 @@
    accounts/default-value
    kami/default-value
    metrics/default-value
-   orders/default-value
    payments/default-value
    profile/default-value
    properties/default-value

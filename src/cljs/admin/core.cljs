@@ -7,7 +7,6 @@
             [admin.history]
             [admin.kami.views]
             [admin.metrics.views]
-            [admin.orders.views]
             [admin.profile.views]
             [admin.properties.views]
             [admin.services.views]

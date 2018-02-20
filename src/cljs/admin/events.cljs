@@ -3,7 +3,6 @@
             [admin.accounts.events]
             [admin.kami.events]
             [admin.metrics.events]
-            [admin.orders.events]
             [admin.profile.events]
             [admin.properties.events]
             [admin.services.events]
