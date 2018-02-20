@@ -112,7 +112,6 @@
 
 
 (defn service-list-main [services] ;;receives services, which is obtained from graphql
-  (js/console.log services)
   [:div
 
    [create-service-modal]
