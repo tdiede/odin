@@ -73,6 +73,28 @@
   (if (some? price) (format/currency price) "quote"))
 
 
+(defn- filter-by-name [services]
+  [ant/select
+   {:placeholder    "select service"
+    :style          {:width "100%"}
+    :filter-option  false
+    :mode           :multiple
+    :label-in-value true
+    :allow-clear    true
+    }
+   (doall
+    (for [{:keys [id name]} services]
+      [ant/select-option {:key id} name]))])
+
+
+(defn- controls [services]
+  [:div.table-controls
+   [:div.columns
+    [:div.column.is-3
+     [ant/form-item {:label "Filter by Service Name"}
+      [filter-by-name services]]]]])
+
+
 (defn services-table [services]
   (let [columns [{:title     "Name"
                   :dataIndex "name"
@@ -105,10 +127,10 @@
         :on-click #(dispatch [:modal/show])}
        "Add New Service"]]]]
 
-   [:div "table filter controls here"] ;;TODO - fixme
+   [controls services]
 
    [:div
-    [services-table services]]]) ;; TODO - fixme
+    [services-table services]]])
 
 
 
