@@ -75,9 +75,11 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id price]} (:adding db)
-         adding            {:service id
-                            :price   price
-                            :fields  (:form-data db)}]
+   (let [{:keys [id title description price]} (:adding db)
+         adding                               {:service     id
+                                               :title       title
+                                               :description description
+                                               :price       price
+                                               :fields      (:form-data db)}]
      {:db       (update db :cart conj adding)
       :dispatch [:services.add-service/close]})))

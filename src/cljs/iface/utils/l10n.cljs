@@ -13,7 +13,9 @@
         :tongue/format-date-short      "MMM DD, YYYY"
         :tongue/format-date-short-num  "M/D/Y"
         :tongue/format-date-time       "MMMM DD, YYYY @ h:mm a"
-        :tongue/format-date-time-short "M/D/YY @ h:mm a"}})
+        :tongue/format-date-time-short "M/D/YY @ h:mm a"
+
+        :tongue/format-time-short      "h:mm a"}})
 
 
 (def lookup

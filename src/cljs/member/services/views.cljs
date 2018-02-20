@@ -20,7 +20,8 @@
                :on-click      #(dispatch [:services.section/select
                                           (aget % "key")])}
      [ant/menu-item {:key "book"} "Book services"]
-     [ant/menu-item {:key "manage"} "Manage services"]]))
+     [ant/menu-item {:key "manage"} "Manage services"]
+     #_[ant/menu-item {:key "cart"} "Shopping cart"]]))
 
 
 ;; ==============================================================================
@@ -114,17 +115,49 @@
 ;; TODO render form fields in the intended order
 ;; TODO make it look pretty?
 
+
+(defmulti field-value (fn [k value options] k))
+
+
+(defmethod field-value :time [k value options]
+  [:span
+   {:style {:float "left"}}
+   [:p (format/time-short value)]])
+
+
+(defmethod field-value :date [k value options]
+  [:span
+   {:style {:float "left"}}
+   [:p (format/date-short value)]])
+
+
+(defmethod field-value :variants [k value options]
+  (let [vlabel (reduce (fn [v option] (if (= (keyword value) (:key option)) (:label option) v)) nil options)]
+    [:span
+     {:style {:float "left"}}
+     [:p vlabel]]))
+
+
+(defmethod field-value :desc [k value options]
+  [:span
+   {:style {:float "left"}}
+   [:p value]])
+
+
 (defn- column-fields-2 [fields]
   [:div
    (map-indexed
     (fn [i row]
       ^{:key i}
       [:div.columns
-       (for [field row]
-         ^{:key (:id field)}
+       (for [{:keys [id type label value options]} row]
+         ^{:key (:id id)}
          [:div.column.is-half
-          [:p (:label field)]
-          [:p (:value field)]
+          [:div
+           [:span {:style {:float "left" :margin-right "10px"}} [:p label]]
+           #_[:span {:style {:float "left"}} [:p value]]
+           [field-value type value options]
+           ]
           ])])
     (partition 2 2 nil fields))])
 
@@ -136,16 +169,16 @@
    [ant/button "Edit Item"]])
 
 
-(defn cart-item [{:keys [service fields]}]
+(defn cart-item [{:keys [service title description price fields]}]
   [ant/card
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 (:title service)]]
+      [:h4.subtitle.is-5 title]]
      [:div.column.is-6
-      [:p.fs3 (:description service)]]
+      [:p.fs3 description]]
      [:div.column.is-1
-      [:p.price (format/currency (:price service))]]
+      [:p.price (format/currency price)]]
      [:div.column.is-2
       [ant/button
        ;; on click must remove item from cart-items
@@ -193,7 +226,8 @@
         ]
     [:div
      [:h1.title.is-3 "Shopping cart"]
-     #_(doall
+     (doall
+      (.log js/console @cart-items)
       (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
      ]))
 
