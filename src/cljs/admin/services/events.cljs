@@ -43,22 +43,23 @@
  :service/fetch
  [(path db/path)]
  (fn [{db :db} [k service-id]]
+   (js/console.log "service id is " service-id)
    {:dispatch [:ui/loading k true]
-    :graphql {:query
-              [[:service {:id service-id}
-                [:id :price :cost :name :desc]]]
-              :on-success [::service-fetch k]
+    :graphql {:query [[:service {:id service-id}
+                       [:id :name :desc :code :price :cost :billed :rental
+                        [:variants [:id :name :cost :price]]]]]
+              :on-success [::service-fetch-success k]
               :on-failure [:graphql/failure k]}}))
 
 (reg-event-fx
- ::service-fetch
+ ::service-fetch-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [service (get-in response [:data :service])]
-     {:db (norms/assoc-norm db :service/norms (:id service) service)
+     {:db (norms/assoc-norm db :services/norms (:id service) service)
       :dispatch [:ui/loading k false]})))
 
 
 (defmethod routes/dispatches :services/entry
   [route]
-  [[:service/fetch]])
+  [[:service/fetch (tb/str->int (get-in route [:params :service-id]))]])

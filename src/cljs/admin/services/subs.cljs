@@ -15,4 +15,6 @@
  :services/list
  :<- [db/path]
  (fn [db _]
-   (norms/denormalize db :services/norms)))
+   (let [norms (norms/denormalize db :services/norms)]
+     (.log js/console norms)
+     norms)))
