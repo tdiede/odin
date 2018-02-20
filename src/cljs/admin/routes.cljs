@@ -18,6 +18,9 @@
     ["/orders" [["" :orders/list]
                 [["/" :order-id] :orders/entry]]]
 
+    ["/services" [["" :services/list]
+                  [["/" :service-id] :services/entry]]]
+
     ["/kami" :kami]
 
     ["/profile" [["" :profile/membership]

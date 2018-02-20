@@ -10,6 +10,7 @@
             [admin.orders.views]
             [admin.profile.views]
             [admin.properties.views]
+            [admin.services.views]
             [admin.routes :as routes]
             [admin.subs]
             [antizer.reagent :as ant]

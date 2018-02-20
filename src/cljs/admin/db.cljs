@@ -5,6 +5,7 @@
             [admin.orders.db :as orders]
             [admin.profile.db :as profile]
             [admin.properties.db :as properties]
+            [admin.services.db :as services]
             [iface.modules.payments :as payments]
             [iface.modules.loading :as loading]))
 
@@ -19,6 +20,9 @@
                         {:key  :properties
                          :name "Communities"
                          :uri  "/properties"}
+                        {:key  :services
+                         :name "Premium Services"
+                         :uri  "/services"}
                         {:key  :orders
                          :name "Orders"
                          :uri  "/orders"}
@@ -40,4 +44,5 @@
    orders/default-value
    payments/default-value
    profile/default-value
-   properties/default-value))
+   properties/default-value
+   services/default-value))
