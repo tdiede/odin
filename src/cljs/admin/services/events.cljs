@@ -7,6 +7,10 @@
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]))
 
+;; ====================================================
+;; list
+;; ====================================================
+
 (reg-event-fx
  :services/query
  [(path db/path)]
@@ -29,3 +33,32 @@
 (defmethod routes/dispatches :services/list
   [route]
   [[:services/query]])
+
+
+;; ====================================================
+;; entry
+;; ====================================================
+
+(reg-event-fx
+ :service/fetch
+ [(path db/path)]
+ (fn [{db :db} [k service-id]]
+   {:dispatch [:ui/loading k true]
+    :graphql {:query
+              [[:service {:id service-id}
+                [:id :price :cost :name :desc]]]
+              :on-success [::service-fetch k]
+              :on-failure [:graphql/failure k]}}))
+
+(reg-event-fx
+ ::service-fetch
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [service (get-in response [:data :service])]
+     {:db (norms/assoc-norm db :service/norms (:id service) service)
+      :dispatch [:ui/loading k false]})))
+
+
+(defmethod routes/dispatches :services/entry
+  [route]
+  [[:service/fetch]])

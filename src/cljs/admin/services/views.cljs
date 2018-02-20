@@ -132,16 +132,28 @@
     [services-table services]]])
 
 
+;; =====================================================
+;; service entry (detail view)
+;; =====================================================
+
+(defn service-detail-main
+  []
+  [:div
+   [:div.columns
+    [:div.column.is-three-quarters
+     (typography/view-header "Service Detail" "A detailed look at a premium service offering.")]]])
+
+
 
 ;; =====================================================
 ;; route handlers
 ;; =====================================================
 
+;; services list
 (defmethod content/view :services/list [route]
   (let [services (subscribe [:services/list])]
     [service-list-main @services]))
 
-
+;; services entry
 (defmethod content/view :services/entry [route]
-  [:div
-   (typography/view-header "Service Detail" "Let's Take a closer look at this here premium service.")])
+  [service-detail-main])
