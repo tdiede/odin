@@ -1,5 +1,6 @@
 (ns admin.services.subs
   (:require [admin.services.db :as db]
+            [admin.services.orders.subs]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]))

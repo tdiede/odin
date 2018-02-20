@@ -2,6 +2,7 @@
   (:require [admin.content :as content]
             [admin.services.db :as db]
             [admin.routes :as routes]
+            [admin.services.orders.views :as orders-views]
             [antizer.reagent :as ant]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]

@@ -19,6 +19,8 @@
                 [["/" :order-id] :orders/entry]]]
 
     ["/services" [["" :services/list]
+                  ["/orders" [["" :services.orders/list]
+                              [["/" :order-id] :services.orders/entry]]]
                   [["/" :service-id] :services/entry]]]
 
     ["/kami" :kami]

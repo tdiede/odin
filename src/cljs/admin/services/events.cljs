@@ -1,5 +1,6 @@
 (ns admin.services.events
   (:require [admin.services.db :as db]
+            [admin.services.orders.events]
             [admin.routes :as routes]
             [re-frame.core :refer [reg-event-db
                                    reg-event-fx
