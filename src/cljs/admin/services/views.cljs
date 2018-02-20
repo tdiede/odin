@@ -117,9 +117,17 @@
      {:columns    columns
       :dataSource services}]))
 
+(defn- path->selected
+  [path]
+  (js/console.log "hey the path is currently -> " (vec (rest path)))
+  (case (vec (rest path))
+    [:list]         :services
+    [:orders :list] :orders
+    :services))
 
-(defn menu []
-  [ant/menu {:mode :horizontal}
+(defn menu [route]
+  [ant/menu {:mode                  :horizontal
+             :selected-key          [(path->selected (:path route))]}
    [ant/menu-item {:key :services}
     [:a {:href (routes/path-for :services/list)}
      "Services"]]
@@ -130,6 +138,14 @@
     [:a {:href "http://homestarrunner.com"}
      "Catalogs"]]])
 
+(defn subview
+  []
+  (let [services (subscribe [:services/list])]
+    [:div
+     [controls @services]
+     [services-table @services]]))
+
+
 (defn service-layout [route] ;;receives services, which is obtained from graphql
   [:div
 
@@ -138,12 +154,11 @@
    (typography/view-header "Premium Services" "Manage and view premium service offerings")
 
    [:div.mb2
-    [menu]]
+    [menu route]]
 
-   ;; somehow render subviews based on the active menu item
-
+   ;; render subviews based on the active menu item
    (case (:page route)
-     :services/list [:h1 "wooo a top-level services table component should go here."]
+     :services/list        [subview]
      :services.orders/list [orders-views/subview])])
 
 
