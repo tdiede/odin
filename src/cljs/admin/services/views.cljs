@@ -17,3 +17,8 @@
     [:div.column
      [:div.is-pulled-right
       [ant/button "Create"]]]]])
+
+
+(defmethod content/view :services/entry [route]
+  [:div
+   (typography/view-header "Service Detail" "Let's Take a closer look at this here premium service.")])
