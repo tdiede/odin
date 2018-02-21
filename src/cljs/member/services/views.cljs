@@ -95,15 +95,7 @@
         :type :primary
         :class "ant-btn-xl"
         :on-click #(dispatch [:services.section/select "cart"])}
-       "Checkout - $" @total-cost " (" @item-count ")"]]
-     #_[:div.shopping-cart
-        [:div.columns
-         [:div.column.is-7
-          [:h4.subtitle.is-5 "X services being requested"]]
-         [:div.column.is-1
-          [:p.price (format/currency 150.0)]]
-         [:div.column.is-4.has-text-right
-          [ant/button "Submit Request"]]]]]))
+       "Checkout - $" @total-cost " (" @item-count ")"]]]))
 
 
 ;; ==============================================================================
@@ -121,26 +113,22 @@
 
 (defmethod field-value :time [k value options]
   [:span
-   {:style {:float "left"}}
    [:p.fs3 (format/time-short value)]])
 
 
 (defmethod field-value :date [k value options]
   [:span
-   {:style {:float "left"}}
    [:p.fs3 (format/date-short value)]])
 
 
 (defmethod field-value :variants [k value options]
   (let [vlabel (reduce (fn [v option] (if (= (keyword value) (:key option)) (:label option) v)) nil options)]
     [:span
-     {:style {:float "left"}}
      [:p.fs3 vlabel]]))
 
 
 (defmethod field-value :desc [k value options]
   [:span
-   {:style {:float "left"}}
    [:p.fs3 value]])
 
 
@@ -154,15 +142,15 @@
          ^{:key (:id id)}
          [:div.column.is-half
           [:div
-           [:span {:style {:float "left" :margin-right "10px"}} [:p.fs3.bold label]]
-           #_[:span {:style {:float "left"}} [:p value]]
+           [:span
+            [:p.fs3.bold label]]
            [field-value type value options]]])])
     (partition 2 2 nil fields))])
 
 
 (defn cart-item-data [fields service-item]
-  [:div
-   [:hr {:style {:margin-top "0" :margin-bottom "20px"}}]
+  [:div.cart-item
+   [:hr]
    [column-fields-2 fields]
    [ant/button {:style {:margin-top "15px"}
                 :icon "edit"
@@ -184,7 +172,7 @@
       [ant/button
        {:type     "danger"
         :icon     "close"
-        :on-click #(dispatch [:services.cart/remove-item id])}
+        :on-click #(dispatch [:services.cart.item/remove id])}
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Remove item"]]]
@@ -245,7 +233,7 @@
        :form-fields @(subscribe [:services.add-service/form])
        :can-submit  @(subscribe [:services.add-service/can-submit?])
        :on-cancel   #(dispatch [:services.add-service/close])
-       :on-submit   #(dispatch [:services.cart/edit-item])
+       :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [:h1.title.is-3 {:style {:margin-top "25px"}} "Shopping cart"]
      (doall
