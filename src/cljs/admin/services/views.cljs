@@ -170,7 +170,6 @@
 ;; =====================================================
 
 (defn service-detail [service]
-  (js/console.log service)
   [:div
    ;; header and controls
    [:div.columns
