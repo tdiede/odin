@@ -51,22 +51,22 @@
    [ant/form-item
     {:label "Price"}
     [ant/input-number
-     {:defaultValue 10.00
+     {:default-value 10.00
       :formatter (fn [value] (str "$" value))}]]
    [ant/form-item
     {:label "Cost"}
     [ant/input-number
-     {:defaultValue 10.00
+     {:default-value 10.00
       :formatter (fn [value] (str "$" value))}]]])
 
 (defn create-service-modal []
   [ant/modal
    {:title    "Create Service"
     :visible  @(subscribe [:modal/visible?])
-    :okText   "Save New Service"
-    :onCancel #(dispatch [:modal/hide])
+    :ok-text   "Save New Service"
+    :on-cancel #(dispatch [:modal/hide])
     ;; TODO - dispatch correct event
-    :onOk     #(dispatch [:modal/hide])}
+    :on-ok     #(dispatch [:modal/hide])}
 
    [create-service-form]])
 
@@ -108,7 +108,7 @@
                   :dataIndex "name"
                   :key       "name"
                   :render    #(r/as-element
-                               [:a {:href                    (routes/path-for :services/entry :service-id (.-id %2))
+                               [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
                                     :dangerouslySetInnerHTML {:__html %1}}])}
                  {:title     "Price"
                   :dataIndex "price"
