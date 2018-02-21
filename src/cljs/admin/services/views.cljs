@@ -183,12 +183,15 @@
    [:div.columns
     [:div.column.is-3
      "Price"
-     [:div (str
-            "$"
-            (:price service)
-            (if (= :monthly (:billed service))
-              "/month"
-              ""))]]
+     [:div
+      (if-let [price (:price service)]
+        (str
+         "$"
+         price
+         (if (= :monthly (:billed service))
+           "/month"
+           ""))
+        "Quote")]]
 
     [:div.column.is-3
      "Cost"
