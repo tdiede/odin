@@ -25,6 +25,25 @@
 
 
 (reg-sub
+ :services/header
+ :<- [:route/current]
+ (fn [{page :page} _]
+   (if (= (name page) "cart")
+     "Shopping Cart"
+     "Premium Services")))
+
+
+(reg-sub
+ :services/subhead
+ :<- [:route/current]
+ (fn [{page :page} _]
+   (cond
+     (= (name page) "book") "Browse and order premium services"
+     (= (name page) "manage") "Manage your premium service requests"
+     :else "")))
+
+
+(reg-sub
  :services.book/categories
  :<- [db/path]
  (fn [db _]

@@ -88,7 +88,7 @@
 
 ;; this removes all of the services with the same service id... we need to only remove the selected item
 (reg-event-db
- :services.cart.item/removeitem
+ :services.cart.item/remove
  [(path db/path)]
  (fn [db [_ id]]
    (update db :cart (fn [cart] (remove #(= id (:id %)) cart)))))

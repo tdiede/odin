@@ -14,14 +14,16 @@
 
 
 (defn menu []
-  (let [section (subscribe [:services/section])]
+  (let [section (subscribe [:services/section])
+        count (subscribe [:services.cart/item-count])]
     [ant/menu {:mode          :horizontal
                :selected-keys [@section]
                :on-click      #(dispatch [:services.section/select
                                           (aget % "key")])}
      [ant/menu-item {:key "book"} "Book services"]
      [ant/menu-item {:key "manage"} "Manage services"]
-     #_[ant/menu-item {:key "cart"} "Shopping cart"]]))
+     [ant/menu-item {:style {:float "right"} :key "cart"}
+      [ant/icon {:type "shopping-cart"}] @count]]))
 
 
 ;; ==============================================================================
@@ -102,11 +104,7 @@
 ;; SHOPPING CART ================================================================
 ;; ==============================================================================
 
-
-;; TODO for times and dates convert the moment string back into actual times and dates
-;; TODO render form fields in the intended order
 ;; TODO make it look pretty?
-
 
 (defmulti field-value (fn [k value options] k))
 
@@ -183,6 +181,14 @@
                                                :price               price}])]]
   )
 
+
+(defn empty-cart []
+  [:div.empty-cart
+   [:p.fs3.bold "There are no premium services selected"]
+   [:p.fs3 "Go to "
+    [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
+
+
 ;; ==============================================================================
 ;; PREMIUM SERVICES CONTENT =====================================================
 ;; ==============================================================================
@@ -235,14 +241,17 @@
        :on-cancel   #(dispatch [:services.add-service/close])
        :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
-     [:h1.title.is-3 {:style {:margin-top "25px"}} "Shopping cart"]
-     (doall
-      (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))]))
+     (if-not (empty? @cart-items)
+       (doall
+        (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
+       [empty-cart])]))
 
 
 
 (defmethod content/view :services [route]
-  [:div
-   (typography/view-header "Premium Services" "Order and manage premium services.")
-   [menu]
-   (content route)])
+  (let [header (subscribe [:services/header])
+        subhead (subscribe [:services/subhead])]
+    [:div
+     (typography/view-header @header @subhead)
+     [menu]
+     (content route)]))
