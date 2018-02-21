@@ -205,7 +205,7 @@
         "n/a"
         (str "$" (- (:price service) (:cost service))))]]]
    [:div
-    "Ordered n times"]]) ;;TODO - get this info out of graphql
+    "Ordered " (str (:order-count service) " time(s)")]]) ;;TODO - get this info out of graphql
 
 (defn service-detail-main
   [{{service-id :service-id} :params}]
