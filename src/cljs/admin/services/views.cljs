@@ -169,13 +169,48 @@
 ;; service entry (detail view)
 ;; =====================================================
 
+(defn service-detail [service]
+  (js/console.log service)
+  [:div
+   ;; header and controls
+   [:div.columns
+    [:div.column.is-9
+     (typography/view-header (:name service) (:desc service))]
+    [:div.column.is-3.is-pulled-right
+     [ant/button "Delete"]
+     [ant/button "Edit"]]]
+
+   ;; content detail
+   [:div.columns
+    [:div.column.is-3
+     "Price"
+     [:div (str
+            "$"
+            (:price service)
+            (if (= :monthly (:billed service))
+              "/month"
+              ""))]]
+
+    [:div.column.is-3
+     "Cost"
+     [:div
+      (if (nil? (:cost service))
+       "n/a"
+       (str "$" (:cost service)))]]
+
+    [:div.column.is-3
+     "Margin"
+     [:div
+      (if (nil? (:cost service))
+        "n/a"
+        (str "$" (- (:price service) (:cost service))))]]]
+   [:div
+    "Ordered n times"]]) ;;TODO - get this info out of graphql
+
 (defn service-detail-main
   [{{service-id :service-id} :params}]
   (let [service (subscribe [:service (tb/str->int service-id)])]
-    [:div
-    [:div.columns
-     [:div.column.is-three-quarters
-      (typography/view-header (:name @service) (:desc @service))]]]))
+    [service-detail @service]))
 
 
 
