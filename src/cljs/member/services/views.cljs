@@ -122,26 +122,26 @@
 (defmethod field-value :time [k value options]
   [:span
    {:style {:float "left"}}
-   [:p (format/time-short value)]])
+   [:p.fs3 (format/time-short value)]])
 
 
 (defmethod field-value :date [k value options]
   [:span
    {:style {:float "left"}}
-   [:p (format/date-short value)]])
+   [:p.fs3 (format/date-short value)]])
 
 
 (defmethod field-value :variants [k value options]
   (let [vlabel (reduce (fn [v option] (if (= (keyword value) (:key option)) (:label option) v)) nil options)]
     [:span
      {:style {:float "left"}}
-     [:p vlabel]]))
+     [:p.fs3 vlabel]]))
 
 
 (defmethod field-value :desc [k value options]
   [:span
    {:style {:float "left"}}
-   [:p value]])
+   [:p.fs3 value]])
 
 
 (defn- column-fields-2 [fields]
@@ -154,38 +154,45 @@
          ^{:key (:id id)}
          [:div.column.is-half
           [:div
-           [:span {:style {:float "left" :margin-right "10px"}} [:p label]]
+           [:span {:style {:float "left" :margin-right "10px"}} [:p.fs3.bold label]]
            #_[:span {:style {:float "left"}} [:p value]]
-           [field-value type value options]
-           ]
-          ])])
+           [field-value type value options]]])])
     (partition 2 2 nil fields))])
 
 
-(defn cart-item-data [item]
+(defn cart-item-data [fields service-item]
   [:div
-   [:hr]
-   [column-fields-2 item]
-   [ant/button "Edit Item"]])
+   [:hr {:style {:margin-top "0" :margin-bottom "20px"}}]
+   [column-fields-2 fields]
+   [ant/button {:style {:margin-top "15px"}
+                :icon "edit"
+                :on-click #(dispatch [:services.cart.item/edit service-item fields])}
+    "Edit Item"]])
 
 
-(defn cart-item [{:keys [service title description price fields]}]
+(defn cart-item [{:keys [id title description price fields]}]
   [ant/card
    [:div.service
     [:div.columns
-     [:div.column.is-3
+     [:div.column.is-9
       [:h4.subtitle.is-5 title]]
-     [:div.column.is-6
+     #_[:div.column.is-6
       [:p.fs3 description]]
      [:div.column.is-1
       [:p.price (format/currency price)]]
-     [:div.column.is-2
+     [:div.column.is-2.align-right
       [ant/button
+       {:type "danger"
+        :icon "close"
+        :on-click #(dispatch [:services.cart/remove-item id])}
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
-       "Cancel"]]]
+       "Remove item"]]]
     (when-not (empty? fields)
-      [cart-item-data fields])]]
+      [cart-item-data fields {:id id
+                              :title title
+                              :description description
+                              :price price}])]]
   )
 
 ;; ==============================================================================
@@ -202,6 +209,15 @@
         catalogues (subscribe [:services.book/catalogues])
         c          (first (filter #(= @selected (:key %)) @catalogues))]
     [:div
+     [services/service-modal
+      {:action      "Add"
+       :is-visible  @(subscribe [:services.add-service/visible?])
+       :service     @(subscribe [:services.add-service/adding])
+       :form-fields @(subscribe [:services.add-service/form])
+       :can-submit  @(subscribe [:services.add-service/can-submit?])
+       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-submit   #(dispatch [:services.add-service/add])
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [categories]
      (if (= @selected :all)
        (doall
@@ -216,34 +232,29 @@
    [:h3 "Manage some services, yo"]])
 
 
-;; TODO remove menu from shopping cart view
-;; TODO add shopping cart items
-
 (defmethod content :services/cart [_]
   (let [cart-items (subscribe [:services.cart/cart])
         ;; first-item (first @cart-items)
         first-item (last @cart-items)
         ]
     [:div
-     [:h1.title.is-3 "Shopping cart"]
+     [services/service-modal
+      {:action      "Edit"
+       :is-visible  @(subscribe [:services.add-service/visible?])
+       :service     @(subscribe [:services.add-service/adding])
+       :form-fields @(subscribe [:services.add-service/form])
+       :can-submit  @(subscribe [:services.add-service/can-submit?])
+       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-submit   #(dispatch [:services.cart/edit-item])
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
+     [:h1.title.is-3 {:style {:margin-top "25px"}} "Shopping cart"]
      (doall
-      (.log js/console @cart-items)
-      (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
-     ]))
+      (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))]))
 
 
 
 (defmethod content/view :services [route]
   [:div
-   [services/service-modal
-    {:action      "Add"
-     :is-visible  @(subscribe [:services.add-service/visible?])
-     :service     @(subscribe [:services.add-service/adding])
-     :form-fields @(subscribe [:services.add-service/form])
-     :can-submit  @(subscribe [:services.add-service/can-submit?])
-     :on-cancel   #(dispatch [:services.add-service/close])
-     :on-submit   #(dispatch [:services.add-service/add])
-     :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
    (typography/view-header "Premium Services" "Order and manage premium services.")
    [menu]
    (content route)])

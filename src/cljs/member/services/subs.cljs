@@ -121,10 +121,7 @@
  (fn [db _]
    (count db)))
 
-;; NOTE when testing be aware that some items and their respective service ids are repeated in
-;;      test data. If we test adding those, the cost of every repeat will be added to the total cost
 
-;; Is there a better way to write this? I feel like all these nested reduces are cringe worthy
 (reg-sub
  :services.cart/total-cost
  :<- [:services.cart/cart]

@@ -76,10 +76,39 @@
  [(path db/path) ]
  (fn [{db :db} _]
    (let [{:keys [id title description price]} (:adding db)
-         adding                               {:service     id
+         adding                               {:id          (db/rand-id) ;; gen unique id so we can remove items by item-id
+                                               :service-id  id ;; not sure if needed, but its here
                                                :title       title
                                                :description description
                                                :price       price
                                                :fields      (:form-data db)}]
      {:db       (update db :cart conj adding)
+      :dispatch [:services.add-service/close]})))
+
+
+;; this removes all of the services with the same service id... we need to only remove the selected item
+(reg-event-db
+ :services.cart/remove-item
+ [(path db/path)]
+ (fn [db [_ id]]
+   (update db :cart (fn [cart] (remove #(= id (:id %)) cart)))))
+
+
+;; this is the same as services.add-service/show, should probably rename that to make it generic
+(reg-event-fx
+ :services.cart.item/edit
+ [(path db/path)]
+ (fn [{db :db} [_ service fields]]
+   {:dispatch [:modal/show db/modal]
+    :db (assoc db :adding service :form-data fields)}))
+
+
+(reg-event-fx
+ :services.cart/edit-item
+ [(path db/path)]
+ (fn [{db :db} _]
+   (let [new-fields (:form-data db)]
+     {:db (update db :cart (fn [cart] (map (fn [item] (if (= (:id item) (:id (:adding db)))
+                                                      (assoc item :fields new-fields)
+                                                      item)) cart)))
       :dispatch [:services.add-service/close]})))
