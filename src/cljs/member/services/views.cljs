@@ -182,17 +182,17 @@
       [:p.price (format/currency price)]]
      [:div.column.is-2.align-right
       [ant/button
-       {:type "danger"
-        :icon "close"
+       {:type     "danger"
+        :icon     "close"
         :on-click #(dispatch [:services.cart/remove-item id])}
        ;; on click must remove item from cart-items
        ;; {:on-click #(dispatch [:modal/show modal])}
        "Remove item"]]]
     (when-not (empty? fields)
-      [cart-item-data fields {:id id
-                              :title title
-                              :description description
-                              :price price}])]]
+      [cart-item-data (sort-by :index fields) {:id id
+                                               :title               title
+                                               :description         description
+                                               :price               price}])]]
   )
 
 ;; ==============================================================================
