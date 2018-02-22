@@ -1,0 +1,4 @@
+{:interfaces
+ {:person
+  {:fields {:first_name {:type (non-null String)}
+            :last_name  {:type (non-null String)}}}}}

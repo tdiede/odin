@@ -74,12 +74,18 @@
   {:inspect-data true})
 
 
+(defn get-from-service [key item]
+  (get-in item [:service key]))
+
+
 (defn on-submit [data]
   (fn [_]
     (swap! data assoc :loading true)
     (.setTimeout js/window
                  #(do
                     (swap! data update :cart conj {:service (get-in sample-data [:service :id])
+                                                   :price   (get-in sample-data [:service :price])
+                                                   :title   (get-in sample-data [:service :title])
                                                    :fields  (:form-fields @data)})
                     (swap! data assoc :form-fields (:fields sample-data))
                     (swap! data assoc :loading false))

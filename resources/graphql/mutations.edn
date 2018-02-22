@@ -1,0 +1,266 @@
+{:mutations
+ {;; account ======================================================================
+
+
+  :update_account
+  {:type        :account
+   :description "Update account information."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "This account's id."}
+                 :data {:type        (non-null :update_account)
+                        :description "The data to update the account with."}}
+   :resolve     :account/update!}
+
+
+  :change_password
+  {:type        :account
+   :description "Change requesting user's password."
+   :args        {:old_password   {:type (non-null String)}
+                 :new_password_1 {:type (non-null String)}
+                 :new_password_2 {:type (non-null String)}}
+   :resolve     :account/change-password!}
+
+
+  ;; application ==================================================================
+
+
+  :approve_application
+  {:type        :application
+   :description "Approve an application for membership."
+   :args        {:application {:type        (non-null :Long)
+                               :description "The account to approve."}
+                 :params      {:type        (non-null :approve_application)
+                               :description "Required parameters to approve the account"}}
+   :resolve     :application/approve!}
+
+
+  ;; checks =======================================================================
+
+
+  :create_check
+  {:type        :check
+   :description "Create a check."
+   :args        {:params {:type :create_check_params}}
+   :resolve     :check/create!}
+
+
+  ;; licenses =====================================================================
+
+
+  :reassign_member_unit
+  {:type        :license
+   :description "Reassign a member to a new unit."
+   :args        {:params {:type :reassign_member_unit_params}}
+   :resolve     :member-license/reassign!}
+
+
+  ;; notes ========================================================================
+
+
+  :create_note
+  {:type        :note
+   :description "Create a new note."
+   :args        {:params {:type :create_note_params}}
+   :resolve     :note/create!}
+
+
+  :update_note
+  {:type        :note
+   :description "Update a note."
+   :args        {:params {:type :update_note_params}}
+   :resolve     :note/update!}
+
+  :delete_note
+  {:type        :Keyword
+   :description "Delete a note."
+   :args        {:note {:type (non-null :Long)}}
+   :resolve     :note/delete!}
+
+  :add_note_comment
+  {:type        :note
+   :description "Add a comment to a note."
+   :args        {:note {:type (non-null :Long)}
+                 :text {:type (non-null String)}}
+   :resolve     :note/add-comment!}
+
+
+  ;; orders =======================================================================
+
+
+  :create_order
+  {:type        :order
+   :description "Create a new premium service order."
+   :args        {:params {:type :mutate_order_params}}
+   :resolve     :order/create!}
+
+
+  :update_order
+  {:type        :order
+   :description "Update a premium service order."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "Id of the order to update."}
+                 :params {:type :mutate_order_params}}
+   :resolve     :order/update!}
+
+
+  :place_order
+  {:type        :order
+   :description "Place a premium service order."
+   :args        {:id                    {:type        (non-null :Long)
+                                         :description "ID of the order entity."}
+                 :projected_fulfillment {:type        :Instant
+                                         :description "Projected fulfillment date."}
+                 :notify                {:type        Boolean
+                                         :description "Send notification?"}}
+   :resolve     :order/place!}
+
+
+  :fulfill_order
+  {:type        :order
+   :description "Fulfill a premium service order."
+   :args        {:id           {:type        (non-null :Long)
+                                :description "ID of the order entity."}
+                 :fulfilled_on {:type        :Instant
+                                :description "Actual fulfillment date."}
+                 :charge       {:type        Boolean
+                                :description "Charge the order?"}
+                 :notify       {:type        Boolean
+                                :description "Send notification?"}}
+   :resolve     :order/fulfill!}
+
+
+  :charge_order
+  {:type    :order
+   :args    {:id {:type (non-null :Long)}}
+   :resolve :order/charge!}
+
+
+  :cancel_order
+  {:type        :order
+   :description "Cancel a premium service order."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "ID of the order entity."}
+                 :notify {:type        Boolean
+                          :description "Send cancelation notification?"}}
+   :resolve     :order/cancel!}
+
+
+  ;; payments =====================================================================
+
+
+  :create_payment
+  {:type        :payment
+   :description "Create a payment."
+   :args        {:params {:type :create_payment_params}}
+   :resolve     :payment/create!}
+
+
+  :pay_rent_payment
+  {:type        :payment
+   :description "Make a payment."
+   :args        {:id     {:type        (non-null :Long)
+                          :description "ID of the payment entity."}
+                 :source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-rent!}
+
+
+  :pay_remainder_deposit
+  {:type        :deposit
+   :description "Pay the remainder of the security deposit."
+   :args        {:source {:type        (non-null String)
+                          :description "ID of the source to use for the payment. Must be a bank account."}}
+   :resolve     :payment/pay-deposit!}
+
+
+  ;; payment sources ==============================================================
+
+
+  :delete_payment_source
+  {:type        :payment_source
+   :description "Delete a payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe source id."}}
+   :resolve     :payment.sources/delete!}
+
+
+  :add_payment_source
+  {:type        :payment_source
+   :description "Add a new source to the requesting users's account."
+   :args        {:token {:type        (non-null String)
+                         :description "The token to create the source with."}}
+   :resolve     :payment.sources/add-source!}
+
+
+  :verify_bank_source
+  {:type        :payment_source
+   :description "Verify a bank account using microdeposits."
+   :args        {:deposits {:type        (list Int)
+                            :description "The two microdeposit amounts."}
+                 :id       {:type        (non-null String)
+                            :description "The Stripe source id."}}
+   :resolve     :payment.sources/verify-bank!}
+
+
+  :set_autopay_source
+  {:type        :payment_source
+   :description "Set a payment source as the autopay source. Currently restricted to bank accounts."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use for autopay."}}
+   :resolve     :payment.sources/set-autopay!}
+
+
+  :unset_autopay_source
+  {:type        :payment_source
+   :description "Unset the source as the autopay source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source used for autopay."}}
+   :resolve     :payment.sources/unset-autopay!}
+
+
+  :set_default_source
+  {:type        :payment_source
+   :description "Set the source as the default payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use as the defaullt source."}}
+   :resolve     :payment.sources/set-default!}
+
+
+  ;; properties ===================================================================
+
+
+  :property_set_rate
+  {:type        :property
+   :description "Set a property's rate for a given term."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "The property's id."}
+                 :term {:type        (non-null Int)
+                        :description "The term length (3,6,12)"}
+                 :rate {:type        (non-null Float)
+                        :description "The rate"}}
+   :resolve     :property/set-rate!}
+
+
+  :property_toggle_touring
+  {:type        :property
+   :description "Toggle a property's touring attribute on/off."
+   :args        {:id {:type        (non-null :Long)
+                      :description "The property's id."}}
+   :resolve     :property/toggle-touring!}
+
+
+  ;; units ========================================================================
+
+
+  :unit_set_rate
+  {:type        :unit
+   :description "Set a unit's rate for a given term."
+   :args        {:id   {:type        (non-null :Long)
+                        :description "The unit's id."}
+                 :term {:type        (non-null Int)
+                        :description "The term length (3,6,12)"}
+                 :rate {:type        (non-null Float)
+                        :description "The rate"}}
+   :resolve     :unit/set-rate!}
+
+  }}

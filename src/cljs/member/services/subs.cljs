@@ -25,6 +25,25 @@
 
 
 (reg-sub
+ :services/header
+ :<- [:route/current]
+ (fn [{page :page} _]
+   (if (= (name page) "cart")
+     "Shopping Cart"
+     "Premium Services")))
+
+
+(reg-sub
+ :services/subhead
+ :<- [:route/current]
+ (fn [{page :page} _]
+   (cond
+     (= (name page) "book") "Browse and order premium services"
+     (= (name page) "manage") "Manage your premium service requests"
+     :else "")))
+
+
+(reg-sub
  :services.book/categories
  :<- [db/path]
  (fn [db _]
@@ -52,6 +71,15 @@
  (fn [[query-params route] [_ category]]
    (db/params->route (:page route)
                      (assoc query-params :category category))))
+
+
+;; gets a category id and checks if it has more than 2 items in it
+(reg-sub
+ :services.book.category/has-more?
+ :<- [db/path]
+ (fn [db [_ id]]
+   (let [catalogue (first (filter #(= (:id %) id) (:catalogues db)))]
+     (> (count (:items catalogue)) 2))))
 
 
 (reg-sub
@@ -104,3 +132,17 @@
  :<- [db/path]
  (fn [db _]
    (:cart db)))
+
+
+(reg-sub
+ :services.cart/item-count
+ :<- [:services.cart/cart]
+ (fn [db _]
+   (count db)))
+
+
+(reg-sub
+ :services.cart/total-cost
+ :<- [:services.cart/cart]
+ (fn [cart _]
+   (reduce #(+ %1 (:price %2)) 0 cart)))

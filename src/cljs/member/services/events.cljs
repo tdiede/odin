@@ -1,15 +1,53 @@
 (ns member.services.events
-  (:require [member.routes :as routes]
+  (:require [akiroz.re-frame.storage :refer [reg-co-fx!]]
+            [member.routes :as routes]
             [member.services.db :as db]
-            [re-frame.core :refer [reg-event-fx reg-event-db path]]
+            [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
             [toolbelt.core :as tb]))
+
+
+(reg-co-fx! db/path
+            {:fx   :cart
+             :cofx :cart})
+
+
+(reg-event-fx
+ ::load-cart
+ [(inject-cofx :cart) (path db/path)]
+ (fn [{:keys [cart db]} _]
+   {:db (assoc db :cart (or cart []))}))
+
+
+(reg-event-fx
+ ::save-cart
+ [(path db/path)]
+ (fn [{:keys [db]} [_ new-cart]]
+   {:db   (assoc db :cart new-cart)
+    :cart new-cart}))
+
+
+(reg-event-fx
+ ::clear-cart
+ (fn [_ _]
+   {:dispatch [::save-cart []]}))
 
 
 (defmethod routes/dispatches :services/book
   [{:keys [params page] :as route}]
   (if (empty? params)
     [[:services/set-default-route route]]
-    [[:services/fetch (db/parse-query-params page params)]]))
+    [[:services/fetch (db/parse-query-params page params)]
+     [::load-cart]]))
+
+
+(defmethod routes/dispatches :services/manage
+  [_]
+  [[::load-cart]])
+
+
+(defmethod routes/dispatches :services/cart
+  [_]
+  [[::load-cart]])
 
 
 (reg-event-fx
@@ -30,7 +68,7 @@
  :services.section/select
  [(path db/path)]
  (fn [_ [_ section]]
-   (let [page (if (= section :book) :services/book :services/manage)]
+   (let [page (keyword (str "services/" section))]
      {:route (routes/path-for page)})))
 
 
@@ -75,7 +113,46 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [service-id (get-in db [:adding :id])
-         adding     {:service service-id :fields (:form-data db)}]
-     {:db       (update db :cart conj adding)
-      :dispatch [:services.add-service/close]})))
+   (let [{:keys [id title description price]} (:adding db)
+         adding                               {:id          (db/rand-id) ;; gen unique id so we can remove items by item-id
+                                               :service-id  id           ;; not sure if needed, but its here
+                                               :title       title
+                                               :description description
+                                               :price       price
+                                               :fields      (:form-data db)}
+         new-cart                             (conj (:cart db) adding)]
+     {:dispatch-n [[:services.add-service/close]
+                   [::save-cart new-cart]]})))
+
+
+;; this removes all of the services with the same service id... we need to only remove the selected item
+(reg-event-fx
+ :services.cart.item/remove
+ [(path db/path)]
+ (fn [{db :db} [_ id]]
+   (let [new-cart (remove #(= id (:id %)) (:cart db))]
+     {:dispatch [::save-cart new-cart]})))
+
+
+;; this is the same as services.add-service/show, should probably rename that to make it generic
+(reg-event-fx
+ :services.cart.item/edit
+ [(path db/path)]
+ (fn [{db :db} [_ service fields]]
+   {:dispatch [:modal/show db/modal]
+    :db       (assoc db :adding service :form-data fields)}))
+
+
+(reg-event-fx
+ :services.cart.item/save-edit
+ [(path db/path)]
+ (fn [{db :db} _]
+   (let [new-fields (:form-data db)
+         new-cart   (map
+                     (fn [item]
+                       (if (= (:id item) (:id (:adding db)))
+                         (assoc item :fields new-fields)
+                         item))
+                     (:cart db))]
+     {:dispatch-n [[:services.add-service/close]
+                   [::save-cart new-cart]]})))

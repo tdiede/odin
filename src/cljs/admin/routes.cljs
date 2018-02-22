@@ -8,6 +8,11 @@
    [["/accounts" [["" :accounts/list]
                   [["/" :account-id] :accounts/entry]]]
 
+    ["/properties" [["" :properties/list]
+                    [["/" :property-id] [["" :properties/entry]
+                                         ["/units" [["" :properties.entry/units]
+                                                    [["/" :unit-id] :properties.entry.units/entry]]]]]]]
+
     ["/metrics" :metrics]
 
     ["/orders" [["" :orders/list]
@@ -59,4 +64,4 @@
 (reg-event-fx
  ::home
  (fn [_ _]
-   {:route (path-for :metrics)}))
+   {:route (path-for :accounts/list)}))

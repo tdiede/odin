@@ -52,22 +52,26 @@
 
 
 (def sample-fields
-  [{:id       (rand-id)
+  [{:index    0
+    :id       (rand-id)
     :type     :date
     :key      :date
     :label    "Select day"
     :required true}
-   {:id       (rand-id)
+   {:index    1
+    :id       (rand-id)
     :type     :time
     :key      :time
     :label    "Select time"
     :required true}
-   {:id       (rand-id)
+   {:index    3
+    :id       (rand-id)
     :type     :desc
     :key      :desc
     :label    "Include any special instructions here."
     :required false}
-   {:id       (rand-id)
+   {:index    2
+    :id       (rand-id)
     :type     :variants
     :key      :dog-size
     :options  [{:id    (rand-id)
@@ -122,6 +126,7 @@
   {path {:params     default-params
          :catalogues sample-catalogues
          :adding     nil
+         :cart       []
          :form-data  []}})
 
 

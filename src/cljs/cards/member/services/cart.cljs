@@ -24,6 +24,8 @@
 
 (def sample-data
   {:cart [{:service 1
+           :price 25.0
+           :title "Single Dog Walk"
            :fields  '({:id       1
                        :type     :date
                        :key      :date
@@ -52,7 +54,9 @@
                        :label    "Select your dog size:"
                        :required true
                        :value    "l"})}
-          {:service 2}]})
+          {:service 2
+           :price 15.0
+           :title "Full length mirror"}]})
 
 
 (defcard-doc
@@ -81,7 +85,7 @@ This is an example of the catalogue that the shopping cart will be referencing?"
 
 (defcard-rg shopping-cart-item
   (fn [_]
-    (let [service-id (:service (nth (:cart sample-data) 1)) ;; gets service id from the second cart item in sample-data
+    (let [service-id (:service (second (:cart sample-data))) ;; gets service id from the second cart item in sample-data
           service    (get-service service-id)
           item       (assoc {} :service (:service service) :fields (:fields (second (:cart sample-data))))]
       [view/cart-item item])))
@@ -89,7 +93,7 @@ This is an example of the catalogue that the shopping cart will be referencing?"
 
 (defcard-rg shopping-cart-item-2
   (fn [_]
-    (let [service-id (:service (nth (:cart sample-data) 0)) ;; gets service id from the first cart item in sample-data
+    (let [service-id (:service (first (:cart sample-data))) ;; gets service id from the first cart item in sample-data
           service    (get-service service-id)
           item       (assoc {} :service (:service service) :fields (:fields (first (:cart sample-data))))]
       [view/cart-item item])))

@@ -28,9 +28,9 @@
   (when-some [payment (member-license/payment-within (d/db conn) license (java.util.Date.))]
     (cond
       (nil? payment)             :due
-      (payment/overdue? payment) :overdue
-      (payment/paid? payment)    :paid
       (payment/pending? payment) :pending
+      (payment/paid? payment)    :paid
+      (payment/overdue? payment) :overdue
       :otherwise                 :due)))
 
 
@@ -71,8 +71,6 @@
 ;; resolvers --------------------------------------------------------------------
 ;; ==============================================================================
 
-
-;; TODO: Authorization for `reassign!`
 
 (defmethod authorization/authorized? :member-license/reassign! [_ account _]
   (account/admin? account))

@@ -1,0 +1,38 @@
+{:queries
+ {:account         {:type    :account
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve :account/entry}
+  :accounts        {:type    (list :account)
+                    :args    {:params {:type :accounts_query_params}}
+                    :resolve :account/list}
+  :order           {:type    :order
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve :order/entry}
+  :orders          {:type    (list :order)
+                    :args    {:params {:type :orders_query_params}}
+                    :resolve :order/list}
+  :payments        {:type    (list :payment)
+                    :args    {:params {:type :payments_query_params}}
+                    :resolve :payment/list}
+  :payment_sources {:type    (list :payment_source)
+                    :args    {:account {:type        (non-null :Long)
+                                        :description "ID of an account to request sources for."}}
+                    :resolve :payment.sources/list}
+  :property        {:type    :property
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve :property/entry}
+  :properties      {:type    (list :property)
+                    :args    {}
+                    :resolve :property/query}
+  :referrals       {:type    (list :referral)
+                    :args    {}
+                    :resolve :referrals/query}
+  :services        {:type    (list :service)
+                    :args    {:params {:type :services_query_params}}
+                    :resolve :service/query}
+  :unit            {:type    :unit
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve (:entity/fetch :id)}
+  :units           {:type    (list :unit)
+                    :args    {:params {:type :units_query_params}}
+                    :resolve :unit/query}}}
