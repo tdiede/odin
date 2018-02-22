@@ -72,7 +72,7 @@
                  [starcity/drawknife "1.0.0"
                   :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
-                 [starcity/ribbon "0.10.0"]
+                 [starcity/ribbon "0.11.0"]
                  [starcity/toolbelt-async "0.4.0"]
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
