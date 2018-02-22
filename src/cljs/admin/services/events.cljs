@@ -31,6 +31,13 @@
     :dispatch [:ui/loading k false]}))
 
 
+(reg-event-fx
+ :services.search/change
+ [(path db/path)]
+ (fn [{db :db} [_ text]]
+   {:db (assoc db :search-text text)}))
+
+
 (defmethod routes/dispatches :services/list
   [route]
   [[:services/query]])

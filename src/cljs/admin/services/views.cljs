@@ -13,7 +13,8 @@
             [iface.utils.formatters :as format]
             [iface.components.table :as table]
             [iface.components.service :as service]
-            [iface.loading :as loading]))
+            [iface.loading :as loading]
+            [clojure.string :as string]))
 
 ;; ====================================================
 ;; service list
@@ -89,12 +90,19 @@
       [ant/select-option {:key id} name]))])
 
 
+(defn- service-filter []
+  [ant/input
+   {:on-change   #(dispatch [:services.search/change (.. % -target -value)])
+    :placeholder "search services by name"
+    :value       @(subscribe [:services/search-text])}])
+
+
 (defn- controls [services]
   [:div.table-controls
    [:div.columns
     [:div.column.is-3
      [ant/form-item {:label "Filter by Service Name"}
-      [filter-by-name services]]]
+      [service-filter]]]
     [:div.column.has-text-right
      [ant/button
       {:type     :primary
@@ -102,6 +110,9 @@
        :on-click #(dispatch [:modal/show])}
       "Add New Service"]]]])
 
+
+(defn case-insensitive-includes? [str1 str2]
+  (string/includes? (string/lower-case str1) (string/lower-case str2)))
 
 (defn services-table [services]
   (let [columns [{:title     "Name"
@@ -113,10 +124,11 @@
                  {:title     "Price"
                   :dataIndex "price"
                   :key       "price"
-                  :render    (table/wrap-cljs render-price)}]]
+                  :render    (table/wrap-cljs render-price)}]
+        search-text @(subscribe [:services/search-text])]
     [ant/table
      {:columns    columns
-      :dataSource services}]))
+      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}])) ;; strangely - data-source does not appear to work. TODO - figure out why
 
 (defn- path->selected
   [path]

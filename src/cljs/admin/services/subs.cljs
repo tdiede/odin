@@ -30,3 +30,10 @@
  :<- [db/path]
  (fn [db _]
    [(:from db) (:to db)]))
+
+
+(reg-sub
+ :services/search-text
+ :<- [db/path]
+ (fn [db _]
+   (:search-text db)))
