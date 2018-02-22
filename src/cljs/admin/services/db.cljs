@@ -8,4 +8,7 @@
 
 
 (def default-value
-  (merge {path {}} orders-db/default-value))
+  (merge {path {:from ""
+                :to ""
+                :service-id nil}}
+         orders-db/default-value))

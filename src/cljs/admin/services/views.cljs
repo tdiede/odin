@@ -169,6 +169,14 @@
 ;; service entry (detail view)
 ;; =====================================================
 
+(defn moment->iso [instant]
+  "convert a MomentJS instance to an ISO date number"
+  (-> (js/moment instant)
+      (.toISOString)))
+
+(defn iso->moment [instant]
+  (js/moment instant))
+
 (defn service-detail [service]
   [:div
    ;; header and controls
@@ -207,7 +215,13 @@
         "n/a"
         (str "$" (- (:price service) (:cost service))))]]]
    [:div
-    "Ordered " (str (:order-count service) " time(s)")]]) ;;TODO - get this info out of graphql
+    "Ordered " (str (:order-count service) " time(s) between ")
+    (let [range (subscribe [:services/range])]
+      [ant/date-picker-range-picker
+       {:format      "l"
+        :allow-clear true
+        :value       (vec (map iso->moment @range))
+        :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
 
 (defn service-detail-main
   [{{service-id :service-id} :params}]
