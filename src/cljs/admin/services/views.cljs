@@ -76,20 +76,6 @@
   (if (some? price) (format/currency price) "quote"))
 
 
-(defn- filter-by-name [services]
-  [ant/select
-   {:placeholder    "select service"
-    :style          {:width "100%"}
-    :filter-option  false
-    :mode           :multiple
-    :label-in-value true
-    :allow-clear    true
-    }
-   (doall
-    (for [{:keys [id name]} services]
-      [ant/select-option {:key id} name]))])
-
-
 (defn- service-filter []
   [ant/input
    {:on-change   #(dispatch [:services.search/change (.. % -target -value)])
