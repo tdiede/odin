@@ -89,12 +89,6 @@
     :dispatch [:service/fetch (:service-id db)]}))
 
 
-(reg-event-fx
- ::service-range-change-success
- [(path db/path)]
- (fn [{db :db} _]
-   (js/console.log "service range changed")))
-
 (defmethod routes/dispatches :services/entry
   [route]
   (let [service-id (get-in route [:params :service-id])]
