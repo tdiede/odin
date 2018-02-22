@@ -24,3 +24,9 @@
  :<- [db/path]
  (fn [db [_ service-id]]
    (norms/get-norm db :services/norms service-id)))
+
+(reg-sub
+ :services/range
+ :<- [db/path]
+ (fn [db _]
+   [(:from db) (:to db)]))

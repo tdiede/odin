@@ -40,6 +40,20 @@
 ;; entry
 ;; ====================================================
 
+
+(reg-event-fx
+ ::set-initial-service-id
+ [(path db/path)]
+ (fn [{db :db} [k service-id]]
+   {:db (assoc db
+               :service-id (tb/str->int service-id)
+               :from       (-> (js/moment (.now js/Date))
+                               (.subtract 1 "months")
+                               (.toISOString))
+               :to         (-> (js/moment (.now js/Date))
+                               (.toISOString)))}))
+
+
 (reg-event-fx
  :service/fetch
  [(path db/path)]
@@ -48,10 +62,14 @@
     :graphql  {:query      [[:service {:id service-id}
                              [:id :name :desc :code :price :cost :billed :rental
                               [:variants [:id :name :cost :price]]]]
-                            [:orders {:params {:services [service-id]}}
+                            [:orders {:params {:services [service-id]
+                                               :datekey  :created
+                                               :from     (:from db)
+                                               :to       (:to db)}}
                              [:id]]]
                :on-success [::service-fetch-success k]
                :on-failure [:graphql/failure k]}}))
+
 
 (reg-event-fx
  ::service-fetch-success
@@ -63,6 +81,16 @@
       :dispatch [:ui/loading k false]})))
 
 
+(reg-event-fx
+ :service.range/change
+ [(path db/path)]
+ (fn [{db :db} [_ from to]]
+   {:db (assoc db :from from :to to)
+    :dispatch [:service/fetch (:service-id db)]}))
+
+
 (defmethod routes/dispatches :services/entry
   [route]
-  [[:service/fetch (tb/str->int (get-in route [:params :service-id]))]])
+  (let [service-id (get-in route [:params :service-id])]
+    [[::set-initial-service-id service-id]
+     [:service/fetch (tb/str->int service-id)]]))
