@@ -126,6 +126,7 @@
   {path {:params     default-params
          :catalogues sample-catalogues
          :adding     nil
+         :cart       []
          :form-data  []}})
 
 

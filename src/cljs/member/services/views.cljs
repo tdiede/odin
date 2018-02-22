@@ -87,7 +87,7 @@
       (map-indexed #(with-meta [catalogue-item %2] {:key %1}) items))]))
 
 
-(defn shopping-cart []
+(defn shopping-cart-button []
   (let [item-count (subscribe [:services.cart/item-count])
         total-cost (subscribe [:services.cart/total-cost])]
     [ant/affix {:offsetBottom 20}
@@ -101,7 +101,7 @@
 
 
 ;; ==============================================================================
-;; SHOPPING CART ================================================================
+;; shopping cart ================================================================
 ;; ==============================================================================
 
 ;; TODO make it look pretty?
@@ -137,7 +137,7 @@
       ^{:key i}
       [:div.columns
        (for [{:keys [id type label value options]} row]
-         ^{:key (:id id)}
+         ^{:key id}
          [:div.column.is-half
           [:div
            [:span
@@ -146,11 +146,15 @@
     (partition 2 2 nil fields))])
 
 
+;; Do we prefer the "edit" button on the left or the right of the card?
+;; I like keeping all the buttons on the right... but it looks so wide...
+
 (defn cart-item-data [fields service-item]
   [:div.cart-item
    [:hr]
    [column-fields-2 fields]
-   [ant/button {:style {:margin-top "15px"}
+   [ant/button {:style {;:float "right"
+                        :margin-top "15px"}
                 :icon "edit"
                 :on-click #(dispatch [:services.cart.item/edit service-item fields])}
     "Edit Item"]])
@@ -163,7 +167,7 @@
      [:div.column.is-9
       [:h4.subtitle.is-5 title]]
      #_[:div.column.is-6
-      [:p.fs3 description]]
+        [:p.fs3 description]]
      [:div.column.is-1
       [:p.price (format/currency price)]]
      [:div.column.is-2.align-right
@@ -171,15 +175,25 @@
        {:type     "danger"
         :icon     "close"
         :on-click #(dispatch [:services.cart.item/remove id])}
-       ;; on click must remove item from cart-items
-       ;; {:on-click #(dispatch [:modal/show modal])}
        "Remove item"]]]
     (when-not (empty? fields)
-      [cart-item-data (sort-by :index fields) {:id id
-                                               :title               title
-                                               :description         description
-                                               :price               price}])]]
-  )
+      [cart-item-data (sort-by :index fields) {:id          id
+                                               :title       title
+                                               :description description
+                                               :price       price}])]])
+
+
+(defn shopping-cart-footer []
+  [:div.cart-footer
+   [:p.fs2 "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]])
+
+
+(defn shopping-cart-body [cart-items]
+  [:div
+   (doall
+    (map-indexed #(with-meta [cart-item %2] {:key %1}) cart-items)
+    )
+   [shopping-cart-footer]])
 
 
 (defn empty-cart []
@@ -218,7 +232,7 @@
         (->> (map (fn [c] (update c :items #(take 2 %))) @catalogues)
              (map-indexed #(with-meta [catalogue %2] {:key %1}))))
        [catalogue c])
-     [shopping-cart]]))
+     [shopping-cart-button]]))
 
 
 (defmethod content :services/manage [_]
@@ -242,8 +256,7 @@
        :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
-       (doall
-        (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
+       [shopping-cart-body @cart-items]
        [empty-cart])]))
 
 
