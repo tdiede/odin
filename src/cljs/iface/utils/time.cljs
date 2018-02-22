@@ -27,3 +27,16 @@
 
 (defn is-after [first second]
   (-> (js/moment second) (.isBefore (js/moment first))))
+
+
+(defn moment->iso
+  "Converts a MomentJS instance into an ISO Date String."
+  [instant]
+  (-> (js/moment instant)
+      (.toISOString)))
+
+
+(defn iso->moment
+  "Converts an ISO String into a MomentJS instance."
+  [instant]
+  (js/moment instant))
