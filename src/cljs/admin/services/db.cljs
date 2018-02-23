@@ -11,6 +11,5 @@
   (merge {path {:from        ""
                 :to          ""
                 :service-id  nil
-                :search-text ""
-                :picker-visible false}}
+                :search-text ""}}
          orders-db/default-value))

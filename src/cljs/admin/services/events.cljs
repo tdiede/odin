@@ -68,25 +68,6 @@
 
 
 (reg-event-fx
- :service.range/set
- [(path db/path)]
- (fn [{db :db} [k time-unit]]
-   {:db       (assoc db
-                     :from (-> (js/moment (.now js/Date))
-                               (.subtract 1 time-unit)
-                               (.hour 0)
-                               (.minute 0)
-                               (.second 0)
-                               (.toISOString))
-                     :to   (-> (js/moment (.now js/Date))
-                               (.hour 23)
-                               (.minute 59)
-                               (.second 59)
-                               (.toISOString)))
-    :dispatch [:service/fetch (:service-id db)]}))
-
-
-(reg-event-fx
  :service/fetch
  [(path db/path)]
  (fn [{db :db} [k service-id]]

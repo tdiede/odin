@@ -197,6 +197,19 @@
      {:on-click #(set-range-picker "year")}
      "Past Year"]]])
 
+
+(defn range-picker-presets
+  [amount time-unit]
+  [(-> (js/moment (.now js/Date))
+       (.subtract amount time-unit)
+       (.hour 0)
+       (.minute 0)
+       (.second 0))
+   (-> (js/moment (.now js/Date))
+       (.hour 23)
+       (.minute 59)
+       (.second 59))])
+
 (defn service-detail [service]
   [:div
    ;; header and controls
@@ -238,12 +251,14 @@
     "Ordered " (str (:order-count service) " time(s) between ")
     (let [range (subscribe [:services/range])]
       [ant/date-picker-range-picker
-       {:format      "l"
-        :allow-clear false
-        :value       (vec (map iso->moment @range))
-        :open        @(subscribe [:services.range/picker-visible])
-        :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])
-        :render-extra-footer #(r/as-element [range-picker-footer-controls])}])]])
+       {:format              "l"
+        :allow-clear         false
+        :ranges              {"Past Week"     (range-picker-presets 1 "week")
+                              "Past Month"    (range-picker-presets 1 "month")
+                              "Past 3 Months" (range-picker-presets 3 "months")
+                              "Past Year"     (range-picker-presets 1 "year")}
+        :value               (vec (map iso->moment @range))
+        :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
 
 (defn service-detail-main
   [{{service-id :service-id} :params}]

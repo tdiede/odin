@@ -37,9 +37,3 @@
  :<- [db/path]
  (fn [db _]
    (:search-text db)))
-
-(reg-sub
- :services.range/picker-visible
- :<- [db/path]
- (fn [db _]
-   (:picker-visible db)))
