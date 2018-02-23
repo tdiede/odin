@@ -5,6 +5,7 @@
             [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [member.content :as content]
+            [member.profile.payments.sources.views.forms :as forms]
             [member.routes :as routes]
             [member.services.db :as db]
             [reagent.core :as r]
@@ -195,7 +196,7 @@
                  :type "primary"
                  :on-click (fn []
                              (if-not @has-card
-                               (.log js/console "Need to enter a credit card")
+                               (dispatch [:modal/show :payment.source/add])
                                (dispatch [:services.cart/submit]))
                              )}
      "Submit orders"]]))
@@ -213,6 +214,30 @@
    [:p.fs3.bold "There are no premium services selected"]
    [:p.fs3 "Go to "
     [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
+
+
+
+;; add credit card modal ========================================================
+
+
+(defn modal-add-credit-card []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/add])]
+    (r/create-class
+     {:component-will-mount
+      (fn [_]
+        (dispatch [:stripe/load-scripts "v2"])
+        (dispatch [:stripe/load-scripts "v3"]))
+      :reagent-render
+      (fn []
+        [ant/modal {:title     "Add credit card"
+                    :width     640
+                    :visible   @is-visible
+                    :on-ok     #(dispatch [:modal/hide :payment.souce/add])
+                    :on-cancel #(dispatch [:modal/hide :payment.source/add])
+                    :footer    nil}
+         [:div
+          (r/as-element (ant/create-form (forms/credit-card)))]])
+      })))
 
 
 ;; ==============================================================================
@@ -266,6 +291,7 @@
 (defmethod content :services/cart [{:keys [requester] :as route}]
   (let [cart-items (subscribe [:services.cart/cart])]
     [:div
+     [modal-add-credit-card]
      [services/service-modal
       {:action      "Edit"
        :is-visible  @(subscribe [:services.add-service/visible?])
