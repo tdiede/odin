@@ -21,8 +21,11 @@
 
 
     ["/services" [["/book" :services/book]
-                  ["/manage" :services/manage]
-                  ["/cart" :services/cart]]]
+                  ["/active-orders" :services/active-orders]
+                  ["/subscriptions" :services/subscriptions]
+                  ["/history" :services/history]
+                  ["/cart" :services/cart]
+                  ]]
 
     ["/logout" :logout]
 

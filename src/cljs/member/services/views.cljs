@@ -20,10 +20,15 @@
                :selected-keys [@section]
                :on-click      #(dispatch [:services.section/select
                                           (aget % "key")])}
-     [ant/menu-item {:key "book"} "Book services"]
-     [ant/menu-item {:key "manage"} "Manage services"]
-     [ant/menu-item {:style {:float "right"} :key "cart"}
-      [ant/icon {:type "shopping-cart"}] @count]]))
+     [ant/menu-item {:key "book"
+                     :class "book-services"}
+      "Book services"]
+     [ant/menu-item {:key "cart"}
+      [ant/icon {:type "shopping-cart"}] @count]
+     [ant/menu-item {:key "history" :style {:float "right"}} "Order history"]
+     [ant/menu-item {:key "subscriptions" :style {:float "right"}} "Subscriptions"]
+     [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]
+     ]))
 
 
 ;; ==============================================================================
@@ -173,7 +178,7 @@
      [:div.column.is-2.align-right
       [ant/button
        {:type     "danger"
-        :icon     "close"
+       :icon     "close"
         :on-click #(dispatch [:services.cart.item/remove id])}
        "Remove item"]]]
     (when-not (empty? fields)
@@ -183,17 +188,29 @@
                                                :price       price}])]])
 
 
-(defn shopping-cart-footer []
-  [:div.cart-footer
-   [:p.fs2 "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]])
+;; QUESTION: Do we need better language on how premium services will be charged individually?
+;; TODO if there is no credit card on file we need to collect credit card information
+(defn shopping-cart-footer [requester]
+  (let [has-card (subscribe [:payment-sources/has-card? (:id requester)])]
+    (.log js/console "has card? " @has-card)
+    [:div.cart-footer.has-text-right
+    [:p.fs2
+     [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
+    [ant/button {:class "ant-btn-xl"
+                 :type "primary"
+                 :on-click (fn []
+                             (if-not @has-card
+                               (.log js/console "Need to enter a credit card")
+                               (dispatch [:services.cart/submit]))
+                             )}
+     "Submit requests"]]))
 
 
-(defn shopping-cart-body [cart-items]
+(defn shopping-cart-body [cart-items requester]
   [:div
    (doall
-    (map-indexed #(with-meta [cart-item %2] {:key %1}) cart-items)
-    )
-   [shopping-cart-footer]])
+    (map-indexed #(with-meta [cart-item %2] {:key %1}) cart-items))
+   [shopping-cart-footer requester]])
 
 
 (defn empty-cart []
@@ -204,7 +221,7 @@
 
 
 ;; ==============================================================================
-;; PREMIUM SERVICES CONTENT =====================================================
+;; premium services content =====================================================
 ;; ==============================================================================
 
 
@@ -235,16 +252,24 @@
      [shopping-cart-button]]))
 
 
-(defmethod content :services/manage [_]
+(defmethod content :services/active-orders [_]
   [:div
    [:h3 "Manage some services, yo"]])
 
 
-(defmethod content :services/cart [_]
-  (let [cart-items (subscribe [:services.cart/cart])
-        ;; first-item (first @cart-items)
-        first-item (last @cart-items)
-        ]
+(defmethod content :services/subscriptions [_]
+  [:div
+   [:h3 "Manage your subscriptions, yo"]])
+
+
+(defmethod content :services/history [_]
+  [:div
+   [:h3 "Look at all the things youve ordered, yo"]])
+
+
+
+(defmethod content :services/cart [{:keys [requester] :as route}]
+  (let [cart-items (subscribe [:services.cart/cart])]
     [:div
      [services/service-modal
       {:action      "Edit"
@@ -256,15 +281,16 @@
        :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
-       [shopping-cart-body @cart-items]
+       [shopping-cart-body @cart-items requester]
        [empty-cart])]))
 
 
 
 (defmethod content/view :services [route]
-  (let [header (subscribe [:services/header])
+  (let [header  (subscribe [:services/header])
         subhead (subscribe [:services/subhead])]
     [:div
      (typography/view-header @header @subhead)
-     [menu]
+     [:div.mb3
+      [menu]]
      (content route)]))

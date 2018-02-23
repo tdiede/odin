@@ -46,8 +46,9 @@
 
 
 (defmethod routes/dispatches :services/cart
-  [_]
-  [[::load-cart]])
+  [{:keys [requester] :as route}]
+  [[:payment-sources/fetch (:id requester)]
+   [::load-cart]])
 
 
 (reg-event-fx
@@ -123,6 +124,13 @@
          new-cart                             (conj (:cart db) adding)]
      {:dispatch-n [[:services.add-service/close]
                    [::save-cart new-cart]]})))
+
+
+(reg-event-fx
+ :services.cart/submit
+ [(path db/path)]
+ (fn [{db :db} _]
+   {:dispatch [::clear-cart]}))
 
 
 ;; this removes all of the services with the same service id... we need to only remove the selected item

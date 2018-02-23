@@ -37,10 +37,13 @@
  :services/subhead
  :<- [:route/current]
  (fn [{page :page} _]
-   (cond
-     (= (name page) "book") "Browse and order premium services"
-     (= (name page) "manage") "Manage your premium service requests"
-     :else "")))
+   (case (name page)
+     "book"          "Browse and order premium services"
+     "active-orders" "Manage your active requests"
+     "subscriptions" "Manage your current subscriptions"
+     "history"       "Look at all the things you've ordered"
+     "cart"          "Give us all your moneys"
+     "")))
 
 
 (reg-sub

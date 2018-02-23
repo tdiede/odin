@@ -122,12 +122,15 @@
   {:category :all})
 
 
+;; Should submited ps requests be held here? is "manage" a good key for them?
+;; We should probably seed some items in the "manage" section
 (def default-value
   {path {:params     default-params
          :catalogues sample-catalogues
          :adding     nil
          :cart       []
-         :form-data  []}})
+         :form-data  []
+         :manage     []}})
 
 
 (defmulti params->route (fn [page params] page))
