@@ -143,49 +143,44 @@
       [:div.columns
        (for [{:keys [id type label value options]} row]
          ^{:key id}
-         [:div.column.is-half
-          [:div
-           [:span
-            [:p.fs3.bold label]]
-           [field-value type value options]]])])
+         [:div.column.is-half.cart-item-info
+          [:span
+           [:p.fs3.bold label]]
+          [field-value type value options]])])
     (partition 2 2 nil fields))])
 
 
 ;; Do we prefer the "edit" button on the left or the right of the card?
 ;; I like keeping all the buttons on the right... but it looks so wide...
 
-(defn cart-item-data [fields service-item]
+(defn cart-item-data [fields]
   [:div.cart-item
-   [:hr]
-   [column-fields-2 fields]
-   [ant/button {:style {;:float "right"
-                        :margin-top "15px"}
-                :icon "edit"
-                :on-click #(dispatch [:services.cart.item/edit service-item fields])}
-    "Edit Item"]])
+   [column-fields-2 fields]])
 
 
 (defn cart-item [{:keys [id title description price fields]}]
-  [ant/card
-   [:div.service
-    [:div.columns
-     [:div.column.is-9
-      [:h4.subtitle.is-5 title]]
-     #_[:div.column.is-6
-        [:p.fs3 description]]
-     [:div.column.is-1
-      [:p.price (format/currency price)]]
-     [:div.column.is-2.align-right
-      [ant/button
-       {:type     "danger"
-       :icon     "close"
-        :on-click #(dispatch [:services.cart.item/remove id])}
-       "Remove item"]]]
-    (when-not (empty? fields)
-      [cart-item-data (sort-by :index fields) {:id          id
-                                               :title       title
-                                               :description description
-                                               :price       price}])]])
+  (let [service-item {:id          id
+                      :title       title
+                      :description description
+                      :price       price}]
+    [ant/card {:style {:margin "10px 0"}}
+     [:div.columns
+      [:div.column.is-6
+       [:h4.subtitle.is-5 title]]
+      [:div.column.is-2
+       [:p.price (format/currency price)]]
+      [:div.column.is-2.align-right
+       [ant/button {:icon "edit"
+                    :on-click #(dispatch [:services.cart.item/edit service-item fields])}
+        "Edit Item"]]
+      [:div.column.is-2
+       [ant/button
+        {:type     "danger"
+         :icon     "close"
+         :on-click #(dispatch [:services.cart.item/remove id])}
+        "Remove item"]]]
+     (when-not (empty? fields)
+       [cart-item-data (sort-by :index fields)])]))
 
 
 ;; QUESTION: Do we need better language on how premium services will be charged individually?
@@ -203,7 +198,7 @@
                                (.log js/console "Need to enter a credit card")
                                (dispatch [:services.cart/submit]))
                              )}
-     "Submit requests"]]))
+     "Submit orders"]]))
 
 
 (defn shopping-cart-body [cart-items requester]

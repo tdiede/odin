@@ -28,21 +28,26 @@
  :services/header
  :<- [:route/current]
  (fn [{page :page} _]
-   (if (= (name page) "cart")
-     "Shopping Cart"
-     "Premium Services")))
+   (case (name page)
+     "book" "Premium Services"
+     "cart" "Shopping Cart"
+     "active-orders" "Requested Services"
+     "subscriptions" "Active Subscriptions"
+     "history" "Order History"
+     "")))
 
 
+;; NOTE We need better subheads for these sections
 (reg-sub
  :services/subhead
  :<- [:route/current]
  (fn [{page :page} _]
    (case (name page)
      "book"          "Browse and order premium services"
+     "cart"          "Give us all your moneys"
      "active-orders" "Manage your active requests"
      "subscriptions" "Manage your current subscriptions"
      "history"       "Look at all the things you've ordered"
-     "cart"          "Give us all your moneys"
      "")))
 
 
