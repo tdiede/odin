@@ -114,7 +114,7 @@
         search-text @(subscribe [:services/search-text])]
     [ant/table
      {:columns    columns
-      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}])) ;; strangely - data-source does not appear to work. TODO - figure out why
+      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 (defn- path->selected
   [path]
