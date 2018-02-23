@@ -56,8 +56,14 @@
                :service-id (tb/str->int service-id)
                :from       (-> (js/moment (.now js/Date))
                                (.subtract 1 "months")
+                               (.hour 0)
+                               (.minute 0)
+                               (.second 0)
                                (.toISOString))
                :to         (-> (js/moment (.now js/Date))
+                               (.hour 23)
+                               (.minute 59)
+                               (.second 59)
                                (.toISOString)))}))
 
 
@@ -65,12 +71,20 @@
  :service.range/set
  [(path db/path)]
  (fn [{db :db} [k time-unit]]
-   {:db (assoc db
-               :from (-> (js/moment (.now js/Date))
-                         (.subtract 1 time-unit)
-                         (.toISOString))
-               :to   (-> (js/moment (.now js/Date))
-                         (.toISOString)))}))
+   {:db       (assoc db
+                     :from (-> (js/moment (.now js/Date))
+                               (.subtract 1 time-unit)
+                               (.hour 0)
+                               (.minute 0)
+                               (.second 0)
+                               (.toISOString))
+                     :to   (-> (js/moment (.now js/Date))
+                               (.hour 23)
+                               (.minute 59)
+                               (.second 59)
+                               (.toISOString)))
+    :dispatch [:service/fetch (:service-id db)]}))
+
 
 (reg-event-fx
  :service/fetch
