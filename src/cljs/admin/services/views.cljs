@@ -118,7 +118,6 @@
 
 (defn- path->selected
   [path]
-  (js/console.log path)
   (case (vec (rest path))
     [:list]           :services
     [:orders :list]   :orders
