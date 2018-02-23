@@ -118,6 +118,7 @@
 
 (defn- path->selected
   [path]
+  (js/console.log path)
   (case (vec (rest path))
     [:list]           :services
     [:orders :list]   :orders
@@ -126,7 +127,7 @@
 
 (defn menu [route]
   [ant/menu {:mode                  :horizontal
-             :selected-key          [(path->selected (:path route))]}
+             :selected-keys          [(path->selected (:path route))]}
    [ant/menu-item {:key :services}
     [:a {:href (routes/path-for :services/list)}
      "Services"]]
