@@ -161,13 +161,15 @@
 
 
 (defn accounts-search []
-  (let [is-loading (subscribe [:ui/loading? :accounts/query])]
+  (let [is-loading   (subscribe [:ui/loading? :accounts/query])
+        search-query (:q @(subscribe [:accounts.list/query-params]))]
     [ant/form-item
      [ant/input-search
-      {:placeholder "Search by name or email"
-       :style       {:width "100%"}
-       :on-change   #(dispatch [:accounts.list/search-accounts (.. % -target -value)])
-       :prefix      (when @is-loading (r/as-element [ant/icon {:type "loading"}]))}]]))
+      {:placeholder   "Search by name or email"
+       :style         {:width "100%"}
+       :on-change     #(dispatch [:accounts.list/search-accounts (.. % -target -value)])
+       :default-value search-query
+       :prefix        (when @is-loading (r/as-element [ant/icon {:type "loading"}]))}]]))
 
 
 (defn accounts-table []
