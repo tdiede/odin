@@ -175,6 +175,28 @@
 (defn iso->moment [instant]
   (js/moment instant))
 
+(defn set-range-picker
+  [time-unit]
+  (dispatch [:service.range/set time-unit])
+  (dispatch [:service.range/close-picker]))
+
+(defn range-picker-footer-controls
+  "Some buttons to quickly select common date ranges"
+  []
+  [:div.columns.is-centered
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "week")}
+     "Past Week"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "month")}
+     "Past Month"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "year")}
+     "Past Year"]]])
+
 (defn service-detail [service]
   [:div
    ;; header and controls
@@ -217,9 +239,11 @@
     (let [range (subscribe [:services/range])]
       [ant/date-picker-range-picker
        {:format      "l"
-        :allow-clear true
+        :allow-clear false
         :value       (vec (map iso->moment @range))
-        :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
+        :open        @(subscribe [:services.range/picker-visible])
+        :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])
+        :render-extra-footer #(r/as-element [range-picker-footer-controls])}])]])
 
 (defn service-detail-main
   [{{service-id :service-id} :params}]

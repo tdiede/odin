@@ -62,6 +62,17 @@
 
 
 (reg-event-fx
+ :service.range/set
+ [(path db/path)]
+ (fn [{db :db} [k time-unit]]
+   {:db (assoc db
+               :from (-> (js/moment (.now js/Date))
+                         (.subtract 1 time-unit)
+                         (.toISOString))
+               :to   (-> (js/moment (.now js/Date))
+                         (.toISOString)))}))
+
+(reg-event-fx
  :service/fetch
  [(path db/path)]
  (fn [{db :db} [k service-id]]
@@ -95,6 +106,12 @@
    {:db (assoc db :from from :to to)
     :dispatch [:service/fetch (:service-id db)]}))
 
+
+(reg-event-fx
+ :service.range/close-picker
+ [(path db/path)]
+ (fn [{db :db} _]
+   {:db (assoc db :picker-visible false)}))
 
 (defmethod routes/dispatches :services/entry
   [route]
