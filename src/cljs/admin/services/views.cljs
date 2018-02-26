@@ -13,7 +13,8 @@
             [iface.utils.formatters :as format]
             [iface.components.table :as table]
             [iface.components.service :as service]
-            [iface.loading :as loading]))
+            [iface.loading :as loading]
+            [clojure.string :as string]))
 
 ;; ====================================================
 ;; service list
@@ -75,18 +76,11 @@
   (if (some? price) (format/currency price) "quote"))
 
 
-(defn- filter-by-name [services]
-  [ant/select
-   {:placeholder    "select service"
-    :style          {:width "100%"}
-    :filter-option  false
-    :mode           :multiple
-    :label-in-value true
-    :allow-clear    true
-    }
-   (doall
-    (for [{:keys [id name]} services]
-      [ant/select-option {:key id} name]))])
+(defn- service-filter []
+  [ant/input
+   {:on-change   #(dispatch [:services.search/change (.. % -target -value)])
+    :placeholder "search services by name"
+    :value       @(subscribe [:services/search-text])}])
 
 
 (defn- controls [services]
@@ -94,7 +88,7 @@
    [:div.columns
     [:div.column.is-3
      [ant/form-item {:label "Filter by Service Name"}
-      [filter-by-name services]]]
+      [service-filter]]]
     [:div.column.has-text-right
      [ant/button
       {:type     :primary
@@ -102,6 +96,9 @@
        :on-click #(dispatch [:modal/show])}
       "Add New Service"]]]])
 
+
+(defn case-insensitive-includes? [str1 str2]
+  (string/includes? (string/lower-case str1) (string/lower-case str2)))
 
 (defn services-table [services]
   (let [columns [{:title     "Name"
@@ -113,10 +110,11 @@
                  {:title     "Price"
                   :dataIndex "price"
                   :key       "price"
-                  :render    (table/wrap-cljs render-price)}]]
+                  :render    (table/wrap-cljs render-price)}]
+        search-text @(subscribe [:services/search-text])]
     [ant/table
      {:columns    columns
-      :dataSource services}]))
+      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 (defn- path->selected
   [path]
@@ -128,7 +126,7 @@
 
 (defn menu [route]
   [ant/menu {:mode                  :horizontal
-             :selected-key          [(path->selected (:path route))]}
+             :selected-keys          [(path->selected (:path route))]}
    [ant/menu-item {:key :services}
     [:a {:href (routes/path-for :services/list)}
      "Services"]]
@@ -177,6 +175,41 @@
 (defn iso->moment [instant]
   (js/moment instant))
 
+(defn set-range-picker
+  [time-unit]
+  (dispatch [:service.range/set time-unit])
+  (dispatch [:service.range/close-picker]))
+
+(defn range-picker-footer-controls
+  "Some buttons to quickly select common date ranges"
+  []
+  [:div.columns.is-centered
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "week")}
+     "Past Week"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "month")}
+     "Past Month"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "year")}
+     "Past Year"]]])
+
+
+(defn range-picker-presets
+  [amount time-unit]
+  [(-> (js/moment (.now js/Date))
+       (.subtract amount time-unit)
+       (.hour 0)
+       (.minute 0)
+       (.second 0))
+   (-> (js/moment (.now js/Date))
+       (.hour 23)
+       (.minute 59)
+       (.second 59))])
+
 (defn service-detail [service]
   [:div
    ;; header and controls
@@ -218,10 +251,14 @@
     "Ordered " (str (:order-count service) " time(s) between ")
     (let [range (subscribe [:services/range])]
       [ant/date-picker-range-picker
-       {:format      "l"
-        :allow-clear true
-        :value       (vec (map iso->moment @range))
-        :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
+       {:format              "l"
+        :allow-clear         false
+        :ranges              {"Past Week"     (range-picker-presets 1 "week")
+                              "Past Month"    (range-picker-presets 1 "month")
+                              "Past 3 Months" (range-picker-presets 3 "months")
+                              "Past Year"     (range-picker-presets 1 "year")}
+        :value               (vec (map iso->moment @range))
+        :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
 
 (defn service-detail-main
   [{{service-id :service-id} :params}]
