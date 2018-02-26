@@ -38,6 +38,12 @@
                                :err-data (ex-data t)}))))
 
 
+(defn entry
+  "Get one service by id"
+  [{conn :conn} {id :id} _]
+  (d/entity (d/db conn) id))
+
+
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
@@ -49,4 +55,5 @@
 
 (def resolvers
   {:service/billed billed
-   :service/query  query})
+   :service/query  query
+   :service/entry  entry})
