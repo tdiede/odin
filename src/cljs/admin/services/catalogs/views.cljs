@@ -63,7 +63,7 @@
       :columns    [{:title     "Name"
                     :dataIndex "name"
                     :key       "name"}
-                   {:title     "Price"
+                   {:title     (r/as-element [:span.is-pulled-right "Price"])
                     :dataIndex "price"
                     :key       "price"
                     :render    #(r/as-element [:span.is-pulled-right "$" %])}
