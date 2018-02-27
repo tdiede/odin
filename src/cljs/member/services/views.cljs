@@ -236,9 +236,9 @@
                     :footer    nil}
          [:div
           (r/as-element (ant/create-form
-                         (form/credit-card {:is-submitting @(subscribe [:ui/loading? :payment.sources.add.card/save-stripe-token!])
-                                             :add-card      :services.cart.add.card/save-stripe-token!
-                                             :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])
+                         (form/credit-card {:is-submitting @(subscribe [:ui/loading? :services.cart.add.card/save-stripe-token!])
+                                            :on-add-card   #(dispatch [:services.cart.add.card/save-stripe-token! %])
+                                            :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])
       })))
 
 

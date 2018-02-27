@@ -316,8 +316,8 @@
             :bank    (r/as-element (ant/create-form (forms/bank-account)))
             :card    (r/as-element (ant/create-form
                                     (form/credit-card {:is-submitting @(subscribe [:ui/loading? :payment.sources.add.card/save-stripe-token!])
-                                                        :add-card      :payment.sources.add.card/save-stripe-token!
-                                                        :on-click      #(dispatch [:modal/hide :payment.source/add])})))
+                                                       :on-add-card   #(dispatch [:payment.sources.add.card/save-stripe-token! %])
+                                                       :on-click      #(dispatch [:modal/hide :payment.source/add])})))
             :bitcoin [forms/bitcoin-account]
             [:div])]])})))
 

@@ -45,16 +45,14 @@
     [ant/select (-> (assoc props :on-change (comp on-change lookup))
                     (update :value #(when-let [x %]
                                       (reverse-lookup (str x)))))
-    (doall
-     (for [t fmts]
-       ^{:key t} [ant/select-option {:value t} t]))]))
+     (doall
+      (for [t fmts]
+        ^{:key t} [ant/select-option {:value t} t]))]))
 
 
 ;; ==============================================================================
 ;; add credit card form =========================================================
 ;; ==============================================================================
-
-
 
 
 (defn- handle-card-errors [container event]
@@ -68,7 +66,7 @@
    :invalid {:color "#ff3860" :iconColor "#ff3860"}})
 
 
-(defn credit-card [{:keys [is-submitting add-card on-click]}]
+(defn credit-card [{:keys [is-submitting on-add-card on-click]}]
   (r/create-class
    {:component-did-mount
     (fn [this]
@@ -84,7 +82,7 @@
                  (.then p (fn [result]
                             (if-let [error (.-error result)]
                               (aset errors "textContent" (.-message error))
-                              (dispatch [add-card (aget (aget result "token") "id")]))))))
+                              (on-add-card (aget (aget result "token") "id")))))))
              (.addEventListener submit-btn "click"))))
     :reagent-render
     (fn []
