@@ -17,11 +17,12 @@
     [ant/select
      {:style       {:width "100%"}
       :placeholder "select a property"}
-     (map (fn [{value :value
-               name  :name}]
+     (map (fn [{code :code
+               name :name
+               id   :id}]
             (r/as-element [ant/select-option
-                           {:value value
-                            :key   value}
+                           {:value code
+                            :key   id}
                            name]))
           properties)]]
    [:div.column.is-9.has-text-right
@@ -58,22 +59,28 @@
     [:h2 "Services"]
     [ant/table
      {:dataSource services
-      :bordered   true
       :scroll     {:x 100}
       :columns    [{:title     "Name"
                     :dataIndex "name"
-                    :key       "name"}
+                    :key       "name"
+                    :render    #(r/as-element
+                                 [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
+                                      :dangerouslySetInnerHTML {:__html %1}}])}
                    {:title     (r/as-element [:span.is-pulled-right "Price"])
                     :dataIndex "price"
                     :key       "price"
                     :render    #(r/as-element [:span.is-pulled-right "$" %])}
-                   {:title  (r/as-element [:span "Active? "[ant/tooltip {:title "Toggle availability of a service at the selected property."} [ant/icon {:type "info-circle-o"}]]])
+                   {:title  (r/as-element
+                             [:span "Active? "
+                              [ant/tooltip {:title "Toggle availability of a service at the selected property."}
+                               [ant/icon {:type "info-circle-o"}]]])
                     :render #(r/as-element [:span.is-pulled-right [toggle-active-checkbox]])}]}]]])
 
 (defn subview []
-  (let [services (subscribe [:services/list]) ;; TODO - the query that populates this property only runs when the services tab is clicked. fix.
-        properties [{:name "West SoMa" :value :52gilbert} {:name "The Mothership" :value :944market} {:name "The Pirate Ship" :value :995market} {:name "Steff's Corporate Partnership" :value :611mission}]
-        catalogs ["All" "Pets" "Laundry" "Storage" "Furniture"]] ;; TODO - replace hardcoded data
+  ;; TODO - the query that populates the `services` property only runs when the services tab is clicked. fix.
+  (let [services (subscribe [:services/list])
+        properties (subscribe [:properties/list])
+        catalogs (r/atom ["All" "Pets" "Laundry" "Storage" "Furniture"])] ;; TODO - replace hardcoded data
     [:div
-     [controls properties]
-     [content catalogs @services]]))
+     [controls @properties]
+     [content @catalogs @services]]))
