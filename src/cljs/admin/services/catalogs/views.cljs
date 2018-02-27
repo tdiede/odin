@@ -49,11 +49,7 @@
     [:h2 "Catalogs"]
     [ant/menu
      {:mode :vertical}
-     [ant/menu-item "All"]
-     [ant/menu-item "Pets"]
-     [ant/menu-item "Laundry"]
-     [ant/menu-item "Storage"]
-     [ant/menu-item "Furniture"]]]
+     (map #(r/as-element [ant/menu-item %]) catalogs)]]
    [:div.column
     [:h2 "Services"]
     [ant/table
