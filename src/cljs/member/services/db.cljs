@@ -107,6 +107,10 @@
     :items (take (inc (rand-int 5)) (repeatedly rand-item))}])
 
 
+(def sample-orders
+  [(take (inc (rand-int 15)) (repeatedly rand-item))])
+
+
 ;; ==================================================
 
 
@@ -122,15 +126,15 @@
   {:category :all})
 
 
-;; Should submited ps requests be held here? is "manage" a good key for them?
-;; We should probably seed some items in the "manage" section
+;; Should submited ps requests be held here? are these keys appropriate for them?
+;; We should probably seed some items in them
 (def default-value
-  {path {:params     default-params
-         :catalogues sample-catalogues
-         :adding     nil
-         :cart       []
-         :form-data  []
-         :manage     []}})
+  {path {:params        default-params
+         :catalogues    sample-catalogues
+         :adding        nil
+         :cart          []
+         :form-data     []
+         :orders        []}})
 
 
 (defmulti params->route (fn [page params] page))

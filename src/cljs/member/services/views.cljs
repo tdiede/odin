@@ -5,7 +5,7 @@
             [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [member.content :as content]
-            [member.profile.payments.sources.views.forms :as forms]
+            ;; [member.profile.payments.sources.views.forms :as forms]
             [member.routes :as routes]
             [member.services.db :as db]
             [reagent.core :as r]
@@ -188,7 +188,6 @@
 ;; TODO if there is no credit card on file we need to collect credit card information
 (defn shopping-cart-footer [requester]
   (let [has-card (subscribe [:payment-sources/has-card? (:id requester)])]
-    (.log js/console "has card? " @has-card)
     [:div.cart-footer.has-text-right
     [:p.fs2
      [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
@@ -236,7 +235,10 @@
                     :on-cancel #(dispatch [:modal/hide :payment.source/add])
                     :footer    nil}
          [:div
-          (r/as-element (ant/create-form (forms/credit-card)))]])
+          (r/as-element (ant/create-form
+                         (form/credit-card {:is-submitting @(subscribe [:ui/loading? :payment.sources.add.card/save-stripe-token!])
+                                             :add-card      :services.cart.add.card/save-stripe-token!
+                                             :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])
       })))
 
 
@@ -291,6 +293,7 @@
 (defmethod content :services/cart [{:keys [requester] :as route}]
   (let [cart-items (subscribe [:services.cart/cart])]
     [:div
+     ;; (.log js/console @cart-items)
      [modal-add-credit-card]
      [services/service-modal
       {:action      "Edit"

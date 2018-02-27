@@ -164,3 +164,29 @@
                      (:cart db))]
      {:dispatch-n [[:services.add-service/close]
                    [::save-cart new-cart]]})))
+
+
+
+;; =============================================================================
+;; Add Card
+;; =============================================================================
+
+;; Cards have no `submit` event, as this is handled by the Stripe JS API.
+;; We skip immediately to `success`, where we've
+;; received a token for the new card from Stripe.
+
+(reg-event-fx
+ :services.cart.add.card/save-stripe-token!
+ (fn [_ [k token]]
+   {:dispatch [:ui/loading k true]
+    :graphql  {:mutation   [[:add_payment_source {:token token} [:id]]]
+               :on-success [::services-create-card-source-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::services-create-card-source-success
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:ui/loading k false]
+                 [:modal/hide :payment.source/add]]
+    :route      (routes/path-for :services/cart)}))

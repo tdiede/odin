@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [iface.media :as media]
             [iface.tooltip :as tooltip]
+            [iface.components.form :as form]
             [iface.components.typography :as typography]
             [iface.components.payments :as payments]
             [member.l10n :as l10n]
@@ -313,7 +314,10 @@
 
           (case @type
             :bank    (r/as-element (ant/create-form (forms/bank-account)))
-            :card    (r/as-element (ant/create-form (forms/credit-card)))
+            :card    (r/as-element (ant/create-form
+                                    (form/credit-card {:is-submitting @(subscribe [:ui/loading? :payment.sources.add.card/save-stripe-token!])
+                                                        :add-card      :payment.sources.add.card/save-stripe-token!
+                                                        :on-click      #(dispatch [:modal/hide :payment.source/add])})))
             :bitcoin [forms/bitcoin-account]
             [:div])]])})))
 
