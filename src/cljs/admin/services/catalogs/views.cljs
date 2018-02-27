@@ -11,15 +11,19 @@
 ;; subview ======================================================================
 ;; ==============================================================================
 
-(defn- controls []
+(defn- controls [properties]
   [:div.columns
    [:div.column.is-3
     [ant/select
-     {:style         {:width "100%"}
-      :placeholder   "select a property"}
-     [ant/select-option {:value "52gilbert"} "52 Gilbert"]
-     [ant/select-option {:value "944market"} "944 Market"]
-     [ant/select-option {:value "611mission"} "611 Mission"]]]
+     {:style       {:width "100%"}
+      :placeholder "select a property"}
+     (map (fn [{value :value
+               name  :name}]
+            (r/as-element [ant/select-option
+                           {:value value
+                            :key   value}
+                           name]))
+          properties)]]
    [:div.column.is-9.has-text-right
     [ant/button
      {:type :primary
@@ -49,11 +53,13 @@
     [:h2 "Catalogs"]
     [ant/menu
      {:mode :vertical}
-     (map #(r/as-element [ant/menu-item %]) catalogs)]]
+     (map #(r/as-element [ant/menu-item {:key %} %]) catalogs)]]
    [:div.column
     [:h2 "Services"]
     [ant/table
      {:dataSource services
+      :bordered   true
+      :scroll     {:x 100}
       :columns    [{:title     "Name"
                     :dataIndex "name"
                     :key       "name"}
@@ -66,7 +72,8 @@
 
 (defn subview []
   (let [services (subscribe [:services/list]) ;; TODO - the query that populates this property only runs when the services tab is clicked. fix.
-        catalogs ["All" "Pets" "Laundry" "Storage" "Furniture"]]
+        properties [{:name "West SoMa" :value :52gilbert} {:name "The Mothership" :value :944market} {:name "The Pirate Ship" :value :995market} {:name "Steff's Corporate Partnership" :value :611mission}]
+        catalogs ["All" "Pets" "Laundry" "Storage" "Furniture"]] ;; TODO - replace hardcoded data
     [:div
-     [controls]
+     [controls properties]
      [content catalogs @services]]))
