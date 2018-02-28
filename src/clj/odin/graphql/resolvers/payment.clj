@@ -383,7 +383,8 @@
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
         amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
-        desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
+        cus-name (or (customer/statement-name customer) (account/full-name account))
+        desc     (format "%s's rent at %s" cus-name (property/name property))]
     (rch/create! stripe amount source-id
                  :email (account/email account)
                  :description desc
