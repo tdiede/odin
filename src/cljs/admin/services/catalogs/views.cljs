@@ -42,11 +42,7 @@
 (defn toggle-active-checkbox []
   "Wrap the checkbox for toggling a service's availability with a confirmation popup.
    That's the sort of thing that probably shouldn't change by accident"
-  [ant/popconfirm
-   {:title "Are you sure you want to toggle this service's availability?"
-    :onConfirm #(js/console.log "it is so ordered")
-    :onCancel  #(js/console.log "nah i'm good")}
-   [ant/checkbox]])
+  [ant/switch])
 
 (defn- content [catalogs services]
   [:div.columns
@@ -78,7 +74,7 @@
 
 (defn subview []
   ;; TODO - the query that populates the `services` property only runs when the services tab is clicked. fix.
-  (let [services (subscribe [:services/list])
+  (let [services (subscribe [:services/list]) ;; should pull from catalog items
         properties (subscribe [:properties/list])
         catalogs (r/atom ["All" "Pets" "Laundry" "Storage" "Furniture"])] ;; TODO - replace hardcoded data
     [:div
