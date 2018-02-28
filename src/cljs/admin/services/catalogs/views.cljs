@@ -42,7 +42,10 @@
 (defn toggle-active-checkbox []
   "Wrap the checkbox for toggling a service's availability with a confirmation popup.
    That's the sort of thing that probably shouldn't change by accident"
-  [ant/switch])
+  [ant/switch
+   {:on-change (fn [status] (js/console.log "Status has been set to" status))
+    :checked-children (r/as-element [ant/icon {:type "check"}])
+    :un-checked-children (r/as-element [ant/icon {:type "cross"}])}])
 
 (defn- content [catalogs services]
   [:div.columns
