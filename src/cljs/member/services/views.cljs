@@ -238,30 +238,31 @@
 ;; ==============================================================================
 
 (defn active-orders-header []
-  [:div.columns {:style {:padding       "0 1.5rem"
-                         :margin-bottom "0"}}
-   [:div.column.is-1]
-   [:div.column.is-5
-    [:h4.subtitle.is-5.bold "Requested service"]]
+  [:div.columns {:style {:padding        "0 1.5rem"
+                         :margin-bottom  "0"
+                         :text-transform "uppercase"}}
+   [:div.column.is-6
+    [:h4.subtitle.is-6.bold "Requested service"]]
    [:div.column.is-2
-    [:h4.subtitle.is-5.bold "Request date"]]
+    [:h4.subtitle.is-6.bold "Request date"]]
    [:div.column.is-1
-    [:h4.subtitle.is-5.bold "Price"]]
+    [:h4.subtitle.is-6.bold "Price"]]
    [:div.column.is-3
-    [:h4.subtitle.is-5.bold "Status"]]])
+    [:h4.subtitle.is-6.bold "Status"]]])
 
 
 (defn above-the-fold [{:keys [name request-date price status]} is-open]
   [:div.columns
-   [:div.column.is-1
-    [ant/button {:on-click #(swap! is-open not)
-                 :icon     (if @is-open "minus" "plus")
-                 :style    {:width     "30px"
-                            :align     "center"
-                            :padding   "0px"
-                            :font-size 20}}]]
-   [:div.column.is-5
-    [:p.body name]]
+   [:div.column.is-6
+    [:span [ant/button {:on-click #(swap! is-open not)
+                        :icon     (if @is-open "minus" "plus")
+                        :style    {:width     "30px"
+                                   :align     "center"
+                                   :padding   "0px"
+                                   :font-size 20
+                                   :margin-right "10px"}}]]
+    [:span {:style {:display "inline-block"}}
+     [:p.body name]]]
    [:div.column.is-2
     [:p.body (format/date-short request-date)]]
    [:div.column.is-1
@@ -274,11 +275,9 @@
                    :icon "close"} "Cancel"])]])
 
 
-;; is it worth writing another 2 column field component just to adjust
-;; to the column layout here? Or are we ok splitting it down the middle?
 (defn below-the-fold [fields]
   [:div
-   [:hr {:style {:margin "0.5rem 0 1.75rem 0"}}]
+   #_[:hr {:style {:margin "0.5rem 0 1.75rem 0"}}]
    [column-fields-2 fields]])
 
 
