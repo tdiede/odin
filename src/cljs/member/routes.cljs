@@ -24,8 +24,7 @@
                   ["/active-orders" :services/active-orders]
                   ["/subscriptions" :services/subscriptions]
                   ["/history" :services/history]
-                  ["/cart" :services/cart]
-                  ]]
+                  ["/cart" :services/cart]]]
 
     ["/logout" :logout]
 

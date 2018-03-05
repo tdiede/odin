@@ -5,7 +5,6 @@
             [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [member.content :as content]
-            ;; [member.profile.payments.sources.views.forms :as forms]
             [member.routes :as routes]
             [member.services.db :as db]
             [reagent.core :as r]
@@ -28,8 +27,7 @@
       [ant/icon {:type "shopping-cart"}] @count]
      [ant/menu-item {:key "history" :style {:float "right"}} "Order history"]
      [ant/menu-item {:key "subscriptions" :style {:float "right"}} "Subscriptions"]
-     [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]
-     ]))
+     [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]]))
 
 
 ;; ==============================================================================
@@ -151,9 +149,6 @@
     (partition 2 2 nil fields))])
 
 
-;; Do we prefer the "edit" button on the left or the right of the card?
-;; I like keeping all the buttons on the right... but it looks so wide...
-
 (defn cart-item-data [fields]
   [:div.cart-item
    [column-fields-2 fields]])
@@ -184,21 +179,18 @@
        [cart-item-data (sort-by :index fields)])]))
 
 
-;; QUESTION: Do we need better language on how premium services will be charged individually?
-;; TODO if there is no credit card on file we need to collect credit card information
 (defn shopping-cart-footer [requester]
   (let [has-card (subscribe [:payment-sources/has-card? (:id requester)])]
     [:div.cart-footer.has-text-right
-    [:p.fs2
-     [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
-    [ant/button {:class "ant-btn-xl"
-                 :type "primary"
-                 :on-click (fn []
-                             (if-not @has-card
-                               (dispatch [:modal/show :payment.source/add])
-                               (dispatch [:services.cart/submit]))
-                             )}
-     "Submit orders"]]))
+     [:p.fs2
+      [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
+     [ant/button {:class "ant-btn-xl"
+                  :type "primary"
+                  :on-click (fn []
+                              (if-not @has-card
+                                (dispatch [:modal/show :payment.source/add])
+                                (dispatch [:services.cart/submit])))}
+      "Submit orders"]]))
 
 
 (defn shopping-cart-body [cart-items requester]
@@ -238,8 +230,95 @@
           (r/as-element (ant/create-form
                          (form/credit-card {:is-submitting @(subscribe [:ui/loading? :services.cart.add.card/save-stripe-token!])
                                             :on-add-card   #(dispatch [:services.cart.add.card/save-stripe-token! %])
-                                            :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])
-      })))
+                                            :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])})))
+
+
+;; ==============================================================================
+;; active orders content ========================================================
+;; ==============================================================================
+
+(defn active-orders-header []
+  [:div.columns {:style {:padding       "0 1.5rem"
+                         :margin-bottom "0"}}
+   [:div.column.is-1]
+   [:div.column.is-5
+    [:h4.subtitle.is-5.bold "Requested service"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-5.bold "Request date"]]
+   [:div.column.is-1
+    [:h4.subtitle.is-5.bold "Price"]]
+   [:div.column.is-3
+    [:h4.subtitle.is-5.bold "Status"]]])
+
+
+(defn above-the-fold [{:keys [name request-date price status]} is-open]
+  [:div.columns
+   [:div.column.is-1
+    [ant/button {:on-click #(swap! is-open not)
+                 :icon     (if @is-open "minus" "plus")
+                 :style    {:width     "30px"
+                            :align     "center"
+                            :padding   "0px"
+                            :font-size 20}}]]
+   [:div.column.is-5
+    [:p.body name]]
+   [:div.column.is-2
+    [:p.body (format/date-short request-date)]]
+   [:div.column.is-1
+    [:p.body (format/currency price)]]
+   [:div.column.is-1
+    [ant/tag status]]
+   [:div.column.is-2.has-text-right
+    (when (= status :pending)
+      [ant/button {:type "danger"
+                   :icon "close"} "Cancel"])]])
+
+
+;; is it worth writing another 2 column field component just to adjust
+;; to the column layout here? Or are we ok splitting it down the middle?
+(defn below-the-fold [fields]
+  [:div
+   [:hr {:style {:margin "0.5rem 0 1.75rem 0"}}]
+   [column-fields-2 fields]])
+
+
+(defn active-order-item []
+  (let  [main    {:name         "Dog walking - single"
+                  :request-date "2018-02-27T19:15:00.134Z"
+                  :price        20
+                  :status       :pending}
+         fields  [{:id      2
+                   :index   2
+                   :label   "Dog size:"
+                   :type    :variants
+                   :value   "m"
+                   :options [{:key   :s
+                              :label "Small"}
+                             {:key   :m
+                              :label "Medium"}
+                             {:key   :l
+                              :label "Large"}]}
+                  {:id    0
+                   :index 0
+                   :type  :date
+                   :label "Date:"
+                   :value "2018-02-27T19:15:00.134Z"}
+                  {:id    1
+                   :index 1
+                   :type  :time
+                   :label "Time:"
+                   :value "2018-02-27T19:15:00.134Z"}
+                  {:id    3
+                   :index 3
+                   :type  :desc
+                   :label "Additional notes:"
+                   :value "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus.  Nullam libero mauris, consequat quis, varius et, dictum id, arcu.  Mauris mollis tincidunt felis.  Aliquam feugiat tellus ut neque.  Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit."}]
+         is-open (r/atom false)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold main is-open])
+       (when @is-open
+         [below-the-fold (sort-by :index fields)])])))
 
 
 ;; ==============================================================================
@@ -276,7 +355,8 @@
 
 (defmethod content :services/active-orders [_]
   [:div
-   [:h3 "Manage some services, yo"]])
+   [active-orders-header]
+   [active-order-item]])
 
 
 (defmethod content :services/subscriptions [_]

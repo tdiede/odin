@@ -205,8 +205,7 @@
  ::create-card-source-success
  (fn [{:keys [db]} [_ k response]]
    {:dispatch-n [[:ui/loading k false]
-                 [:modal/hide :payment.source/add]
-                 ]
+                 [:modal/hide :payment.source/add]]
     :route      (routes/path-for :profile.payment/sources
                                  :query-params {:source-id (get-in response [:data :add_payment_source :id])})}))
 
