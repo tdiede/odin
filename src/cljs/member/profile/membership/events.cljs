@@ -17,7 +17,8 @@
 (defmethod routes/dispatches :profile/membership [route]
   (let [account-id (get-in route [:requester :id])]
     [[:profile/fetch-account account-id]
-     [:member.license/fetch account-id]]))
+     [:member.license/fetch account-id]
+     [:payment-sources/fetch account-id]]))
 
 
 ;; =============================================================================
