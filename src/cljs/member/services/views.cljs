@@ -321,6 +321,25 @@
 
 
 ;; ==============================================================================
+;; manage subscriptions =========================================================
+;; ==============================================================================
+
+
+(defn manage-subscriptions-header []
+  [:div.columns {:style {:padding        "0 1.5rem"
+                         :margin-bottom  "0"
+                         :text-transform "uppercase"}}
+   [:div.column.is-6
+    [:h4.subtitle.is-6.bold "Service subscription"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Billed date"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Price"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Status"]]])
+
+
+;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
 
@@ -360,7 +379,8 @@
 
 (defmethod content :services/subscriptions [_]
   [:div
-   [:h3 "Manage your subscriptions, yo"]])
+   [manage-subscriptions-header]
+   ])
 
 
 (defmethod content :services/history [_]
