@@ -37,3 +37,10 @@
  :<- [db/path]
  (fn [db _]
    (:search-text db)))
+
+
+(reg-sub
+ :services/form
+ :<- [db/path]
+ (fn [db _]
+   (:form db)))

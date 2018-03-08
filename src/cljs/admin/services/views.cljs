@@ -33,43 +33,53 @@
   [:div
    [ant/form-item
     {:label "Service Name"
-     :type "text"}
+     :type  "text"}
     [ant/input
-     {:placeholder "Service Name"}]]
+     {:placeholder "service name"
+      :on-change #(dispatch [:service.form/update :name (.. % -target -value)])}]]
    [ant/form-item
     {:label "Description"}
     [ant/input-text-area
-     {:rows 4}]]
+     {:rows 4
+      :placeholder "description"
+      :on-change #(dispatch [:service.form/update :description (.. % -target -value)])}]]
    [ant/form-item
+    {:label "Code"
+     :type "text"}
+    [ant/input
+     {:placeholder "service code"
+      :on-change #(dispatch [:service.form/update :code (.. % -target -value)])}]]
+   #_[ant/form-item
     {:label "Catalog"}
     [ant/select
-     {:style          {:width "100%"}}
-     [ant/select-option {:key 1} 1]
-     [ant/select-option {:key 2} 2]
-     [ant/select-option {:key 3} 3]
-     [ant/select-option {:key 4} 4]
-     [ant/select-option {:key 5} 5]]]
-   [ant/form-item
+     {:style       {:width "100%"}
+      :mode        "tags"
+      :placeholder "add this service to catalogs"}
+     [ant/select-option {:key 1 :value :pets} "pets"]
+     [ant/select-option {:key 2 :value :laundry} "laundry"]
+     [ant/select-option {:key 3 :value :cleaning} "cleaning"]
+     [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
+   #_[ant/form-item
     {:label "Price"}
     [ant/input-number
      {:default-value 10.00
-      :formatter (fn [value] (str "$" value))}]]
-   [ant/form-item
+      :formatter     (fn [value] (str "$" value))}]]
+   #_[ant/form-item
     {:label "Cost"}
     [ant/input-number
      {:default-value 10.00
-      :formatter (fn [value] (str "$" value))}]]])
+      :formatter     (fn [value] (str "$" value))}]]])
 
 (defn create-service-modal []
-  [ant/modal
-   {:title    "Create Service"
-    :visible  @(subscribe [:modal/visible?])
-    :ok-text   "Save New Service"
-    :on-cancel #(dispatch [:modal/hide])
-    ;; TODO - dispatch correct event
-    :on-ok     #(dispatch [:modal/hide])}
+  (let [form (subscribe [:services/form])]
+    [ant/modal
+     {:title    "Create Service"
+      :visible  @(subscribe [:modal/visible?])
+      :ok-text   "Save New Service"
+      :on-cancel #(dispatch [:modal/hide])
+      :on-ok     #(dispatch [:service/create! @form])}
 
-   [create-service-form]])
+     [create-service-form]]))
 
 
 (defn- render-price [_ {price :price}]

@@ -8,9 +8,11 @@
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]))
 
-;; ====================================================
-;; list
-;; ====================================================
+
+
+;; ==============================================================================
+;; list =========================================================================
+;; ==============================================================================
 
 (reg-event-fx
  :services/query
@@ -113,3 +115,29 @@
   (let [service-id (get-in route [:params :service-id])]
     [[::set-initial-service-id service-id]
      [:service/fetch (tb/str->int service-id)]]))
+
+
+;; ==============================================================================
+;; create =======================================================================
+;; ==============================================================================
+
+(reg-event-fx
+ :service.form/update
+ [(path db/path)]
+ (fn [{db :db} [_ key value]]
+   {:db (assoc-in db [:form key] value)}))
+
+
+(reg-event-fx
+ :service/create!
+ [(path db/path)]
+ (fn [{db :db} [k form]]
+   (js/console.log "submitting... form content is  " form)
+   {:graphql {:mutation [[:service_create {:params form} [:id]]]
+              :on-success [::create-success k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::create-success
+ {:dispatch [:modal/hide]})
