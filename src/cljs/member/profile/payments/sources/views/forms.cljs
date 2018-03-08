@@ -11,60 +11,6 @@
    :wrapper-col {:span 10}})
 
 
-(defn- handle-card-errors [container event]
-  (if-let [error (.-error event)]
-    (aset container "textContent" (.-message error))
-    (aset container "textContent" "")))
-
-
-(def card-style
-  {:base    {:fontFamily "'Work Sans', Helvetica, sans-serif"}
-   :invalid {:color "#ff3860" :iconColor "#ff3860"}})
-
-
-(defn credit-card []
-  (let [is-submitting (subscribe [:ui/loading? :payment.sources.add.card/save-stripe-token!])]
-    (r/create-class
-     {:component-did-mount
-      (fn [this]
-        (let [st         (js/Stripe (.-key js/stripe))
-              elements   (.elements st)
-              card       (.create elements "card" #js {:style (clj->js card-style)})
-              errors     (.querySelector (r/dom-node this) "#card-errors")
-              submit-btn (.querySelector (r/dom-node this) "#submit-btn")]
-          (.mount card "#card-element")
-          (.addEventListener card "change" (partial handle-card-errors errors))
-          (->> (fn [_]
-                 (let [p (.createToken st card)]
-                   (.then p (fn [result]
-                              (if-let [error (.-error result)]
-                                (aset errors "textContent" (.-message error))
-                                (dispatch [:payment.sources.add.card/save-stripe-token! (aget (aget result "token") "id")]))))))
-               (.addEventListener submit-btn "click"))))
-      :reagent-render
-      (fn []
-        [:div
-         [:div {:style {:background-color "#f7f8f9"
-                        :padding          24
-                        :border-radius    4
-                        :border           "1px solid #eeeeee"}}
-          [:label.label.is-small {:for "card-element"} "Credit or debit card"]
-          [:div#card-element]
-          [:p#card-errors.help.is-danger]]
-         [:hr]
-         [:div.align-right
-          [ant/button
-           {:on-click #(dispatch [:modal/hide :payment.source/add])
-            :size     :large}
-           "Cancel"]
-          [ant/button
-           {:type    :primary
-            :size    :large
-            :id      "submit-btn"
-            :loading @is-submitting}
-           "Add Credit Card"]]])})))
-
-
 (defn bitcoin-account []
   [:div
    [:div.card

@@ -1,6 +1,13 @@
 (ns iface.components.form
   (:require [cljsjs.moment]
-            [antizer.reagent :as ant]))
+            [antizer.reagent :as ant]
+            [re-frame.core :refer [dispatch subscribe]]
+            [reagent.core :as r]))
+
+
+;; ==============================================================================
+;; time picker component ========================================================
+;; ==============================================================================
 
 
 (defn number->time [n]
@@ -23,7 +30,8 @@
 
 
 (defn time-picker
-  "TODO: Documentation"
+  "time picker takes start and end times in military hours and interval in minutes
+  if none are supplied it will default to 9am - 5pm at 30 mins intervals"
   [{:keys [on-change start end interval placeholder]
     :or   {on-change identity
            start     9
@@ -37,6 +45,64 @@
     [ant/select (-> (assoc props :on-change (comp on-change lookup))
                     (update :value #(when-let [x %]
                                       (reverse-lookup (str x)))))
-    (doall
-     (for [t fmts]
-       ^{:key t} [ant/select-option {:value t} t]))]))
+     (doall
+      (for [t fmts]
+        ^{:key t} [ant/select-option {:value t} t]))]))
+
+
+;; ==============================================================================
+;; add credit card form =========================================================
+;; ==============================================================================
+
+
+(defn- handle-card-errors [container event]
+  (if-let [error (.-error event)]
+    (aset container "textContent" (.-message error))
+    (aset container "textContent" "")))
+
+
+(def card-style
+  {:base    {:fontFamily "'Work Sans', Helvetica, sans-serif"}
+   :invalid {:color "#ff3860" :iconColor "#ff3860"}})
+
+
+(defn credit-card [{:keys [is-submitting on-add-card on-click]}]
+  (r/create-class
+   {:component-did-mount
+    (fn [this]
+      (let [st         (js/Stripe (.-key js/stripe))
+            elements   (.elements st)
+            card       (.create elements "card" #js {:style (clj->js card-style)})
+            errors     (.querySelector (r/dom-node this) "#card-errors")
+            submit-btn (.querySelector (r/dom-node this) "#submit-btn")]
+        (.mount card "#card-element")
+        (.addEventListener card "change" (partial handle-card-errors errors))
+        (->> (fn [_]
+               (let [p (.createToken st card)]
+                 (.then p (fn [result]
+                            (if-let [error (.-error result)]
+                              (aset errors "textContent" (.-message error))
+                              (on-add-card (aget (aget result "token") "id")))))))
+             (.addEventListener submit-btn "click"))))
+    :reagent-render
+    (fn []
+      [:div
+       [:div {:style {:background-color "#f7f8f9"
+                      :padding          24
+                      :border-radius    4
+                      :border           "1px solid #eeeeee"}}
+        [:label.label.is-small {:for "card-element"} "Credit or debit card"]
+        [:div#card-element]
+        [:p#card-errors.help.is-danger]]
+       [:hr]
+       [:div.align-right
+        [ant/button
+         {:on-click on-click
+          :size     :large}
+         "Cancel"]
+        [ant/button
+         {:type    :primary
+          :size    :large
+          :id      "submit-btn"
+          :loading is-submitting}
+         "Add Credit Card"]]])}))
