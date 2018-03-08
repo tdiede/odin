@@ -54,19 +54,10 @@
                            "")}]]])
 
 
-(defn- deposit-status
-  [{:keys [amount amount_remaining amount_paid amount_pending due] :as deposit}]
-  (let [is-overdue (t/is-before-now due)]
-    (cond
-      (> amount_pending 0)                    :pending
-      (= amount amount_paid)                  :paid
-      (and is-overdue (> amount_remaining 0)) :overdue
-      (= amount_paid 0)                       :unpaid
-      (> amount_remaining amount_paid)        :partial
-      :otherwise                              :pending)))
 
-
-(defmulti deposit-status-content (fn [deposit sources] (deposit-status deposit)))
+(defmulti deposit-status-content
+  (fn [deposit sources]
+    (:status deposit)))
 
 
 (defmethod deposit-status-content :default
@@ -93,32 +84,32 @@
   [{:keys [id amount_remaining]} sources]
   (let [is-loading (subscribe [:ui/loading? :payment-sources/fetch])]
     [:div
-    [:p.fs2 "Your security deposit is partially paid."]
-    [ant/tooltip
-     {:title (when (empty? sources)
-               (r/as-element [link-bank-tooltip-title]))}
-     [ant/button
-      {:on-click #(dispatch [:modal/show id])
-       :size     :large
-       :loading  @is-loading
-       :disabled (empty? sources)}
-      (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]]))
+     [:p.fs2 "Your security deposit is partially paid."]
+     [ant/tooltip
+      {:title (when (empty? sources)
+                (r/as-element [link-bank-tooltip-title]))}
+      [ant/button
+       {:on-click #(dispatch [:modal/show id])
+        :size     :large
+        :loading  @is-loading
+        :disabled (empty? sources)}
+       (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]]))
 
 
 (defmethod deposit-status-content :unpaid
   [{:keys [id amount_remaining]} sources]
   (let [is-loading (subscribe [:ui/loading? :payment-sources/fetch])]
     [:div
-    [:p.fs2 "Your security deposit is unpaid."]
-    [ant/tooltip
-     {:title (when (empty? sources)
-               (r/as-element [link-bank-tooltip-title]))}
-     [ant/button
-      {:on-click #(dispatch [:modal/show id])
-       :size     :large
-       :loading  @is-loading
-       :disabled (empty? sources)}
-      (format/format "Pay Now (%s)" (format/currency amount_remaining))]]]))
+     [:p.fs2 "Your security deposit is unpaid."]
+     [ant/tooltip
+      {:title (when (empty? sources)
+                (r/as-element [link-bank-tooltip-title]))}
+      [ant/button
+       {:on-click #(dispatch [:modal/show id])
+        :size     :large
+        :loading  @is-loading
+        :disabled (empty? sources)}
+       (format/format "Pay Now (%s)" (format/currency amount_remaining))]]]))
 
 
 (defmethod deposit-status-content :pending [{:keys [amount_pending]} _]
@@ -141,7 +132,7 @@
          :sources @sources]
         [:div.columns
          [:div.column.is-2
-          (when (not @is-loading) [render-card-icon :deposit (deposit-status @deposit)])]
+          (when (not @is-loading) [render-card-icon :deposit (:status @deposit)])]
          [:div.column
           (card-title :deposit)
           (when (not (nil? @deposit))
