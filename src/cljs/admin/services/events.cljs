@@ -17,7 +17,7 @@
  [(path db/path)]
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
-    :graphql  {:query      [[:services {:params {}}
+    :graphql  {:query      [[:services {:params params}
                              [:id :name :code :billed :price :cost]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))

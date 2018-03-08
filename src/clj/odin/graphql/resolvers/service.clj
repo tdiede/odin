@@ -4,7 +4,8 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [taoensso.timbre :as timbre]))
+            [taoensso.timbre :as timbre]
+            [blueprints.models.source :as source]))
 
 ;; =============================================================================
 ;; Fields
@@ -23,8 +24,7 @@
 
 (defn- query-services
   [db params]
-  (->> (apply concat params)
-       (apply service/query db)))
+  (service/query db params))
 
 
 (defn query
@@ -44,6 +44,19 @@
   (d/entity (d/db conn) id))
 
 
+;; ==============================================================================
+;; mutations ====================================================================
+;; ==============================================================================
+
+
+(defn create!
+  [{:keys [conn requester]} {params :params} _]
+  (let [{:keys [code name description]} params]
+    @(d/transact conn [(service/create code name description params)
+                       (source/create requester)])
+    (d/entity (d/db conn) [:service/code code])))
+
+
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
@@ -53,7 +66,32 @@
   (account/admin? account))
 
 
+(defmethod authorization/authorized? :service/create! [_ account _]
+  (account/admin? account))
+
+
 (def resolvers
-  {:service/billed billed
-   :service/query  query
-   :service/entry  entry})
+  {;; fields
+   :service/billed  billed
+   ;; mutations
+   :service/create! create!
+   ;; queries
+   :service/query   query
+   :service/entry   entry})
+
+
+
+(comment
+
+  (com.walmartlabs.lacinia/execute odin.graphql/schema
+           (venia.core/graphql-query
+            {:venia.core/queries
+             [[:service_create {:params {:name "Weasel Steaming"
+                                         :code "pets,weasels"
+                                         :desc "Let us give your weasel the royal treatment."}}
+               [:id]]]})
+           nil
+           {:conn      odin.datomic/conn
+            :requester (d/entity (d/db :conn) [:account/email "admin@test.com"])})
+
+  )

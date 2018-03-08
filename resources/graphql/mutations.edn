@@ -248,6 +248,16 @@
                       :description "The property's id."}}
    :resolve     :property/toggle-touring!}
 
+  ;; services =====================================================================
+
+
+  :service_create
+  {:type        :service
+   :description ""
+   :args        {:params {:type :service_create_params}}
+   :resolve     :service/create!}
+
+
 
   ;; units ========================================================================
 

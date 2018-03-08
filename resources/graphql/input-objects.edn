@@ -131,6 +131,17 @@
                      :description "Query term."}}}
 
 
+  :service_create_params
+  {:description "Parameters to create a new service."
+   :fields      {:name        {:type (non-null String)}
+                 :code        {:type (non-null String)}
+                 :description {:type (non-null String)}
+                 :catalogs    {:type (list :Keyword)}
+                 ;; :fields {:type (list :service_field_object)}
+                 :price       {:type Float}
+                 :cost        {:type Float}}}
+
+
   :units_query_params
   {:description "Parameters to query for units."
    :fields      {:property {:type        :Long
