@@ -42,7 +42,8 @@
 
 (defmethod routes/dispatches :services/list
   [route]
-  [[:services/query]])
+  [[:services/query]
+   [:properties/query]])
 
 
 ;; ====================================================
@@ -132,7 +133,6 @@
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
-   (js/console.log "submitting... form content is  " form)
    {:graphql {:mutation [[:service_create {:params form} [:id]]]
               :on-success [::create-success k]
               :on-failure [:graphql/failure k]}}))

@@ -31,49 +31,102 @@
 ;; let's keep it simple for now, just as a placeholder.
 (defn create-service-form []
   [:div
-   [ant/form-item
-    {:label "Service Name"
-     :type  "text"}
-    [ant/input
-     {:placeholder "service name"
-      :on-change #(dispatch [:service.form/update :name (.. % -target -value)])}]]
-   [ant/form-item
-    {:label "Description"}
-    [ant/input-text-area
-     {:rows 4
-      :placeholder "description"
-      :on-change #(dispatch [:service.form/update :description (.. % -target -value)])}]]
-   [ant/form-item
-    {:label "Code"
-     :type "text"}
-    [ant/input
-     {:placeholder "service code"
-      :on-change #(dispatch [:service.form/update :code (.. % -target -value)])}]]
-   #_[ant/form-item
-    {:label "Catalog"}
-    [ant/select
-     {:style       {:width "100%"}
-      :mode        "tags"
-      :placeholder "add this service to catalogs"}
-     [ant/select-option {:key 1 :value :pets} "pets"]
-     [ant/select-option {:key 2 :value :laundry} "laundry"]
-     [ant/select-option {:key 3 :value :cleaning} "cleaning"]
-     [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
-   #_[ant/form-item
-    {:label "Price"}
-    [ant/input-number
-     {:default-value 10.00
-      :formatter     (fn [value] (str "$" value))}]]
-   #_[ant/form-item
-    {:label "Cost"}
-    [ant/input-number
-     {:default-value 10.00
-      :formatter     (fn [value] (str "$" value))}]]])
+   [ant/card
+    [:h3 "Service Details"]
+    [:div.columns
+     [:div.column.is-6
+      [ant/form-item
+       {:label "Service Name"
+        :type  "text"}
+       [ant/input
+        {:placeholder "service name"
+         :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
+      [ant/form-item
+       {:label "Description"}
+       [ant/input-text-area
+        {:rows        6
+         :placeholder "description"
+         :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
+     [:div.column.is-4
+      [ant/form-item
+       {:label "Code"
+        :type  "text"}
+       [ant/input
+        {:placeholder "service code"
+         :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
+      [ant/form-item
+       {:label "Catalogs"}
+       [ant/select
+        {:style       {:width "100%"}
+         :mode        "tags"
+         :placeholder "add this service to catalogs"}
+        [ant/select-option {:key 1 :value :pets} "pets"]
+        [ant/select-option {:key 2 :value :laundry} "laundry"]
+        [ant/select-option {:key 3 :value :cleaning} "cleaning"]
+        [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
+      [ant/form-item
+       {:label "Properties"}
+       [ant/input
+        {:style       {:width "100%"}
+         :placeholder "properties"}]]]
+     [:div.column.is-1
+      [:div.is-pulled-right
+       [ant/form-item
+        {:label "Active?"}
+        [ant/switch]]]]]]
+   [ant/card
+    [:h3"Pricing/Billing"]
+    [:div.columns
+     [:div.column.is-3
+      [ant/form-item
+       {:label "Price"}
+       [ant/input-number
+        {:default-value 10.00
+         :style         {:width "75%"}
+         :formatter     (fn [value] (str "$" value))}]]]
+     [:div.column.is-3
+      [ant/form-item
+       {:label "Cost"}
+       [ant/input-number
+        {:default-value 10.00
+         :style         {:width "75%"}
+         :formatter     (fn [value] (str "$" value))}]]]
+     [:div.column.is-3
+      [ant/form-item
+       {:label "Billed"}
+       [ant/select
+        {:style       {:width "75%"}
+         :placeholder "billed"}
+        [ant/select-option {:value :once} "once"]
+        [ant/select-option {:value :monthly} "monthly"]]]]
+     [:div.column.is-3
+      [ant/form-item
+       {:label "Rental?"}
+       [ant/checkbox]]]]]
+   [ant/card
+    [:div.columns
+     [:div.column.is-10
+      [:h3 "Fields"]
+      [:div "Information to be provided by the member when they place an order"]]
+     [:div.column.is-2.is-pulled-right
+      (let [menu
+            [ant/menu
+             [ant/menu-item "Text Box"]
+             [ant/menu-item "Number"]
+             [ant/menu-item "Date"]
+             [ant/menu-item "Dropdown Menu"]]]
+        [ant/dropdown-button
+         {:overlay (r/as-element menu)}
+         [ant/icon {:type "plus"}]
+         "Add Field"])]]
+    [:div
+     "here is where the individual fields will go. this is getting to be a hella complicated form!"]]])
 
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]
     [ant/modal
      {:title    "Create Service"
+      :width    "70%"
       :visible  @(subscribe [:modal/visible?])
       :ok-text   "Save New Service"
       :on-cancel #(dispatch [:modal/hide])
