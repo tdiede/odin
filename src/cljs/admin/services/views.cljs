@@ -115,12 +115,35 @@
              [ant/menu-item "Number"]
              [ant/menu-item "Date"]
              [ant/menu-item "Dropdown Menu"]]]
-        [ant/dropdown-button
+        [ant/dropdown
          {:overlay (r/as-element menu)}
-         [ant/icon {:type "plus"}]
-         "Add Field"])]]
-    [:div
-     "here is where the individual fields will go. this is getting to be a hella complicated form!"]]])
+         [ant/button
+          "Add Field"
+          [ant/icon {:type "down"}]]])]]]])
+
+(defn create-text-input-field []
+  [:div.columns
+   [:div.column.is-6
+    [ant/form-item
+     {:label "Label"}
+     [ant/input
+      {:style       {:width "100%"}
+       :size        "small"
+       :placeholder "label or question for this input"}]]]
+   [:div.column.is-1
+    [ant/form-item {:label "Required?"}
+     [ant/checkbox]]]
+   [:div.column.is-1
+    [ant/form-item {:label "Remove"}
+     [ant/button
+      {:shape "circle"
+       :size  "small"
+       :icon  "close-circle-o"
+       :type  "danger"}]]]
+   [:div.column.is-3
+    [ant/form-item {:label "Order"}
+     [ant/button {:icon "up" :type "primary"}]
+     [ant/button {:icon "down" :type "primary"}]]]])
 
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]
