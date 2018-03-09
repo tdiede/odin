@@ -19,16 +19,6 @@
 ;; ====================================================
 ;; service list
 ;; ====================================================
-
-
-
-;; creating a new premium service is worth some further thought.
-;; one aspect of adding a service is adding that new services'
-;; configuration options, which would  basically mean creating
-;; a form-builder that our staff would use. this may not be a
-;; good idea.
-
-;; let's keep it simple for now, just as a placeholder.
 (defn create-service-form []
   [:div
    [ant/card
