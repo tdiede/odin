@@ -45,10 +45,12 @@
      [ant/input
       {:style       {:width "100%"}
        :size        "small"
-       :placeholder "label or question for this input"}]]]
+       :placeholder "label or question for this input"
+       :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
    [:div.column.is-1
     [ant/form-item
-     {:label (when (zero? index) "Required?")}
+     {:label     (when (zero? index) "Required?")
+      :on-change #(dispatch [:service.form.field/update index :required (.. % -target -value)])}
      [ant/checkbox]]]
    [:div.column.is-1
     [ant/form-item

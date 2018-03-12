@@ -160,6 +160,11 @@
    (update-in db [:form :fields] #(->> (tb/remove-at % index)
                                        (map-indexed (fn [i f] (assoc f :index i)))
                                        vec))))
+(reg-event-db
+ :service.form.field/update
+ [(path db/path)]
+ (fn [db [_ index key value]]
+   (update-in db [:form :fields index] #(assoc % key value))))
 
 
 (reg-event-fx
