@@ -133,7 +133,7 @@
   {:index    index
    :type     type
    :label    ""
-   :required true})
+   :required false})
 
 
 (defmethod construct-field :dropdown
@@ -141,7 +141,7 @@
   {:index    index
    :type     type
    :label    ""
-   :required true
+   :required false
    :options  []})
 
 

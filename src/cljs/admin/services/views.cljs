@@ -26,7 +26,7 @@
 
 
 (defmethod render-service-field :default
-  [{:keys [index]}] ;; only show labels if this is the first field (see iface/components/order)
+  [{:keys [index label required]}] ;; only show labels if this is the first field (see iface/components/order)
   [:div.columns {:key index}
    [:div.column.is-2
     [ant/form-item
@@ -46,12 +46,16 @@
       {:style       {:width "100%"}
        :size        "small"
        :placeholder "label or question for this input"
+       :value       label
        :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
    [:div.column.is-1
     [ant/form-item
-     {:label     (when (zero? index) "Required?")
-      :on-change #(dispatch [:service.form.field/update index :required (.. % -target -value)])}
-     [ant/checkbox]]]
+     {:label (when (zero? index) "Required?")
+      ;; :on-change #(dispatch [:service.form.field/update index :required %])
+      }
+     [ant/checkbox
+      {:default-checked required
+       :on-change #(dispatch [:service.form.field/update index :required (.. % -target -checked)])}]]]
    [:div.column.is-1
     [ant/form-item
      {:label (when (zero? index) "Remove")}
