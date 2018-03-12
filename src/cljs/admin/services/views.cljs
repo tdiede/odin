@@ -54,12 +54,11 @@
     [ant/form-item
      {:label (when (zero? index) "Remove")}
      [ant/button
-      {:shape "circle"
-       :size  "small"
-       :icon  "close-circle-o"
-       :type  "danger"}]]]])
-
-
+      {:shape    "circle"
+       :size     "small"
+       :icon     "close-circle-o"
+       :type     "danger"
+       :on-click #(dispatch [:service.form.field/delete index])}]]]])
 
 
 (defn fields-card [fields]
@@ -70,11 +69,12 @@
      [:div "Information to be provided by the member when they place an order"]]
     [:div.column.is-2.is-pulled-right
      (let [menu
-           [ant/menu
-            [ant/menu-item "Text Box"]
-            [ant/menu-item "Number"]
-            [ant/menu-item "Date"]
-            [ant/menu-item "Dropdown Menu"]]]
+           [ant/menu {:on-click #(dispatch [:service.form.field/create (aget % "key")])}
+            [ant/menu-item {:key "text" }"Text Box"]
+            [ant/menu-item {:key "number"} "Number"]
+            [ant/menu-item {:key "date"} "Date"]
+            [ant/menu-item {:key "time"} "Time"]
+            [ant/menu-item {:key "dropdown"} "Dropdown Menu"]]]
        [ant/dropdown
         {:overlay (r/as-element menu)}
         [ant/button

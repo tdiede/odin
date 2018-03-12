@@ -144,12 +144,23 @@
    :required true
    :options  []})
 
-(reg-event-fx
+
+(reg-event-db
  :service.form.field/create
  [(path db/path)]
- (fn [{db :db} [_ field-type]]
+ (fn [db [_ field-type]]
    (let [new-field (construct-field (count (get-in db [:form :fields])) field-type)]
-     {:db (update-in db [:form :fields] conj new-field)})))
+     (update-in db [:form :fields] conj new-field))))
+
+
+(reg-event-db
+ :service.form.field/delete
+ [(path db/path)]
+ (fn [db [_ index]]
+   (update-in db [:form :fields] #(->> (tb/remove-at % index)
+                                       (map-indexed (fn [i f] (assoc f :index i)))
+                                       vec))))
+
 
 (reg-event-fx
  :service.form/update
