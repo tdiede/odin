@@ -122,6 +122,35 @@
 ;; create =======================================================================
 ;; ==============================================================================
 
+
+(defmulti construct-field
+  (fn [_ type]
+    type))
+
+
+(defmethod construct-field :default
+  [index type]
+  {:index    index
+   :type     type
+   :label    ""
+   :required true})
+
+
+(defmethod construct-field :dropdown
+  [index type]
+  {:index    index
+   :type     type
+   :label    ""
+   :required true
+   :options  []})
+
+(reg-event-fx
+ :service.form.field/create
+ [(path db/path)]
+ (fn [{db :db} [_ field-type]]
+   (let [new-field (construct-field (count (get-in db [:form :fields])) field-type)]
+     {:db (update-in db [:form :fields] conj new-field)})))
+
 (reg-event-fx
  :service.form/update
  [(path db/path)]

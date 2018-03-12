@@ -19,121 +19,149 @@
 ;; ====================================================
 ;; service list
 ;; ====================================================
-(defn create-service-form []
-  [:div
-   [ant/card
-    [:h3 "Service Details"]
-    [:div.columns
-     [:div.column.is-6
-      [ant/form-item
-       {:label "Service Name"
-        :type  "text"}
-       [ant/input
-        {:placeholder "service name"
-         :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
-      [ant/form-item
-       {:label "Description"}
-       [ant/input-text-area
-        {:rows        6
-         :placeholder "description"
-         :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
-     [:div.column.is-4
-      [ant/form-item
-       {:label "Code"
-        :type  "text"}
-       [ant/input
-        {:placeholder "service code"
-         :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
-      [ant/form-item
-       {:label "Catalogs"}
-       [ant/select
-        {:style       {:width "100%"}
-         :mode        "tags"
-         :placeholder "add this service to catalogs"}
-        [ant/select-option {:key 1 :value :pets} "pets"]
-        [ant/select-option {:key 2 :value :laundry} "laundry"]
-        [ant/select-option {:key 3 :value :cleaning} "cleaning"]
-        [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
-      [ant/form-item
-       {:label "Properties"}
-       [ant/input
-        {:style       {:width "100%"}
-         :placeholder "properties"}]]]
-     [:div.column.is-1
-      [:div.is-pulled-right
-       [ant/form-item
-        {:label "Active?"}
-        [ant/switch]]]]]]
-   [ant/card
-    [:h3"Pricing/Billing"]
-    [:div.columns
-     [:div.column.is-3
-      [ant/form-item
-       {:label "Price"}
-       [ant/input-number
-        {:default-value 10.00
-         :style         {:width "75%"}
-         :formatter     (fn [value] (str "$" value))}]]]
-     [:div.column.is-3
-      [ant/form-item
-       {:label "Cost"}
-       [ant/input-number
-        {:default-value 10.00
-         :style         {:width "75%"}
-         :formatter     (fn [value] (str "$" value))}]]]
-     [:div.column.is-3
-      [ant/form-item
-       {:label "Billed"}
-       [ant/select
-        {:style       {:width "75%"}
-         :placeholder "billed"}
-        [ant/select-option {:value :once} "once"]
-        [ant/select-option {:value :monthly} "monthly"]]]]
-     [:div.column.is-3
-      [ant/form-item
-       {:label "Rental?"}
-       [ant/checkbox]]]]]
-   [ant/card
-    [:div.columns
-     [:div.column.is-10
-      [:h3 "Fields"]
-      [:div "Information to be provided by the member when they place an order"]]
-     [:div.column.is-2.is-pulled-right
-      (let [menu
-            [ant/menu
-             [ant/menu-item "Text Box"]
-             [ant/menu-item "Number"]
-             [ant/menu-item "Date"]
-             [ant/menu-item "Dropdown Menu"]]]
-        [ant/dropdown
-         {:overlay (r/as-element menu)}
-         [ant/button
-          "Add Field"
-          [ant/icon {:type "down"}]]])]]]])
 
-(defn create-text-input-field []
-  [:div.columns
+
+(defmulti render-service-field :type)
+
+
+
+(defmethod render-service-field :default
+  [{:keys [index]}] ;; only show labels if this is the first field (see iface/components/order)
+  [:div.columns {:key index}
+   [:div.column.is-2
+    [ant/form-item
+     {:label (when (zero? index) "Order")}
+     [ant/button  ;; TODO - disable if this is the first field
+      {:icon "up"
+       :type "primary"
+       :size "small"}]
+     [ant/button ;; TODO - disable if this is the last field
+      {:icon "down"
+       :type "primary"
+       :size "small"}]]]
    [:div.column.is-6
     [ant/form-item
-     {:label "Label"}
+     {:label (when (zero? index) "Label")}
      [ant/input
       {:style       {:width "100%"}
        :size        "small"
        :placeholder "label or question for this input"}]]]
    [:div.column.is-1
-    [ant/form-item {:label "Required?"}
+    [ant/form-item
+     {:label (when (zero? index) "Required?")}
      [ant/checkbox]]]
    [:div.column.is-1
-    [ant/form-item {:label "Remove"}
+    [ant/form-item
+     {:label (when (zero? index) "Remove")}
      [ant/button
       {:shape "circle"
        :size  "small"
        :icon  "close-circle-o"
-       :type  "danger"}]]]
-   [:div.column.is-3
-    [ant/form-item {:label "Order"}
-     [ant/button {:icon "up" :type "primary"}]
-     [ant/button {:icon "down" :type "primary"}]]]])
+       :type  "danger"}]]]])
+
+
+
+
+(defn fields-card [fields]
+  [ant/card
+   [:div.columns
+    [:div.column.is-10
+     [:h3 "Fields"]
+     [:div "Information to be provided by the member when they place an order"]]
+    [:div.column.is-2.is-pulled-right
+     (let [menu
+           [ant/menu
+            [ant/menu-item "Text Box"]
+            [ant/menu-item "Number"]
+            [ant/menu-item "Date"]
+            [ant/menu-item "Dropdown Menu"]]]
+       [ant/dropdown
+        {:overlay (r/as-element menu)}
+        [ant/button
+         "Add Field"
+         [ant/icon {:type "down"}]]])]]
+   (map render-service-field fields)])
+
+
+(defn create-service-form []
+  (let [form (subscribe [:services/form])]
+    [:div
+     [ant/card
+      [:h3 "Service Details"]
+      [:div.columns
+       [:div.column.is-6
+        [ant/form-item
+         {:label "Service Name"
+          :type  "text"}
+         [ant/input
+          {:placeholder "service name"
+           :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
+        [ant/form-item
+         {:label "Description"}
+         [ant/input-text-area
+          {:rows        6
+           :placeholder "description"
+           :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
+       [:div.column.is-4
+        [ant/form-item
+         {:label "Code"
+          :type  "text"}
+         [ant/input
+          {:placeholder "service code"
+           :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
+        [ant/form-item
+         {:label "Catalogs"}
+         [ant/select
+          {:style       {:width "100%"}
+           :mode        "tags"
+           :placeholder "add this service to catalogs"}
+          [ant/select-option {:key 1 :value :pets} "pets"]
+          [ant/select-option {:key 2 :value :laundry} "laundry"]
+          [ant/select-option {:key 3 :value :cleaning} "cleaning"]
+          [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
+        [ant/form-item
+         {:label "Properties"}
+         [ant/input
+          {:style       {:width "100%"}
+           :placeholder "properties"}]]]
+       [:div.column.is-1
+        [:div.is-pulled-right
+         [ant/form-item
+          {:label "Active?"}
+          [ant/switch]]]]]]
+     [ant/card
+      [:h3"Pricing/Billing"]
+      [:div.columns
+       [:div.column.is-3
+        [ant/form-item
+         {:label "Price"}
+         [ant/input-number
+          {:default-value 10.00
+           :style         {:width "75%"}
+           :formatter     (fn [value] (str "$" value))}]]]
+       [:div.column.is-3
+        [ant/form-item
+         {:label "Cost"}
+         [ant/input-number
+          {:default-value 10.00
+           :style         {:width "75%"}
+           :formatter     (fn [value] (str "$" value))}]]]
+       [:div.column.is-3
+        [ant/form-item
+         {:label "Billed"}
+         [ant/select
+          {:style       {:width "75%"}
+           :placeholder "billed"}
+          [ant/select-option {:value :once} "once"]
+          [ant/select-option {:value :monthly} "monthly"]]]]
+       [:div.column.is-3
+        [ant/form-item
+         {:label "Rental?"}
+         [ant/checkbox]]]]]
+     [fields-card (:fields @form)]]))
+
+
+
 
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]

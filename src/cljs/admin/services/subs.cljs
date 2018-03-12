@@ -44,3 +44,9 @@
  :<- [db/path]
  (fn [db _]
    (:form db)))
+
+(reg-sub
+ :services.form/fields
+ :<- [:services/form]
+ (fn [form _]
+   (:fields form)))

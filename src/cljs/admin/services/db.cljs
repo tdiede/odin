@@ -14,5 +14,6 @@
                 :search-text ""
                 :form        {:name        ""
                               :description ""
-                              :code        ""}}}
+                              :code        ""
+                              :fields      []}}}
          orders-db/default-value))
