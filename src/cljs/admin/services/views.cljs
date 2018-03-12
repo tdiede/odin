@@ -26,7 +26,7 @@
 
 
 (defmethod render-service-field :default
-  [{:keys [index label required type]}] ;; only show labels if this is the first field (see iface/components/order)
+  [{:keys [index label required type]}]
   [:div.columns {:key index}
 
    [:div.column.is-1
@@ -62,9 +62,10 @@
     [ant/form-item
      {:label (when (zero? index) "Order")}
      [ant/button-group
-      [ant/button  ;; TODO - disable if this is the first field
+      [ant/button
        {:icon "up"
-        :type "primary"}]
+        :type "primary"
+        :disabled (zero? index)}]
       [ant/button ;; TODO - disable if this is the last field
        {:icon "down"
         :type "primary"}]]]]])

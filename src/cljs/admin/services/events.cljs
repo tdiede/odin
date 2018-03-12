@@ -166,6 +166,19 @@
  (fn [db [_ index key value]]
    (update-in db [:form :fields index] #(assoc % key value))))
 
+(reg-event-db
+ :service.form.field/reorder
+ [(path db/path)]
+ (fn [db [_ index direction]]
+   (let [other-index
+         (case direction
+           :up   (inc index)
+           :down (dec index))
+         temp-index 99]
+     (-> (update-in db [:form :fields index] #(assoc % :index temp-index))
+         (update-in [:form :fields other-index] #(assoc % :index index))
+         (update-in [:form :fields temp-index] #(assoc % :index other-index))))))
+
 
 (reg-event-fx
  :service.form/update
