@@ -31,14 +31,15 @@
    [:div.column.is-2
     [ant/form-item
      {:label (when (zero? index) "Order")}
-     [ant/button  ;; TODO - disable if this is the first field
-      {:icon "up"
-       :type "primary"
-       :size "small"}]
-     [ant/button ;; TODO - disable if this is the last field
-      {:icon "down"
-       :type "primary"
-       :size "small"}]]]
+     [ant/button-group
+      [ant/button  ;; TODO - disable if this is the first field
+       {:icon "up"
+        :type "primary"
+        :size "small"}]
+      [ant/button ;; TODO - disable if this is the last field
+       {:icon "down"
+        :type "primary"
+        :size "small"}]]]]
    [:div.column.is-6
     [ant/form-item
      {:label (when (zero? index) "Label")}
