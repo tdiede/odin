@@ -26,26 +26,19 @@
 
 
 (defmethod render-service-field :default
-  [{:keys [index label required]}] ;; only show labels if this is the first field (see iface/components/order)
+  [{:keys [index label required type]}] ;; only show labels if this is the first field (see iface/components/order)
   [:div.columns {:key index}
-   [:div.column.is-2
+
+   [:div.column.is-1
     [ant/form-item
-     {:label (when (zero? index) "Order")}
-     [ant/button-group
-      [ant/button  ;; TODO - disable if this is the first field
-       {:icon "up"
-        :type "primary"
-        :size "small"}]
-      [ant/button ;; TODO - disable if this is the last field
-       {:icon "down"
-        :type "primary"
-        :size "small"}]]]]
-   [:div.column.is-6
+     {:label     (when (zero? index) "Type")
+      :read-only true}
+     (name type)]]
+   [:div.column.is-8
     [ant/form-item
      {:label (when (zero? index) "Label")}
      [ant/input
       {:style       {:width "100%"}
-       :size        "small"
        :placeholder "label or question for this input"
        :value       label
        :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
@@ -56,16 +49,25 @@
       }
      [ant/checkbox
       {:default-checked required
-       :on-change #(dispatch [:service.form.field/update index :required (.. % -target -checked)])}]]]
+       :on-change       #(dispatch [:service.form.field/update index :required (.. % -target -checked)])}]]]
    [:div.column.is-1
     [ant/form-item
      {:label (when (zero? index) "Remove")}
      [ant/button
       {:shape    "circle"
-       :size     "small"
        :icon     "close-circle-o"
        :type     "danger"
-       :on-click #(dispatch [:service.form.field/delete index])}]]]])
+       :on-click #(dispatch [:service.form.field/delete index])}]]]
+   [:div.column.is-2
+    [ant/form-item
+     {:label (when (zero? index) "Order")}
+     [ant/button-group
+      [ant/button  ;; TODO - disable if this is the first field
+       {:icon "up"
+        :type "primary"}]
+      [ant/button ;; TODO - disable if this is the last field
+       {:icon "down"
+        :type "primary"}]]]]])
 
 
 (defn fields-card [fields]
