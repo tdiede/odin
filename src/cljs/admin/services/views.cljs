@@ -75,6 +75,59 @@
       :type     "primary"}]]])
 
 
+(defn service-field-options-entry
+  [{:keys [field-index index value]}]
+  [:div.columns {:key index}
+   [:div.column.is-8
+    [ant/input
+     {:placeholder "label"
+      :value       value
+      :on-change   #(dispatch [:service.form.field.option/update field-index index (.. % -target -value)])}]]
+   [:div.column.is-1
+    [ant/button
+     {:icon     "close-circle-o"
+      :shape    "circle"
+      :type     "danger"
+      :on-click #(dispatch [:service.form.field.option/delete field-index index])}]]
+   [:div.column.is-3
+    [ant/button-group
+     [ant/button
+      {:icon     "up"
+       :type     "primary"
+       :disabled (zero? index)
+       :on-click #(dispatch [:service.form.field.option/reorder field-index index (dec index)])}]
+     [ant/button
+      {:icon "down"
+       :type "primary"
+       :disabled (= index (dec (count (get-in @(subscribe [:services.form/fields]) [field-index :options])))) ;; TODO - find a better way to do this, too
+       :on-click #(dispatch [:service.form.field.option/reorder field-index index (inc index)])}]]]])
+
+
+(defn service-field-options-popover
+  [index options]
+  [:div
+   (if (empty? options)
+     [:p "no options yet!"]
+     (doall (map service-field-options-entry options)))
+   [:div.columns
+    [:div.column.is-6.is-offset-3
+     [ant/button
+      {:style    {:width "100%"}
+       :on-click #(dispatch [:service.form.field.option/create index])}
+      "Add Option"]]]])
+
+(defn service-field-options-container
+  [index options]
+  [ant/form-item
+   {:label (when (zero? index) "Options")}
+   [ant/popover
+    {:title         "Menu Options"
+     :overlay-style {:width "30%"}
+     :content       (r/as-element [service-field-options-popover index options])}
+    [ant/button
+     {:style {:width "100%"}}
+     (str "Menu Options (" (count options) ")")]]])
+
 (defmulti render-service-field :type)
 
 
@@ -85,17 +138,9 @@
    [:div.column.is-1
     [service-field-type index type]]
    [:div.column.is-5
-    [service-field-label index label]
-    ]
+    [service-field-label index label]]
    [:div.column.is-3
-    [ant/form-item
-     {:label (when (zero? index) "Options")}
-     [ant/select
-      {:style       {:width "100%"}
-       :placeholder "menu options"}
-      [ant/select-option {:key 1} "Hana"]
-      [ant/select-option {:key 2} "Dul"]
-      [ant/select-option {:key 3} "Set"]]]]
+    [service-field-options-container index options]]
    [:div.column.is-1
     [service-field-required index required]]
    [:div.column.is-1

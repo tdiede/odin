@@ -173,8 +173,43 @@
    (let [field-one (assoc (get-in db [:form :fields index1]) :index index2)
          field-two (assoc (get-in db [:form :fields index2]) :index index1)]
      (-> (assoc-in db [:form :fields index2] field-one)
-         (assoc-in [:form :fields index1] field-two)))))
+         (assoc-in    [:form :fields index1] field-two)))))
 
+
+(reg-event-db
+ :service.form.field.option/create
+ [(path db/path)]
+ (fn [db [_ field-index]]
+   (let [new-option
+         {:value       ""
+          :index       (count (get-in db [:form :fields field-index :options]))
+          :field-index field-index}]
+     (update-in db [:form :fields field-index :options] conj new-option))))
+
+(reg-event-db
+ :service.form.field.option/update
+ [(path db/path)]
+ (fn [db [_ field-index option-index value]]
+   (update-in db [:form :fields field-index :options option-index ] #(assoc % :value value))))
+
+
+(reg-event-db
+ :service.form.field.option/delete
+ [(path db/path)]
+ (fn [db [_ field-index option-index]]
+   (update-in db [:form :fields field-index :options] #(->> (tb/remove-at % option-index)
+                                                            (map-indexed (fn [i o] (assoc o :index i)))
+                                                            vec))))
+
+
+(reg-event-db
+ :service.form.field.option/reorder
+ [(path db/path)]
+ (fn [db [_ field-index index1 index2]]
+   (let [option-one (assoc (get-in db [:form :fields field-index :options index1]) :index index2)
+         option-two (assoc (get-in db [:form :fields field-index :options index2]) :index index1)]
+     (-> (assoc-in db [:form :fields field-index :options index2] option-one)
+         (assoc-in    [:form :fields field-index :options index1] option-two)))))
 
 (reg-event-fx
  :service.form/update
