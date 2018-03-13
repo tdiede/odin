@@ -149,7 +149,7 @@
  :service.form.field/create
  [(path db/path)]
  (fn [db [_ field-type]]
-   (let [new-field (construct-field (count (get-in db [:form :fields])) field-type)]
+   (let [new-field (construct-field (count (get-in db [:form :fields])) (keyword field-type))]
      (update-in db [:form :fields] conj new-field))))
 
 

@@ -24,6 +24,61 @@
 (defmulti render-service-field :type)
 
 
+(defmethod render-service-field :dropdown
+  [{:keys [index label required type options]}]
+
+  [:div.columns {:key index}
+   [:div.column.is-1
+    [ant/form-item
+     {:label     (when (zero? index) "Type")
+      :read-only true}
+     (name type)]]
+   [:div.column.is-5
+    [ant/form-item
+     {:label (when (zero? index) "Label")}
+     [ant/input
+      {:style       {:width "100%"}
+       :placeholder "label or question for this input"
+       :value       label
+       :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
+   [:div.column.is-3
+    [ant/form-item
+     {:label (when (zero? index) "Options")}
+     [ant/select
+      {:style       {:width "100%"}
+       :placeholder "menu options"}
+      [ant/select-option {:key 1} "Hana"]
+      [ant/select-option {:key 2} "Dul"]
+      [ant/select-option {:key 3} "Set"]]]]
+   [:div.column.is-1
+    [ant/form-item
+     {:label (when (zero? index) "Required?")}
+     [ant/switch
+      {:checked required
+       :on-change #(dispatch [:service.form.field/update index :required %])}]]]
+   [:div.column.is-1
+    [ant/form-item
+     {:label (when (zero? index) "Remove")}
+     [ant/button
+      {:shape    "circle"
+       :icon     "close-circle-o"
+       :type     "danger"
+       :on-click #(dispatch [:service.form.field/delete index])}]]]
+   [:div.column.is-2
+    [ant/form-item
+     {:label (when (zero? index) "Order")}
+     [ant/button-group
+      [ant/button
+       {:icon     "up"
+        :type     "primary"
+        :on-click #(dispatch [:service.form.field/reorder index (dec index)])
+        :disabled (zero? index)}]
+      [ant/button
+       {:icon     "down"
+        :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
+        :on-click #(dispatch [:service.form.field/reorder index (inc index)])
+        :type     "primary"}]]]]])
+
 
 (defmethod render-service-field :default
   [{:keys [index label required type]}]
