@@ -67,8 +67,9 @@
         :type "primary"
         :on-click #(dispatch [:service.form.field/reorder index (dec index)])
         :disabled (zero? index)}]
-      [ant/button ;; TODO - disable if this is the last field
+      [ant/button
        {:icon "down"
+        :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
         :on-click #(dispatch [:service.form.field/reorder index (inc index)])
         :type "primary"}]]]]])
 
