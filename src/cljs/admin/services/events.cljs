@@ -169,15 +169,11 @@
 (reg-event-db
  :service.form.field/reorder
  [(path db/path)]
- (fn [db [_ index direction]]
-   (let [other-index
-         (case direction
-           :up   (inc index)
-           :down (dec index))
-         temp-index 99]
-     (-> (update-in db [:form :fields index] #(assoc % :index temp-index))
-         (update-in [:form :fields other-index] #(assoc % :index index))
-         (update-in [:form :fields temp-index] #(assoc % :index other-index))))))
+ (fn [db [_ index1 index2]]
+   (let [field-one (assoc (get-in db [:form :fields index1]) :index index2)
+         field-two (assoc (get-in db [:form :fields index2]) :index index1)]
+     (-> (assoc-in db [:form :fields index2] field-one)
+         (assoc-in [:form :fields index1] field-two)))))
 
 
 (reg-event-fx

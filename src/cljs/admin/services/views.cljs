@@ -65,9 +65,11 @@
       [ant/button
        {:icon "up"
         :type "primary"
+        :on-click #(dispatch [:service.form.field/reorder index (dec index)])
         :disabled (zero? index)}]
       [ant/button ;; TODO - disable if this is the last field
        {:icon "down"
+        :on-click #(dispatch [:service.form.field/reorder index (inc index)])
         :type "primary"}]]]]])
 
 
