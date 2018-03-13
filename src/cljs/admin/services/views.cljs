@@ -106,9 +106,6 @@
 (defn service-field-options-popover
   [index options]
   [:div
-   (if (empty? options)
-     [:p "no options yet!"]
-     (doall (map service-field-options-entry options)))
    [:div.columns
     [:div.column.is-6.is-offset-3
      [ant/button
