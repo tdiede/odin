@@ -1,4 +1,4 @@
-(ns admin.orders.create
+(ns admin.services.orders.create
   (:require [antizer.reagent :as ant]
             [clojure.string :as string]
             [iface.components.order :as order]

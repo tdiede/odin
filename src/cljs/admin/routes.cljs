@@ -15,8 +15,12 @@
 
     ["/metrics" :metrics]
 
-    ["/orders" [["" :orders/list]
-                [["/" :order-id] :orders/entry]]]
+
+    ["/services" [["" :services/list]
+                  ["/orders" [["" :services.orders/list]
+                              [["/" :order-id] :services.orders/entry]]]
+                  ["/catalogs" [["" :services.catalogs/list]]]
+                  [["/" :service-id] :services/entry]]]
 
     ["/kami" :kami]
 

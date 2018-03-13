@@ -259,7 +259,7 @@
     [:div.column.is-narrow
      [:span.icon.is-large [:i {:class (str "fa fa-3x " (icon-class type))}]]]
     [:div.column
-     [:h3 (translate (:type payment))]
+     [:h3 (translate (keyword "payment.for" (name (:type payment))))]
      (when (some? description)
        [:h3 description])
      [:h4 (string/capitalize (:description payment))]]
@@ -278,27 +278,31 @@
     (fn [payment-id {:keys [on-confirm on-cancel loading sources]
                     :or   {on-confirm #(dispatch [:modal/hide payment-id])
                            loading    false}}]
-      [:div
-       (when (some? sources)
-         [ant/select
-          {:style {:width 225 :margin-right "1rem"}
-           :size  :large
-           :value @selected-source}
-          (for [{id :id :as source} sources]
-            ^{:key id} [ant/select-option {:value id} (source-name source)])])
-       [ant/button
-        {:size     :large
-         :on-click on-cancel}
-        "Cancel"]
-       [ant/button
-        {:type     :primary
-         :size     :large
-         :on-click (fn [e]
-                     (if-some [source-id @selected-source]
-                       (on-confirm payment-id source-id e)
-                       (on-confirm payment-id e)))
-         :loading  loading}
-        "Confirm Payment"]])))
+      [:div.columns
+       [:div.column.is-half
+        (when (some? sources)
+          [ant/select
+           {:style {:width "100%" :margin-right "1rem"}
+            :size  :large
+            :value @selected-source
+            :on-change (partial reset! selected-source)}
+           (for [{id :id :as source} sources]
+             ^{:key id} [ant/select-option {:value id}
+                         (source-name source)])])]
+       [:div.column
+        [ant/button
+         {:size     :large
+          :on-click on-cancel}
+         "Cancel"]
+        [ant/button
+         {:type     :primary
+          :size     :large
+          :on-click (fn [e]
+                      (if-some [source-id @selected-source]
+                        (on-confirm payment-id source-id e)
+                        (on-confirm payment-id e)))
+          :loading  loading}
+         "Confirm Payment"]]])))
 
 
 (defn make-payment-modal

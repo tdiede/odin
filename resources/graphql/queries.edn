@@ -27,6 +27,9 @@
   :referrals       {:type    (list :referral)
                     :args    {}
                     :resolve :referrals/query}
+  :service         {:type    :service
+                    :args    {:id {:type (non-null :Long)}}
+                    :resolve :service/entry}
   :services        {:type    (list :service)
                     :args    {:params {:type :services_query_params}}
                     :resolve :service/query}

@@ -203,12 +203,17 @@
 
 
 (defn- managed-account
-  "Produce the Stripe managed account if the payment was made one one."
+  "Produce the Stripe managed account if the payment was made on one."
   [db payment]
-  (when (payment/autopay? payment)
-    (->> (payment/account payment)
-         (member-license/active db)
-         (member-license/rent-connect-id))))
+  (when-let [p (payment/property payment)]
+    (cond
+      (payment/autopay? payment)
+      (property/rent-connect-id p)
+
+      ;; (= :payment.for/deposit (payment/payment-for2 db payment))
+      ;; (property/deposit-connect-id p)
+
+      :otherwise nil)))
 
 
 (defn- fetch-charge
@@ -230,7 +235,7 @@
           (>! out (inject-charge payment charge)))
         (>! out payment))
       (catch Throwable t
-        (timbre/errorf t "failed to fetch charge for payment: %s" (:db/id payment))
+        (timbre/warnf t "failed to fetch charge for payment: %s" (:db/id payment))
         (>! out payment)))
     (async/close! out)))
 
@@ -378,7 +383,8 @@
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
         amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
-        desc     (format "%s's rent at %s" (account/full-name account) (property/name property))]
+        cus-name (or (customer/statement-name customer) (account/full-name account))
+        desc     (format "%s's rent at %s" cus-name (property/name property))]
     (rch/create! stripe amount source-id
                  :email (account/email account)
                  :description desc
