@@ -20,6 +20,60 @@
 ;; service list
 ;; ====================================================
 
+(defn service-field-type
+  [index type]
+  [ant/form-item
+   {:label     (when (zero? index) "Type")
+    :read-only true}
+   (name type)])
+
+(defn service-field-label
+  [index label]
+  [ant/form-item
+   {:label (when (zero? index) "Label")}
+   [ant/input
+    {:style       {:width "100%"}
+     :placeholder "label or question for this input"
+     :value       label
+     :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]])
+
+
+(defn service-field-required
+  [index required]
+  [ant/form-item
+   {:label (when (zero? index) "Required?")}
+   [ant/switch
+    {:checked required
+     :on-change #(dispatch [:service.form.field/update index :required %])}]])
+
+
+(defn service-field-remove
+  [index]
+  [ant/form-item
+   {:label (when (zero? index) "Remove")}
+   [ant/button
+    {:shape    "circle"
+     :icon     "close-circle-o"
+     :type     "danger"
+     :on-click #(dispatch [:service.form.field/delete index])}]])
+
+
+(defn service-field-order
+  [index]
+  [ant/form-item
+   {:label (when (zero? index) "Order")}
+   [ant/button-group
+    [ant/button
+     {:icon     "up"
+      :type     "primary"
+      :on-click #(dispatch [:service.form.field/reorder index (dec index)])
+      :disabled (zero? index)}]
+    [ant/button
+     {:icon     "down"
+      :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
+      :on-click #(dispatch [:service.form.field/reorder index (inc index)])
+      :type     "primary"}]]])
+
 
 (defmulti render-service-field :type)
 
@@ -29,18 +83,10 @@
 
   [:div.columns {:key index}
    [:div.column.is-1
-    [ant/form-item
-     {:label     (when (zero? index) "Type")
-      :read-only true}
-     (name type)]]
+    [service-field-type index type]]
    [:div.column.is-5
-    [ant/form-item
-     {:label (when (zero? index) "Label")}
-     [ant/input
-      {:style       {:width "100%"}
-       :placeholder "label or question for this input"
-       :value       label
-       :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
+    [service-field-label index label]
+    ]
    [:div.column.is-3
     [ant/form-item
      {:label (when (zero? index) "Options")}
@@ -51,80 +97,27 @@
       [ant/select-option {:key 2} "Dul"]
       [ant/select-option {:key 3} "Set"]]]]
    [:div.column.is-1
-    [ant/form-item
-     {:label (when (zero? index) "Required?")}
-     [ant/switch
-      {:checked required
-       :on-change #(dispatch [:service.form.field/update index :required %])}]]]
+    [service-field-required index required]]
    [:div.column.is-1
-    [ant/form-item
-     {:label (when (zero? index) "Remove")}
-     [ant/button
-      {:shape    "circle"
-       :icon     "close-circle-o"
-       :type     "danger"
-       :on-click #(dispatch [:service.form.field/delete index])}]]]
+    [service-field-remove index]]
    [:div.column.is-2
-    [ant/form-item
-     {:label (when (zero? index) "Order")}
-     [ant/button-group
-      [ant/button
-       {:icon     "up"
-        :type     "primary"
-        :on-click #(dispatch [:service.form.field/reorder index (dec index)])
-        :disabled (zero? index)}]
-      [ant/button
-       {:icon     "down"
-        :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
-        :on-click #(dispatch [:service.form.field/reorder index (inc index)])
-        :type     "primary"}]]]]])
+    [service-field-order index]]])
 
 
 (defmethod render-service-field :default
   [{:keys [index label required type]}]
-  [:div.columns {:key index}
 
+  [:div.columns {:key index}
    [:div.column.is-1
-    [ant/form-item
-     {:label     (when (zero? index) "Type")
-      :read-only true}
-     (name type)]]
+    [service-field-type index type]]
    [:div.column.is-8
-    [ant/form-item
-     {:label (when (zero? index) "Label")}
-     [ant/input
-      {:style       {:width "100%"}
-       :placeholder "label or question for this input"
-       :value       label
-       :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
+    [service-field-label index label]]
    [:div.column.is-1
-    [ant/form-item
-     {:label (when (zero? index) "Required?")}
-     [ant/switch
-      {:checked required
-       :on-change #(dispatch [:service.form.field/update index :required %])}]]]
+    [service-field-required index required]]
    [:div.column.is-1
-    [ant/form-item
-     {:label (when (zero? index) "Remove")}
-     [ant/button
-      {:shape    "circle"
-       :icon     "close-circle-o"
-       :type     "danger"
-       :on-click #(dispatch [:service.form.field/delete index])}]]]
+    [service-field-remove index]]
    [:div.column.is-2
-    [ant/form-item
-     {:label (when (zero? index) "Order")}
-     [ant/button-group
-      [ant/button
-       {:icon     "up"
-        :type     "primary"
-        :on-click #(dispatch [:service.form.field/reorder index (dec index)])
-        :disabled (zero? index)}]
-      [ant/button
-       {:icon     "down"
-        :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
-        :on-click #(dispatch [:service.form.field/reorder index (inc index)])
-        :type     "primary"}]]]]])
+    [service-field-order index]]])
 
 
 (defn fields-card [fields]
