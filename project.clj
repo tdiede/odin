@@ -57,7 +57,7 @@
                  [cljsjs/moment "2.17.1-1"]
                  [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
-                 [starcity/blueprints "2.3.0"
+                 [starcity/blueprints "2.3.1-SNAPSHOT"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava]]
@@ -76,7 +76,7 @@
                  [starcity/toolbelt-async "0.4.0"]
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
-                 [starcity/toolbelt-datomic "0.2.0"]
+                 [starcity/toolbelt-datomic "0.4.0-SNAPSHOT"]
                  [starcity/toolbelt-re-frame "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [enlive "1.1.6"]]
