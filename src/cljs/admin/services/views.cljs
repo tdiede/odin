@@ -70,7 +70,7 @@
       :disabled (zero? index)}]
     [ant/button
      {:icon     "down"
-      :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
+      :disabled @(subscribe [:services.form.field/is-last? index]) ;; TODO - find a better way to do this
       :on-click #(dispatch [:service.form.field/reorder index (inc index)])
       :type     "primary"}]]])
 
@@ -97,9 +97,9 @@
        :disabled (zero? index)
        :on-click #(dispatch [:service.form.field.option/reorder field-index index (dec index)])}]
      [ant/button
-      {:icon "down"
-       :type "primary"
-       :disabled (= index (dec (count (get-in @(subscribe [:services.form/fields]) [field-index :options])))) ;; TODO - find a better way to do this, too
+      {:icon     "down"
+       :type     "primary"
+       :disabled @(subscribe [:services.form.field.option/is-last? field-index index])
        :on-click #(dispatch [:service.form.field.option/reorder field-index index (inc index)])}]]]])
 
 
