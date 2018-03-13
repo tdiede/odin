@@ -45,9 +45,9 @@
    [:div.column.is-1
     [ant/form-item
      {:label (when (zero? index) "Required?")}
-     [ant/checkbox
-      {:default-checked required
-       :on-change       #(dispatch [:service.form.field/update index :required (.. % -target -checked)])}]]]
+     [ant/switch
+      {:checked required
+       :on-change #(dispatch [:service.form.field/update index :required %])}]]]
    [:div.column.is-1
     [ant/form-item
      {:label (when (zero? index) "Remove")}
@@ -91,7 +91,7 @@
         [ant/button
          "Add Field"
          [ant/icon {:type "down"}]]])]]
-   (map render-service-field fields)])
+   (doall (map render-service-field fields))])
 
 
 (defn create-service-form []
