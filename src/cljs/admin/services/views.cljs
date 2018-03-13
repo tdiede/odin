@@ -44,9 +44,7 @@
        :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]]]
    [:div.column.is-1
     [ant/form-item
-     {:label (when (zero? index) "Required?")
-      ;; :on-change #(dispatch [:service.form.field/update index :required %])
-      }
+     {:label (when (zero? index) "Required?")}
      [ant/checkbox
       {:default-checked required
        :on-change       #(dispatch [:service.form.field/update index :required (.. % -target -checked)])}]]]
@@ -63,15 +61,15 @@
      {:label (when (zero? index) "Order")}
      [ant/button-group
       [ant/button
-       {:icon "up"
-        :type "primary"
+       {:icon     "up"
+        :type     "primary"
         :on-click #(dispatch [:service.form.field/reorder index (dec index)])
         :disabled (zero? index)}]
       [ant/button
-       {:icon "down"
+       {:icon     "down"
         :disabled (= index (dec (count @(subscribe [:services.form/fields])))) ;; TODO - find a better way to do this
         :on-click #(dispatch [:service.form.field/reorder index (inc index)])
-        :type "primary"}]]]]])
+        :type     "primary"}]]]]])
 
 
 (defn fields-card [fields]
