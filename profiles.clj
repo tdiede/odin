@@ -7,8 +7,8 @@
                       [binaryage/devtools "0.9.4"]
                       [com.datomic/datomic-free "0.9.5544"]
                       [devcards "0.2.4"]
-                      [starcity/reactor "1.7.4-SNAPSHOT"
-                       :excluions [ring cheshire clj-time org.apache.httpcomponents/httpcore commons-codec
+                      [starcity/reactor "1.6.0"
+                       :exclusions [ring cheshire clj-time org.apache.httpcomponents/httpcore commons-codec
                                    org.clojure/core.async]]]
        :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
 
