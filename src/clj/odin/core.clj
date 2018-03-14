@@ -5,6 +5,7 @@
             [odin.log]
             [odin.server]
             [odin.nrepl]
+            [odin.teller]
             [clojure.tools.cli :refer [parse-opts]]
             [mount.core :as mount]
             [clojure.spec.alpha :as s]))

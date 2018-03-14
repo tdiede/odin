@@ -11,6 +11,7 @@
                  [org.clojure/core.match "0.3.0-alpha5"]
                  [org.clojure/test.check "0.9.0"]
                  ;; Web
+                 [bouncer "1.0.1"]
                  [bidi "2.1.3"]
                  [ring "1.6.3"]
                  [starcity/facade "0.4.0"
@@ -26,7 +27,7 @@
                  [ring-middleware-format "0.7.2"
                   :exclusions [ring/ring-core]]
                  ;; Other
-                 [kami "0.1.0"]
+                 [kami "0.1.0" :exclusions [starcity/toolbelt]]
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.21.0"]
                  [vincit/venia "0.2.3"]
@@ -57,10 +58,12 @@
                  [cljsjs/moment "2.17.1-1"]
 
                  ;; DB
+                 [starcity/teller "0.1.0-SNAPSHOT"]
                  [starcity/blueprints "2.3.0"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
-                               com.google.guava/guava]]
+                               com.google.guava/guava
+                               starcity/toolbelt-datomic]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
                  [cljs-ajax "0.7.3"
@@ -76,7 +79,7 @@
                  [starcity/toolbelt-async "0.4.0"]
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
-                 [starcity/toolbelt-datomic "0.2.0"]
+                 [starcity/toolbelt-datomic "0.4.0"]
                  [starcity/toolbelt-re-frame "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [enlive "1.1.6"]]
