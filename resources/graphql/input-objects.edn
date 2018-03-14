@@ -125,6 +125,23 @@
                  :content {:type String}}}
 
 
+
+  :service_field_option_object
+  {:description "The options given to a member in a service field of type `:dropdown`"
+   :fields      {:index       {:type (non-null Int)}
+                 :value       {:type (non-null String)}
+                 :field_index {:type (non-null Int)}}}
+
+
+  :service_field_object
+  {:description "Custom fields to be defined when a new `service` is created."
+   :fields      {:index    {:type (non-null Int)}
+                 :type     {:type (non-null :service_field_type)}
+                 :label    {:type (non-null String)}
+                 :required {:type Boolean}
+                 :options  {:type (list :service_field_option_object)}}}
+
+
   :services_query_params
   {:description "Parameters to query for services."
    :fields      {:q {:type        String
@@ -137,9 +154,12 @@
                  :code        {:type (non-null String)}
                  :description {:type (non-null String)}
                  :catalogs    {:type (list :Keyword)}
-                 ;; :fields {:type (list :service_field_object)}
+                 :fields      {:type (list :service_field_object)}
+                 :properties  {:type (list :Long)}
                  :price       {:type Float}
-                 :cost        {:type Float}}}
+                 :cost        {:type Float}
+                 :billed      {:type :service_billed}
+                 :rental      {:type Boolean}}}
 
 
   :units_query_params

@@ -70,37 +70,37 @@
       :disabled (zero? index)}]
     [ant/button
      {:icon     "down"
-      :disabled @(subscribe [:services.form.field/is-last? index]) ;; TODO - find a better way to do this
+      :disabled @(subscribe [:services.form.field/is-last? index])
       :on-click #(dispatch [:service.form.field/reorder index (inc index)])
       :type     "primary"}]]])
 
 
 (defn service-field-options-entry
-  [{:keys [field-index index value]}]
+  [{:keys [field_index index value]}]
   [:div.columns {:key index}
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
       :value       value
-      :on-change   #(dispatch [:service.form.field.option/update field-index index (.. % -target -value)])}]]
+      :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
      {:icon     "close-circle-o"
       :shape    "circle"
       :type     "danger"
-      :on-click #(dispatch [:service.form.field.option/delete field-index index])}]]
+      :on-click #(dispatch [:service.form.field.option/delete field_index index])}]]
    [:div.column.is-3
     [ant/button-group
      [ant/button
       {:icon     "up"
        :type     "primary"
        :disabled (zero? index)
-       :on-click #(dispatch [:service.form.field.option/reorder field-index index (dec index)])}]
+       :on-click #(dispatch [:service.form.field.option/reorder field_index index (dec index)])}]
      [ant/button
       {:icon     "down"
        :type     "primary"
-       :disabled @(subscribe [:services.form.field.option/is-last? field-index index])
-       :on-click #(dispatch [:service.form.field.option/reorder field-index index (inc index)])}]]]])
+       :disabled @(subscribe [:services.form.field.option/is-last? field_index index])
+       :on-click #(dispatch [:service.form.field.option/reorder field_index index (inc index)])}]]]])
 
 
 (defn service-field-options-popover
@@ -197,12 +197,14 @@
           :type  "text"}
          [ant/input
           {:placeholder "service name"
+           :value       (:name @form)
            :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
         [ant/form-item
          {:label "Description"}
          [ant/input-text-area
           {:rows        6
            :placeholder "description"
+           :value       (:description @form)
            :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
        [:div.column.is-4
         [ant/form-item
@@ -210,8 +212,9 @@
           :type  "text"}
          [ant/input
           {:placeholder "service code"
+           :value       (:code @form)
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
-        [ant/form-item
+        [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
          [ant/select
           {:style       {:width "100%"}
@@ -223,9 +226,19 @@
           [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
         [ant/form-item
          {:label "Properties"}
-         [ant/input
+         [ant/select
           {:style       {:width "100%"}
-           :placeholder "properties"}]]]
+           :placeholder "select properties"
+           :mode        "multiple"
+           :value       (mapv str (:properties @form))
+           :on-change   #(let [ids (mapv tb/str->int (js->clj %))]
+                           (dispatch [:service.form/update :properties ids]))}
+          (map (fn [{:keys [name id]}]
+                 [ant/select-option
+                  {:value (str id)
+                   :key   id}
+                  name])
+               @(subscribe [:properties/list]))]]]
        [:div.column.is-1
         [:div.is-pulled-right
          [ant/form-item
@@ -239,30 +252,36 @@
          {:label "Price"}
          [ant/input-number
           {:default-value 10.00
+           :value         (:price @form)
            :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))}]]]
+           :formatter     (fn [value] (str "$" value))
+           :on-change     #(dispatch [:service.form/update :price %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Cost"}
          [ant/input-number
           {:default-value 10.00
+           :value         (:cost @form)
            :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))}]]]
+           :formatter     (fn [value] (str "$" value))
+           :on-change     #(dispatch [:service.form/update :cost %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Billed"}
          [ant/select
           {:style       {:width "75%"}
-           :placeholder "billed"}
+           :placeholder "billed"
+           :value       (:billed @form)
+           :on-change   #(dispatch [:service.form/update :billed (keyword %)])}
           [ant/select-option {:value :once} "once"]
           [ant/select-option {:value :monthly} "monthly"]]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Rental?"}
-         [ant/checkbox]]]]]
+         [ant/checkbox
+          {:checked   (:rental @form)
+           :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]]]
      [fields-card (:fields @form)]]))
-
-
 
 
 (defn create-service-modal []
@@ -299,7 +318,7 @@
      [ant/button
       {:type     :primary
        :icon     "plus"
-       :on-click #(dispatch [:modal/show])}
+       :on-click #(dispatch [:modal/show])} ;; TODO - move dispatch of :modal/show to `events`, use ::keyword to identify specific thing
       "Add New Service"]]]])
 
 

@@ -61,4 +61,8 @@
 
   :service_billed
   {:description "Different ways a service can be billed."
-   :values      [:once :monthly]}}}
+   :values      [:once :monthly]}
+
+  :service_field_type
+  {:description "Different types of input fields presented to members when they order a premium service"
+   :values      [:text :dropdown :number :date :time]}}}

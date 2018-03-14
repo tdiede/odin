@@ -20,7 +20,7 @@
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :billed :price :cost]]]
+                             [:id :name :code :price]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -183,7 +183,7 @@
    (let [new-option
          {:value       ""
           :index       (count (get-in db [:form :fields field-index :options]))
-          :field-index field-index}]
+          :field_index field-index}]
      (update-in db [:form :fields field-index :options] conj new-option))))
 
 (reg-event-db
@@ -218,15 +218,19 @@
    {:db (assoc-in db [:form key] value)}))
 
 
-(reg-event-fx
+(reg-event-fx ;; TODO - toggle loading state, know which modal
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
-   {:graphql {:mutation [[:service_create {:params form} [:id]]]
+   (js/console.log "form values!" form)
+   {:graphql {:mutation [[:service_create {:params form}
+                          [:id]]]
               :on-success [::create-success k]
               :on-failure [:graphql/failure k]}}))
 
 
-(reg-event-fx
+(reg-event-fx ;; TODO - toggle loading state, know which modal
  ::create-success
- {:dispatch [:modal/hide]})
+ [(path db/path)]
+ (fn [{db :db} [_ ]]
+   {:dispatch [:modal/hide]}))

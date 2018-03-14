@@ -15,5 +15,10 @@
                 :form        {:name        ""
                               :description ""
                               :code        ""
+                              :properties  []
+                              :catalogs    []
+                              :price       0.0
+                              :cost        0.0
+                              :rental      false
                               :fields      []}}}
          orders-db/default-value))
