@@ -45,8 +45,7 @@
      (let [autopay-source (<!? c)]
        [(and (= (:last4 source) (:last4 autopay-source))
              (= (:account_holder_name source) (:account_holder_name autopay-source))
-             (= (:bank_name source) (:bank_name autopay-source)))
-        autopay-source])
+             (= (:bank_name source) (:bank_name autopay-source))) autopay-source])
      [false nil])))
 
 
