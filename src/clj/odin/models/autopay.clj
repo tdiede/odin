@@ -43,7 +43,9 @@
   (go-try
    (if-let [c (autopay-source db stripe source)]
      (let [autopay-source (<!? c)]
-       [(= (:fingerprint source) (:fingerprint autopay-source)) autopay-source])
+       [(and (= (:last4 source) (:last4 autopay-source))
+             (= (:account_holder_name source) (:account_holder_name autopay-source))
+             (= (:bank_name source) (:bank_name autopay-source))) autopay-source])
      [false nil])))
 
 
@@ -181,7 +183,7 @@
            :ok)
          ;; create subscription
          (let [plan (<!? (setup-autopay-plan! stripe license))
-               subs  (<!? (create-subscription! stripe license (:customer source) (:id plan) (:id source)))]
+               subs (<!? (create-subscription! stripe license (:customer source) (:id plan) (:id source)))]
            @(d/transact-async conn [[:db/add (:db/id license) :member-license/subscription-id (:id subs)]
                                     [:db/add (:db/id license) :member-license/plan-id (:id plan)]])
            :ok))))))
