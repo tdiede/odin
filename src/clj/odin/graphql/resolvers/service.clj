@@ -4,7 +4,8 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [taoensso.timbre :as timbre]))
+            [taoensso.timbre :as timbre]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Fields
@@ -16,6 +17,11 @@
   (-> (service/billed service) name keyword))
 
 
+(defn make-billed-key
+  [billed]
+  (keyword "service.billed" (name billed)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -23,8 +29,9 @@
 
 (defn- query-services
   [db params]
-  (->> (apply concat params)
-       (apply service/query db)))
+  (->> (tb/transform-when-key-exists params {:properties (partial map (partial d/entity db))
+                                             :billed     (partial map make-billed-key)})
+       (service/query db)))
 
 
 (defn query
@@ -49,11 +56,33 @@
 ;; =============================================================================
 
 
+;; we probably don't need this for all anymore? seems like this restricts all service queries?
+;; members will probably need this
 (defmethod authorization/authorized? :service/query [_ account _]
-  (account/admin? account))
+  #_(account/admin? account)
+  true)
 
 
 (def resolvers
   {:service/billed billed
    :service/query  query
    :service/entry  entry})
+
+
+(comment
+
+  ;; Run the query.
+  (com.walmartlabs.lacinia/execute odin.graphql/schema
+           (venia.core/graphql-query
+            {:venia/queries
+             [[:services {:params {:q "dog"
+                                   :properties [285873023222986]}}
+               [:name]]]})
+           nil
+           {:conn odin.datomic/conn
+            ;; :requester (d/entity (d/db :conn) [:account/email "member@test.com"])
+            })
+
+  (query-services (d/db odin.datomic/conn) {:properties [[:property/code "52gilbert"]]})
+
+  )
