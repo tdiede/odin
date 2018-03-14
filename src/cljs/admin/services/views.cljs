@@ -289,9 +289,9 @@
     [ant/modal
      {:title    "Create Service"
       :width    "70%"
-      :visible  @(subscribe [:modal/visible?])
+      :visible  @(subscribe [:modal/visible? :service/create-service-form])
       :ok-text   "Save New Service"
-      :on-cancel #(dispatch [:modal/hide])
+      :on-cancel #(dispatch [:service.form/hide])
       :on-ok     #(dispatch [:service/create! @form])}
 
      [create-service-form]]))
@@ -318,7 +318,7 @@
      [ant/button
       {:type     :primary
        :icon     "plus"
-       :on-click #(dispatch [:modal/show])} ;; TODO - move dispatch of :modal/show to `events`, use ::keyword to identify specific thing
+       :on-click #(dispatch [:service.form/show])} ;; TODO - move dispatch of :modal/show to `events`, use ::keyword to identify specific thing
       "Add New Service"]]]])
 
 

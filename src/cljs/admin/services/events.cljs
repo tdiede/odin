@@ -122,6 +122,16 @@
 ;; create =======================================================================
 ;; ==============================================================================
 
+(reg-event-fx
+ :service.form/show
+ (fn [_ _]
+   {:dispatch [:modal/show :service/create-service-form]}))
+
+
+(reg-event-fx
+ :service.form/hide
+ (fn [_ _]
+   {:dispatch [:modal/hide :service/create-service-form]}))
 
 (defmulti construct-field
   (fn [_ type]
@@ -233,4 +243,4 @@
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ ]]
-   {:dispatch [:modal/hide]}))
+   {:dispatch [:service.form/hide]}))
