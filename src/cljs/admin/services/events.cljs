@@ -228,7 +228,7 @@
    {:db (assoc-in db [:form key] value)}))
 
 
-(reg-event-fx ;; TODO - toggle loading state, know which modal
+(reg-event-fx
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
@@ -239,7 +239,7 @@
               :on-failure [:graphql/failure k]}}))
 
 
-(reg-event-fx ;; TODO - toggle loading state, know which modal
+(reg-event-fx
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ ]]

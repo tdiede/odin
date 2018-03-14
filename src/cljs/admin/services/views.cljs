@@ -287,12 +287,20 @@
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]
     [ant/modal
-     {:title    "Create Service"
-      :width    "70%"
-      :visible  @(subscribe [:modal/visible? :service/create-service-form])
+     {:title     "Create Service"
+      :width     "70%"
+      :visible   @(subscribe [:modal/visible? :service/create-service-form])
       :ok-text   "Save New Service"
       :on-cancel #(dispatch [:service.form/hide])
-      :on-ok     #(dispatch [:service/create! @form])}
+      :on-ok     (fn []
+                   (let [{name        :name
+                          description :description
+                          code        :code} @form]
+                     (if (every? #(empty? %) [name description code])
+                       (ant/notification-error
+                        {:message "Additional information required"
+                         :description "Please enter a name, description, and code for this service."})
+                       (dispatch [:service/create! @form]))))}
 
      [create-service-form]]))
 
@@ -318,7 +326,7 @@
      [ant/button
       {:type     :primary
        :icon     "plus"
-       :on-click #(dispatch [:service.form/show])} ;; TODO - move dispatch of :modal/show to `events`, use ::keyword to identify specific thing
+       :on-click #(dispatch [:service.form/show])}
       "Add New Service"]]]])
 
 
