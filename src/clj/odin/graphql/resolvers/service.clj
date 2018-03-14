@@ -5,7 +5,8 @@
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Fields
@@ -56,11 +57,11 @@
 ;; =============================================================================
 
 
-;; we probably don't need this for all anymore? seems like this restricts all service queries?
-;; members will probably need this
-(defmethod authorization/authorized? :service/query [_ account _]
-  #_(account/admin? account)
-  true)
+(defmethod authorization/authorized? :service/query
+  [{conn :conn} account {params :params}]
+  (or (account/admin? account)
+      (let [property (account/current-property (d/db conn) account)]
+        (= (:properties params) [(td/id property)]))))
 
 
 (def resolvers
@@ -72,17 +73,22 @@
 (comment
 
   ;; Run the query.
-  (com.walmartlabs.lacinia/execute odin.graphql/schema
-           (venia.core/graphql-query
-            {:venia/queries
-             [[:services {:params {:q "dog"
-                                   :properties [285873023222986]}}
-               [:name]]]})
-           nil
-           {:conn odin.datomic/conn
-            ;; :requester (d/entity (d/db :conn) [:account/email "member@test.com"])
-            })
+  (let [conn odin.datomic/conn]
+    (com.walmartlabs.lacinia/execute
+     odin.graphql/schema
+     (venia.core/graphql-query
+      {:venia/queries
+       [[:services {:params {:q          "dog"
+                             :properties [285873023222997]}}
+         [:name]]]})
+     nil
+     {:conn      conn
+      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
 
-  (query-services (d/db odin.datomic/conn) {:properties [[:property/code "52gilbert"]]})
+  (query-services (d/db odin.datomic/conn) {:properties [[:property/code "2072mission"]]})
+
+  (let [conn odin.datomic/conn]
+    (account/current-property (d/db conn) (d/entity (d/db conn) [:account/email "member@test.com"])))
+
 
   )
