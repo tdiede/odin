@@ -205,7 +205,6 @@
 
 (defmethod render-service-field :default
   [{:keys [index label required type]}]
-
   [:div.columns {:key index}
    [:div.column.is-1
     [service-field-type index type]]
@@ -219,33 +218,30 @@
     [service-field-order index]]])
 
 
+(defn add-fields-menu []
+  (let [menu
+        [ant/menu {:on-click #(dispatch [:service.form.field/create (aget % "key")])}
+         [ant/menu-item {:key "text" }"Text Box"]
+         [ant/menu-item {:key "number"} "Number"]
+         [ant/menu-item {:key "date"} "Date"]
+         [ant/menu-item {:key "time"} "Time"]
+         [ant/menu-item {:key "dropdown"} "Dropdown Menu"]]]
+    [ant/dropdown
+     {:overlay (r/as-element menu)}
+     [ant/button
+      "Add Field"
+      [ant/icon {:type "down"}]]]))
+
+
 (defn fields-card [fields]
-  [ant/card
-   [:div.columns
-    [:div.column.is-10
-     [:h3 "Fields"]
-     [:div "Information to be provided by the member when they place an order."]]
-    [:div.column.is-2.is-pulled-right
-     (let [menu
-           [ant/menu {:on-click #(dispatch [:service.form.field/create (aget % "key")])}
-            [ant/menu-item {:key "text" }"Text Box"]
-            [ant/menu-item {:key "number"} "Number"]
-            [ant/menu-item {:key "date"} "Date"]
-            [ant/menu-item {:key "time"} "Time"]
-            [ant/menu-item {:key "dropdown"} "Dropdown Menu"]]]
-       [ant/dropdown
-        {:overlay (r/as-element menu)}
-        [ant/button
-         "Add Field"
-         [ant/icon {:type "down"}]]])]]
+  [ant/card {:title "Fields" :extra (r/as-element [add-fields-menu])}
    (doall (map render-service-field fields))])
 
 
 (defn create-service-form []
   (let [form (subscribe [:services/form])]
     [:div
-     [ant/card
-      [:h3 "Service Details"]
+     [ant/card {:title "Service Details"}
       [:div.columns
        [:div.column.is-6
         [ant/form-item
@@ -300,8 +296,8 @@
          [ant/form-item
           {:label "Active?"}
           [ant/switch]]]]]]
-     [ant/card
-      [:h3"Pricing/Billing"]
+
+     [ant/card {:title "Pricing/Billing"}
       [:div.columns
        [:div.column.is-3
         [ant/form-item
@@ -337,6 +333,7 @@
          [ant/checkbox
           {:checked   (:rental @form)
            :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]]]
+
      [fields-card (:fields @form)]]))
 
 
@@ -449,97 +446,115 @@
       :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 
-(defn- service-entry []
-  [:div
-   [ant/card {:title "Service Details"}
-    [:div.columns
-     [:div.column.is-6
-      [:h3 [:b "Weasel Steaming"]]
-      [:p "Let us treat your weasel to a well-deserved spa treatment that's fit for royalty. Only the best of steamings will do for your weasel, the best weasel, the King of All Weasels."]]
-     [:div.column.is-4
-      [:div.mb1
-       [:p [:b "Code"]]
-       [:p "pets,weasels,spa"]]
+(defn- service-entry [service]
+  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service]
+    [:div
+     [ant/card {:title "Service Details"}
+      [:div.columns
+       [:div.column.is-6
+        [:h3 [:b name]]
+        [:p description]]
+       [:div.column.is-4
+        [:div.mb1
+         [:p [:b "Code"]]
+         [:p code]]
 
-      [:div.mb1
-       [:p [:b "Catalogs"]]
-       [:p "pets"]]
+        [:div.mb1
+         [:p [:b "Catalogs"]]
+         (if (nil? catalogs)
+           [:p "none"]
+           [:p catalogs])]
 
-      [:div.mb1
-       [:p [:b "Properties"]]
-       [:p "The Mission, West SoMa"]]]
+        [:div.mb1
+         [:p [:b "Properties"]]
+         (if (nil? properties)
+           [:p "none"]
+           [:p "The Mission, West SoMa"])]]
 
-     [:div.column.is-2
-      [:p.mb1 [:b "Active?"]]
-      [ant/switch {:checked true}]]]]
+       [:div.column.is-2
+        [:p.mb1 [:b "Active?"]] ;; TODO - implement "active/inactive" services
+        [ant/switch {:checked true}]]]]
 
-   [ant/card {:title "Pricing/Billing"}
-    [:div.columns
-     [:div.column.is-3
-      [:div
-       [:p [:b "Price"]]
-       [:p "$45.00"]]]
-     [:div.column.is-3
-      [:div
-       [:p [:b "Cost"]]
-       [:p "$10.00"]]]
+     [ant/card {:title "Pricing/Billing"}
+      [:div.columns
+       [:div.column.is-3
+        [:div
+         [:p [:b "Price"]]
+         (if (nil? price)
+           [:p "Quote"]
+           [:p (str
+                "$"
+                price
+                (if (= :monthly billed)
+                  "/month"
+                  ""))])]]
+       [:div.column.is-3
+        [:div
+         [:p [:b "Cost"]]
+         (if (nil? cost)
+           [:p "n/a"]
+           [:p (str "$" cost)])]]
 
-     [:div.column.is-3
-      [:div
-       [:p [:b "Billed"]]
-       [:p "once"]]]
+       [:div.column.is-3
+        [:div
+         [:p [:b "Billed"]]
+         [:p (drop 1 (str billed))]]]
 
-     [:div.column.is-3
-      [:div
-       [:p [:b "Rental?"]]
-       [ant/checkbox {:checked false}]]]]]
+       [:div.column.is-3
+        [:div
+         [:p [:b "Rental?"]]
+         [ant/checkbox {:checked rental}]]]]]
 
-   [ant/card {:title "Metrics"}
-    [:p [:b "Usage"]]
-    [:p
-     "Ordered 3 time(s) between "
-     ;; "Ordered " (str (:order-count service) " time(s) between ")
-     (let [range (subscribe [:services/range])]
-       [ant/date-picker-range-picker
-        {:format              "l"
-         :allow-clear         false
-         :ranges              {"Past Week"     (range-picker-presets 1 "week")
-                               "Past Month"    (range-picker-presets 1 "month")
-                               "Past 3 Months" (range-picker-presets 3 "months")
-                               "Past Year"     (range-picker-presets 1 "year")}}])]]
+     [ant/card {:title "Metrics"}
+      [:p [:b "Usage"]]
+      [:p
+       "Ordered " (str order-count " time(s) between ")
+       (let [range (subscribe [:services/range])]
+         [ant/date-picker-range-picker
+          {:format              "l"
+           :allow-clear         false
+           :ranges              {"Past Week"     (range-picker-presets 1 "week")
+                                 "Past Month"    (range-picker-presets 1 "month")
+                                 "Past 3 Months" (range-picker-presets 3 "months")
+                                 "Past Year"     (range-picker-presets 1 "year")}
+           :value               (vec (map iso->moment @range))
+           :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
 
-   [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
-    [:div.columns
-     [:div.column.is-1
-      [:p [:b "Type"]]
-      [:div "text"]]
+     [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
+      (if (nil? fields)
+        [:p "No fields found."]
 
-     [:div.column.is-9
-      [:p [:b "Label"]]
-      [:p "What is your weasel's name?"]]
+        [:div
+         [:div.columns
+          [:div.column.is-1
+           [:p [:b "Type"]]
+           [:div "text"]]
 
-     [:div.column.is-1
-      [:p [:b "Required?"]]
-      [ant/switch {:checked true}]]]
+          [:div.column.is-9
+           [:p [:b "Label"]]
+           [:p "What is your weasel's name?"]]
 
-    [:div.columns
-     [:div.column.is-1
-      [:p [:b "Type"]]
-      [:div "dropdown"]]
+          [:div.column.is-1
+           [:p [:b "Required?"]]
+           [ant/switch {:checked true}]]]
 
-     [:div.column.is-9
-      [:p [:b "Label"]]
-      [:p "When should we pick up your weasel?"]
-      [:div "Options: Morning, Afternoon, Evening"]]
+         [:div.columns
+          [:div.column.is-1
+           [:p [:b "Type"]]
+           [:div "dropdown"]]
 
-     [:div.column.is-1
-      [:p [:b "Required?"]]
-      [ant/switch {:checked true}]]]
-    ]])
+          [:div.column.is-9
+           [:p [:b "Label"]]
+           [:p "When should we pick up your weasel?"]
+           [:div "Options: Morning, Afternoon, Evening"]]
+
+          [:div.column.is-1
+           [:p [:b "Required?"]]
+           [ant/switch {:checked true}]]]])]]))
 
 
 (defn services-subview
-  []
+  [route]
   (let [services (subscribe [:services/list])]
     #_[:div
      [controls @services]
@@ -558,8 +573,12 @@
        [service-filter]]
       [services-list @services]]
 
-     [:div.column.is-9
-      [service-entry]]]))
+     (if (not (nil? (get-in route [:params :service-id])))
+       (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
+         [:div.column.is-9
+          [service-entry service]])
+       [:p.mt2.ml2
+        "Select a service from the list to see more details."])]))
 
 
 (defn service-layout [route] ;;receives services, which is obtained from graphql
@@ -574,7 +593,8 @@
 
    ;; render subviews based on the active menu item
    (case (:page route)
-     :services/list          [services-subview]
+     :services/list          [services-subview route]
+     :services/entry         [services-subview route]
      :services.orders/list   [orders-views/subview]
      :services.catalogs/list [catalogs-views/subview])])
 
@@ -584,7 +604,7 @@
 ;; service entry (detail view)
 ;; =====================================================
 
-(defn service-detail [service]
+#_(defn service-detail [service]
   [:div
    ;; header and controls
    [:div.columns
@@ -634,7 +654,7 @@
         :value               (vec (map iso->moment @range))
         :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
 
-(defn service-detail-main
+#_(defn service-detail-main
   [{{service-id :service-id} :params}]
   (let [service (subscribe [:service (tb/str->int service-id)])]
     [service-detail @service]))
@@ -651,4 +671,6 @@
 
 ;; services entry
 (defmethod content/view :services/entry [route]
-  [service-detail-main route])
+  (js/console.log "yo services/entry view")
+  #_[service-detail-main route]
+  [service-layout route])
