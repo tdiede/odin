@@ -425,7 +425,9 @@
             :rental   {:type    Boolean
                        :resolve (:get :service/rental)}
             :variants {:type    (list :service_variant)
-                       :resolve (:get :service/variants)}}}
+                       :resolve (:get :service/variants)}
+            :catalogs {:type    (list :Keyword)
+                       :resolve (:get :service/catalogs)}}}
 
 
   :service_variant
