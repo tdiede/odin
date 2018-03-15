@@ -16,16 +16,72 @@
             [iface.loading :as loading]
             [clojure.string :as string]))
 
-;; ====================================================
-;; service list
-;; ====================================================
+
+;; ==============================================================================
+;; some range helpers what probably should go in iface dot components i guess ===
+;; ==============================================================================
+
+
+
+(defn moment->iso [instant]
+  "convert a MomentJS instance to an ISO date number"
+  (-> (js/moment instant)
+      (.toISOString)))
+
+(defn iso->moment [instant]
+  (js/moment instant))
+
+(defn set-range-picker
+  [time-unit]
+  (dispatch [:service.range/set time-unit])
+  (dispatch [:service.range/close-picker]))
+
+(defn range-picker-footer-controls
+  "Some buttons to quickly select common date ranges"
+  []
+  [:div.columns.is-centered
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "week")}
+     "Past Week"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "month")}
+     "Past Month"]]
+   [:div.column.is-3
+    [ant/button
+     {:on-click #(set-range-picker "year")}
+     "Past Year"]]])
+
+
+(defn range-picker-presets
+  [amount time-unit]
+  [(-> (js/moment (.now js/Date))
+       (.subtract amount time-unit)
+       (.hour 0)
+       (.minute 0)
+       (.second 0))
+   (-> (js/moment (.now js/Date))
+       (.hour 23)
+       (.minute 59)
+       (.second 59))])
+
+
+
+
+
+
+;; ==============================================================================
+;; create service form ==========================================================
+;; ==============================================================================
+
 
 (defn service-field-type
   [index type]
   [ant/form-item
    {:label     (when (zero? index) "Type")
     :read-only true}
-   (name type)])
+   (drop 1 (str type))]) ;; TODO - figure out why `name` was causing an error
 
 (defn service-field-label
   [index label]
@@ -168,7 +224,7 @@
    [:div.columns
     [:div.column.is-10
      [:h3 "Fields"]
-     [:div "Information to be provided by the member when they place an order"]]
+     [:div "Information to be provided by the member when they place an order."]]
     [:div.column.is-2.is-pulled-right
      (let [menu
            [ant/menu {:on-click #(dispatch [:service.form.field/create (aget % "key")])}
@@ -305,6 +361,13 @@
      [create-service-form]]))
 
 
+
+;; ==============================================================================
+;; services list ================================================================
+;; ==============================================================================
+
+
+
 (defn- render-price [_ {price :price}]
   (if (some? price) (format/currency price) "quote"))
 
@@ -347,6 +410,7 @@
         search-text @(subscribe [:services/search-text])]
     [ant/table
      {:columns    columns
+      :pagination {:position :top}
       :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 (defn- path->selected
@@ -370,12 +434,132 @@
     [:a {:href (routes/path-for :services.catalogs/list)}
      "Catalogs"]]])
 
+
+(defn- services-list [services]
+  (let [columns [{:title     "Name"
+                  :dataIndex "name"
+                  :key       "name"
+                  :render    #(r/as-element
+                               [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
+                                    :dangerouslySetInnerHTML {:__html %1}}])}]
+        search-text @(subscribe [:services/search-text])]
+    [ant/table
+     {:columns    columns
+      :show-header false
+      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
+
+
+(defn- service-entry []
+  [:div
+   [ant/card {:title "Service Details"}
+    [:div.columns
+     [:div.column.is-6
+      [:h3 [:b "Weasel Steaming"]]
+      [:p "Let us treat your weasel to a well-deserved spa treatment that's fit for royalty. Only the best of steamings will do for your weasel, the best weasel, the King of All Weasels."]]
+     [:div.column.is-4
+      [:div.mb1
+       [:p [:b "Code"]]
+       [:p "pets,weasels,spa"]]
+
+      [:div.mb1
+       [:p [:b "Catalogs"]]
+       [:p "pets"]]
+
+      [:div.mb1
+       [:p [:b "Properties"]]
+       [:p "The Mission, West SoMa"]]]
+
+     [:div.column.is-2
+      [:p.mb1 [:b "Active?"]]
+      [ant/switch {:checked true}]]]]
+
+   [ant/card {:title "Pricing/Billing"}
+    [:div.columns
+     [:div.column.is-3
+      [:div
+       [:p [:b "Price"]]
+       [:p "$45.00"]]]
+     [:div.column.is-3
+      [:div
+       [:p [:b "Cost"]]
+       [:p "$10.00"]]]
+
+     [:div.column.is-3
+      [:div
+       [:p [:b "Billed"]]
+       [:p "once"]]]
+
+     [:div.column.is-3
+      [:div
+       [:p [:b "Rental?"]]
+       [ant/checkbox {:checked false}]]]]]
+
+   [ant/card {:title "Metrics"}
+    [:p [:b "Usage"]]
+    [:p
+     "Ordered 3 time(s) between "
+     ;; "Ordered " (str (:order-count service) " time(s) between ")
+     (let [range (subscribe [:services/range])]
+       [ant/date-picker-range-picker
+        {:format              "l"
+         :allow-clear         false
+         :ranges              {"Past Week"     (range-picker-presets 1 "week")
+                               "Past Month"    (range-picker-presets 1 "month")
+                               "Past 3 Months" (range-picker-presets 3 "months")
+                               "Past Year"     (range-picker-presets 1 "year")}}])]]
+
+   [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
+    [:div.columns
+     [:div.column.is-1
+      [:p [:b "Type"]]
+      [:div "text"]]
+
+     [:div.column.is-9
+      [:p [:b "Label"]]
+      [:p "What is your weasel's name?"]]
+
+     [:div.column.is-1
+      [:p [:b "Required?"]]
+      [ant/switch {:checked true}]]]
+
+    [:div.columns
+     [:div.column.is-1
+      [:p [:b "Type"]]
+      [:div "dropdown"]]
+
+     [:div.column.is-9
+      [:p [:b "Label"]]
+      [:p "When should we pick up your weasel?"]
+      [:div "Options: Morning, Afternoon, Evening"]]
+
+     [:div.column.is-1
+      [:p [:b "Required?"]]
+      [ant/switch {:checked true}]]]
+    ]])
+
+
 (defn services-subview
   []
   (let [services (subscribe [:services/list])]
-    [:div
+    #_[:div
      [controls @services]
-     [services-table @services]]))
+       [services-table @services]]
+
+    [:div.columns
+     [:div.column.is-3
+      [:div.mb2
+       [ant/button
+        {:style {:width "100%"}
+         :type  :primary
+         :icon  "plus"
+         :on-click #(dispatch [:service.form/show])}
+        "Create a New Service"]]
+      [:div.mb1
+       [service-filter]]
+      [services-list @services]]
+
+     [:div.column.is-9
+      [service-entry]]]))
 
 
 (defn service-layout [route] ;;receives services, which is obtained from graphql
@@ -399,49 +583,6 @@
 ;; =====================================================
 ;; service entry (detail view)
 ;; =====================================================
-
-(defn moment->iso [instant]
-  "convert a MomentJS instance to an ISO date number"
-  (-> (js/moment instant)
-      (.toISOString)))
-
-(defn iso->moment [instant]
-  (js/moment instant))
-
-(defn set-range-picker
-  [time-unit]
-  (dispatch [:service.range/set time-unit])
-  (dispatch [:service.range/close-picker]))
-
-(defn range-picker-footer-controls
-  "Some buttons to quickly select common date ranges"
-  []
-  [:div.columns.is-centered
-   [:div.column.is-3
-    [ant/button
-     {:on-click #(set-range-picker "week")}
-     "Past Week"]]
-   [:div.column.is-3
-    [ant/button
-     {:on-click #(set-range-picker "month")}
-     "Past Month"]]
-   [:div.column.is-3
-    [ant/button
-     {:on-click #(set-range-picker "year")}
-     "Past Year"]]])
-
-
-(defn range-picker-presets
-  [amount time-unit]
-  [(-> (js/moment (.now js/Date))
-       (.subtract amount time-unit)
-       (.hour 0)
-       (.minute 0)
-       (.second 0))
-   (-> (js/moment (.now js/Date))
-       (.hour 23)
-       (.minute 59)
-       (.second 59))])
 
 (defn service-detail [service]
   [:div
