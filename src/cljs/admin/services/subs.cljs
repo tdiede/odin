@@ -37,3 +37,30 @@
  :<- [db/path]
  (fn [db _]
    (:search-text db)))
+
+
+(reg-sub
+ :services/form
+ :<- [db/path]
+ (fn [db _]
+   (:form db)))
+
+
+(reg-sub
+ :services.form/fields
+ :<- [:services/form]
+ (fn [form _]
+   (:fields form)))
+
+
+(reg-sub
+ :services.form.field/is-last?
+ :<- [:services.form/fields]
+ (fn [fields [_ index]]
+   (= index (dec (count fields)))))
+
+(reg-sub
+ :services.form.field.option/is-last?
+ :<- [:services.form/fields]
+ (fn [fields [_ field-index option-index]]
+   (= option-index (dec (count (get-in fields [field-index :options]))))))

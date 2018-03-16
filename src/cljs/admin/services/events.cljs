@@ -8,17 +8,19 @@
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]))
 
-;; ====================================================
-;; list
-;; ====================================================
+
+
+;; ==============================================================================
+;; list =========================================================================
+;; ==============================================================================
 
 (reg-event-fx
  :services/query
  [(path db/path)]
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
-    :graphql  {:query      [[:services {:params {}}
-                             [:id :name :code :billed :price :cost]]]
+    :graphql  {:query      [[:services {:params params}
+                             [:id :name :code :price]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -40,7 +42,8 @@
 
 (defmethod routes/dispatches :services/list
   [route]
-  [[:services/query]])
+  [[:services/query]
+   [:properties/query]])
 
 
 ;; ====================================================
@@ -73,7 +76,7 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :desc :code :price :cost :billed :rental
+                             [:id :name :description :code :price :cost :billed :rental
                               [:variants [:id :name :cost :price]]]]
                             [:orders {:params {:services [service-id]
                                                :datekey  :created
@@ -112,4 +115,136 @@
   [route]
   (let [service-id (get-in route [:params :service-id])]
     [[::set-initial-service-id service-id]
-     [:service/fetch (tb/str->int service-id)]]))
+     [:service/fetch (tb/str->int service-id)]
+     [:services/query]
+     [:properties/query]]))
+
+
+;; ==============================================================================
+;; create =======================================================================
+;; ==============================================================================
+
+(reg-event-fx
+ :service.form/show
+ (fn [_ _]
+   {:dispatch [:modal/show :service/create-service-form]}))
+
+
+(reg-event-fx
+ :service.form/hide
+ (fn [_ _]
+   {:dispatch [:modal/hide :service/create-service-form]}))
+
+(defmulti construct-field
+  (fn [_ type]
+    type))
+
+
+(defmethod construct-field :default
+  [index type]
+  {:index    index
+   :type     type
+   :label    ""
+   :required false})
+
+
+(defmethod construct-field :dropdown
+  [index type]
+  {:index    index
+   :type     type
+   :label    ""
+   :required false
+   :options  []})
+
+
+(reg-event-db
+ :service.form.field/create
+ [(path db/path)]
+ (fn [db [_ field-type]]
+   (let [new-field (construct-field (count (get-in db [:form :fields])) (keyword field-type))]
+     (update-in db [:form :fields] conj new-field))))
+
+
+(reg-event-db
+ :service.form.field/delete
+ [(path db/path)]
+ (fn [db [_ index]]
+   (update-in db [:form :fields] #(->> (tb/remove-at % index)
+                                       (map-indexed (fn [i f] (assoc f :index i)))
+                                       vec))))
+(reg-event-db
+ :service.form.field/update
+ [(path db/path)]
+ (fn [db [_ index key value]]
+   (update-in db [:form :fields index] #(assoc % key value))))
+
+(reg-event-db
+ :service.form.field/reorder
+ [(path db/path)]
+ (fn [db [_ index1 index2]]
+   (let [field-one (assoc (get-in db [:form :fields index1]) :index index2)
+         field-two (assoc (get-in db [:form :fields index2]) :index index1)]
+     (-> (assoc-in db [:form :fields index2] field-one)
+         (assoc-in    [:form :fields index1] field-two)))))
+
+
+(reg-event-db
+ :service.form.field.option/create
+ [(path db/path)]
+ (fn [db [_ field-index]]
+   (let [new-option
+         {:value       ""
+          :index       (count (get-in db [:form :fields field-index :options]))
+          :field_index field-index}]
+     (update-in db [:form :fields field-index :options] conj new-option))))
+
+(reg-event-db
+ :service.form.field.option/update
+ [(path db/path)]
+ (fn [db [_ field-index option-index value]]
+   (update-in db [:form :fields field-index :options option-index ] #(assoc % :value value))))
+
+
+(reg-event-db
+ :service.form.field.option/delete
+ [(path db/path)]
+ (fn [db [_ field-index option-index]]
+   (update-in db [:form :fields field-index :options] #(->> (tb/remove-at % option-index)
+                                                            (map-indexed (fn [i o] (assoc o :index i)))
+                                                            vec))))
+
+
+(reg-event-db
+ :service.form.field.option/reorder
+ [(path db/path)]
+ (fn [db [_ field-index index1 index2]]
+   (let [option-one (assoc (get-in db [:form :fields field-index :options index1]) :index index2)
+         option-two (assoc (get-in db [:form :fields field-index :options index2]) :index index1)]
+     (-> (assoc-in db [:form :fields field-index :options index2] option-one)
+         (assoc-in    [:form :fields field-index :options index1] option-two)))))
+
+(reg-event-fx
+ :service.form/update
+ [(path db/path)]
+ (fn [{db :db} [_ key value]]
+   {:db (assoc-in db [:form key] value)}))
+
+
+(reg-event-fx
+ :service/create!
+ [(path db/path)]
+ (fn [{db :db} [k form]]
+   {:graphql {:mutation [[:service_create {:params form}
+                          [:id]]]
+              :on-success [::create-success k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::create-success
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (js/console.log response)
+   {:dispatch-n [[:services/query]
+                 [:service.form/hide]]
+    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service :id])))}))

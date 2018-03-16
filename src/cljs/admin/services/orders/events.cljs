@@ -63,7 +63,7 @@
                     [:line_items [:id :desc :cost :price]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
-                    [:service [:id :name :desc :code :cost :billed :price]]
+                    [:service [:id :name :description :code :cost :billed :price]]
                     [:property [:id :name]]
                     [:payments [:id :amount :description :paid_on]]]]]
                  :on-success [::order-fetch k]
