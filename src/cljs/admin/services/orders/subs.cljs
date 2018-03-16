@@ -1,5 +1,5 @@
-(ns admin.orders.subs
-  (:require [admin.orders.db :as db]
+(ns admin.services.orders.subs
+  (:require [admin.services.orders.db :as db]
             [iface.components.table :as table]
             [iface.utils.norms :as norms]
             [re-frame.core :refer [reg-sub]]
@@ -36,10 +36,10 @@
 ;; ==============================================================================
 
 (reg-sub
- :order/editing?
+ :services.order/editing?
  :<- [db/path]
  (fn [db [_ order-id]]
-   (get-in db [:order/editing order-id])))
+   (get-in db [:services.order/editing order-id])))
 
 
 ;; ==============================================================================
@@ -48,7 +48,7 @@
 
 
 (reg-sub
- :orders/query-params
+ :services.orders/query-params
  :<- [db/path]
  (fn [db _]
    (:params db)))
@@ -61,28 +61,28 @@
 
 
 (reg-sub
- :orders/table
- :<- [:orders/query-params]
+ :services.orders/table
+ :<- [:services.orders/query-params]
  :<- [:orders]
  (fn [[params orders] _]
    (table/sort-rows params sort-fns orders)))
 
 
 (reg-sub
- :orders/statuses
+ :services.orders/statuses
  (fn [db _]
    [:all :pending :placed :fulfilled :failed :charged :canceled]))
 
 
 (reg-sub
  :orders.statuses/selected
- :<- [:orders/query-params]
+ :<- [:services.orders/query-params]
  (fn [params _]
    (:statuses params #{:all})))
 
 
 (reg-sub
- :orders/members
+ :services.orders/members
  :<- [db/path]
  (fn [db _]
    (:accounts db)))
@@ -97,6 +97,6 @@
 
 (reg-sub
  :orders.filters/dirty?
- :<- [:orders/query-params]
+ :<- [:services.orders/query-params]
  (fn [params _]
    (not= params db/default-params)))

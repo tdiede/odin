@@ -1,4 +1,4 @@
-(ns admin.orders.db
+(ns admin.services.orders.db
   (:require [admin.routes :as routes]
             [clojure.string :as string]
             [iface.components.table :as table]
@@ -36,7 +36,7 @@
                                           (interpose ",")
                                           (apply str))})
                    (table/remove-empty-vals))]
-    (routes/path-for :orders/list :query-params params)))
+    (routes/path-for :services.orders/list :query-params params)))
 
 
 (defn parse-query-params [params]

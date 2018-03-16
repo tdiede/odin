@@ -1,4 +1,4 @@
-(ns admin.orders.create
+(ns admin.services.orders.create
   (:require [antizer.reagent :as ant]
             [clojure.string :as string]
             [iface.components.order :as order]
@@ -124,7 +124,7 @@
  (fn [{db :db} [_ bootstrapped]]
    (tb/assoc-when
     {:graphql {:query      [[:accounts {:params {:roles [:member]}} [:id :name :email [:property [:name]]]]
-                            [:services [:id :code :name :desc :price :billed
+                            [:services [:id :code :name :description :price :billed
                                         [:variants [:id :name :price]]]]]
                :on-success [::fetch-success]
                :on-failure [:graphql/failure ::fetch]}}

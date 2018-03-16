@@ -54,26 +54,19 @@
                            "")}]]])
 
 
-(defn- deposit-status
-  [{:keys [amount amount_remaining amount_paid amount_pending due] :as deposit}]
-  (let [is-overdue (t/is-before-now due)]
-    (cond
-      (> amount_pending 0)                    :pending
-      (= amount amount_paid)                  :paid
-      (and is-overdue (> amount_remaining 0)) :overdue
-      (= amount_paid 0)                       :unpaid
-      (> amount_remaining amount_paid)        :partial
-      :otherwise                              :pending)))
+
+(defmulti deposit-status-content
+  (fn [deposit sources]
+    (:status deposit)))
 
 
-(defmulti deposit-status-content (fn [deposit sources] (deposit-status deposit)))
-
-
-(defmethod deposit-status-content :default [{:keys [amount]} sources]
+(defmethod deposit-status-content :default
+  [{:keys [amount]} sources]
   [:p.fs2 "Your security deposit has been paid in entirety."])
 
 
-(defmethod deposit-status-content :overdue [{:keys [id amount due amount_remaining]} sources]
+(defmethod deposit-status-content :overdue
+  [{:keys [id amount due amount_remaining]} sources]
   [:div
    [:p.fs2 "Your security deposit is overdue."]
    [ant/tooltip
@@ -87,30 +80,36 @@
      (format/format "Pay remaining amount (%s)" (format/currency amount_remaining))]]])
 
 
-(defmethod deposit-status-content :partial [{:keys [id amount_remaining]} sources]
-  [:div
-   [:p.fs2 "Your security deposit is partially paid."]
-   [ant/tooltip
-    {:title (when (empty? sources)
-              (r/as-element [link-bank-tooltip-title]))}
-    [ant/button
-     {:on-click #(dispatch [:modal/show id])
-      :size     :large
-      :disabled (empty? sources)}
-     (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]])
+(defmethod deposit-status-content :partial
+  [{:keys [id amount_remaining]} sources]
+  (let [is-loading (subscribe [:ui/loading? :payment-sources/fetch])]
+    [:div
+     [:p.fs2 "Your security deposit is partially paid."]
+     [ant/tooltip
+      {:title (when (empty? sources)
+                (r/as-element [link-bank-tooltip-title]))}
+      [ant/button
+       {:on-click #(dispatch [:modal/show id])
+        :size     :large
+        :loading  @is-loading
+        :disabled (empty? sources)}
+       (format/format "Pay Remaining (%s)" (format/currency amount_remaining))]]]))
 
 
-(defmethod deposit-status-content :unpaid [{:keys [id amount_remaining]} sources]
-  [:div
-   [:p.fs2 "Your security deposit is unpaid."]
-   [ant/tooltip
-    {:title (when (empty? sources)
-              (r/as-element [link-bank-tooltip-title]))}
-    [ant/button
-     {:on-click #(dispatch [:modal/show id])
-      :size     :large
-      :disabled (empty? sources)}
-     (format/format "Pay Now (%s)" (format/currency amount_remaining))]]])
+(defmethod deposit-status-content :unpaid
+  [{:keys [id amount_remaining]} sources]
+  (let [is-loading (subscribe [:ui/loading? :payment-sources/fetch])]
+    [:div
+     [:p.fs2 "Your security deposit is unpaid."]
+     [ant/tooltip
+      {:title (when (empty? sources)
+                (r/as-element [link-bank-tooltip-title]))}
+      [ant/button
+       {:on-click #(dispatch [:modal/show id])
+        :size     :large
+        :loading  @is-loading
+        :disabled (empty? sources)}
+       (format/format "Pay Now (%s)" (format/currency amount_remaining))]]]))
 
 
 (defmethod deposit-status-content :pending [{:keys [amount_pending]} _]
@@ -118,22 +117,22 @@
 
 
 (defn deposit-status-card []
-  (let [loading (subscribe [:member.license/loading?])
-        deposit (subscribe [:member/deposit])
-        payment (subscribe [:member.deposit/payment])
-        sources (subscribe [:payment.sources/verified-banks])
-        paying  (subscribe [:ui/loading? :member/pay-deposit!])]
+  (let [is-loading   (subscribe [:member.license/loading?])
+        deposit      (subscribe [:member/deposit])
+        payment      (subscribe [:member.deposit/payment])
+        sources      (subscribe [:payment.sources/verified-banks])
+        is-paying    (subscribe [:ui/loading? :member/pay-deposit!])]
     (fn []
       [:div.mb2
-       [ant/card {:loading @loading}
+       [ant/card {:loading @is-loading}
         [payments-ui/make-payment-modal @payment
          :on-confirm (fn [payment-id source-id _]
                        (dispatch [:member/pay-deposit! payment-id source-id]))
-         :loading @paying
+         :loading @is-paying
          :sources @sources]
         [:div.columns
          [:div.column.is-2
-          (when (not @loading) [render-card-icon :deposit (deposit-status @deposit)])]
+          (when (not @is-loading) [render-card-icon :deposit (:status @deposit)])]
          [:div.column
           (card-title :deposit)
           (when (not (nil? @deposit))
@@ -169,8 +168,9 @@
 (defn rent-due-card
   "Renders an outstanding rent payment with the amount and a CTA to pay."
   [{:keys [id amount due pstart pend] :as payment}]
-  (let [sources (subscribe [:payment.sources/verified-banks])
-        paying  (subscribe [:ui/loading? :member/pay-rent-payment!])]
+  (let [sources    (subscribe [:payment.sources/verified-banks])
+        is-loading (subscribe [:ui/loading? :payment-sources/fetch])
+        is-paying  (subscribe [:ui/loading? :member/pay-rent-payment!])]
     (fn [{:keys [id amount due pstart pend late_fee] :as payment}]
       [ant/card
        [:div.columns
@@ -181,7 +181,7 @@
            [payments-ui/make-payment-modal payment
             :on-confirm (fn [payment-id source-id _]
                           (dispatch [:member/pay-rent-payment! payment-id source-id]))
-            :loading @paying
+            :loading @is-paying
             :sources @sources])
          (card-title :rent)
          [:p.fs2 (rent-payment-text payment)]
@@ -195,6 +195,7 @@
            {:type     (if (rent-overdue? payment) :danger :primary)
             :size     :large
             :on-click #(dispatch [:modal/show id])
+            :loading  @is-loading
             :disabled (empty? @sources)}
            (format/format "Pay Now (%s)" (format/currency (+ amount late_fee)))]]]]])))
 
@@ -246,5 +247,5 @@
          [membership-summary]]
 
         [:div.column.is-5
-         [:h2 "Rental Agreement"]
+         [:h2 "Membership Agreement"]
          [membership/license-summary @license {:loading @loading}]]])]))

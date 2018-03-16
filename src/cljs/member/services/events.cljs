@@ -33,10 +33,11 @@
 
 
 (defmethod routes/dispatches :services/book
-  [{:keys [params page] :as route}]
+  [{:keys [params page requester] :as route}]
   (if (empty? params)
     [[:services/set-default-route route]]
     [[:services/fetch (db/parse-query-params page params)]
+     [:services/fetch-catalogs]
      [::load-cart]]))
 
 
@@ -63,6 +64,48 @@
  [(path db/path)]
  (fn [{db :db} [_ query-params]]
    {:db (assoc db :params query-params)}))
+
+
+(reg-event-fx
+ :services/fetch-catalogs
+ (fn [{db :db} [k]]
+   {:dispatch-n [[:ui/loading k true]
+                 [::fetch-property k (get-in db [:account :id])]]}))
+
+
+(reg-event-fx
+ ::fetch-property
+ (fn [{db :db} [_ k account-id]]
+   {:graphql {:query      [[:account {:id account-id}
+                            [[:property [:id]]]]]
+              :on-success [::fetch-catalogs k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::fetch-catalogs
+ (fn [{db :db} [_ k response]]
+   (let [property-id (get-in response [:data :account :property :id])]
+     {:graphql {:query [[:services {:params {:properties [property-id]}}
+                         [:id :name :desc :price :catalogs]]]
+                :on-success [:services/catalogs k]
+                :on-failure [:graphql/failure k]}})))
+
+
+(reg-event-fx
+ :services/catalogs
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [services (get-in response [:data :services])
+         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))
+         catalogs (reduce ;; how to organize this in a nicer way?
+                   (fn [acc cs]
+                     (assoc-in acc [cs] (get
+                                         (group-by #(some (fn [c] (= c cs)) (:catalogs %)) services)
+                                         true)))
+                   {}
+                   clist)]
+     {:db (assoc db :catalogs catalogs)})))
 
 
 (reg-event-fx

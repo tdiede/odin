@@ -1,8 +1,8 @@
-(ns admin.orders.views
+(ns admin.services.orders.views
   (:require [admin.content :as content]
-            [admin.orders.views.progress :as progress]
-            [admin.orders.create :as create]
-            [admin.orders.db :as db]
+            [admin.services.orders.views.progress :as progress]
+            [admin.services.orders.create :as create]
+            [admin.services.orders.db :as db]
             [admin.routes :as routes]
             [antizer.reagent :as ant]
             [clojure.string :as string]
@@ -169,7 +169,7 @@
 
 (defn- order-edit
   [order]
-  (let [is-loading (subscribe [:ui/loading? :order/update!])
+  (let [is-loading (subscribe [:ui/loading? :services.order/update!])
         form       (r/atom (-> order (update :line_items vec)))]
     (fn [order]
       [:div
@@ -179,7 +179,7 @@
         {:on-change (fn [k v] (swap! form assoc k v))}]
        [:div.mt2.has-text-right
         [ant/button
-         {:on-click #(dispatch [:order/editing (:id order) false])}
+         {:on-click #(dispatch [:services.order/editing (:id order) false])}
          "Cancel"]
         [ant/button
          {:on-click #(reset! form order)}
@@ -189,19 +189,19 @@
           :disabled (or (= @form order)
                         (not (order/line-items-valid? (:line_items @form))))
           :loading  @is-loading
-          :on-click #(dispatch [:order/update! order @form])}
+          :on-click #(dispatch [:services.order/update! order @form])}
          "Save"]]])))
 
 
 (defn order-card [order]
-  (let [is-loading (subscribe [:ui/loading? :order/fetch])
-        is-editing (subscribe [:order/editing? (:id order)])]
+  (let [is-loading (subscribe [:ui/loading? :services.order/fetch])
+        is-editing (subscribe [:services.order/editing? (:id order)])]
     [ant/card {:class     "svc"
                :bodyStyle {:padding "10px 16px"}
                :loading   @is-loading}
      (if @is-editing
        [order-edit order]
-       [order-details order {:on-click #(dispatch [:order/editing (:id order) true])}])]))
+       [order-details order {:on-click #(dispatch [:services.order/editing (:id order) true])}])]))
 
 
 (defn- subheader [order]
@@ -213,10 +213,10 @@
      " at " [:a property]]))
 
 
-(defmethod content/view :orders/entry
+(defmethod content/view :services.orders/entry
   [{{order-id :order-id} :params}]
   (let [order      (subscribe [:order (tb/str->int order-id)])
-        is-loading (subscribe [:ui/loading? :order/fetch])]
+        is-loading (subscribe [:ui/loading? :services.order/fetch])]
     (if (and @is-loading (nil? @order))
       (loading/fullpage :text "Fetching order...")
       [:div
@@ -227,7 +227,7 @@
          [ant/button {:shape    :circle
                       :icon     "reload"
                       :loading  @is-loading
-                      :on-click #(dispatch [:order/refresh order-id])}]]]
+                      :on-click #(dispatch [:services.order/refresh order-id])}]]]
 
        [:div.columns
         [:div.column
@@ -305,7 +305,7 @@
     :onFilter  (fn [value record]
                  (= value (str (goog.object/getValueByKeys record "service" "id"))))
     :render    #(r/as-element
-                 [:a {:href                    (routes/path-for :orders/entry :order-id (.-id %2))
+                 [:a {:href                    (routes/path-for :services.orders/entry :order-id (.-id %2))
                       :dangerouslySetInnerHTML {:__html %1}}])}
    {:title     "Member"
     :dataIndex :account
@@ -349,9 +349,9 @@
 
 
 (defn orders-table []
-  (let [orders     (subscribe [:orders/table])
-        params     (subscribe [:orders/query-params])
-        is-loading (subscribe [:ui/loading? :orders/query])]
+  (let [orders     (subscribe [:services.orders/table])
+        params     (subscribe [:services.orders/query-params])
+        is-loading (subscribe [:ui/loading? :services.orders/query])]
     (fn []
       [ant/spin (tb/assoc-when
                  {:tip      "Fetch orders..."
@@ -367,7 +367,7 @@
 
 
 (defn- status-filters []
-  (let [statuses (subscribe [:orders/statuses])
+  (let [statuses (subscribe [:services.orders/statuses])
         selected (subscribe [:orders.statuses/selected])]
     [:div
      (doall
@@ -383,9 +383,9 @@
 
 
 (defn- filter-by-members []
-  (let [is-loading        (subscribe [:ui/loading? :orders/search-members])
+  (let [is-loading        (subscribe [:ui/loading? :services.orders/search-members])
         selected-accounts (subscribe [:orders.accounts/selected])
-        accounts          (subscribe [:orders/members])]
+        accounts          (subscribe [:services.orders/members])]
     [ant/select
      {:placeholder       "select members"
       :style             {:width "100%"}
@@ -395,15 +395,15 @@
       :label-in-value    true
       :value             (if-some [xs @selected-accounts] xs [])
       :allow-clear       true
-      :on-search         #(dispatch [:orders/search-members %])
-      :on-change         #(dispatch [:orders/select-members (js->clj % :keywordize-keys true)])}
+      :on-search         #(dispatch [:services.orders/search-members %])
+      :on-change         #(dispatch [:services.orders/select-members (js->clj % :keywordize-keys true)])}
      (doall
       (for [{:keys [id name]} @accounts]
         [ant/select-option {:key id} name]))]))
 
 
-(defn- controls []
-  (let [params        (subscribe [:orders/query-params])
+(defn controls []
+  (let [params        (subscribe [:services.orders/query-params])
         filters-dirty (subscribe [:orders.filters/dirty?])]
     [:div.table-controls
      [:div.columns
@@ -421,7 +421,7 @@
        [ant/form-item {:label "Calculate Range With"}
         [ant/select {:value     (:datekey @params)
                      :style     {:width 138}
-                     :on-change #(dispatch [:orders/datekey (keyword %)])}
+                     :on-change #(dispatch [:services.orders/datekey (keyword %)])}
          [ant/select-option {:value :created} "Created"]
          [ant/select-option {:value :billed} "Billed On"]]]]]
      [:div
@@ -432,18 +432,17 @@
 
 
 ;; entrypoint ===================================================================
+;; rendered by `service-layout` component
 
-
-(defmethod content/view :orders/list [route]
-  (let [query-params (subscribe [:orders/query-params])]
+(defn subview []
+  (let [query-params (subscribe [:services.orders/query-params])]
     [:div
-     (typography/view-header "Orders" "Manage and view premium service orders.")
      [:div.columns
-      [:div.column
-       [status-filters]]
-      [:div.column
-       [:div.is-pulled-right
-        [create/button {:on-create [:orders/query @query-params]}]]]]
+     [:div.column
+      [status-filters]]
+     [:div.column
+      [:div.is-pulled-right
+       [create/button {:on-create [:services.orders/query @query-params]}]]]]
 
      [controls]
 

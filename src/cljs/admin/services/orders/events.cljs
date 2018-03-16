@@ -1,5 +1,5 @@
-(ns admin.orders.events
-  (:require [admin.orders.db :as db]
+(ns admin.services.orders.events
+  (:require [admin.services.orders.db :as db]
             [admin.routes :as routes]
             [iface.utils.norms :as norms]
             [re-frame.core :refer [reg-event-db
@@ -26,7 +26,7 @@
 
 
 (reg-event-fx
- :orders/query
+ :services.orders/query
  [(path db/path)]
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
@@ -51,7 +51,7 @@
 
 
 (reg-event-fx
- :order/fetch
+ :services.order/fetch
  [(path db/path)]
  (fn [{db :db} [k order-id]]
    {:dispatch-n [[:ui/loading k true]
@@ -63,7 +63,7 @@
                     [:line_items [:id :desc :cost :price]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
-                    [:service [:id :name :desc :code :cost :billed :price]]
+                    [:service [:id :name :description :code :cost :billed :price]]
                     [:property [:id :name]]
                     [:payments [:id :amount :description :paid_on]]]]]
                  :on-success [::order-fetch k]
@@ -84,18 +84,18 @@
 ;; ==============================================================================
 
 
-(defmethod routes/dispatches :orders/entry [route]
-  [[:order/fetch (tb/str->int (get-in route [:params :order-id]))]])
+(defmethod routes/dispatches :services.orders/entry [route]
+  [[:services.order/fetch (tb/str->int (get-in route [:params :order-id]))]])
 
 
 (reg-event-fx
- :order/refresh
+ :services.order/refresh
  (fn [_ [_ order-id]]
-   {:dispatch [:order/fetch order-id]}))
+   {:dispatch [:services.order/fetch order-id]}))
 
 
 (reg-event-fx
- :order/place!
+ :services.order/place!
  (fn [_ [k {id :id} {:keys [send-notification projected-fulfillment]}]]
    {:dispatch [:ui/loading k true]
     :graphql  {:mutation
@@ -112,12 +112,12 @@
  ::place!
  (fn [_ [_ k response]]
    {:dispatch-n [[:ui/loading k false]
-                 [:order/fetch (get-in response [:data :place_order :id])]
-                 [:modal/hide :order/place]]}))
+                 [:services.order/fetch (get-in response [:data :place_order :id])]
+                 [:modal/hide :services.order/place]]}))
 
 
 (reg-event-fx
- :order/cancel!
+ :services.order/cancel!
  (fn [_ [k {id :id} {:keys [send-notification]}]]
    {:dispatch [:ui/loading k true]
     :graphql {:mutation
@@ -130,12 +130,12 @@
  ::cancel!
  (fn [_ [_ k response]]
    {:dispatch-n [[:ui/loading k false]
-                 [:order/fetch (get-in response [:data :cancel_order :id])]
-                 [:modal/hide :order/cancel]]}))
+                 [:services.order/fetch (get-in response [:data :cancel_order :id])]
+                 [:modal/hide :services.order/cancel]]}))
 
 
 (reg-event-fx
- :order/fulfill!
+ :services.order/fulfill!
  (fn [_ [k {id :id} {:keys [send-notification actual-fulfillment process-charge]}]]
    (tb/assoc-when
     {:dispatch [:ui/loading k true]
@@ -149,19 +149,19 @@
                 :on-failure [:graphql/failure k]}}
     :dispatch-later (when process-charge
                       [{:ms      3000
-                        :dispatch [:order/fetch id]}]))))
+                        :dispatch [:services.order/fetch id]}]))))
 
 
 (reg-event-fx
  ::fulfill!
  (fn [_ [_ k response]]
    {:dispatch-n [[:ui/loading k false]
-                 [:order/fetch (get-in response [:data :fulfill_order :id])]
-                 [:modal/hide :order/fulfill]]}))
+                 [:services.order/fetch (get-in response [:data :fulfill_order :id])]
+                 [:modal/hide :services.order/fulfill]]}))
 
 
 (reg-event-fx
- :order/charge!
+ :services.order/charge!
  (fn [_ [k {id :id}]]
    {:dispatch       [:ui/loading k true]
     :graphql        {:mutation
@@ -169,26 +169,26 @@
                      :on-success [::charge! k]
                      :on-failure [:graphql/failure k]}
     :dispatch-later [{:ms       3000
-                      :dispatch [:order/fetch id]}]}))
+                      :dispatch [:services.order/fetch id]}]}))
 
 
 (reg-event-fx
  ::charge!
  (fn [_ [_ k response]]
    {:dispatch-n [[:ui/loading k false]
-                 [:order/fetch (get-in response [:data :charge_order :id])]
-                 [:modal/hide :order/charge]]}))
+                 [:services.order/fetch (get-in response [:data :charge_order :id])]
+                 [:modal/hide :services.order/charge]]}))
 
 
 (reg-event-db
- :order/editing
+ :services.order/editing
  [(path db/path)]
  (fn [db [_ order-id is-editing]]
-   (assoc-in db [:order/editing order-id] is-editing)))
+   (assoc-in db [:services.order/editing order-id] is-editing)))
 
 
 (reg-event-fx
- :order/update!
+ :services.order/update!
  (fn [_ [k order params]]
    (let [uparams (reduce
                   (fn [acc [k v]]
@@ -211,8 +211,8 @@
  (fn [_ [_ k response]]
    (let [order-id (get-in response [:data :update_order :id])]
      {:dispatch-n [[:ui/loading k false]
-                   [:order/fetch order-id]
-                   [:order/editing order-id false]]})))
+                   [:services.order/fetch order-id]
+                   [:services.order/editing order-id false]]})))
 
 
 ;; ==============================================================================
@@ -220,24 +220,24 @@
 ;; ==============================================================================
 
 
-(defmethod routes/dispatches :orders/list [{params :params}]
+(defmethod routes/dispatches :services.orders/list [{params :params}]
   (if (empty? params)
-    [[:orders/set-default-route]]
-    [[:orders/fetch (db/parse-query-params params)]]))
+    [[:services.orders/set-default-route]]
+    [[:services.orders/fetch (db/parse-query-params params)]]))
 
 
 (reg-event-fx
- :orders/set-default-route
+ :services.orders/set-default-route
  [(path db/path)]
  (fn [{db :db} _]
    {:route (db/params->route (:params db))}))
 
 
 (reg-event-fx
- :orders/fetch
+ :services.orders/fetch
  [(path db/path)]
  (fn [{db :db} [k query-params]]
-   {:dispatch [:orders/query query-params]
+   {:dispatch [:services.orders/query query-params]
     :db       (assoc db :params query-params)}))
 
 
@@ -262,14 +262,14 @@
 
 
 (reg-event-fx
- :orders/datekey
+ :services.orders/datekey
  [(path db/path)]
  (fn [{db :db} [_ datekey]]
    {:route (db/params->route (assoc (:params db) :datekey datekey))}))
 
 
 (reg-event-fx
- :orders/search-members
+ :services.orders/search-members
  [(path db/path)]
  (fn [{db :db} [k query]]
    {:dispatch-throttle {:id              k
@@ -300,7 +300,7 @@
 
 
 (reg-event-fx
- :orders/select-members
+ :services.orders/select-members
  [(path db/path)]
  (fn [{db :db} [_ selected]]
    {:db    (assoc db :selected-accounts selected)

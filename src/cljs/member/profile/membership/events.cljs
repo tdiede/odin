@@ -17,7 +17,8 @@
 (defmethod routes/dispatches :profile/membership [route]
   (let [account-id (get-in route [:requester :id])]
     [[:profile/fetch-account account-id]
-     [:member.license/fetch account-id]]))
+     [:member.license/fetch account-id]
+     [:payment-sources/fetch account-id]]))
 
 
 ;; =============================================================================
@@ -35,7 +36,7 @@
        {:dispatch [:notify/failure "Whoops! Something went wrong."]})
      {:dispatch [:ui/loading k true]
       :graphql  {:query      [[:account {:id account-id}
-                               [[:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending]]
+                               [[:deposit [:id :due :amount :amount_remaining :amount_paid :amount_pending :status]]
                                 [:active_license
                                  [:id :rate :starts :ends :status :term
                                   [:unit [:id :number]]

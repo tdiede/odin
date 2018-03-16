@@ -1,6 +1,7 @@
 (ns admin.accounts.views.application
   (:require [antizer.reagent :as ant]
             [iface.utils.formatters :as format]
+            [iface.utils.log :as l]
             [re-frame.core :refer [subscribe dispatch]]
             [reagent.core :as r]
             [toolbelt.core :as tb]))
@@ -26,7 +27,7 @@
         form         (r/atom {:community (when (= 1 (count (:communities application)))
                                            (-> application :communities first :id))
                               :term      (:term application)
-                              :move-in   (:move_in application)})]
+                              :move-in   (.toDate (.startOf (js/moment (:move_in application)) "day"))})]
     (r/create-class
      {:component-will-mount
       (fn [_]
@@ -82,7 +83,7 @@
             [ant/date-picker
              {:value       (js/moment. (:move-in @form))
               :allow-clear false
-              :on-change   #(swap! form assoc :move-in (.toDate %))}]])
+              :on-change   #(swap! form assoc :move-in (.toDate (.startOf % "day")))}]])
 
          ;; Chose unit
          (when (:community @form)
