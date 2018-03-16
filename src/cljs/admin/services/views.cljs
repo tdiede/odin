@@ -446,9 +446,21 @@
       :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 
+;; =====================================================
+;; service entry (detail view)
+;; =====================================================
+
+
 (defn- service-entry [service]
   (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service]
     [:div
+     [:div.mb2
+      [:div
+       [ant/button
+        {:on-click #(dispatch [:service/edit-service @service])}
+        "Edit"]
+       [ant/button "Delete"]
+       [ant/button "Duplicate"]]]
      [ant/card {:title "Service Details"}
       [:div.columns
        [:div.column.is-6
@@ -511,14 +523,14 @@
        "Ordered " (str order-count " time(s) between ")
        (let [range (subscribe [:services/range])]
          [ant/date-picker-range-picker
-          {:format              "l"
-           :allow-clear         false
-           :ranges              {"Past Week"     (range-picker-presets 1 "week")
-                                 "Past Month"    (range-picker-presets 1 "month")
-                                 "Past 3 Months" (range-picker-presets 3 "months")
-                                 "Past Year"     (range-picker-presets 1 "year")}
-           :value               (vec (map iso->moment @range))
-           :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
+          {:format      "l"
+           :allow-clear false
+           :ranges      {"Past Week"     (range-picker-presets 1 "week")
+                         "Past Month"    (range-picker-presets 1 "month")
+                         "Past 3 Months" (range-picker-presets 3 "months")
+                         "Past Year"     (range-picker-presets 1 "year")}
+           :value       (vec (map iso->moment @range))
+           :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
 
      [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
       (if (nil? fields)
@@ -553,32 +565,47 @@
            [ant/switch {:checked true}]]]])]]))
 
 
+(defn services-list-container [services]
+  [:div.column.is-3
+   [:div.mb2
+    [ant/button
+     {:style {:width "100%"}
+      :type  :primary
+      :icon  "plus"
+      :on-click #(dispatch [:service.form/show])}
+     "Create a New Service"]]
+   [:div.mb1
+    [service-filter]]
+   [services-list @services]])
+
+
+(defn services-entry-container [route]
+  (if (not (nil? (get-in route [:params :service-id])))
+    (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
+      [:div.column.is-9
+       [service-entry service]])
+    [:p.mt2.ml2
+     "Select a service from the list to see more details."]))
+
+(defn services-editing-container [route]
+  (let [service-id (get-in route [:params :service-id])]
+    [:div.column.is-9
+     [:div.mb2
+      [:div
+       [ant/button
+        {:on-click #(dispatch [:service/cancel-edit])}
+        "Cancel"]
+       [ant/button "Save Changes"]]]
+     [create-service-form]]))
+
 (defn services-subview
   [route]
   (let [services (subscribe [:services/list])]
-    #_[:div
-     [controls @services]
-       [services-table @services]]
-
     [:div.columns
-     [:div.column.is-3
-      [:div.mb2
-       [ant/button
-        {:style {:width "100%"}
-         :type  :primary
-         :icon  "plus"
-         :on-click #(dispatch [:service.form/show])}
-        "Create a New Service"]]
-      [:div.mb1
-       [service-filter]]
-      [services-list @services]]
-
-     (if (not (nil? (get-in route [:params :service-id])))
-       (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
-         [:div.column.is-9
-          [service-entry service]])
-       [:p.mt2.ml2
-        "Select a service from the list to see more details."])]))
+     [services-list-container services]
+     (if @(subscribe [:services/is-editing])
+       [services-editing-container route]
+       [services-entry-container route])]))
 
 
 (defn service-layout [route] ;;receives services, which is obtained from graphql
@@ -600,9 +627,6 @@
 
 
 
-;; =====================================================
-;; service entry (detail view)
-;; =====================================================
 
 
 

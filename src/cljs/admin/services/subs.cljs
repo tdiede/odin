@@ -64,3 +64,10 @@
  :<- [:services.form/fields]
  (fn [fields [_ field-index option-index]]
    (= option-index (dec (count (get-in fields [field-index :options]))))))
+
+
+(reg-sub
+ :services/is-editing
+ :<- [db/path]
+ (fn [db _]
+   (:is-editing db)))
