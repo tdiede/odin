@@ -66,31 +66,6 @@
    {:db (assoc db :params query-params)}))
 
 
-;; TODO how do i get a property id out of an account-id??
-;; (reg-event-fx
-;;  :services/fetch-catalogs
-;;  [(path db/path)]
-;;  (fn [{db :db} [k account-id]]
-;;    (.log js/console "id? " db account-id)
-;;    {:dispatch [:ui/loading k true]
-;;     :graphql {:query [
-;;                       #_[:account {:id account-id}
-;;                        [:name [:property [:id]]]]
-;;                       [:services {:params {:properties [285873023222986]}}
-;;                        [:name :catalogs]]]
-;;               :on-success [::services-fetch-catalogs k]
-;;               :on-failure [:graphql/failure k]}
-;;     }))
-
-
-;; (reg-event-fx
-;;  ::services-fetch-catalogs
-;;  [(path db/path)]
-;;  (fn [{db :db} [_ k response]]
-;;    (.log js/console "query: " response)
-;;    {:db db}))
-
-
 (reg-event-fx
  :services/fetch-catalogs
  (fn [{db :db} [k]]
@@ -110,7 +85,6 @@
 (reg-event-fx
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
-   (.log js/console "response: " (get-in response [:data :account :property :id]))
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query [[:services {:params {:properties [property-id]}}
                          [:id :name :desc :price :catalogs]]]
@@ -131,8 +105,6 @@
                                          true)))
                    {}
                    clist)]
-     (.log js/console "Services: " services)
-     (.log js/console "catalogs: " catalogs)
      {:db (assoc db :catalogs catalogs)})))
 
 
