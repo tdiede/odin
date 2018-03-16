@@ -87,7 +87,9 @@
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query [[:services {:params {:properties [property-id]}}
-                         [:id :name :desc :price :catalogs]]]
+                         [:id :name :description :price :catalogs
+                          [:fields [:index :label :type :required
+                                    [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
 
@@ -96,17 +98,32 @@
  :services/catalogs
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [services (get-in response [:data :services])
-         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))
-         catalogs (reduce ;; how to organize this in a nicer way?
-                   (fn [acc cs]
-                     (assoc-in acc [cs] (get
-                                         (group-by #(some (fn [c] (= c cs)) (:catalogs %)) services)
-                                         true)))
-                   {}
-                   clist)]
-     {:db (assoc db :catalogs catalogs)})))
+   (let [services (sort-by #(clojure.string/lower-case (:name %)) (get-in response [:data :services]))
+         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+     {:db (assoc db :catalogs clist :services services)})))
 
+
+(comment
+
+  (def sample-svc
+    [{:name "Room cleaning"}
+     {:name "Dog Walking - Single"}
+     {:name "Dog Walking - Daily"}
+     {:name "Room Washing"}
+     {:name "Dog boarding"}
+     {:name "Extra keyfob"}])
+
+  (sort-by #(clojure.string/lower-case (:name %)) sample-svc)
+
+  catalogs (reduce ;; how to organize this in a nicer way?
+            (fn [acc cs]
+              (assoc-in acc [cs] (get
+                                  (group-by #(some (fn [c] (= c cs)) (:catalogs %)) services)
+                                  true)))
+            {}
+            clist)
+
+  )
 
 (reg-event-fx
  :services.section/select
