@@ -55,14 +55,30 @@
  :services.book/categories
  :<- [db/path]
  (fn [db _]
-   [{:category :all
-     :label    "All"}
-    {:category :room-upgrades
-     :label    "Room Upgrades"}
-    {:category :laundry-services
-     :label    "Laundry Services"}
-    {:category :pet-services
-     :label    "Pet Services"}]))
+   (reduce
+    (fn [catalogs c]
+      (conj catalogs
+            (assoc {} :category c :label (clojure.string/capitalize (name c)))))
+    [{:category :all
+      :label    "All"}]
+    (get-in db [:catalogs]))))
+
+
+(comment
+
+  (def cs [:pets :misc :subscriptions])
+
+  (def init [{:category :all
+              :label "All"}])
+
+  (reduce
+   (fn [catalogs c]
+     (conj catalogs (assoc {} :category c :label (clojure.string/capitalize (name c)))))
+   init
+   (sort cs))
+
+
+  )
 
 
 (reg-sub
