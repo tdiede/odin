@@ -31,7 +31,6 @@
 
 (defn- query-services
   [db params]
-  <<<<<<< HEAD
   (->> (tb/transform-when-key-exists params {:properties (partial map (partial d/entity db))
                                              :billed     (partial map make-billed-key)})
        (service/query db)))
