@@ -145,6 +145,19 @@
                  [:service/toggle-is-editing false]]}))
 
 
+
+;; ==============================================================================
+;; copy service =================================================================
+;; ==============================================================================
+
+(reg-event-fx
+ :service/copy-service
+ [(path db/path)]
+ (fn [{db :db} [_ service]]
+   {:dispatch-n [[:service.form/populate (assoc service :name (str (:name service) "- Copy") :code "")]
+                 [:modal/show :service/create-service-form]]}))
+
+
 ;; ==============================================================================
 ;; create =======================================================================
 ;; ==============================================================================
@@ -153,6 +166,9 @@
  :service.form/show
  (fn [_ _]
    {:dispatch [:modal/show :service/create-service-form]}))
+
+
+
 
 
 (reg-event-db
@@ -176,7 +192,8 @@
 (reg-event-fx
  :service.form/hide
  (fn [_ _]
-   {:dispatch [:modal/hide :service/create-service-form]}))
+   {:dispatch-n [[:service.form/populate nil]
+                 [:modal/hide :service/create-service-form]]}))
 
 (defmulti construct-field
   (fn [_ type]
