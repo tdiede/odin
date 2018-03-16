@@ -145,6 +145,12 @@
                  [:service/toggle-is-editing false]]}))
 
 
+(reg-event-fx
+ :service/save-edits
+ [(path db/path)]
+ (fn [{db :db} _ edits]))
+
+
 
 ;; ==============================================================================
 ;; copy service =================================================================
@@ -185,7 +191,9 @@
                         :price price
                         :cost cost
                         :rental rental
-                        :fields fields}))
+                        :fields (if (nil? fields)
+                                  []
+                                  fields)}))
      (assoc db :form db/form-defaults))))
 
 
