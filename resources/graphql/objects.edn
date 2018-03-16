@@ -407,27 +407,30 @@
                        :resolve (:get :referral/tour-for)}}}
 
 
+  ;; TODO add service fields
   :service
-  {:fields {:id       {:type    (non-null :Long)
-                       :resolve (:get :db/id)}
-            :name     {:type    (non-null String)
-                       :resolve (:get :service/name)}
-            :desc     {:type    String
-                       :resolve (:get :service/desc)}
-            :code     {:type    (non-null String)
-                       :resolve (:get :service/code)}
-            :price    {:type    Float
-                       :resolve (:get :service/price)}
-            :cost     {:type    Float
-                       :resolve (:get :service/cost)}
-            :billed   {:type    :service_billed
-                       :resolve :service/billed}
-            :rental   {:type    Boolean
-                       :resolve (:get :service/rental)}
-            :variants {:type    (list :service_variant)
-                       :resolve (:get :service/variants)}
-            :catalogs {:type    (list :Keyword)
-                       :resolve (:get :service/catalogs)}}}
+  {:fields {:id         {:type    (non-null :Long)
+                         :resolve (:get :db/id)}
+            :name       {:type    (non-null String)
+                         :resolve (:get :service/name)}
+            :desc       {:type    String
+                         :resolve (:get :service/desc)}
+            :code       {:type    (non-null String)
+                         :resolve (:get :service/code)}
+            :price      {:type    Float
+                         :resolve (:get :service/price)}
+            :cost       {:type    Float
+                         :resolve (:get :service/cost)}
+            :billed     {:type    :service_billed
+                         :resolve :service/billed}
+            :rental     {:type    Boolean
+                         :resolve (:get :service/rental)}
+            :variants   {:type    (list :service_variant)
+                         :resolve (:get :service/variants)}
+            :catalogs   {:type    (list :Keyword)
+                         :resolve (:get :service/catalogs)}
+            :properties {:type    (list :property)
+                         :resolve (:get :service/properties)}}}
 
 
   :service_variant
