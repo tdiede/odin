@@ -461,7 +461,9 @@
         {:on-click #(dispatch [:service/edit-service @service])}
         "Edit"]
        [ant/button "Delete"]
-       [ant/button "Duplicate"]]]
+       [ant/button
+        {:on-click #(dispatch [:service/copy-service @service])}
+        "Make a Copy"]]]
      [ant/card {:title "Service Details"}
       [:div.columns
        [:div.column.is-6
