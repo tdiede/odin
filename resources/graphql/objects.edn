@@ -430,7 +430,31 @@
             :catalogs    {:type    (list :Keyword)
                           :resolve (:get :service/catalogs)}
             :properties  {:type    (list :property)
-                          :resolve (:get :service/properties)}}}
+                          :resolve (:get :service/properties)}
+            :fields      {:type    (list :service_field)
+                          :resolve (:get :service/fields)}}}
+
+
+  :service_field
+  {:fields {:index    {:type    (non-null :Long)
+                       :resolve (:get :service-field/index)}
+            :type     {:type    :service_field_type
+                       :resolve (:get :service-field/type)}
+            :label    {:type    (non-null String)
+                       :resolve (:get :service-field/label)}
+            :required {:type    Boolean
+                       :resolve (:get :service-field/required)}
+            :options  {:type    (list :service_field_option)
+                       :resolve (:get :service-field/options)}}}
+
+
+  :service_field_option
+  {:fields {:index {:type (non-null :Long)
+                    :resolve (:get :service-field-option/option)}
+            :value {:type (non-null String)
+                    :resolve (:get :service-field-option/value)}
+            :label {:type (non-null String)
+                    :resolve (:get :service-field-option/label)}}}
 
 
   :service_variant
