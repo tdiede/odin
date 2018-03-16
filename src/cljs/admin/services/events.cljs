@@ -174,7 +174,22 @@
    {:dispatch [:modal/show :service/create-service-form]}))
 
 
-
+(reg-event-db
+ :service.form/populate-from-service
+ [(path db/path)]
+ (fn [db [_ {:keys [name description code properties catalogs price cost rental fields]}]]
+   (let [populated-form
+         (tb/assoc-some db/form-defaults
+                     {:name name
+                      :description description
+                      :code code
+                      :properties properties
+                      :catalogs catalogs
+                      :price price
+                      :cost cost
+                      :rental rental
+                      :fields fields})]
+     (assoc db :form populated-form))))
 
 
 (reg-event-db
