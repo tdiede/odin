@@ -243,6 +243,8 @@
 (reg-event-fx
  ::create-success
  [(path db/path)]
- (fn [{db :db} [_ ]]
+ (fn [{db :db} [_ k response]]
+   (js/console.log response)
    {:dispatch-n [[:services/query]
-                 [:service.form/hide]]}))
+                 [:service.form/hide]]
+    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service :id])))}))

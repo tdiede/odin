@@ -469,7 +469,7 @@
          [:p [:b "Properties"]]
          (if (nil? properties)
            [:p "none"]
-           [:p "The Mission, West SoMa"])]]
+           [:p properties])]]
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]] ;; TODO - implement "active/inactive" services
