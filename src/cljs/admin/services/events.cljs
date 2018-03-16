@@ -115,7 +115,9 @@
   [route]
   (let [service-id (get-in route [:params :service-id])]
     [[::set-initial-service-id service-id]
-     [:service/fetch (tb/str->int service-id)]]))
+     [:service/fetch (tb/str->int service-id)]
+     [:services/query]
+     [:properties/query]]))
 
 
 ;; ==============================================================================
@@ -232,7 +234,6 @@
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
-   (js/console.log "form values!" form)
    {:graphql {:mutation [[:service_create {:params form}
                           [:id]]]
               :on-success [::create-success k]
@@ -243,4 +244,5 @@
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ ]]
-   {:dispatch [:service.form/hide]}))
+   {:dispatch-n [[:services/query]
+                 [:service.form/hide]]}))

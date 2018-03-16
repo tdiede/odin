@@ -604,60 +604,6 @@
 ;; service entry (detail view)
 ;; =====================================================
 
-#_(defn service-detail [service]
-  [:div
-   ;; header and controls
-   [:div.columns
-    [:div.column.is-9
-     (typography/view-header (:name service) (:desc service))]
-    [:div.column.is-3.is-pulled-right
-     [ant/button "Delete"]
-     [ant/button "Edit"]]]
-
-   ;; content detail
-   [:div.columns
-    [:div.column.is-3
-     "Price"
-     [:div
-      (if-let [price (:price service)]
-        (str
-         "$"
-         price
-         (if (= :monthly (:billed service))
-           "/month"
-           ""))
-        "Quote")]]
-
-    [:div.column.is-3
-     "Cost"
-     [:div
-      (if (nil? (:cost service))
-       "n/a"
-       (str "$" (:cost service)))]]
-
-    [:div.column.is-3
-     "Margin"
-     [:div
-      (if (nil? (:cost service))
-        "n/a"
-        (str "$" (- (:price service) (:cost service))))]]]
-   [:div
-    "Ordered " (str (:order-count service) " time(s) between ")
-    (let [range (subscribe [:services/range])]
-      [ant/date-picker-range-picker
-       {:format              "l"
-        :allow-clear         false
-        :ranges              {"Past Week"     (range-picker-presets 1 "week")
-                              "Past Month"    (range-picker-presets 1 "month")
-                              "Past 3 Months" (range-picker-presets 3 "months")
-                              "Past Year"     (range-picker-presets 1 "year")}
-        :value               (vec (map iso->moment @range))
-        :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]])
-
-#_(defn service-detail-main
-  [{{service-id :service-id} :params}]
-  (let [service (subscribe [:service (tb/str->int service-id)])]
-    [service-detail @service]))
 
 
 
@@ -671,6 +617,4 @@
 
 ;; services entry
 (defmethod content/view :services/entry [route]
-  (js/console.log "yo services/entry view")
-  #_[service-detail-main route]
   [service-layout route])
