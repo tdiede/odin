@@ -423,13 +423,10 @@
              :selected-keys          [(path->selected (:path route))]}
    [ant/menu-item {:key :services}
     [:a {:href (routes/path-for :services/list)}
-     "Services"]]
+     "Service Offerings"]]
    [ant/menu-item {:key :orders}
     [:a {:href (routes/path-for :services.orders/list)}
-     "Orders"]]
-   [ant/menu-item {:key :catalogs}
-    [:a {:href (routes/path-for :services.catalogs/list)}
-     "Catalogs"]]])
+     "Manage Orders"]]])
 
 
 (defn- services-list [services]
