@@ -121,6 +121,30 @@
 
 
 ;; ==============================================================================
+;; editing ======================================================================
+;; ==============================================================================
+(reg-event-fx
+ :service/edit-service
+ [(path db/path)]
+ (fn [{db :db} [_ service-id]]
+   {:dispatch-n [[:service/toggle-is-editing]
+                 [:service.form/populate service-id]]}))
+
+(reg-event-db
+ :service/toggle-is-editing
+ [(path db/path)]
+ (fn [db _]
+   (assoc db :is-editing (not (:is-editing db)))))
+
+(reg-event-fx
+ :service/cancel-edit
+ [(path db/path)]
+ (fn [{db :db} _]
+   {:dispatch-n [[:service.form/clear]
+                 [:service/toggle-is-editing]]}))
+
+
+;; ==============================================================================
 ;; create =======================================================================
 ;; ==============================================================================
 
@@ -128,6 +152,15 @@
  :service.form/show
  (fn [_ _]
    {:dispatch [:modal/show :service/create-service-form]}))
+
+
+(reg-event-db
+ :service.form/populate
+ [(path db/path)]
+ (fn [db [_ service]]
+   (if (not (nil? service))
+     (assoc db :form service)
+     (assoc db :form db/form-defaults))))
 
 
 (reg-event-fx
@@ -213,7 +246,6 @@
                                                             (map-indexed (fn [i o] (assoc o :index i)))
                                                             vec))))
 
-
 (reg-event-db
  :service.form.field.option/reorder
  [(path db/path)]
@@ -228,6 +260,14 @@
  [(path db/path)]
  (fn [{db :db} [_ key value]]
    {:db (assoc-in db [:form key] value)}))
+
+
+(reg-event-db
+ :service.form/clear
+ [(path db/path)]
+ (fn [db _]
+   (-> (update-in db [:form] dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
+       (assoc-in [:form] db/form-defaults))))
 
 
 (reg-event-fx
@@ -246,5 +286,6 @@
  (fn [{db :db} [_ k response]]
    (js/console.log response)
    {:dispatch-n [[:services/query]
-                 [:service.form/hide]]
-    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service :id])))}))
+                 [:service.form/hide]
+                 [:service.form/clear]]
+    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_create :id])))}))
