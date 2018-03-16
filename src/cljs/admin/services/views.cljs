@@ -433,17 +433,18 @@
 
 
 (defn- services-list [services]
-  (let [columns [{:title     "Name"
-                  :dataIndex "name"
-                  :key       "name"
-                  :render    #(r/as-element
-                               [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
-                                    :dangerouslySetInnerHTML {:__html %1}}])}]
+  (let [columns     [{:title     "Name"
+                      :dataIndex "name"
+                      :key       "name"
+                      :render    #(r/as-element
+                                   [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
+                                        :dangerouslySetInnerHTML {:__html %1}}])
+                      }]
         search-text @(subscribe [:services/search-text])]
     [ant/table
-     {:columns    columns
+     {:columns     columns
       :show-header false
-      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
+      :dataSource  (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 
 ;; =====================================================

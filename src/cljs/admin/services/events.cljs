@@ -117,7 +117,8 @@
     [[::set-initial-service-id service-id]
      [:service/fetch (tb/str->int service-id)]
      [:services/query]
-     [:properties/query]]))
+     [:properties/query]
+     [:service/cancel-edit]]))
 
 
 ;; ==============================================================================
@@ -126,22 +127,22 @@
 (reg-event-fx
  :service/edit-service
  [(path db/path)]
- (fn [{db :db} [_ service-id]]
-   {:dispatch-n [[:service/toggle-is-editing]
-                 [:service.form/populate service-id]]}))
+ (fn [{db :db} [_ service]]
+   {:dispatch-n [[:service/toggle-is-editing true]
+                 [:service.form/populate service]]}))
 
 (reg-event-db
  :service/toggle-is-editing
  [(path db/path)]
- (fn [db _]
-   (assoc db :is-editing (not (:is-editing db)))))
+ (fn [db [_ val]]
+   (assoc db :is-editing val)))
 
 (reg-event-fx
  :service/cancel-edit
  [(path db/path)]
  (fn [{db :db} _]
    {:dispatch-n [[:service.form/clear]
-                 [:service/toggle-is-editing]]}))
+                 [:service/toggle-is-editing false]]}))
 
 
 ;; ==============================================================================
@@ -159,7 +160,16 @@
  [(path db/path)]
  (fn [db [_ service]]
    (if (not (nil? service))
-     (assoc db :form service)
+     (let [{:keys [name description code properties catalogs price cost rental fields]} service]
+       (assoc db :form {:name name
+                        :description description
+                        :code code
+                        :properties properties
+                        :catalogs catalogs
+                        :price price
+                        :cost cost
+                        :rental rental
+                        :fields fields}))
      (assoc db :form db/form-defaults))))
 
 
