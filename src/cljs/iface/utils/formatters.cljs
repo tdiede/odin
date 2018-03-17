@@ -49,6 +49,14 @@
         (.format (l10n/translate :tongue/format-date-time-short)))))
 
 
+(defn time-short
+  "Time (e.g. 10:30 am)"
+  [s]
+  (when (some? s)
+    (-> (js/moment s)
+        (.format (l10n/translate :tongue/format-time-short)))))
+
+
 (defn date-words
   "Verbose date (e.g. Today at 12:00pm)"
   [date]

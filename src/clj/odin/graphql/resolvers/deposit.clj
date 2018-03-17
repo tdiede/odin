@@ -28,12 +28,11 @@
   [_ _ dep]
   (let [is-overdue (t/after? (t/now) (c/to-date-time (deposit/due dep)))]
     (cond
-      (> (deposit/amount-pending dep) 0)                           :pending
-      (= (deposit/amount dep) (deposit/amount-paid dep))           :paid
-      (and is-overdue (> (deposit/amount-remaining dep) 0))        :overdue
-      (= (deposit/amount-paid dep) 0)                              :unpaid
-      (> (deposit/amount-remaining dep) (deposit/amount-paid dep)) :partial
-      :otherwise                                                   :pending)))
+      (> (deposit/amount-pending dep) 0)                    :pending
+      (= (deposit/amount dep) (deposit/amount-paid dep))    :paid
+      (and is-overdue (> (deposit/amount-remaining dep) 0)) :overdue
+      (= (deposit/amount-paid dep) 0)                       :unpaid
+      :otherwise                                            :partial)))
 
 
 (defn refund-status

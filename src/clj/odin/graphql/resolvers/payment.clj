@@ -210,8 +210,8 @@
       (payment/autopay? payment)
       (property/rent-connect-id p)
 
-      (= :payment.for/deposit (payment/payment-for2 db payment))
-      (property/deposit-connect-id p)
+      ;; (= :payment.for/deposit (payment/payment-for2 db payment))
+      ;; (property/deposit-connect-id p)
 
       :otherwise nil)))
 

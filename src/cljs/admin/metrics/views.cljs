@@ -3,7 +3,7 @@
             [admin.metrics.service-revenue :as service-revenue]
             [antizer.reagent :as ant]
             [iface.chart :as chart]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]))
 

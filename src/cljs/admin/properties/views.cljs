@@ -7,7 +7,7 @@
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [admin.routes :as routes]
             [iface.loading :as loading]))
 

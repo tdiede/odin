@@ -6,7 +6,8 @@
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
             [blueprints.models.source :as source]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Fields
@@ -18,6 +19,11 @@
   (-> (service/billed service) name keyword))
 
 
+(defn make-billed-key
+  [billed]
+  (keyword "service.billed" (name billed)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -25,7 +31,9 @@
 
 (defn- query-services
   [db params]
-  (service/query db params))
+  (->> (tb/transform-when-key-exists params {:properties (partial map (partial d/entity db))
+                                             :billed     (partial map make-billed-key)})
+       (service/query db)))
 
 
 (defn query
@@ -110,8 +118,11 @@
 ;; =============================================================================
 
 
-(defmethod authorization/authorized? :service/query [_ account _]
-  (account/admin? account))
+(defmethod authorization/authorized? :service/query
+  [{conn :conn} account {params :params}]
+  (or (account/admin? account)
+      (let [property (account/current-property (d/db conn) account)]
+        (= (:properties params) [(td/id property)]))))
 
 
 (defmethod authorization/authorized? :service/create! [_ account _]
@@ -128,8 +139,26 @@
    :service/entry   entry})
 
 
-
 (comment
+
+  ;; Run the query.
+  (let [conn odin.datomic/conn]
+    (com.walmartlabs.lacinia/execute
+     odin.graphql/schema
+     (venia.core/graphql-query
+      {:venia/queries
+       [[:services {:params {:q          "dog"
+                             :properties [285873023222997]}}
+         [:name]]]})
+     nil
+     {:conn      conn
+      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
+
+  (query-services (d/db odin.datomic/conn) {:properties [[:property/code "2072mission"]]})
+
+  (let [conn odin.datomic/conn]
+    (account/current-property (d/db conn) (d/entity (d/db conn) [:account/email "member@test.com"])))
+
 
   (com.walmartlabs.lacinia/execute odin.graphql/schema
                                    (venia.core/graphql-query
@@ -141,5 +170,4 @@
                                    nil
                                    {:conn      odin.datomic/conn
                                     :requester (d/entity (d/db :conn) [:account/email "admin@test.com"])})
-
   )

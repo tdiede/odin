@@ -144,8 +144,13 @@
 
   :services_query_params
   {:description "Parameters to query for services."
-   :fields      {:q {:type        String
-                     :description "Query term."}}}
+   :fields      {:q          {:type        String
+                              :description "Query term."}
+                 :catalogs   {:type        (list :Keyword)
+                              :description "List of catalogs we want services from"}
+                 :properties {:type        (list :Long)
+                              :description "List of property IDs"}
+                 :billed     {:type (list :service_billed)}}}
 
 
   :service_create_params
