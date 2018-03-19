@@ -82,6 +82,9 @@
               :on-failure [:graphql/failure k]}}))
 
 
+;; when we implement the `active` attribute for services
+;; will need to add `:active true` to `query params`
+;; we dont want to show members inactive services
 (reg-event-fx
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
@@ -136,12 +139,12 @@
 (reg-event-db
  :services.add-service.form/update
  [(path db/path)]
- (fn [db [_ key value]]
+ (fn [db [_ index value]]
    (update db :form-data
            (fn [fields]
              (map
               (fn [field]
-                (if (= (:key field) key)
+                (if (= (:index field) index)
                   (assoc field :value value)
                   field))
               fields)))))
@@ -157,9 +160,12 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [service fields]}]]
-   {:dispatch [:modal/show db/modal]
-    :db       (assoc db :adding service :form-data fields)}))
+ (fn [{db :db} [_ {:keys [id name description fields]}]]
+   (let [service {:id          id
+                  :name        name
+                  :description description}]
+     {:dispatch [:modal/show db/modal]
+      :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
 
 (reg-event-fx
