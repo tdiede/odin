@@ -55,7 +55,7 @@
         @categories))]]))
 
 
-(defn catalogue-item [{:keys [service] :as item}]
+#_(defn catalogue-item [{:keys [service] :as item}]
   [ant/card
    [:div.service
     [:div.columns
@@ -71,7 +71,37 @@
        "Request Service"]]]]])
 
 
-(defn catalogue [{:keys [id name items key] :as c}]
+(defn service-item [{:keys [name description price] :as service}]
+  [ant/card
+   (.log js/console name description price)
+   [:div.service
+    [:div.columns
+     [:div.column.is-3
+      [:h4.subtitle.is-5 name]]
+     [:div.column.is-6
+      [:p.fs3 description]]
+     [:div.column.is-1
+      [:p.price (if (some? price)
+                  (format/currency price)
+                  (format/currency 0))]]
+     [:div.column.is-2
+      [ant/button
+       {:on-click #(dispatch [:services.add-service/show service])}
+       "Request Service"]]]]])
+
+
+(defn catalog [services]
+  (let [selected @(subscribe [:services.book/category])]
+    (.log js/console "c" (map :name services))
+    [:div.catalogue
+     [:div.colums {:style {:margin-bottom "0px"}}
+      [:div.colums.is-10
+       [:h3.title.is-4 (clojure.string/capitalize (name selected)) " Services"]]
+      (doall
+       (map-indexed #(with-meta [service-item %2] {:key %1}) services))]]))
+
+
+#_(defn catalogue [{:keys [id name items key] :as c}]
   (let [route    (subscribe [:services.book.category/route key])
         selected (subscribe [:services.book/category])
         has-more (subscribe [:services.book.category/has-more? id])]
@@ -350,8 +380,10 @@
 
 (defmethod content :services/book [_]
   (let [selected   (subscribe [:services.book/category])
-        catalogues (subscribe [:services.book/catalogues])
-        c          (first (filter #(= @selected (:key %)) @catalogues))]
+        ;; catalogues (subscribe [:services.book/catalogues])
+        services (subscribe [:services.book/services-by-catalog @selected])
+        ;; c (@selected @catalogues)
+        #_(first (filter #(= @selected (:key %)) @catalogues))]
     [:div
      [services/service-modal
       {:action      "Add"
@@ -363,13 +395,26 @@
        :on-submit   #(dispatch [:services.add-service/add])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [categories]
-     (if (= @selected :all)
+     [catalog @services]
+     (.log js/console "services: " @services)
+     #_(if (= @selected :all)
        (doall
         (->> (map (fn [c] (update c :items #(take 2 %))) @catalogues)
              (map-indexed #(with-meta [catalogue %2] {:key %1}))))
-       [catalogue c])
+       #_[catalogue c]
+       #_(.log js/console "view: " c @catalogues)
+       (map #(.log js/console %) c))
      [shopping-cart-button]]))
 
+
+(comment
+
+  (def services {:pets [{:name "Dog walking"}
+                        {:name "dog boarding"}]
+                 :laundry [{:name "dry cleaning"}]
+                 :subscriptions [] })
+
+  )
 
 (defmethod content :services/active-orders [_]
   [:div

@@ -55,13 +55,14 @@
  :services.book/categories
  :<- [db/path]
  (fn [db _]
-   (reduce
-    (fn [catalogs c]
-      (conj catalogs
-            (assoc {} :category c :label (clojure.string/capitalize (name c)))))
-    [{:category :all
-      :label    "All"}]
-    (get-in db [:catalogs]))))
+   (conj (reduce
+          (fn [catalogs c]
+            (conj catalogs
+                  (assoc {} :category c :label (clojure.string/capitalize (name c)))))
+          [{:category :all
+            :label    "All"}]
+          (get-in db [:catalogs])) {:category :miscellaneous
+                                    :label "Miscellaneous"})))
 
 
 (comment
@@ -144,10 +145,53 @@
 
 
 (reg-sub
- :services.book/catalogues
+ :services.book/services-by-catalog
  :<- [db/path]
- (fn [db _]
-   (:catalogues db)))
+ (fn [db [_ selected]]
+   (cond
+     (= selected :all) (:services db)
+     (= selected :miscellaneous) (get
+                                 (group-by #(empty? (:catalogs %)) (:services db))
+                                 true)
+     :else (get
+            (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
+            true))))
+
+(comment
+
+  (def svc {:services [{:name "dog"
+                        :catalogs [:pets]}
+                       {:name "keyfob"
+                        :catalogs []}
+                       {:name "laundry"
+                        :catalogs [:laundry :subscription]}]})
+
+  (get
+   (group-by #(empty? (:catalogs %)) (:services svc))
+   true)
+
+  (get
+   (group-by #(some (fn [c] (= c :laundry)) (:catalogs %)) (:services svc))
+   true)
+
+  )
+#_(reg-sub
+   :services.book/catalogues
+   :<- [db/path]
+   (fn [db _]
+     (let [services (:services db)
+           catalogs (:catalogs db)
+           sorted-svc (reduce
+                       (fn [acc cs]
+                         (assoc-in acc [cs] (get
+                                             (group-by #(some (fn [c] (= c cs)) (:catalogs %)) (:services db))
+                                             true)))
+                       {}
+                       (:catalogs db))]
+       (.log js/console sorted-svc)
+       (:catalogues db)
+       sorted-svc
+       )))
 
 
 ;; THOUGHT should this be called "cart" instead?
