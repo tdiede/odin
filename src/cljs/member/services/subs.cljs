@@ -65,23 +65,6 @@
                                     :label "Miscellaneous"})))
 
 
-(comment
-
-  (def cs [:pets :misc :subscriptions])
-
-  (def init [{:category :all
-              :label "All"}])
-
-  (reduce
-   (fn [catalogs c]
-     (conj catalogs (assoc {} :category c :label (clojure.string/capitalize (name c)))))
-   init
-   (sort cs))
-
-
-  )
-
-
 (reg-sub
  :services.book/category
  :<- [db/path]
@@ -98,6 +81,7 @@
                      (assoc query-params :category category))))
 
 
+;; do we still need this?
 ;; gets a category id and checks if it has more than 2 items in it
 (reg-sub
  :services.book.category/has-more?
@@ -156,42 +140,6 @@
      :else (get
             (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
             true))))
-
-(comment
-
-  (def svc {:services [{:name "dog"
-                        :catalogs [:pets]}
-                       {:name "keyfob"
-                        :catalogs []}
-                       {:name "laundry"
-                        :catalogs [:laundry :subscription]}]})
-
-  (get
-   (group-by #(empty? (:catalogs %)) (:services svc))
-   true)
-
-  (get
-   (group-by #(some (fn [c] (= c :laundry)) (:catalogs %)) (:services svc))
-   true)
-
-  )
-#_(reg-sub
-   :services.book/catalogues
-   :<- [db/path]
-   (fn [db _]
-     (let [services (:services db)
-           catalogs (:catalogs db)
-           sorted-svc (reduce
-                       (fn [acc cs]
-                         (assoc-in acc [cs] (get
-                                             (group-by #(some (fn [c] (= c cs)) (:catalogs %)) (:services db))
-                                             true)))
-                       {}
-                       (:catalogs db))]
-       (.log js/console sorted-svc)
-       (:catalogues db)
-       sorted-svc
-       )))
 
 
 ;; THOUGHT should this be called "cart" instead?

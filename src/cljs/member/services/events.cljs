@@ -106,28 +106,6 @@
      {:db (assoc db :catalogs clist :services services)})))
 
 
-(comment
-
-  (def sample-svc
-    [{:name "Room cleaning"}
-     {:name "Dog Walking - Single"}
-     {:name "Dog Walking - Daily"}
-     {:name "Room Washing"}
-     {:name "Dog boarding"}
-     {:name "Extra keyfob"}])
-
-  (sort-by #(clojure.string/lower-case (:name %)) sample-svc)
-
-  catalogs (reduce ;; how to organize this in a nicer way?
-            (fn [acc cs]
-              (assoc-in acc [cs] (get
-                                  (group-by #(some (fn [c] (= c cs)) (:catalogs %)) services)
-                                  true)))
-            {}
-            clist)
-
-  )
-
 (reg-event-fx
  :services.section/select
  [(path db/path)]
@@ -180,10 +158,10 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id title description price]} (:adding db)
+   (let [{:keys [id name description price]} (:adding db)
          adding                               {:id          (db/rand-id) ;; gen unique id so we can remove items by item-id
                                                :service-id  id           ;; not sure if needed, but its here
-                                               :title       title
+                                               :name        name
                                                :description description
                                                :price       price
                                                :fields      (:form-data db)}
@@ -199,7 +177,6 @@
    {:dispatch [::clear-cart]}))
 
 
-;; this removes all of the services with the same service id... we need to only remove the selected item
 (reg-event-fx
  :services.cart.item/remove
  [(path db/path)]
