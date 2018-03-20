@@ -277,10 +277,25 @@
                                     :resolve (:get :order/variant)}
             :line_items            {:type    (list :line_item)
                                     :resolve (:get :order/lines)}
+            :fields                {:type    (list :order_field)
+                                    :resolve (:get :order/fields)}
             :created               {:type    (non-null :Instant)
                                     :resolve :entity/created}
             :updated               {:type    (non-null :Instant)
                                     :resolve :entity/updated}}}
+
+
+  :order_field
+  {:fields {:id    {:type    (non-null :Long)
+                    :resolve (:get :db/id)}
+            :label {:type    (non-null String)
+                    :resolve (:get :order-field/service-field :service-field/label)}
+            :value {:type    :Any
+                    :resolve :order-field/value}
+            :type  {:type    (non-null :service_field_type)
+                    :resolve (:keyword/name :order-field/service-field :service-field/type)}
+            :index {:type    (non-null :Long)
+                    :resolve (:get :order-field/service-field :service-field/index)}}}
 
 
   :line_item
@@ -449,11 +464,11 @@
 
 
   :service_field_option
-  {:fields {:index {:type (non-null :Long)
+  {:fields {:index {:type    (non-null :Long)
                     :resolve (:get :service-field-option/option)}
-            :value {:type (non-null String)
+            :value {:type    (non-null String)
                     :resolve (:get :service-field-option/value)}
-            :label {:type (non-null String)
+            :label {:type    (non-null String)
                     :resolve (:get :service-field-option/label)}}}
 
 
