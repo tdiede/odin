@@ -94,6 +94,13 @@
    :resolve     :order/create!}
 
 
+  :order_create_many
+  {:type        (list :order)
+   :description "Create many orders at once"
+   :args        {:params {:type (list :mutate_order_params)}}
+   :resolve     :order/create-many!}
+
+
   :update_order
   {:type        :order
    :description "Update a premium service order."
