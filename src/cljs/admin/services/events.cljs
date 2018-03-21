@@ -77,7 +77,9 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :code :price :cost :billed :rental
+                             ;; [:id :name :description :code :price :cost :billed :rental
+                             [:id :name :description :code :price :cost :billed :rental :catalogs
+                              [:properties [:name]]
                               [:variants [:id :name :cost :price]]]]
                             [:orders {:params {:services [service-id]
                                                :datekey  :created

@@ -489,9 +489,14 @@
 
         [:div.mb1
          [:p [:b "Properties"]]
-         (if (nil? properties)
+         (if (empty? properties)
            [:p "none"]
-           [:p properties])]]
+           [:p (map-indexed
+                (fn [i property]
+                  (if (zero? i)
+                    (:name property)
+                    (str ", " (:name property))))
+                properties)])]]
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]] ;; TODO - implement "active/inactive" services
