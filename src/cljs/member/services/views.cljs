@@ -137,7 +137,6 @@
    [:p.fs3 value]])
 
 
-;; TODO this is being used in orders... fix it
 (defn- column-fields-2 [fields]
   [:div
    (map-indexed
@@ -174,8 +173,8 @@
     (partition 2 2 nil fields))])
 
 
-(defn cart-item [{:keys [id name description price fields]}]
-  (let [service-item {:id          id
+(defn cart-item [{:keys [index name description price fields]}]
+  (let [service-item {:index       index
                       :name        name
                       :description description
                       :price       price}]
@@ -195,7 +194,7 @@
        [ant/button
         {:type     "danger"
          :icon     "close"
-         :on-click #(dispatch [:services.cart.item/remove id])}
+         :on-click #(dispatch [:services.cart.item/remove index])}
         "Remove item"]]]
      (when-not (empty? fields)
        (.log js/console fields)
@@ -209,10 +208,9 @@
       [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
      [ant/button {:class "ant-btn-xl"
                   :type "primary"
-                  :on-click (fn []
-                              (if-not @has-card
-                                (dispatch [:modal/show :payment.source/add])
-                                (dispatch [:services.cart/submit])))}
+                  :on-click #(if-not @has-card
+                              (dispatch [:modal/show :payment.source/add])
+                              (dispatch [:services.cart/submit requester]))}
       "Submit orders"]]))
 
 
@@ -374,7 +372,7 @@
 
 
 (defmethod content :services/book [_]
-  (let [selected   (subscribe [:services.book/category])
+  (let [selected (subscribe [:services.book/category])
         services (subscribe [:services.book/services-by-catalog @selected])]
     [:div
      [services/service-modal
@@ -423,7 +421,7 @@
        :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
-       [shopping-cart-body @cart-items requester]
+       [shopping-cart-body (sort-by :index @cart-items) requester]
        [empty-cart])]))
 
 
