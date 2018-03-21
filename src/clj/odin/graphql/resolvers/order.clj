@@ -5,6 +5,7 @@
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
             [blueprints.models.source :as source]
+            [clj-time.coerce :as c]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
@@ -131,12 +132,31 @@
     (and (zero? lcost) (nil? vcost))))
 
 
+(defn parse-params
+  "Parse to params and converts them into the needed format"
+  [{:keys [fields] :as params}]
+  (let [fs ])
+  params)
+
+
+(defn parse-fields
+  "Parse and convert fields to the needed format"
+  [db fields]
+  (map
+   (fn [field]
+     (-> (order/order-field (d/entity db (:service_field field)) (:value field))
+         (tb/transform-when-key-exists
+             {:order-field.value/number #(float (tb/str->int %))
+              :order-field.value/date   c/to-date})))
+   fields))
+
+
 (defn prepare-order
   [db {:keys [account service line_items fields] :as params}]
   (let [line-items (when-not (empty? line_items)
                      (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
-        fields (when-not (empty? fields)
-                 (map #(order/order-field (d/entity db (:service_field %)) (:value %)) fields))]
+        fields     (when-not (empty? fields)
+                       (parse-fields db fields))]
     (order/create account service
                   (tb/assoc-when
                    {}
@@ -149,13 +169,32 @@
                            (:cost params))
                    :variant (:variant params)
                    :quantity (:quantity params)
-                   :fields fields))))
+                   :fields (when fields
+                             fields)))))
+
+
+(comment
+
+  (let [params {:fields [{:service_field 285873023223075 ;; number
+                          :value         "2"}
+                         {:service_field 285873023223053 ;; date
+                          :value         nil};; "2018-03-22T19:47:30.032Z"}
+                         {:service_field 285873023223060 ;; time
+                          :value         "2018-03-21T20:30:00.598Z"}
+                         {:service_field 285873023223061 ;; text
+                          :value         nil}]}]
+    (parse-fields (d/db odin.datomic/conn) (:fields params)))
+
+  (parse-fields (d/db odin.datomic/conn) [])
+
+
+  )
 
 
 (defn create!
   "Create a new order."
   [{:keys [requester conn]} {params :params} _]
-  (let [order (prepare-order (d/db conn) params)]
+  (let [order (prepare-order (d/db conn) (parse-params params))]
     @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
 
@@ -163,7 +202,7 @@
 (defn create-many!
   "Create many new orders"
   [{:keys [requester conn]} {params :params} _]
-  (let [orders (map (partial prepare-order (d/db conn)) params)]
+  (let [orders (map (comp (partial prepare-order (d/db conn)) parse-params) params)]
     @(d/transact conn (conj orders (source/create requester)))
     (map #(d/entity (d/db conn) [:order/uuid (:order/uuid %)]) orders)))
 

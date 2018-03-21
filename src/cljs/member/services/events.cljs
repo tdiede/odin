@@ -42,6 +42,12 @@
      [::load-cart]]))
 
 
+(defmethod routes/dispatches :services/active-orders
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
+
+
 (defmethod routes/dispatches :services/manage
   [_]
   [[::load-cart]])
@@ -171,14 +177,19 @@
                    [::save-cart new-cart]]})))
 
 
+;; is this really needed? it seems like it still goes into
+;; graphql as a string...
 (defn construct-order-fields [fields]
   (map
-   (fn [field]
+   (fn [{:keys [id value type]}]
      (let [order-field (tb/assoc-when
-                        {:service_field (:id field)}
-                        :value (:value field))]
+                        {:service_field id}
+                        :value (if (number? value)
+                                 (float value)
+                                 value))]
        order-field))
    fields))
+
 
 (defn create-order-params
   "Constructs `mutate_order_params` from app db"
@@ -198,14 +209,13 @@
  :services.cart/submit
  [(path db/path)]
  (fn [{db :db} [k account]]
-   (let [order-params (create-order-params (:cart db) account)
-         ]
-     (.log js/console "order params" order-params)
+   (let [order-params (create-order-params (:cart db) account)]
      {:dispatch  [:ui/loading k true]
       :graphql {:mutation   [[:order_create_many {:params order-params}
                               [:id]]]
                 :on-success [::clear-cart k]
-                :on-failure [:graphql/failure k]}})))
+                :on-failure [:graphql/failure k]
+                }})))
 
 
 (defn reindex-cart [cart]
