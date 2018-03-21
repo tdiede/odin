@@ -90,7 +90,7 @@
    [ant/input
     {:style       {:width "100%"}
      :placeholder "label or question for this input"
-     :value       label
+     :defaultvalue       label
      :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]])
 
 
@@ -137,7 +137,7 @@
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
-      :value       value
+      :default-value       value
       :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
@@ -249,22 +249,22 @@
           :type  "text"}
          [ant/input
           {:placeholder "service name"
-           :value       (:name @form)
+           :default-value       (:name @form)
            :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
         [ant/form-item
          {:label "Description"}
          [ant/input-text-area
-          {:rows        6
-           :placeholder "description"
-           :value       (:description @form)
-           :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
+          {:rows          6
+           :placeholder   "description"
+           :default-value (:description @form)
+           :on-change     #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
        [:div.column.is-4
         [ant/form-item
          {:label "Code"
           :type  "text"}
          [ant/input
           {:placeholder "service code"
-           :value       (:code @form)
+           :default-value       (:code @form)
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
