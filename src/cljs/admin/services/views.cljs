@@ -471,7 +471,8 @@
        [ant/button
         {:on-click #(dispatch [:service/copy-service @service])}
         "Make a Copy"]]]
-     [ant/card {:title "Service Details"}
+     [ant/card
+      {:title "Service Details"}
       [:div.columns
        [:div.column.is-6
         [:h3 [:b name]]
@@ -485,7 +486,14 @@
          [:p [:b "Catalogs"]]
          (if (nil? catalogs)
            [:p "none"]
-           [:p catalogs])]
+           [:p (map-indexed
+               (fn [i catalog]
+                 (if (zero? i)
+                   (str (clojure.core/name catalog))
+                   (str ", " (clojure.core/name catalog))))
+               catalogs)
+            ]
+           #_[:p catalogs])]
 
         [:div.mb1
          [:p [:b "Properties"]]
@@ -493,9 +501,10 @@
            [:p "none"]
            [:p (map-indexed
                 (fn [i property]
-                  (if (zero? i)
-                    (:name property)
-                    (str ", " (:name property))))
+                  (let [property-name (:name  @(subscribe [:property property]))]
+                    (if (zero? i)
+                      property-name
+                      (str ", " property-name))))
                 properties)])]]
 
        [:div.column.is-2
@@ -525,7 +534,7 @@
        [:div.column.is-3
         [:div
          [:p [:b "Billed"]]
-         [:p (drop 1 (str billed))]]]
+         [:p billed]]]
 
        [:div.column.is-3
         [:div

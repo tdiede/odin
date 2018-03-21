@@ -79,7 +79,7 @@
     :graphql  {:query      [[:service {:id service-id}
                              ;; [:id :name :description :code :price :cost :billed :rental
                              [:id :name :description :code :price :cost :billed :rental :catalogs
-                              [:properties [:name]]
+                              [:properties [:id]]
                               [:variants [:id :name :cost :price]]]]
                             [:orders {:params {:services [service-id]
                                                :datekey  :created
@@ -96,7 +96,7 @@
  (fn [{db :db} [_ k response]]
    (let [service (get-in response [:data :service])
          order-count (count (get-in response [:data :orders]))]
-     {:db (norms/assoc-norm db :services/norms (:id service) (assoc service :order-count order-count))
+     {:db (norms/assoc-norm db :services/norms (:id service) (assoc service :order-count order-count :properties (mapv :id (:properties service))))
       :dispatch [:ui/loading k false]})))
 
 
