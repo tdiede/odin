@@ -6,7 +6,8 @@
                                    reg-event-fx
                                    path]]
             [toolbelt.core :as tb]
-            [iface.utils.norms :as norms]))
+            [iface.utils.norms :as norms]
+            [antizer.reagent :as ant]))
 
 
 
@@ -357,4 +358,13 @@
  [(path db/path)]
  (fn [{db :db} [_ k service-id]]
    {:dispatch-n [[:ui/loading k false]
+                 [::delete-service-notification]
                  [:services/query]]}))
+
+
+(reg-event-fx
+ ::delete-service-notification
+ (fn [_ _]
+   (ant/notification-info
+    {:message   "Service deleted."
+     :placement "bottom-right"})))
