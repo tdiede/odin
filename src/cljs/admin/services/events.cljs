@@ -339,3 +339,22 @@
                  [:service.form/hide]
                  [:service.form/clear]]
     :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_create :id])))}))
+
+
+(reg-event-fx
+ :service/delete!
+ [(path db/path)]
+ (fn [{db :db} [k service-id]]
+   {:dispatch [:ui/loading k true]
+    :graphql  {:mutation   [[:service_delete {:service service-id}]]
+               :on-success [::delete-service-success k service-id]
+               :on-failure [:graphql/failure k]}
+    :route    (routes/path-for :services/list)}))
+
+
+(reg-event-fx
+ ::delete-service-success
+ [(path db/path)]
+ (fn [{db :db} [_ k service-id]]
+   {:dispatch-n [[:ui/loading k false]
+                 [:services/query]]}))

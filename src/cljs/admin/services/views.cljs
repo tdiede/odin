@@ -9,7 +9,7 @@
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [taoensso.timbre :as timbre]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [iface.components.table :as table]
             [iface.components.service :as service]
@@ -457,7 +457,9 @@
        [ant/button
         {:on-click #(dispatch [:service/edit-service @service])}
         "Edit"]
-       [ant/button "Delete"]
+       [ant/button
+        {:on-click #(dispatch [:service/delete! (:id @service)])}
+        "Delete"]
        [ant/button
         {:on-click #(dispatch [:service/copy-service @service])}
         "Make a Copy"]]]

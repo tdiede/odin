@@ -113,6 +113,13 @@
     (d/entity (d/db conn) [:service/code code])))
 
 
+(defn deletify!
+  [{:keys [conn requester]} {:keys [service]} _]
+  (timbre/info (str "attempting to delete service id " service))
+  @(d/transact conn [[:db.fn/retractEntity service]
+                     (source/create requester)])
+  :ok)
+
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
@@ -134,6 +141,7 @@
    :service/billed  billed
    ;; mutations
    :service/create! create!
+   :service/delete! deletify!
    ;; queries
    :service/query   query
    :service/entry   entry})
