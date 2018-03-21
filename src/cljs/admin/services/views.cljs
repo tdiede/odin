@@ -457,9 +457,15 @@
        [ant/button
         {:on-click #(dispatch [:service/edit-service @service])}
         "Edit"]
-       [ant/button
-        {:on-click #(dispatch [:service/delete! (:id @service)])}
-        "Delete"]
+       [ant/popconfirm
+        {:title      (r/as-element [:div
+                                    [:h4 "Are you sure you want to delete this service offering?"]
+                                    [:div "This action can't be undone."]])
+         :ok-text    "Yes, I'm sure"
+         :ok-type    :danger
+         :on-confirm #(dispatch [:service/delete! (:id @service)])}
+        [ant/button
+         "Delete"]]
        [ant/button
         {:on-click #(dispatch [:service/copy-service @service])}
         "Make a Copy"]]]
