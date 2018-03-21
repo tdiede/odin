@@ -80,7 +80,7 @@
 
 
   :mutate_order_field_params
-  {:description "Parameters needed to create order fields"
+  {:description "Parameters needed to create or edit order fields"
    :fields      {:id            {:type :Long}
                  :service_field {:type :Long}
                  :value         {:type :Any}}}

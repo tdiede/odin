@@ -112,6 +112,7 @@
     [ant/form-item {:label (:label field)}
      [ant/input-number
       {:default-value 1
+       :value         (:value field)
        :min           1
        :max           99
        :on-change     #(on-change (:index field) %)}]]]])

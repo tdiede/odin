@@ -167,8 +167,8 @@
     @(d/transact conn (conj orders (source/create requester)))
     (map #(d/entity (d/db conn) [:order/uuid (:order/uuid %)]) orders)))
 
-;; Given set of existing ids, examine set of `old` ids
 
+;; Given set of existing ids, examine set of `old` ids
 
 (defn- update-line-item-tx
   [db {:keys [id desc cost price] :as item}]

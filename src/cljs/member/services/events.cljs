@@ -28,8 +28,9 @@
 
 (reg-event-fx
  ::clear-cart
- (fn [_ _]
-   {:dispatch [::save-cart []]}))
+ (fn [_ [k]]
+   {:dispatch-n [[::save-cart []]
+                 [:ui/loading k false]]}))
 
 
 (defmethod routes/dispatches :services/book
@@ -91,7 +92,7 @@
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query [[:services {:params {:properties [property-id]}}
                          [:id :name :description :price :catalogs
-                          [:fields [:index :label :type :required
+                          [:fields [:id :index :label :type :required
                                     [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
@@ -159,29 +160,66 @@
  [(path db/path) ]
  (fn [{db :db} _]
    (let [{:keys [id name description price]} (:adding db)
-         adding                               {:id          (db/rand-id) ;; gen unique id so we can remove items by item-id
-                                               :service-id  id           ;; not sure if needed, but its here
-                                               :name        name
-                                               :description description
-                                               :price       price
-                                               :fields      (:form-data db)}
-         new-cart                             (conj (:cart db) adding)]
+         adding                              {:index       (count (:cart db))
+                                              :service     id
+                                              :name        name
+                                              :description description
+                                              :price       price
+                                              :fields      (:form-data db)}
+         new-cart                            (conj (:cart db) adding)]
      {:dispatch-n [[:services.add-service/close]
                    [::save-cart new-cart]]})))
+
+
+(defn construct-order-fields [fields]
+  (map
+   (fn [field]
+     (let [order-field (tb/assoc-when
+                        {:service_field (:id field)}
+                        :value (:value field))]
+       order-field))
+   fields))
+
+(defn create-order-params
+  "Constructs `mutate_order_params` from app db"
+  [cart account]
+  (map
+   (fn [item]
+     (let [fields (construct-order-fields (:fields item))
+           order  (tb/assoc-when
+                   {:account (:id account)
+                    :service (:service item)}
+                   :fields  fields)]
+       order))
+   cart))
 
 
 (reg-event-fx
  :services.cart/submit
  [(path db/path)]
- (fn [{db :db} _]
-   {:dispatch [::clear-cart]}))
+ (fn [{db :db} [k account]]
+   (let [order-params (create-order-params (:cart db) account)
+         ]
+     (.log js/console "order params" order-params)
+     {:dispatch  [:ui/loading k true]
+      :graphql {:mutation   [[:order_create_many {:params order-params}
+                              [:id]]]
+                :on-success [::clear-cart k]
+                :on-failure [:graphql/failure k]}})))
+
+
+(defn reindex-cart [cart]
+  (map-indexed
+   (fn [i item]
+     (assoc item :index i))
+   (sort-by :index cart)))
 
 
 (reg-event-fx
  :services.cart.item/remove
  [(path db/path)]
- (fn [{db :db} [_ id]]
-   (let [new-cart (remove #(= id (:id %)) (:cart db))]
+ (fn [{db :db} [_ index]]
+   (let [new-cart (reindex-cart (remove #(= index (:index %)) (:cart db)))]
      {:dispatch [::save-cart new-cart]})))
 
 
