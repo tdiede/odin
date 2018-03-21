@@ -1,7 +1,8 @@
 (ns iface.modules.notification
   (:require [antizer.reagent :as ant]
             [reagent.core :as r]
-            [re-frame.core :refer [reg-event-fx]]))
+            [re-frame.core :refer [reg-event-fx
+                                   reg-fx]]))
 
 
 ;; ==============================================================================
@@ -9,8 +10,14 @@
 ;; ==============================================================================
 
 
-;; TODO: Make fx!
-
+(reg-fx
+ :notification
+ (fn [[type message]]
+   (case type
+     :info    (ant/notification-info {:message message})
+     :success (ant/notification-success {:message message})
+     :error   (ant/notification-error {:message message})
+     :warning (ant/notification-warning {:message message}))))
 
 (reg-event-fx
  :notify/success

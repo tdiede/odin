@@ -339,6 +339,7 @@
    {:dispatch-n [[:services/query]
                  [:service.form/hide]
                  [:service.form/clear]]
+    :notification [:success "Service created!"]
     :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_create :id])))}))
 
 
@@ -358,13 +359,5 @@
  [(path db/path)]
  (fn [{db :db} [_ k service-id]]
    {:dispatch-n [[:ui/loading k false]
-                 [::delete-service-notification]
-                 [:services/query]]}))
-
-
-(reg-event-fx
- ::delete-service-notification
- (fn [_ _]
-   (ant/notification-info
-    {:message   "Service deleted."
-     :placement "bottom-right"})))
+                 [:services/query]]
+    :notification [:success "Service deleted."]}))
