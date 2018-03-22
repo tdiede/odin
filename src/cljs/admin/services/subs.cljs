@@ -16,8 +16,7 @@
  :services/list
  :<- [db/path]
  (fn [db _]
-   (let [norms (norms/denormalize db :services/norms)]
-     norms)))
+   (norms/denormalize db :services/norms)))
 
 (reg-sub
  :service
@@ -71,3 +70,10 @@
  :<- [db/path]
  (fn [db _]
    (:is-editing db)))
+
+
+(reg-sub
+ :services/catalogs
+ :<- [:services/list]
+ (fn [services _]
+   (vec (distinct (mapcat :catalogs services)))))

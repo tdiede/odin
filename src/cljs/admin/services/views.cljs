@@ -238,7 +238,8 @@
 
 
 (defn create-service-form []
-  (let [form (subscribe [:services/form])]
+  (let [form     (subscribe [:services/form])
+        catalogs (subscribe [:services/catalogs])]
     [:div
      [ant/card {:title "Service Details"}
       [:div.columns
@@ -270,11 +271,15 @@
          [ant/select
           {:style       {:width "100%"}
            :mode        "tags"
+           :value       (:catalogs @form)
+           :on-change   #(dispatch [:service.form/update :catalogs (js->clj %)])
            :placeholder "add this service to catalogs"}
-          [ant/select-option {:key 1 :value :pets} "pets"]
-          [ant/select-option {:key 2 :value :laundry} "laundry"]
-          [ant/select-option {:key 3 :value :cleaning} "cleaning"]
-          [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
+          (map-indexed (fn [i catalog]
+                         [ant/select-option
+                          {:key   i
+                           :value catalog}
+                          (clojure.core/name catalog)])
+                       @catalogs)]]
         [ant/form-item
          {:label "Properties"}
          [ant/select
@@ -294,7 +299,9 @@
         [:div.is-pulled-right
          [ant/form-item
           {:label "Active?"}
-          [ant/switch]]]]]]
+          [ant/switch
+           {:checked (:active @form)
+            :on-change #(dispatch [:service.form/update :active %])}]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
       [:div.columns
@@ -302,18 +309,18 @@
         [ant/form-item
          {:label "Price"}
          [ant/input-number
-          {:value         (:price @form)
-           :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))
-           :on-change     #(dispatch [:service.form/update :price %])}]]]
+          {:value     (:price @form)
+           :style     {:width "75%"}
+           :formatter (fn [value] (str "$" value))
+           :on-change #(dispatch [:service.form/update :price %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Cost"}
          [ant/input-number
-          {:value         (:cost @form)
-           :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))
-           :on-change     #(dispatch [:service.form/update :cost %])}]]]
+          {:value     (:cost @form)
+           :style     {:width "75%"}
+           :formatter (fn [value] (str "$" value))
+           :on-change #(dispatch [:service.form/update :cost %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Billed"}
@@ -460,10 +467,10 @@
     [:p [:b "Required?"]]
     [ant/switch {:checked required}]]
 
-   (when (and (= :service-field.type/dropdown type) (not (empty? options)))
-     [:div [:b "Options: "]
+   (when (and (= :dropdown type) (not (empty? options)))
+     [:div.column [:b "Options: "]
       (map (fn [option]
-             [:span {:key (:id option)} (:label option)]) options)])])
+             [:span {:key (:label option)} (:label option)]) options)])])
 
 
 (defn- service-entry [service]
@@ -523,8 +530,8 @@
                 properties)])]]
 
        [:div.column.is-2
-        [:p.mb1 [:b "Active?"]] ;; TODO - implement "active/inactive" services
-        [ant/switch {:checked true}]]]]
+        [:p.mb1 [:b "Active?"]]
+        [ant/switch {:checked active}]]]]
 
      [ant/card {:title "Pricing/Billing"}
       [:div.columns
