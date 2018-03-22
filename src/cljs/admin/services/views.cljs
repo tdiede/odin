@@ -80,7 +80,7 @@
   [ant/form-item
    {:label     (when (zero? index) "Type")
     :read-only true}
-   (drop 1 (str type))]) ;; TODO - figure out why `name` was causing an error
+   (clojure.core/name type)])
 
 (defn service-field-label
   [index label]
@@ -89,7 +89,7 @@
    [ant/input
     {:style       {:width "100%"}
      :placeholder "label or question for this input"
-     :defaultvalue       label
+     :value       label
      :on-change   #(dispatch [:service.form.field/update index :label (.. % -target -value)])}]])
 
 
@@ -136,7 +136,7 @@
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
-      :default-value       value
+      :value       value
       :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
@@ -248,22 +248,22 @@
           :type  "text"}
          [ant/input
           {:placeholder "service name"
-           :default-value       (:name @form)
+           :value       (:name @form)
            :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
         [ant/form-item
          {:label "Description"}
          [ant/input-text-area
-          {:rows          6
-           :placeholder   "description"
-           :default-value (:description @form)
-           :on-change     #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
+          {:rows        6
+           :placeholder "description"
+           :value       (:description @form)
+           :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
        [:div.column.is-4
         [ant/form-item
          {:label "Code"
           :type  "text"}
          [ant/input
           {:placeholder "service code"
-           :default-value       (:code @form)
+           :value       (:code @form)
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
@@ -302,7 +302,7 @@
         [ant/form-item
          {:label "Price"}
          [ant/input-number
-          {:default-value 10.00
+          {:value 10.00
            :value         (:price @form)
            :style         {:width "75%"}
            :formatter     (fn [value] (str "$" value))
@@ -311,7 +311,7 @@
         [ant/form-item
          {:label "Cost"}
          [ant/input-number
-          {:default-value 10.00
+          {:value 10.00
            :value         (:cost @form)
            :style         {:width "75%"}
            :formatter     (fn [value] (str "$" value))
