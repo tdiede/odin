@@ -274,80 +274,17 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
-#_(defn above-the-fold [{:keys [name request-date price status]} is-open]
-  [ant/card
-   [:div.columns
-    [:div.column.is-6
-     [:span [ant/button {:on-click #(swap! is-open not)
-                         :icon     (if @is-open "minus" "plus")
-                         :style    {:width     "30px"
-                                    :align     "center"
-                                    :padding   "0px"
-                                    :font-size 20
-                                    :margin-right "10px"}}]]
-     [:span {:style {:display "inline-block"}}
-      [:p.body name]]]
-    [:div.column.is-2
-     [:p.body (format/date-short request-date)]]
-    [:div.column.is-1
-     [:p.body (format/currency price)]]
-    [:div.column.is-1
-     [ant/tag status]]
-    [:div.column.is-2.has-text-right
-     (when (= status :pending)
-       [ant/button {:type "danger"
-                    :icon "close"} "Cancel"])]]])
-
-
 (defn below-the-fold [fields]
   [:div
    #_[:hr {:style {:margin "0.5rem 0 1.75rem 0"}}]
    [column-fields-2 fields]])
 
 
-#_(defn active-order-item []
-  (let  [main    {:name         "Dog walking - single"
-                  :request-date "2018-02-27T19:15:00.134Z"
-                  :price        20
-                  :status       :pending}
-         fields  [{:id      2
-                   :index   2
-                   :label   "Dog size:"
-                   :type    :variants
-                   :value   "m"
-                   :options [{:key   :s
-                              :label "Small"}
-                             {:key   :m
-                              :label "Medium"}
-                             {:key   :l
-                              :label "Large"}]}
-                  {:id    0
-                   :index 0
-                   :type  :date
-                   :label "Date:"
-                   :value "2018-02-27T19:15:00.134Z"}
-                  {:id    1
-                   :index 1
-                   :type  :time
-                   :label "Time:"
-                   :value "2018-02-27T19:15:00.134Z"}
-                  {:id    3
-                   :index 3
-                   :type  :desc
-                   :label "Additional notes:"
-                   :value "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus.  Nullam libero mauris, consequat quis, varius et, dictum id, arcu.  Mauris mollis tincidunt felis.  Aliquam feugiat tellus ut neque.  Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit."}]
-         is-open (r/atom false)]
-    (fn []
-      [ant/card
-       (r/as-element [above-the-fold main is-open])
-       (when @is-open
-         [below-the-fold (sort-by :index fields)])])))
-
-(defn above-the-fold [{:keys [name created price status]}]
+(defn above-the-fold [{:keys [name created price status]} is-open]
   [:div.columns
    [:div.column.is-6
-    [:span [ant/button {;; :on-click #(swap! is-open not)
-                        :icon  "plus" ;; (if @is-open "minus" "plus")
+    [:span [ant/button {:on-click #(swap! is-open not)
+                        :icon  (if @is-open "minus" "plus")
                         :style {:width        "30px"
                                 :align        "center"
                                 :padding      "0px"
@@ -370,13 +307,10 @@
 
 
 (defn active-order-item [{:keys [fields] :as order}]
-  [ant/card
-   (.log js/console order)
-   (r/as-element [above-the-fold order])]
-  #_(let  []
+  (let [is-open (r/atom false)]
     (fn []
       [ant/card
-       (r/as-element [above-the-fold main is-open])
+       (r/as-element [above-the-fold order is-open])
        (when @is-open
          [below-the-fold (sort-by :index fields)])])))
 

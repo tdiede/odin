@@ -142,7 +142,6 @@
       true))))
 
 
-;; THOUGHT should this be called "cart" instead?
 (reg-sub
  :services.cart/cart
  :<- [db/path]
