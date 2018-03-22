@@ -199,12 +199,11 @@
 (defn construct-order-fields [fields]
   (map
    (fn [{:keys [id value type]}]
-     (let [order-field (tb/assoc-when
-                        {:service_field id}
-                        :value (if (number? value)
-                                 (float value)
-                                 value))]
-       order-field))
+     (tb/assoc-when
+      {:service_field id}
+      :value (if (number? value)
+               (float value)
+               value)))
    fields))
 
 

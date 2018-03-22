@@ -1,5 +1,6 @@
 (ns member.services.subs
-  (:require [member.services.db :as db]
+  (:require [clojure.string :as string]
+            [member.services.db :as db]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 
@@ -55,14 +56,13 @@
  :services.book/categories
  :<- [db/path]
  (fn [db _]
-   (conj (reduce
-          (fn [catalogs c]
-            (conj catalogs
-                  (assoc {} :category c :label (clojure.string/capitalize (name c)))))
-          [{:category :all
-            :label    "All"}]
-          (get-in db [:catalogs])) {:category :miscellaneous
-                                    :label "Miscellaneous"})))
+   (-> (reduce (fn [catalogs c]
+                 (conj catalogs {:category c :label (string/capitalize (name c))}))
+               [{:category :all
+                 :label    "All"}]
+               (:catalogs db))
+       (conj {:category :miscellaneous
+              :label    "Miscellaneous"}))))
 
 
 (reg-sub
@@ -132,14 +132,14 @@
  :services.book/services-by-catalog
  :<- [db/path]
  (fn [db [_ selected]]
-   (cond
-     (= selected :all) (:services db)
-     (= selected :miscellaneous) (get
-                                 (group-by #(empty? (:catalogs %)) (:services db))
-                                 true)
-     :else (get
-            (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
-            true))))
+   (case selected
+     :all (:services db)
+     :miscellaneous (get
+                     (group-by #(empty? (:catalogs %)) (:services db))
+                     true)
+     (get
+      (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
+      true))))
 
 
 ;; THOUGHT should this be called "cart" instead?
