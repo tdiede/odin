@@ -413,7 +413,6 @@
   (case (vec (rest path))
     [:list]           :services
     [:orders :list]   :orders
-    [:catalogs :list] :catalogs
     :services))
 
 (defn menu [route]
@@ -509,9 +508,7 @@
                  (if (zero? i)
                    (str (clojure.core/name catalog))
                    (str ", " (clojure.core/name catalog))))
-               catalogs)
-            ]
-           #_[:p catalogs])]
+               catalogs)])]
 
         [:div.mb1
          [:p [:b "Properties"]]
