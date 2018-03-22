@@ -339,20 +339,21 @@
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]
     [ant/modal
-     {:title     "Create Service"
-      :width     "70%"
-      :visible   @(subscribe [:modal/visible? :service/create-service-form])
-      :ok-text   "Save New Service"
-      :on-cancel #(dispatch [:service.form/hide])
-      :on-ok     (fn []
-                   (let [{name        :name
-                          description :description
-                          code        :code} @form]
-                     (if (every? #(empty? %) [name description code])
-                       (ant/notification-error
-                        {:message "Additional information required"
-                         :description "Please enter a name, description, and code for this service."})
-                       (dispatch [:service/create! @form]))))}
+     {:title       "Create Service"
+      :width       "70%"
+      :visible     @(subscribe [:modal/visible? :service/create-service-form])
+      :ok-text     "Save New Service"
+      :on-cancel   #(dispatch [:service.form/hide])
+      :on-ok       (fn []
+                     (let [{name        :name
+                            description :description
+                            code        :code} @form]
+                       (if (every? #(empty? %) [name description code])
+                         (ant/notification-error
+                          {:message     "Additional information required"
+                           :description "Please enter a name, description, and code for this service."})
+                         (dispatch [:service/create! @form]))))
+      :after-close #(dispatch [:service.form/clear])}
 
      [create-service-form]]))
 
@@ -446,6 +447,25 @@
 ;; =====================================================
 ;; service entry (detail view)
 ;; =====================================================
+
+
+(defn- service-entry-field [{:keys [id index type label required options]}]
+  [:div.columns
+   [:div.column.is-1
+    [:p [:b "Type"]]
+    [:div (clojure.core/name type)]]
+
+   [:div.column.is-9
+    [:p [:b "Label"]]
+    [:p label]]
+
+   [:div.column.is-1
+    [:p [:b "Required?"]]
+    [ant/switch {:checked required}]]
+
+   (when (and (= :service-field.type/dropdown type) (not (empty? options)))
+     [:div [:b "Options: "]
+      (map (fn [option] (str (:label option))) options)])])
 
 
 (defn- service-entry [service]
@@ -560,32 +580,10 @@
         [:p "No fields found."]
 
         [:div
-         [:div.columns
-          [:div.column.is-1
-           [:p [:b "Type"]]
-           [:div "text"]]
-
-          [:div.column.is-9
-           [:p [:b "Label"]]
-           [:p "What is your weasel's name?"]]
-
-          [:div.column.is-1
-           [:p [:b "Required?"]]
-           [ant/switch {:checked true}]]]
-
-         [:div.columns
-          [:div.column.is-1
-           [:p [:b "Type"]]
-           [:div "dropdown"]]
-
-          [:div.column.is-9
-           [:p [:b "Label"]]
-           [:p "When should we pick up your weasel?"]
-           [:div "Options: Morning, Afternoon, Evening"]]
-
-          [:div.column.is-1
-           [:p [:b "Required?"]]
-           [ant/switch {:checked true}]]]])]]))
+         (map
+          (fn [field]
+            [service-entry-field field])
+          fields)])]]))
 
 
 (defn services-list-container [services]
