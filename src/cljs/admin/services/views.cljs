@@ -136,7 +136,7 @@
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
-      :value       value
+      :default-value       value
       :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
@@ -302,8 +302,7 @@
         [ant/form-item
          {:label "Price"}
          [ant/input-number
-          {:value 10.00
-           :value         (:price @form)
+          {:value         (:price @form)
            :style         {:width "75%"}
            :formatter     (fn [value] (str "$" value))
            :on-change     #(dispatch [:service.form/update :price %])}]]]
@@ -311,8 +310,7 @@
         [ant/form-item
          {:label "Cost"}
          [ant/input-number
-          {:value 10.00
-           :value         (:cost @form)
+          {:value         (:cost @form)
            :style         {:width "75%"}
            :formatter     (fn [value] (str "$" value))
            :on-change     #(dispatch [:service.form/update :cost %])}]]]
