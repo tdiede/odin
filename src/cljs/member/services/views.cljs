@@ -209,8 +209,8 @@
      [ant/button {:class "ant-btn-xl"
                   :type "primary"
                   :on-click #(if-not @has-card
-                              (dispatch [:modal/show :payment.source/add])
-                              (dispatch [:services.cart/submit requester]))}
+                               (dispatch [:modal/show :payment.source/add])
+                               (dispatch [:services.cart/submit requester]))}
       "Submit orders"]]))
 
 
@@ -274,28 +274,29 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
-(defn above-the-fold [{:keys [name request-date price status]} is-open]
-  [:div.columns
-   [:div.column.is-6
-    [:span [ant/button {:on-click #(swap! is-open not)
-                        :icon     (if @is-open "minus" "plus")
-                        :style    {:width     "30px"
-                                   :align     "center"
-                                   :padding   "0px"
-                                   :font-size 20
-                                   :margin-right "10px"}}]]
-    [:span {:style {:display "inline-block"}}
-     [:p.body name]]]
-   [:div.column.is-2
-    [:p.body (format/date-short request-date)]]
-   [:div.column.is-1
-    [:p.body (format/currency price)]]
-   [:div.column.is-1
-    [ant/tag status]]
-   [:div.column.is-2.has-text-right
-    (when (= status :pending)
-      [ant/button {:type "danger"
-                   :icon "close"} "Cancel"])]])
+#_(defn above-the-fold [{:keys [name request-date price status]} is-open]
+  [ant/card
+   [:div.columns
+    [:div.column.is-6
+     [:span [ant/button {:on-click #(swap! is-open not)
+                         :icon     (if @is-open "minus" "plus")
+                         :style    {:width     "30px"
+                                    :align     "center"
+                                    :padding   "0px"
+                                    :font-size 20
+                                    :margin-right "10px"}}]]
+     [:span {:style {:display "inline-block"}}
+      [:p.body name]]]
+    [:div.column.is-2
+     [:p.body (format/date-short request-date)]]
+    [:div.column.is-1
+     [:p.body (format/currency price)]]
+    [:div.column.is-1
+     [ant/tag status]]
+    [:div.column.is-2.has-text-right
+     (when (= status :pending)
+       [ant/button {:type "danger"
+                    :icon "close"} "Cancel"])]]])
 
 
 (defn below-the-fold [fields]
@@ -304,7 +305,7 @@
    [column-fields-2 fields]])
 
 
-(defn active-order-item []
+#_(defn active-order-item []
   (let  [main    {:name         "Dog walking - single"
                   :request-date "2018-02-27T19:15:00.134Z"
                   :price        20
@@ -341,6 +342,50 @@
        (r/as-element [above-the-fold main is-open])
        (when @is-open
          [below-the-fold (sort-by :index fields)])])))
+
+(defn above-the-fold [{:keys [name created price status]}]
+  [:div.columns
+   [:div.column.is-6
+    [:span [ant/button {;; :on-click #(swap! is-open not)
+                        :icon  "plus" ;; (if @is-open "minus" "plus")
+                        :style {:width        "30px"
+                                :align        "center"
+                                :padding      "0px"
+                                :font-size    20
+                                :margin-right "10px"}}]]
+    [:span {:style {:display "inline-block"}}
+     [:p.body name]]]
+   [:div.column.is-2
+    [:p.body (format/date-short created)]]
+   [:div.column.is-1
+    [:p.body (if (some? price)
+               (format/currency price)
+               (format/currency 0))]]
+   [:div.column.is-1
+    [ant/tag status]]
+   [:div.column.is-2.has-text-right
+    (when (= status :pending)
+      [ant/button {:type "danger"
+                   :icon "close"} "Cancel"])]])
+
+
+(defn active-order-item [{:keys [fields] :as order}]
+  [ant/card
+   (.log js/console order)
+   (r/as-element [above-the-fold order])]
+  #_(let  []
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold main is-open])
+       (when @is-open
+         [below-the-fold (sort-by :index fields)])])))
+
+
+(defn active-orders [orders]
+  [:div
+   (map
+    #(with-meta [active-order-item %] {:key (:id %)})
+    (sort-by :created > orders))])
 
 
 ;; ==============================================================================
@@ -390,9 +435,11 @@
 
 
 (defmethod content :services/active-orders [_]
-  [:div
-   [active-orders-header]
-   [active-order-item]])
+  (let [orders (subscribe [:orders/active])]
+    [:div
+     [active-orders-header]
+     [active-orders @orders]
+     #_[active-order-item]]))
 
 
 (defmethod content :services/subscriptions [_]

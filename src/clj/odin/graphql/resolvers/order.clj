@@ -115,6 +115,24 @@
   [{conn :conn} {order-id :id} _]
   (d/entity (d/db conn) order-id))
 
+(comment
+
+  ;; Run the query.
+  (let [conn odin.datomic/conn]
+    (com.walmartlabs.lacinia/execute
+     odin.graphql/schema
+     (venia.core/graphql-query
+      {:venia/queries
+       [[:orders {:params {:accounts [285873023223095]}}
+         [:name]]]})
+     nil
+     {:conn      conn
+      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
+
+
+
+  )
+
 
 ;; =============================================================================
 ;; Mutations
@@ -361,8 +379,9 @@
     (or (account/admin? account) (= (:db/id (order/account order)) (:db/id account)))))
 
 
-(defmethod authorization/authorized? :order/list [_ account _]
-  (account/admin? account))
+(defmethod authorization/authorized? :order/list [{conn :conn} account {params :params}]
+  (or (account/admin? account)
+      (= (:accounts params) [(td/id account)])))
 
 
 (defmethod authorization/authorized? :order/entry [{conn :conn} account params]

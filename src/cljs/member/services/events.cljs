@@ -74,6 +74,23 @@
 
 
 (reg-event-fx
+ :services/fetch-orders
+ (fn [{db :db} [k account]]
+   {:graphql {:query [[:orders {:params {:accounts [account]}}
+                       [:id :name :price :status :created
+                        [:fields [:id :label :value :type :index]]]]]
+              :on-success [::fetch-orders k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::fetch-orders
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   {:db (assoc db :orders (get-in response [:data :orders]))}))
+
+
+(reg-event-fx
  :services/fetch-catalogs
  (fn [{db :db} [k]]
    {:dispatch-n [[:ui/loading k true]

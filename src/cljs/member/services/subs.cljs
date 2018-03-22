@@ -162,3 +162,10 @@
  :<- [:services.cart/cart]
  (fn [cart _]
    (reduce #(+ %1 (:price %2)) 0 cart)))
+
+
+(reg-sub
+ :orders/active
+ :<- [db/path]
+ (fn [db _]
+   (filter #(= (:status %) :pending) (:orders db))))
