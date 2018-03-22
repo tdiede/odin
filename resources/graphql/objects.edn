@@ -425,7 +425,6 @@
                        :resolve (:get :referral/tour-for)}}}
 
 
-  ;; TODO add service fields
   :service
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
@@ -445,6 +444,8 @@
                           :resolve (:get :service/rental)}
             :variants    {:type    (list :service_variant)
                           :resolve (:get :service/variants)}
+            :active      {:type    Boolean
+                          :resolve (:get :service/active)}
             :catalogs    {:type    (list :Keyword)
                           :resolve (:get :service/catalogs)}
             :properties  {:type    (list :property)
@@ -459,7 +460,7 @@
             :index    {:type    (non-null :Long)
                        :resolve (:get :service-field/index)}
             :type     {:type    :service_field_type
-                       :resolve (:get :service-field/type)}
+                       :resolve (:keyword/name :service-field/type)}
             :label    {:type    (non-null String)
                        :resolve (:get :service-field/label)}
             :required {:type    Boolean
@@ -470,7 +471,7 @@
 
   :service_field_option
   {:fields {:index {:type    (non-null :Long)
-                    :resolve (:get :service-field-option/option)}
+                    :resolve (:get :service-field-option/index)}
             :value {:type    (non-null String)
                     :resolve (:get :service-field-option/value)}
             :label {:type    (non-null String)

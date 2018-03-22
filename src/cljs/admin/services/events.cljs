@@ -21,7 +21,7 @@
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :price]]]
+                             [:id :name :code :catalogs :price]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -32,6 +32,7 @@
    {:db (->> (get-in response [:data :services])
              (norms/normalize db :services/norms))
     :dispatch [:ui/loading k false]}))
+
 
 
 (reg-event-fx
@@ -77,7 +78,7 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :code :price :cost :billed :rental :catalogs
+                             [:id :name :description :active :code :price :cost :billed :rental :catalogs
                               [:fields [:id :index :type :label :required
                                         [:options [:index :value :label]]]]
                               [:properties [:id]]
@@ -160,11 +161,22 @@
 ;; copy service =================================================================
 ;; ==============================================================================
 
+
+(defn copy-service-data
+  [service]
+  (tb/transform-when-key-exists service
+    {:name     #(str % " - copy")
+     :code     (constantly "")
+     :catalogs (partial mapv clojure.core/name)
+     :fields   (partial mapv #(-> (dissoc % :id)
+                           (update :options vec)))}))
+
+
 (reg-event-fx
  :service/copy-service
  [(path db/path)]
  (fn [{db :db} [_ service]]
-   {:dispatch-n [[:service.form/populate (assoc service :name (str (:name service) "- Copy") :code "")]
+   {:dispatch-n [[:service.form/populate (copy-service-data service)]
                  [:modal/show :service/create-service-form]]}))
 
 
@@ -184,15 +196,15 @@
  (fn [db [_ {:keys [name description code properties catalogs price cost rental fields]}]]
    (let [populated-form
          (tb/assoc-some db/form-defaults
-                     {:name name
-                      :description description
-                      :code code
-                      :properties properties
-                      :catalogs catalogs
-                      :price price
-                      :cost cost
-                      :rental rental
-                      :fields fields})]
+                        :name name
+                        :description description
+                        :code code
+                        :properties properties
+                        :catalogs catalogs
+                        :price price
+                        :cost cost
+                        :rental rental
+                        :fields fields)]
      (assoc db :form populated-form))))
 
 
@@ -328,6 +340,7 @@
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
+   (js/console.log form)
    {:graphql {:mutation [[:service_create {:params form}
                           [:id]]]
               :on-success [::create-success k]

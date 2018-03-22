@@ -60,7 +60,7 @@
 
 (defn- parse-service-field-option
   [{:keys [value index]}]
-  (service/create-option value {:index index}))
+  (service/create-option value value {:index index}))
 
 
 (defn- parse-service-field
@@ -74,8 +74,9 @@
 (defn- parse-create-params
   [params]
   (tb/transform-when-key-exists params
-    {:billed #(keyword "service.billed" (name %))
-     :fields (partial map parse-service-field)}))
+    {:billed   #(keyword "service.billed" (name %))
+     :catalogs (partial map #(if (string? %) (keyword %) %))
+     :fields   (partial map parse-service-field)}))
 
 
 (comment
@@ -107,7 +108,7 @@
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
-    (clojure.pprint/pprint params)
+    (clojure.pprint/pprint (parse-create-params params))
     @(d/transact conn [(service/create code name description (parse-create-params params))
                        (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))

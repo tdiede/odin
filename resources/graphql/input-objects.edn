@@ -166,7 +166,8 @@
    :fields      {:name        {:type (non-null String)}
                  :code        {:type (non-null String)}
                  :description {:type (non-null String)}
-                 :catalogs    {:type (list :Keyword)}
+                 :catalogs    {:type (list String)}
+                 :active      {:type Boolean}
                  :fields      {:type (list :service_field_object)}
                  :properties  {:type (list :Long)}
                  :price       {:type Float}
