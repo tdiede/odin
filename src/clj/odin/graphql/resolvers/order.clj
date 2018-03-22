@@ -73,7 +73,7 @@
   "The field value according to the service-field-type"
   [{conn :conn} _ order-field]
   (let [svc-field (:order-field/service-field order-field)
-        value-key (order/order-field-key svc-field)]
+        value-key (:order/order-field-key svc-field)]
     (value-key order-field)))
 
 
