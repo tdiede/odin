@@ -3,7 +3,6 @@
             [admin.services.db :as db]
             [admin.routes :as routes]
             [admin.services.orders.views :as orders-views]
-            [admin.services.catalogs.views :as catalogs-views]
             [antizer.reagent :as ant]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
@@ -646,8 +645,7 @@
    (case (:page route)
      :services/list          [services-subview route]
      :services/entry         [services-subview route]
-     :services.orders/list   [orders-views/subview]
-     :services.catalogs/list [catalogs-views/subview])])
+     :services.orders/list   [orders-views/subview])])
 
 
 
