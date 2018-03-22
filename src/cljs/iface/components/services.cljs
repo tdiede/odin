@@ -15,6 +15,7 @@
 
 (defn- column-fields [fields component-fn]
   [:div
+   (.log js/console "date: " fields)
    (map-indexed
     (fn [i row]
       ^{:key i}
@@ -30,34 +31,39 @@
 (defmulti form-fields (fn [k fields opts] k))
 
 
-(defmethod form-fields :date [k fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
+;; why is this changing the value on both things?
+(defmethod form-fields :date [k field {on-change :on-change}]
+  [:div.columns
+   [:div.column
+    [ant/form-item {:label (:label field)}
      [ant/date-picker
-      {:style         {:width "100%"}
+      {:style         {:width "50%"}
        :value         (when-let [date (:value field)]
                         (js/moment date))
-       :on-change     #(on-change (:key field) (when-let [x %] (.toISOString x)))
+       :on-change     #(on-change (:index field) (when-let [x %] (.toISOString x)))
        :disabled-date (fn [current]
                         (and current (< (.valueOf current) (.valueOf (js/moment.)))))
-       :show-today    false}])])
+       :show-today    false}]]]])
 
 
-(defmethod form-fields :time [k fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
+(defmethod form-fields :time [k field {on-change :on-change}]
+  [:div.columns
+   [:div.column
+    [ant/form-item {:label (:label field)}
      [form/time-picker
-      {:size        :large
+      {:style       {:width "50%"}
+       :size        :large
        :start       9
        :end         17
        :interval    45
        :placeholder "Select a time"
        :value       (when-let [time (:value field)]
                       (js/moment time))
-       :on-change   #(on-change (:key field) (.toISOString %))}])])
+       :on-change   #(on-change (:index field) (.toISOString %))}]]]])
 
 
-(defmethod form-fields :variants [k fields {on-change :on-change}]
+;; Are we keeping variants?
+#_(defmethod form-fields :variants [k fields {on-change :on-change}]
   [:div
    (map-indexed
     (fn [i field]
@@ -74,28 +80,50 @@
     (get-fields fields k))])
 
 
-(defmethod form-fields :desc [k fields {on-change :on-change}]
-  [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/input
-          {:type      :textarea
-           :value     (:value field)
-           :on-change #(on-change (:key field) (.. % -target -value))}]]]])
-    (get-fields fields k))])
+(defmethod form-fields :text [k field {on-change :on-change}]
+  [:div.columns
+   [:div.column
+    [ant/form-item {:label (:label field)}
+     [ant/input
+      {:style     {:width "100%"}
+       :type      :textarea
+       :value     (:value field)
+       :on-change #(on-change (:index field) (.. % -target -value))}]]]])
+
+
+;; TODO need to test this one
+(defmethod form-fields :dropdown [k field {on-change :on-change}]
+  [:div.columns
+   [:div.column
+    [ant/form-item {:label (:label field)}
+     [ant/select
+      {:style                {:width "50%"}
+       :value     (:value field)
+       :on-change #(on-change (:index field) %)}
+      (doall
+       (map-indexed
+        #(with-meta [ant/select-option {:value %2} (:label %2)] {:key %1})
+        (:options field)))]]]])
+
+
+(defmethod form-fields :number [k field {on-change :on-change}]
+  [:div.columns
+   [:div.column
+    [ant/form-item {:label (:label field)}
+     [ant/input-number
+      {:default-value 1
+       :value         (:value field)
+       :min           1
+       :max           99
+       :on-change     #(on-change (:index field) %)}]]]])
 
 
 (defn add-service-form
   [fields opts]
   [:form
-   [form-fields :date fields opts]
-   [form-fields :time fields opts]
-   [form-fields :variants fields opts]
-   [form-fields :desc fields opts]])
+   (map-indexed
+    #(with-meta [form-fields (keyword (name (:type %2))) %2 opts] {:key %1})
+    fields)])
 
 
 (defn add-service-modal-footer
@@ -118,7 +146,7 @@
 (defn service-modal
   [{:keys [action is-visible service form-fields can-submit on-cancel on-submit on-change]}]
   [ant/modal
-   {:title     (str action " " (:title service))
+   {:title     (str action " " (:name service))
     :visible   is-visible
     :on-cancel on-cancel
     :footer    (r/as-element

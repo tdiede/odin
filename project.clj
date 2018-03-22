@@ -57,7 +57,7 @@
                  [cljsjs/moment "2.17.1-1"]
                  [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
-                 [starcity/blueprints "2.3.1-SNAPSHOT"
+                 [starcity/blueprints "2.4.0-SNAPSHOT"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava]]

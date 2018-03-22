@@ -55,14 +55,14 @@
  :services.book/categories
  :<- [db/path]
  (fn [db _]
-   [{:category :all
-     :label    "All"}
-    {:category :room-upgrades
-     :label    "Room Upgrades"}
-    {:category :laundry-services
-     :label    "Laundry Services"}
-    {:category :pet-services
-     :label    "Pet Services"}]))
+   (conj (reduce
+          (fn [catalogs c]
+            (conj catalogs
+                  (assoc {} :category c :label (clojure.string/capitalize (name c)))))
+          [{:category :all
+            :label    "All"}]
+          (get-in db [:catalogs])) {:category :miscellaneous
+                                    :label "Miscellaneous"})))
 
 
 (reg-sub
@@ -81,6 +81,7 @@
                      (assoc query-params :category category))))
 
 
+;; do we still need this?
 ;; gets a category id and checks if it has more than 2 items in it
 (reg-sub
  :services.book.category/has-more?
@@ -128,10 +129,17 @@
 
 
 (reg-sub
- :services.book/catalogues
+ :services.book/services-by-catalog
  :<- [db/path]
- (fn [db _]
-   (:catalogues db)))
+ (fn [db [_ selected]]
+   (cond
+     (= selected :all) (:services db)
+     (= selected :miscellaneous) (get
+                                 (group-by #(empty? (:catalogs %)) (:services db))
+                                 true)
+     :else (get
+            (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
+            true))))
 
 
 ;; THOUGHT should this be called "cart" instead?

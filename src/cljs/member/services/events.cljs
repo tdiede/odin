@@ -28,8 +28,9 @@
 
 (reg-event-fx
  ::clear-cart
- (fn [_ _]
-   {:dispatch [::save-cart []]}))
+ (fn [_ [k]]
+   {:dispatch-n [[::save-cart []]
+                 [:ui/loading k false]]}))
 
 
 (defmethod routes/dispatches :services/book
@@ -82,12 +83,17 @@
               :on-failure [:graphql/failure k]}}))
 
 
+;; when we implement the `active` attribute for services
+;; will need to add `:active true` to `query params`
+;; we dont want to show members inactive services
 (reg-event-fx
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query [[:services {:params {:properties [property-id]}}
-                         [:id :name :desc :price :catalogs]]]
+                         [:id :name :description :price :catalogs
+                          [:fields [:id :index :label :type :required
+                                    [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
 
@@ -96,16 +102,9 @@
  :services/catalogs
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [services (get-in response [:data :services])
-         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))
-         catalogs (reduce ;; how to organize this in a nicer way?
-                   (fn [acc cs]
-                     (assoc-in acc [cs] (get
-                                         (group-by #(some (fn [c] (= c cs)) (:catalogs %)) services)
-                                         true)))
-                   {}
-                   clist)]
-     {:db (assoc db :catalogs catalogs)})))
+   (let [services (sort-by #(clojure.string/lower-case (:name %)) (get-in response [:data :services]))
+         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+     {:db (assoc db :catalogs clist :services services)})))
 
 
 (reg-event-fx
@@ -119,12 +118,12 @@
 (reg-event-db
  :services.add-service.form/update
  [(path db/path)]
- (fn [db [_ key value]]
+ (fn [db [_ index value]]
    (update db :form-data
            (fn [fields]
              (map
               (fn [field]
-                (if (= (:key field) key)
+                (if (= (:index field) index)
                   (assoc field :value value)
                   field))
               fields)))))
@@ -140,9 +139,12 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [service fields]}]]
-   {:dispatch [:modal/show db/modal]
-    :db       (assoc db :adding service :form-data fields)}))
+ (fn [{db :db} [_ {:keys [id name description fields]}]]
+   (let [service {:id          id
+                  :name        name
+                  :description description}]
+     {:dispatch [:modal/show db/modal]
+      :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
 
 (reg-event-fx
@@ -157,31 +159,67 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id title description price]} (:adding db)
-         adding                               {:id          (db/rand-id) ;; gen unique id so we can remove items by item-id
-                                               :service-id  id           ;; not sure if needed, but its here
-                                               :title       title
-                                               :description description
-                                               :price       price
-                                               :fields      (:form-data db)}
-         new-cart                             (conj (:cart db) adding)]
+   (let [{:keys [id name description price]} (:adding db)
+         adding                              {:index       (count (:cart db))
+                                              :service     id
+                                              :name        name
+                                              :description description
+                                              :price       price
+                                              :fields      (:form-data db)}
+         new-cart                            (conj (:cart db) adding)]
      {:dispatch-n [[:services.add-service/close]
                    [::save-cart new-cart]]})))
+
+
+(defn construct-order-fields [fields]
+  (map
+   (fn [field]
+     (let [order-field (tb/assoc-when
+                        {:service_field (:id field)}
+                        :value (:value field))]
+       order-field))
+   fields))
+
+(defn create-order-params
+  "Constructs `mutate_order_params` from app db"
+  [cart account]
+  (map
+   (fn [item]
+     (let [fields (construct-order-fields (:fields item))
+           order  (tb/assoc-when
+                   {:account (:id account)
+                    :service (:service item)}
+                   :fields  fields)]
+       order))
+   cart))
 
 
 (reg-event-fx
  :services.cart/submit
  [(path db/path)]
- (fn [{db :db} _]
-   {:dispatch [::clear-cart]}))
+ (fn [{db :db} [k account]]
+   (let [order-params (create-order-params (:cart db) account)
+         ]
+     (.log js/console "order params" order-params)
+     {:dispatch  [:ui/loading k true]
+      :graphql {:mutation   [[:order_create_many {:params order-params}
+                              [:id]]]
+                :on-success [::clear-cart k]
+                :on-failure [:graphql/failure k]}})))
 
 
-;; this removes all of the services with the same service id... we need to only remove the selected item
+(defn reindex-cart [cart]
+  (map-indexed
+   (fn [i item]
+     (assoc item :index i))
+   (sort-by :index cart)))
+
+
 (reg-event-fx
  :services.cart.item/remove
  [(path db/path)]
- (fn [{db :db} [_ id]]
-   (let [new-cart (remove #(= id (:id %)) (:cart db))]
+ (fn [{db :db} [_ index]]
+   (let [new-cart (reindex-cart (remove #(= index (:index %)) (:cart db)))]
      {:dispatch [::save-cart new-cart]})))
 
 

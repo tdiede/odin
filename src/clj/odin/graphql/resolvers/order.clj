@@ -69,6 +69,14 @@
                              :order-id (:db/id order)})))
 
 
+(defn field-value
+  "The field value according to the service-field-type"
+  [{conn :conn} _ order-field]
+  (let [svc-field (:order-field/service-field order-field)
+        value-key (order/order-field-key svc-field)]
+    (value-key order-field)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -123,30 +131,44 @@
     (and (zero? lcost) (nil? vcost))))
 
 
+(defn prepare-order
+  [db {:keys [account service line_items fields] :as params}]
+  (let [line-items (when-not (empty? line_items)
+                     (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
+        fields (when-not (empty? fields)
+                 (map #(order/order-field (d/entity db (:service_field %)) (:value %)) fields))]
+    (order/create account service
+                  (tb/assoc-when
+                   {}
+                   :lines line-items
+                   :summary (:summary params)
+                   :request (:request params)
+                   :price (when (use-order-price? service params)
+                            (:price params))
+                   :cost (when (use-order-cost? service params)
+                           (:cost params))
+                   :variant (:variant params)
+                   :quantity (:quantity params)
+                   :fields fields))))
+
+
 (defn create!
   "Create a new order."
-  [{:keys [requester conn]} {{:keys [account service line_items] :as params} :params} _]
-  (let [[account service] (td/entities (d/db conn) account service)
-        line-items        (when-not (empty? line_items)
-                            (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
-        order             (order/create account service
-                                        (tb/assoc-when
-                                         {}
-                                         :lines line-items
-                                         :summary (:summary params)
-                                         :request (:request params)
-                                         :price (when (use-order-price? service params)
-                                                  (:price params))
-                                         :cost (when (use-order-cost? service params)
-                                                 (:cost params))
-                                         :variant (:variant params)
-                                         :quantity (:quantity params)))]
+  [{:keys [requester conn]} {params :params} _]
+  (let [order (prepare-order (d/db conn) params)]
     @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
 
 
-;; Given set of existing ids, examine set of `old` ids
+(defn create-many!
+  "Create many new orders"
+  [{:keys [requester conn]} {params :params} _]
+  (let [orders (map (partial prepare-order (d/db conn)) params)]
+    @(d/transact conn (conj orders (source/create requester)))
+    (map #(d/entity (d/db conn) [:order/uuid (:order/uuid %)]) orders)))
 
+
+;; Given set of existing ids, examine set of `old` ids
 
 (defn- update-line-item-tx
   [db {:keys [id desc cost price] :as item}]
@@ -336,11 +358,13 @@
    :order/billed-on    billed-on
    :order/fulfilled-on fulfilled-on
    :order/property     property
+   :order-field/value  field-value
    ;; queries
    :order/list         orders
    :order/entry        order
    ;; mutations
    :order/create!      create!
+   :order/create-many! create-many!
    :order/update!      update!
    :order/place!       place!
    :order/fulfill!     fulfill!

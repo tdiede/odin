@@ -55,40 +55,32 @@
         @categories))]]))
 
 
-(defn catalogue-item [{:keys [service] :as item}]
+(defn service-item [{:keys [name description price] :as service}]
   [ant/card
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 (:title service)]]
+      [:h4.subtitle.is-5 name]]
      [:div.column.is-6
-      [:p.fs3 (:description service)]]
+      [:p.fs3 description]]
      [:div.column.is-1
-      [:p.price (format/currency (:price service))]]
+      [:p.price (if (some? price)
+                  (format/currency price)
+                  (format/currency 0))]]
      [:div.column.is-2
       [ant/button
-       {:on-click #(dispatch [:services.add-service/show item])}
+       {:on-click #(dispatch [:services.add-service/show service])}
        "Request Service"]]]]])
 
 
-(defn catalogue [{:keys [id name items key] :as c}]
-  (let [route    (subscribe [:services.book.category/route key])
-        selected (subscribe [:services.book/category])
-        has-more (subscribe [:services.book.category/has-more? id])]
+(defn catalog [services]
+  (let [selected @(subscribe [:services.book/category])]
     [:div.catalogue
-     [:div.columns {:style {:margin-bottom "0px"}}
-      [:div.column.is-10
-       [:h3.title.is-4 name]]
-      (when (and (= @selected :all) @has-more)
-        [:div.column.is-2.has-text-right {:style {:display "table"}}
-         [:a {:href  @route
-              :style {:display        "table-cell"
-                      :vertical-align "middle"
-                      :padding-top    8}}
-          "See More"
-          [ant/icon {:style {:margin-left 4} :type "right"}]]])]
-     (doall
-      (map-indexed #(with-meta [catalogue-item %2] {:key %1}) items))]))
+     [:div.colums {:style {:margin-bottom "0px"}}
+      [:div.colums.is-10
+       [:h3.title.is-4 (clojure.string/capitalize (name selected)) " Services"]]
+      (doall
+       (map-indexed #(with-meta [service-item %2] {:key %1}) services))]]))
 
 
 (defn shopping-cart-button []
@@ -129,7 +121,18 @@
      [:p.fs3 vlabel]]))
 
 
-(defmethod field-value :desc [k value options]
+(defmethod field-value :text [k value options]
+  [:span
+   [:p.fs3 value]])
+
+
+(defmethod field-value :number [k value options]
+  [:span
+   [:p.fs3 value]])
+
+
+;; TODO this hasn't been tested
+(defmethod field-value :dropdown [k value options]
   [:span
    [:p.fs3 value]])
 
@@ -140,42 +143,61 @@
     (fn [i row]
       ^{:key i}
       [:div.columns
-       (for [{:keys [id type label value options]} row]
-         ^{:key id}
+       (for [{:keys [service-id type label value options]} row]
+         ^{:key service-id}
          [:div.column.is-half.cart-item-info
           [:span
            [:p.fs3.bold label]]
-          [field-value type value options]])])
+          [field-value (keyword (name type)) value options]])])
     (partition 2 2 nil fields))])
+
+
+(defn cart-item-data-row [fields]
+  [:div.columns
+   (map-indexed
+    (fn [i {:keys [label value type options] :as field}]
+      ^{:key i}
+      [:div.column.is-half.cart-item-info
+       [:span
+        [:p.fs3.bold label]]
+       [field-value (keyword (name type)) value options]])
+    fields)])
 
 
 (defn cart-item-data [fields]
   [:div.cart-item
-   [column-fields-2 fields]])
+   (map-indexed
+    (fn [i field-pair]
+      ^{:key i}
+      [cart-item-data-row field-pair])
+    (partition 2 2 nil fields))])
 
 
-(defn cart-item [{:keys [id title description price fields]}]
-  (let [service-item {:id          id
-                      :title       title
+(defn cart-item [{:keys [index name description price fields]}]
+  (let [service-item {:index       index
+                      :name        name
                       :description description
                       :price       price}]
     [ant/card {:style {:margin "10px 0"}}
      [:div.columns
       [:div.column.is-6
-       [:h4.subtitle.is-5 title]]
+       [:h4.subtitle.is-5 name]]
       [:div.column.is-2
-       [:p.price (format/currency price)]]
+       [:p.price (if (some? price)
+                   (format/currency price)
+                   (format/currency 0))]]
       [:div.column.is-2.align-right
-       [ant/button {:icon "edit"
+       [ant/button {:icon     "edit"
                     :on-click #(dispatch [:services.cart.item/edit service-item fields])}
         "Edit Item"]]
       [:div.column.is-2
        [ant/button
         {:type     "danger"
          :icon     "close"
-         :on-click #(dispatch [:services.cart.item/remove id])}
+         :on-click #(dispatch [:services.cart.item/remove index])}
         "Remove item"]]]
      (when-not (empty? fields)
+       (.log js/console fields)
        [cart-item-data (sort-by :index fields)])]))
 
 
@@ -186,10 +208,9 @@
       [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
      [ant/button {:class "ant-btn-xl"
                   :type "primary"
-                  :on-click (fn []
-                              (if-not @has-card
-                                (dispatch [:modal/show :payment.source/add])
-                                (dispatch [:services.cart/submit])))}
+                  :on-click #(if-not @has-card
+                              (dispatch [:modal/show :payment.source/add])
+                              (dispatch [:services.cart/submit requester]))}
       "Submit orders"]]))
 
 
@@ -220,17 +241,19 @@
         (dispatch [:stripe/load-scripts "v3"]))
       :reagent-render
       (fn []
-        [ant/modal {:title     "Add credit card"
-                    :width     640
-                    :visible   @is-visible
-                    :on-ok     #(dispatch [:modal/hide :payment.souce/add])
-                    :on-cancel #(dispatch [:modal/hide :payment.source/add])
-                    :footer    nil}
+        [ant/modal
+         {:title     "Add credit card"
+          :width     640
+          :visible   @is-visible
+          :on-ok     #(dispatch [:modal/hide :payment.souce/add])
+          :on-cancel #(dispatch [:modal/hide :payment.source/add])
+          :footer    nil}
          [:div
           (r/as-element (ant/create-form
-                         (form/credit-card {:is-submitting @(subscribe [:ui/loading? :services.cart.add.card/save-stripe-token!])
-                                            :on-add-card   #(dispatch [:services.cart.add.card/save-stripe-token! %])
-                                            :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])})))
+                         (form/credit-card
+                          {:is-submitting @(subscribe [:ui/loading? :services.cart.add.card/save-stripe-token!])
+                           :on-add-card   #(dispatch [:services.cart.add.card/save-stripe-token! %])
+                           :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])})))
 
 
 ;; ==============================================================================
@@ -349,9 +372,8 @@
 
 
 (defmethod content :services/book [_]
-  (let [selected   (subscribe [:services.book/category])
-        catalogues (subscribe [:services.book/catalogues])
-        c          (first (filter #(= @selected (:key %)) @catalogues))]
+  (let [selected (subscribe [:services.book/category])
+        services (subscribe [:services.book/services-by-catalog @selected])]
     [:div
      [services/service-modal
       {:action      "Add"
@@ -363,11 +385,7 @@
        :on-submit   #(dispatch [:services.add-service/add])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [categories]
-     (if (= @selected :all)
-       (doall
-        (->> (map (fn [c] (update c :items #(take 2 %))) @catalogues)
-             (map-indexed #(with-meta [catalogue %2] {:key %1}))))
-       [catalogue c])
+     [catalog @services]
      [shopping-cart-button]]))
 
 
@@ -392,7 +410,6 @@
 (defmethod content :services/cart [{:keys [requester] :as route}]
   (let [cart-items (subscribe [:services.cart/cart])]
     [:div
-     ;; (.log js/console @cart-items)
      [modal-add-credit-card]
      [services/service-modal
       {:action      "Edit"
@@ -404,7 +421,7 @@
        :on-submit   #(dispatch [:services.cart.item/save-edit])
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
-       [shopping-cart-body @cart-items requester]
+       [shopping-cart-body (sort-by :index @cart-items) requester]
        [empty-cart])]))
 
 
