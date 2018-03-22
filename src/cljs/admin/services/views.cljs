@@ -448,7 +448,7 @@
 
 
 (defn- service-entry-field [{:keys [id index type label required options]}]
-  [:div.columns
+  [:div.columns {:key id}
    [:div.column.is-1
     [:p [:b "Type"]]
     [:div (clojure.core/name type)]]
@@ -463,7 +463,8 @@
 
    (when (and (= :service-field.type/dropdown type) (not (empty? options)))
      [:div [:b "Options: "]
-      (map (fn [option] (str (:label option))) options)])])
+      (map (fn [option]
+             [:span {:key (:id option)} (:label option)]) options)])])
 
 
 (defn- service-entry [service]
