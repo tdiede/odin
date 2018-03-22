@@ -341,6 +341,36 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
+(defn active-subscription-item
+  [{:keys [name price status fields] :as subscription}]
+  [ant/card
+   [:div.columns
+    [:div.column.is-6
+     [:span [ant/button {:icon "plus"
+                         :style {:width        "30px"
+                                 :align        "center"
+                                 :padding      "0px"
+                                 :font-size    20
+                                 :margin-right "10px"}}]]
+     [:span {:style {:display "inline-block"}}
+      [:p.body name]]]
+    [:div.column.is-2
+     [:p "billed date"]]
+    [:div.column.is-2
+     [:p.body (if (some? price)
+                (format/currency price)
+                (format/currency 0))]]
+    [:div.column.is-2
+     [ant/tag status]]]])
+
+
+(defn active-subscriptions [subscriptions]
+  [:div
+   (map
+    #(with-meta [active-subscription-item %] {:key (:id %)})
+    (sort-by :created > subscriptions))])
+
+
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
@@ -377,14 +407,19 @@
 
 
 (defmethod content :services/subscriptions [_]
-  [:div
-   [manage-subscriptions-header]
-   ])
+  (let [subscriptions (subscribe [:orders/subscriptions])]
+    [:div
+     (.log js/console @subscriptions)
+     [manage-subscriptions-header]
+     [active-subscriptions @subscriptions]
+     ]))
 
 
 (defmethod content :services/history [_]
-  [:div
-   [:h3 "Look at all the things youve ordered, yo"]])
+  (let [history (subscribe [:orders/history])]
+    [:div
+     (.log js/console @history)
+     [:h3 "Look at all the things youve ordered, yo"]]))
 
 
 

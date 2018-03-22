@@ -282,7 +282,10 @@
             :created               {:type    (non-null :Instant)
                                     :resolve :entity/created}
             :updated               {:type    (non-null :Instant)
-                                    :resolve :entity/updated}}}
+                                    :resolve :entity/updated}
+            :billed                {:type        :service_billed
+                                    :description "Orders are billed `once` for one time services or `monthly` for subscriptions"
+                                    :resolve     (:get :order/service :service/billed)}}}
 
 
   :order_field

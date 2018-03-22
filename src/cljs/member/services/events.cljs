@@ -77,7 +77,7 @@
  :services/fetch-orders
  (fn [{db :db} [k account]]
    {:graphql {:query [[:orders {:params {:accounts [account]}}
-                       [:id :name :price :status :created
+                       [:id :name :price :status :created :billed
                         [:fields [:id :label :value :type :index]]]]]
               :on-success [::fetch-orders k]
               :on-failure [:graphql/failure k]}}))
@@ -113,6 +113,7 @@
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
+     (.log js/console property-id)
      {:graphql {:query [[:services {:params {:properties [property-id]}}
                          [:id :name :description :price :catalogs
                           [:fields [:id :index :label :type :required
