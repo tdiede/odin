@@ -1,5 +1,6 @@
 (ns member.services.events
   (:require [akiroz.re-frame.storage :refer [reg-co-fx!]]
+            [antizer.reagent :as ant]
             [member.routes :as routes]
             [member.services.db :as db]
             [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
@@ -29,8 +30,11 @@
 (reg-event-fx
  ::clear-cart
  (fn [_ [k]]
+   (ant/notification-success {:message  "Premium service orders made!"
+                              :duration 2.75})
    {:dispatch-n [[::save-cart []]
-                 [:ui/loading k false]]}))
+                 [:ui/loading k false]]
+    :route      (routes/path-for :services/active-orders)}))
 
 
 (defmethod routes/dispatches :services/book
@@ -113,7 +117,6 @@
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
-     (.log js/console property-id)
      {:graphql {:query [[:services {:params {:properties [property-id]}}
                          [:id :name :description :price :catalogs
                           [:fields [:id :index :label :type :required
@@ -163,10 +166,11 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [id name description fields]}]]
+ (fn [{db :db} [_ {:keys [id name description price fields]}]]
    (let [service {:id          id
                   :name        name
-                  :description description}]
+                  :description description
+                  :price       price}]
      {:dispatch [:modal/show db/modal]
       :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
@@ -231,8 +235,7 @@
       :graphql {:mutation   [[:order_create_many {:params order-params}
                               [:id]]]
                 :on-success [::clear-cart k]
-                :on-failure [:graphql/failure k]
-                }})))
+                :on-failure [:graphql/failure k]}})))
 
 
 (defn reindex-cart [cart]
@@ -295,6 +298,26 @@
 (reg-event-fx
  ::services-create-card-source-success
  (fn [{:keys [db]} [_ k response]]
+   (ant/notification-success {:message     "Payment method added!"
+                              :description "You can now pay for premium services with your credit card on file"
+                              :duration    2.75})
    {:dispatch-n [[:ui/loading k false]
                  [:modal/hide :payment.source/add]]
     :route      (routes/path-for :services/cart)}))
+
+
+;; ==============================================================================
+;; orders =======================================================================
+;; ==============================================================================
+
+
+;; TODO implement mutations for this
+(reg-event-fx
+ :services.order/cancel-order
+ [(path db/path)]
+ (fn [{db :db} [_ id]]
+   {:db (update-in db [:orders]
+                   #(map (fn [order] (if (= (:id order) id)
+                                      (assoc order :status :cancelled)
+                                      order))
+                         %))}))

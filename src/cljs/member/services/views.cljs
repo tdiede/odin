@@ -280,16 +280,16 @@
    [column-fields-2 fields]])
 
 
-(defn above-the-fold [{:keys [name created price status]} is-open]
+(defn above-the-fold [{:keys [id name created price status]} is-open]
   [:div.columns
    [:div.column.is-6
     [:span [ant/button {:on-click #(swap! is-open not)
-                        :icon  (if @is-open "minus" "plus")
-                        :style {:width        "30px"
-                                :align        "center"
-                                :padding      "0px"
-                                :font-size    20
-                                :margin-right "10px"}}]]
+                        :icon     (if @is-open "minus" "plus")
+                        :style    {:width        "30px"
+                                   :align        "center"
+                                   :padding      "0px"
+                                   :font-size    20
+                                   :margin-right "10px"}}]]
     [:span {:style {:display "inline-block"}}
      [:p.body name]]]
    [:div.column.is-2
@@ -302,8 +302,9 @@
     [ant/tag status]]
    [:div.column.is-2.has-text-right
     (when (= status :pending)
-      [ant/button {:type "danger"
-                   :icon "close"} "Cancel"])]])
+      [ant/button {:on-click #(dispatch [:services.order/cancel-order id])
+                   :type     "danger"
+                   :icon     "close"} "Cancel"])]])
 
 
 (defn active-order-item [{:keys [fields] :as order}]
@@ -372,6 +373,27 @@
 
 
 ;; ==============================================================================
+;; order history ================================================================
+;; ==============================================================================
+
+
+(defn order-history-header []
+  [:div.columns {:style {:padding        "0 1.5rem"
+                         :margin-bottom  "0"
+                         :text-transform "uppercase"}}
+   [:div.column.is-4
+    [:h4.subtitle.is-6.bold "Service service"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Completed"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Date charged"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Price"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Status"]]])
+
+
+;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
 
@@ -419,6 +441,7 @@
   (let [history (subscribe [:orders/history])]
     [:div
      (.log js/console @history)
+     [order-history-header]
      [:h3 "Look at all the things youve ordered, yo"]]))
 
 
