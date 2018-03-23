@@ -101,9 +101,9 @@
        :value     (:value field)
        :on-change #(on-change (:index field) %)}
       (doall
-       (map-indexed
-        #(with-meta [ant/select-option {:value %2} (:label %2)] {:key %1})
-        (:options field)))]]]])
+       (map
+        #(with-meta [ant/select-option {:value (:value %)} (:label %)] {:key (:index %)})
+        (sort-by :index (:options field))))]]]])
 
 
 (defmethod form-fields :number [k field {on-change :on-change}]
