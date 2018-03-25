@@ -149,11 +149,27 @@
    {:dispatch-n [[:service.form/clear]
                  [:service/toggle-is-editing false]]}))
 
-
+;; send the entire form to graphql. let the resolver determine which attrs to update
 (reg-event-fx
  :service/save-edits
  [(path db/path)]
- (fn [{db :db} _ edits]))
+ (fn [{db :db} [k service-id form]]
+   (js/console.log "updating service " service-id)
+   {:graphql {:mutation   [[:service_update {:service service-id
+                                             :params  form}
+                            [:id]]]
+              :on-success [::update-success k]
+              :on-failure [:graphql/failure k]}}))
+
+(reg-event-fx
+ ::update-success
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   {:dispatch-n [[:services/query]
+                 [:service.form/hide]
+                 [:service.form/clear]]
+    :notification [:success "Your changes have been saved!"]
+    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_update :id])))}))
 
 
 
