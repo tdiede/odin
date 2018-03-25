@@ -176,6 +176,21 @@
                  :rental      {:type Boolean}}}
 
 
+  :service_update_params
+  {:description "Parameters to update a new service"
+   :fields {:name        {:type String}
+            :code        {:type String}
+            :description {:type String}
+            :catalogs    {:type (list String)}
+            :active      {:type Boolean}
+            :fields      {:type (list :service_field_object)}
+            :properties  {:type (list :Long)}
+            :price       {:type Float}
+            :cost        {:type Float}
+            :billed      {:type :service_billed}
+            :rental      {:type Boolean}}}
+
+
   :units_query_params
   {:description "Parameters to query for units."
    :fields      {:property {:type        :Long

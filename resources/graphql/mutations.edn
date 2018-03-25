@@ -271,6 +271,13 @@
                            :description "The service's id."}}
    :resolve     :service/delete!}
 
+  :service_update
+  {:type        :service
+   :description "edit an existing premium service offering's details"
+   :args        {:service {:type        (non-null Long)
+                           :description "The service's id"}
+                 :params  {:type :service_update_params}}
+   :resolve     :service/update!}
 
 
   ;; units ========================================================================

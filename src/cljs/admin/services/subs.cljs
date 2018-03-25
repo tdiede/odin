@@ -19,6 +19,12 @@
    (norms/denormalize db :services/norms)))
 
 (reg-sub
+ :service-id
+ :<- [db/path]
+ (fn [db _]
+   (:service-id db)))
+
+(reg-sub
  :service
  :<- [db/path]
  (fn [db [_ service-id]]

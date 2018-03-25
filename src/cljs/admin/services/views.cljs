@@ -612,14 +612,17 @@
      "Select a service from the list to see more details."]))
 
 (defn services-editing-container [route]
-  (let [service-id (get-in route [:params :service-id])]
+  (let [service-id (subscribe [:service-id])
+        form       (subscribe [:services/form])]
     [:div.column.is-9
      [:div.mb2
       [:div
        [ant/button
         {:on-click #(dispatch [:service/cancel-edit])}
         "Cancel"]
-       [ant/button "Save Changes"]]]
+       [ant/button
+        {:on-click #(dispatch [:service/save-edits @service-id @form])}
+        "Save Changes"]]]
      [create-service-form]]))
 
 (defn services-subview
