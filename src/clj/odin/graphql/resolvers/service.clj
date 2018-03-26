@@ -197,23 +197,14 @@
   (let [catalogs (service/catalogs service)
         keep     (filter #(% catalogs) catalogs-params)
         added    (remove #(% catalogs) catalogs-params)
-        removed  (remove #(% catalogs-params) catalogs)]
-
-    (timbre/info "\nkeep has...")
-    (clojure.pprint/pprint keep)
-
-    (timbre/info "\nadded has...")
-    (clojure.pprint/pprint added)
-
-    (timbre/info "\nremoved has...")
-    (clojure.pprint/pprint removed)
+        removed  (set/difference (set catalogs) (set (concat keep added)))]
 
     (cond-> []
       (not (empty? added))
       (concat (map #(vector :db/add (td/id service) :service/catalogs %) added))
 
       (not (empty? removed))
-      (concat (map #(vector :db.fn/retract (td/id service) :service/catalogs %) removed)))
+      (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))
     ))
 
 
@@ -346,7 +337,7 @@
   (update-mock 17592186046059 {:name        "Party"
                                :description "Party party party hard / party in a dude's back yard / party once and party twice / party hard, to be precise"
                                :code        "party,party,party,hard"
-                               :catalogs    '(:pets :storage)
+                               :catalogs    '(:subscriptions :storage)
                                :properties  [285873023222987]
                                :price       27.0
                                :cost        1.50
