@@ -204,9 +204,36 @@
       (concat (map #(vector :db/add (td/id service) :service/catalogs %) added))
 
       (not (empty? removed))
-      (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))
-    ))
+      (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))))
 
+
+
+(defn update-service-properties-tx
+  [service properties-params]
+  (let [existing     (set (map td/id (service/properties service)))
+        [keep added] (map set ((juxt filter remove) (partial contains? existing) properties-params))
+        removed   (set/difference existing (set/union keep added))]
+
+
+    (cond-> []
+      (not (empty? added))
+      (concat (map #(vector :db/add (td/id service) :service/properties %) added))
+
+      (not (empty? removed))
+      (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
+
+
+(comment
+
+  (let [service      (d/entity (d/db conn) 17592186046059)
+        existing     (set (map td/id (service/properties service)))
+        incoming     [285873023222987 285873023222998 285873023223414]
+        [keep added] (map set ((juxt filter remove) (partial contains? existing) incoming))
+        to-retract   (set/difference existing (set/union keep added))
+        ]
+    [keep added to-retract])
+
+  )
 
 
 (defn edit-service-tx
@@ -251,11 +278,11 @@
       ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
       (concat (update-service-catalogs-tx existing (:catalogs updated)))
-      #_(conj [:db/add id :service/catalogs (vec (:catalogs updated))])
 
       ;; properties - existing has a set of lookup refs (by property id). updated is a vector of property ids.
       ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
-      #_(and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
+      (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
+      (concat (update-service-properties-tx existing (:properties updated)))
       #_(conj [:db/add id :service/properties (set (map td/id (:properties updated)))])
 
       ;; fields - handled by their own special function
@@ -275,14 +302,13 @@
         :description "Let's steam some weasels."
         :code        "test,edits,plzwork"
         :catalogs    [:storage :subscriptions]
-        :properties  [285873023222987]
+        :properties  [285873023222987 285873023222998] ;; 2987-> West SoMa, 2998-> Mission
         :price       15.0
         :cost        3.0
         :active      true
         :billed      :once}
        (edit-service-tx service))
 
-;; expected result of above: add subscriptions, keep storage, retract pets
 
   (->> [{:id    17592186046048
          :index 0
