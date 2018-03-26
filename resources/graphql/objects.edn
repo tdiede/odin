@@ -285,7 +285,7 @@
                                     :resolve :entity/updated}
             :billed                {:type        :service_billed
                                     :description "Orders are billed `once` for one time services or `monthly` for subscriptions"
-                                    :resolve     (:get :order/service :service/billed)}}}
+                                    :resolve     (:keyword/name :order/service :service/billed)}}}
 
 
   :order_field

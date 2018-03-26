@@ -167,14 +167,14 @@
  :orders/active
  :<- [db/path]
  (fn [db _]
-   (filter #(and (not= (:billed %) :service.billed/monthly) (= (:status %) :pending)) (:orders db))))
+   (filter #(and (not= (:billed %) :monthly) (= (:status %) :pending)) (:orders db))))
 
 
 (reg-sub
  :orders/subscriptions
  :<- [db/path]
  (fn [db _]
-   (filter #(and (= (:billed %) :service.billed/monthly) (not= (:status %) :cancelled)) (:orders db))))
+   (filter #(and (= (:billed %) :monthly) (not= (:status %) :cancelled)) (:orders db))))
 
 
 (reg-sub

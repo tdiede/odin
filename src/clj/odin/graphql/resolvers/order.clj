@@ -75,7 +75,8 @@
   [{conn :conn} _ order-field]
   (let [svc-field (:order-field/service-field order-field)
         value-key (:order/order-field-key svc-field)]
-    (value-key order-field)))
+    (when (some? value-key)
+      (value-key order-field))))
 
 
 ;; =============================================================================
@@ -126,8 +127,9 @@
      (venia.core/graphql-query
       {:venia/queries
        [[:orders {:params {:billed [:once]
-                           :accounts [285873023223095]}}
-         [:name :billed]]]})
+                           :accounts [285873023223100]}}
+         [:name :billed
+          #_[:fields [:id :label :index :value]]]]]})
      nil
      {:conn      conn
       :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
