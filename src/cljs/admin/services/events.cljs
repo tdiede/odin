@@ -155,11 +155,14 @@
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
    (js/console.log "updating service " service-id)
-   {:graphql {:mutation   [[:service_update {:service service-id
-                                             :params  form}
-                            [:id]]]
+   (js/console.log "and my form says" form)
+   {:graphql {:mutation
+              [[:service_update {:id     service-id
+                                 :params form}
+                [:id]]]
               :on-success [::update-success k]
-              :on-failure [:graphql/failure k]}}))
+              :on-failure [:graphql/failure k]}}
+   ))
 
 (reg-event-fx
  ::update-success

@@ -8,7 +8,8 @@
             [blueprints.models.source :as source]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [re-frame.db :as db]))
 
 ;; =============================================================================
 ;; Fields
@@ -191,12 +192,22 @@
                       :service/fields (service/create-field label type field)})
                    new)))))
 
+(defn update-service-catalogs-tx
+  [service catalogs-params]
+  (let [catalogs (service/catalogs service)
+        keep     (filter #(% catalogs) catalogs-params)
+        added    (remove #(% catalogs) catalogs-params)]
+    (map (fn [new-cat]
+           [:db/add (td/id service) :service/catalogs new-cat])
+         added)
+    ))
+
 
 
 (defn edit-service-tx
   [existing updated]
   (timbre/info "\n\n ====================current service name is: "(:service/name existing))
-  (let [id (td/id existing)]
+  (let [id (:db/id existing)]
     (cond-> []
 
       ;; special case - there's a name-internal attribute for some reason.
@@ -204,50 +215,43 @@
       (conj [:db/add id :service/name (:name updated)])
 
       ;; special case - it's `desc` in datomic, but `description` everywhere else
-      (and (not= (:service/desc-internal existing) (:description updated)) (not (nil? (:description updated))))
-      (conj [:db/add id :service/desc-internal (:description updated)])
+      (and (not= (:service/desc existing) (:description updated)) (not (nil? (:description updated))))
+      (conj [:db/add id :service/desc (:description updated)])
 
       ;; default case
-      #_(and (not= (:service/code existing) (:code updated)) (not (nil? (:code updated))))
-      #_(conj [{:db/id        (td/id existing)
-                :service/code (:code updated)}])
+      (and (not= (:service/code existing) (:code updated)) (not (nil? (:code updated))))
+      (conj [:db/add id :service/code (:code updated)])
 
       ;; default case
-      #_(and (not= (:service/price existing) (:price updated)) (not (nil? (:price updated))))
-      #_(conj [{:db/id (td/id existing)
-                :service/price (:price updated)}])
+      (and (not= (:service/price existing) (:price updated)) (not (nil? (:price updated))))
+      (conj [:db/add id :service/price (:price updated)])
 
       ;; default case
-      #_(and (not= (:service/cost existing) (:cost updated)) (not (nil? (:cost updated))))
-      #_(conj [{:db/id (td/id existing)
-                :service/cost (:cost existing)}])
+      (and (not= (:service/cost existing) (:cost updated)) (not (nil? (:cost updated))))
+      (conj [:db/add id :service/cost (:cost updated)])
 
       ;; special case - the billed keyword values are namespaced in datomic, but not in the client
-      #_(and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
-      #_(conj [{:db/id (td/id existing)
-                :service/billed (keyword "service.billed" (name (:billed updated)))}])
+      (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
+      (conj [:db/add id :service/billed (keyword "service.billed" (name (:billed updated)))])
 
       ;; default case
-      #_(and (not= (:service/rental existing) (:rental updated)) (not (nil? (:rental updated))))
-      #_(conj [{:db/id (td/id existing)
-                :service/rental (:rental updated)}])
+      (and (not= (:service/rental existing) (:rental updated)) (not (nil? (:rental updated))))
+      (conj [:db/add id :service/rental (:rental updated)])
 
       ;; default case
-      #_(and (not= (:service/active existing) (:active updated) (not (nil? (:active updated)))))
-      #_(conj [{:db/id (td/id existing)
-                :service/active (:active updated)}])
+      (and (not= (:service/active existing) (:active updated) (not (nil? (:active updated)))))
+      (conj [:db/add id :service/active (:active updated)])
 
       ;; catalogs - existing is a set of keywords. updated is a list of keywords.
       ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
-      #_(and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
-      #_(conj [{:db/id (td/id existing)
-                :service/catalogs (set (:catalogs updated))}])
+      (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
+      (concat (update-service-catalogs-tx existing (:catalogs updated)))
+      #_(conj [:db/add id :service/catalogs (vec (:catalogs updated))])
 
       ;; properties - existing has a set of lookup refs (by property id). updated is a vector of property ids.
       ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       #_(and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      #_(conj [{:db/id (td/id existing)
-                :service/properties (set (map td/id (:properties updated)))}])
+      #_(conj [:db/add id :service/properties (set (map td/id (:properties updated)))])
 
       ;; fields - handled by their own special function
 
@@ -259,13 +263,13 @@
 
   (td/mapify (d/entity (d/db conn) 17592186046043))
 
-  (def service (d/entity (d/db conn) 17592186046043))
+  (def service (d/entity (d/db conn) 17592186046059))
 
-  (->> {:id          17592186046043
+  (->> {:id          17592186046059
         :name        "Weaselish Steaming"
         :description "Let's steam some weasels."
-        :code        "test,edits"
-        :catalogs    '(:pets :storage)
+        :code        "test,edits,plzwork"
+        :catalogs    [:pets :storage]
         :properties  [285873023222987]
         :price       15.0
         :cost        3.0
@@ -301,38 +305,37 @@
 
 
 (defn update!
-  [{:keys [conn requester]} {:keys [service params]} _]
+  [{:keys [conn requester]} {:keys [service-id params]} _]
+  (timbre/info "\n\n--------------- we updatin boyzzzzz ---------------------\n")
+  (timbre/info (str "\n service-id is " service-id))
+  (timbre/info "\n and params are \n")
+  (clojure.pprint/pprint params)
   (let [service (d/entity (d/db conn) service-id)]
-    (timbre/info "\n\n--------------- we updatin boyzzzzz ---------------------\n\n\n")
     @(d/transact conn (concat
-                       [(edit-service-tx service params)
-                        #_(service/edit service (parse-mutate-params params))
-                        (source/create requester)]
+                       (edit-service-tx service params)
+                       [(source/create requester)]
                        (update-service-fields-tx (d/db conn) service (:fields params))))
-    (d/entity (d/db conn) service)))
+    (d/entity (d/db conn) service-id)))
 
 (comment
   (defn update-mock
     [service-id params]
-    (timbre/info "\n\n--------------- we updatin boyzzzzz ---------------------\n")
     (let [service (d/entity (d/db conn) service-id)]
-      (timbre/info "\n\n in case it's interesting, here is the service we're updating:")
-      (clojure.pprint/pprint (td/mapify service))
-      (timbre/info "if there's nothing above that line, we're fucked")
       @(d/transact conn (concat
-                         [(edit-service-tx service params)
-                          #_(source/create requester)]
+                         (edit-service-tx service params)
+                          #_(source/create requester)
                          (update-service-fields-tx (d/db conn) service (:fields params))))
       (d/entity (d/db conn) service-id)))
 
-  (update-mock 17592186046043 {:name        "Weaselish Steaming"
-                               :description "Let's steam some weasels."
-                               :code        "test,edits"
+  (update-mock 17592186046059 {:name        "Party"
+                               :description "Party party party hard / party in a dude's back yard / party once and party twice / party hard, to be precise"
+                               :code        "party,party,party,hard"
                                :catalogs    '(:pets :storage)
                                :properties  [285873023222987]
-                               :price       15.0
-                               :cost        3.0
-                               :billed      :once})
+                               :price       27.0
+                               :cost        1.50
+                               :active      false
+                               :billed      :monthly})
 
 
   )
