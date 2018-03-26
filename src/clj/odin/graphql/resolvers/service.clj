@@ -196,10 +196,24 @@
   [service catalogs-params]
   (let [catalogs (service/catalogs service)
         keep     (filter #(% catalogs) catalogs-params)
-        added    (remove #(% catalogs) catalogs-params)]
-    (map (fn [new-cat]
-           [:db/add (td/id service) :service/catalogs new-cat])
-         added)
+        added    (remove #(% catalogs) catalogs-params)
+        removed  (remove #(% catalogs-params) catalogs)]
+
+    (timbre/info "\nkeep has...")
+    (clojure.pprint/pprint keep)
+
+    (timbre/info "\nadded has...")
+    (clojure.pprint/pprint added)
+
+    (timbre/info "\nremoved has...")
+    (clojure.pprint/pprint removed)
+
+    (cond-> []
+      (not (empty? added))
+      (concat (map #(vector :db/add (td/id service) :service/catalogs %) added))
+
+      (not (empty? removed))
+      (concat (map #(vector :db.fn/retract (td/id service) :service/catalogs %) removed)))
     ))
 
 
@@ -269,13 +283,15 @@
         :name        "Weaselish Steaming"
         :description "Let's steam some weasels."
         :code        "test,edits,plzwork"
-        :catalogs    [:pets :storage]
+        :catalogs    [:storage :subscriptions]
         :properties  [285873023222987]
         :price       15.0
         :cost        3.0
+        :active      true
         :billed      :once}
        (edit-service-tx service))
 
+;; expected result of above: add subscriptions, keep storage, retract pets
 
   (->> [{:id    17592186046048
          :index 0
