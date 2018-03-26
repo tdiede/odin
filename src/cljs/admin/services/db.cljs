@@ -11,8 +11,10 @@
                     :code        ""
                     :properties  []
                     :catalogs    []
+                    :active      false
                     :price       0.0
                     :cost        0.0
+                    :billed      :once
                     :rental      false
                     :fields      []})
 

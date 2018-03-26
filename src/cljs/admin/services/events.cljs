@@ -157,8 +157,8 @@
    (js/console.log "updating service " service-id)
    (js/console.log "and my form says" form)
    {:graphql {:mutation
-              [[:service_update {:id     service-id
-                                 :params form}
+              [[:service_update {:service_id service-id
+                                 :params  (dissoc form :fields)}
                 [:id]]]
               :on-success [::update-success k]
               :on-failure [:graphql/failure k]}}
@@ -210,36 +210,20 @@
 
 
 (reg-event-db
- :service.form/populate-from-service
- [(path db/path)]
- (fn [db [_ {:keys [name description code properties catalogs price cost rental fields]}]]
-   (let [populated-form
-         (tb/assoc-some db/form-defaults
-                        :name name
-                        :description description
-                        :code code
-                        :properties properties
-                        :catalogs catalogs
-                        :price price
-                        :cost cost
-                        :rental rental
-                        :fields fields)]
-     (assoc db :form populated-form))))
-
-
-(reg-event-db
  :service.form/populate
  [(path db/path)]
  (fn [db [_ service]]
    (if (not (nil? service))
-     (let [{:keys [name description code properties catalogs price cost rental fields]} service]
+     (let [{:keys [name description code active properties catalogs price cost billed rental fields]} service]
        (assoc db :form {:name name
                         :description description
                         :code code
+                        :active active
                         :properties properties
-                        :catalogs catalogs
+                        :catalogs (map clojure.core/name catalogs)
                         :price price
                         :cost cost
+                        :billed billed
                         :rental rental
                         :fields (if (nil? fields)
                                   []

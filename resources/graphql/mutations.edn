@@ -274,7 +274,7 @@
   :service_update
   {:type        :service
    :description "edit an existing premium service offering's details"
-   :args        {:service {:type        (non-null Long)
+   :args        {:service_id {:type        (non-null Long)
                            :description "The service's id"}
                  :params  {:type :service_update_params}}
    :resolve     :service/update!}

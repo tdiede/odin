@@ -227,7 +227,7 @@
 
   (let [service      (d/entity (d/db conn) 17592186046059)
         existing     (set (map td/id (service/properties service)))
-        incoming     [285873023222987 285873023222998 285873023223414]
+        incoming     [285873023222987 285873023222998]
         [keep added] (map set ((juxt filter remove) (partial contains? existing) incoming))
         to-retract   (set/difference existing (set/union keep added))
         ]
@@ -238,56 +238,37 @@
 
 (defn edit-service-tx
   [existing updated]
-  (timbre/info "\n\n ====================current service name is: "(:service/name existing))
   (let [id (:db/id existing)]
     (cond-> []
-
-      ;; special case - there's a name-internal attribute for some reason.
       (and (not= (:service/name existing) (:name updated)) (not (nil? (:name updated))))
       (conj [:db/add id :service/name (:name updated)])
 
-      ;; special case - it's `desc` in datomic, but `description` everywhere else
       (and (not= (:service/desc existing) (:description updated)) (not (nil? (:description updated))))
       (conj [:db/add id :service/desc (:description updated)])
 
-      ;; default case
       (and (not= (:service/code existing) (:code updated)) (not (nil? (:code updated))))
       (conj [:db/add id :service/code (:code updated)])
 
-      ;; default case
       (and (not= (:service/price existing) (:price updated)) (not (nil? (:price updated))))
       (conj [:db/add id :service/price (:price updated)])
 
-      ;; default case
       (and (not= (:service/cost existing) (:cost updated)) (not (nil? (:cost updated))))
       (conj [:db/add id :service/cost (:cost updated)])
 
-      ;; special case - the billed keyword values are namespaced in datomic, but not in the client
       (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
       (conj [:db/add id :service/billed (keyword "service.billed" (name (:billed updated)))])
 
-      ;; default case
       (and (not= (:service/rental existing) (:rental updated)) (not (nil? (:rental updated))))
       (conj [:db/add id :service/rental (:rental updated)])
 
-      ;; default case
       (and (not= (:service/active existing) (:active updated) (not (nil? (:active updated)))))
       (conj [:db/add id :service/active (:active updated)])
 
-      ;; catalogs - existing is a set of keywords. updated is a list of keywords.
-      ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
-      (concat (update-service-catalogs-tx existing (:catalogs updated)))
+      (concat (update-service-catalogs-tx existing (map keyword (:catalogs updated))))
 
-      ;; properties - existing has a set of lookup refs (by property id). updated is a vector of property ids.
-      ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      (concat (update-service-properties-tx existing (:properties updated)))
-      #_(conj [:db/add id :service/properties (set (map td/id (:properties updated)))])
-
-      ;; fields - handled by their own special function
-
-      )))
+      (concat (update-service-properties-tx existing (:properties updated))))))
 
 (comment
 
@@ -295,22 +276,31 @@
 
   (td/mapify (d/entity (d/db conn) 17592186046043))
 
-  (def service (d/entity (d/db conn) 17592186046059))
+  (def service (d/entity (d/db conn) 17592186046114))
 
-  (->> {:id          17592186046059
-        :name        "Weaselish Steaming"
-        :description "Let's steam some weasels."
+  (->> {:id          17592186046114
+        :name        "Edited Test Service"
+        :description "edited service descriptions"
         :code        "test,edits,plzwork"
         :catalogs    [:storage :subscriptions]
         :properties  [285873023222987 285873023222998] ;; 2987-> West SoMa, 2998-> Mission
         :price       15.0
         :cost        3.0
         :active      true
-        :billed      :once}
+        :billed      :once
+        :fields      [{:id       17592186046082
+                       :index    0
+                       :type     :text
+                       :label    "keep me!"
+                       :required true
+                       :options  '()}
+                      {:index 1
+                       :type :text
+                       :label "one more, plz"}]}
        (edit-service-tx service))
 
 
-  (->> [{:id    17592186046048
+  (->> [{:id    17592186046076
          :index 0
          :label "blah blah"}
         {:index    2
@@ -338,37 +328,43 @@
 
 
 (defn update!
-  [{:keys [conn requester]} {:keys [service-id params]} _]
-  (timbre/info "\n\n--------------- we updatin boyzzzzz ---------------------\n")
-  (timbre/info (str "\n service-id is " service-id))
-  (timbre/info "\n and params are \n")
-  (clojure.pprint/pprint params)
-  (let [service (d/entity (d/db conn) service-id)]
+  [{:keys [conn requester]} {:keys [service_id params]} _]
+  (let [service (d/entity (d/db conn) service_id)]
     @(d/transact conn (concat
-                       (edit-service-tx service params)
+                       (edit-service-tx service (dissoc params :fields))
                        [(source/create requester)]
                        (update-service-fields-tx (d/db conn) service (:fields params))))
-    (d/entity (d/db conn) service-id)))
+    (d/entity (d/db conn) service_id)))
 
 (comment
   (defn update-mock
     [service-id params]
     (let [service (d/entity (d/db conn) service-id)]
       @(d/transact conn (concat
-                         (edit-service-tx service params)
+                         (edit-service-tx service (dissoc params :fields))
                           #_(source/create requester)
                          (update-service-fields-tx (d/db conn) service (:fields params))))
       (d/entity (d/db conn) service-id)))
 
-  (update-mock 17592186046059 {:name        "Party"
-                               :description "Party party party hard / party in a dude's back yard / party once and party twice / party hard, to be precise"
-                               :code        "party,party,party,hard"
-                               :catalogs    '(:subscriptions :storage)
-                               :properties  [285873023222987]
-                               :price       27.0
-                               :cost        1.50
-                               :active      false
-                               :billed      :monthly})
+  (update-mock 17592186046081 {:name        "Edited Test Service - the Squeakuel"
+                               :description "further edited service descriptions, and also it's the squeakuel"
+                               :code        "test,edits,plzwork,squeakuel"
+                               :catalogs    [:pets :subscriptions]
+                               :properties  [285873023222998] ;; 2987-> West SoMa, 2998-> Mission
+                               :price       25.0
+                               :cost        3.0
+                               :rental      true
+                               :active      true
+                               :billed      :once
+                               :fields      [{:id       17592186046082
+                                              :index    0
+                                              :type     :text
+                                              :label    "keep me!"
+                                              :required true
+                                              :options  '()}
+                                             {:index 1
+                                              :type  :text
+                                              :label "one more, plz"}]})
 
 
   )
@@ -386,6 +382,10 @@
 
 
 (defmethod authorization/authorized? :service/create! [_ account _]
+  (account/admin? account))
+
+
+(defmethod authorization/authorized? :service/update! [_ account _]
   (account/admin? account))
 
 

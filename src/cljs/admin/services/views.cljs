@@ -277,7 +277,7 @@
           (map-indexed (fn [i catalog]
                          [ant/select-option
                           {:key   i
-                           :value catalog}
+                           :value (clojure.core/name catalog)}
                           (clojure.core/name catalog)])
                        @catalogs)]]
         [ant/form-item
