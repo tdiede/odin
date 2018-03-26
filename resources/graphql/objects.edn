@@ -301,6 +301,19 @@
                     :resolve (:get :order-field/service-field :service-field/index)}}}
 
 
+  :order_field
+  {:fields {:id    {:type    (non-null :Long)
+                    :resolve (:get :db/id)}
+            :label {:type    (non-null String)
+                    :resolve (:get :order-field/service-field :service-field/label)}
+            :value {:type    :Any
+                    :resolve :order-field/value}
+            :type  {:type    (non-null :service_field_type)
+                    :resolve (:keyword/name :order-field/service-field :service-field/type)}
+            :index {:type    (non-null :Long)
+                    :resolve (:get :order-field/service-field :service-field/index)}}}
+
+
   :line_item
   {:fields {:id    {:type    (non-null :Long)
                     :resolve (:get :db/id)}
