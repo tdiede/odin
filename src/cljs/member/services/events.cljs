@@ -217,12 +217,11 @@
   [cart account]
   (map
    (fn [item]
-     (let [fields (construct-order-fields (:fields item))
-           order  (tb/assoc-when
-                   {:account (:id account)
-                    :service (:service item)}
-                   :fields  fields)]
-       order))
+     (let [fields (construct-order-fields (:fields item))]
+       (tb/assoc-when
+        {:account (:id account)
+         :service (:service item)}
+        :fields  fields)))
    cart))
 
 
