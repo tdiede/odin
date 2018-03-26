@@ -117,14 +117,17 @@
 
 (comment
 
+  (parse-gql-params {:billed [:service.billed/once]})
+
   ;; Run the query.
   (let [conn odin.datomic/conn]
     (com.walmartlabs.lacinia/execute
      odin.graphql/schema
      (venia.core/graphql-query
       {:venia/queries
-       [[:orders {:params {:accounts [285873023223095]}}
-         [:name]]]})
+       [[:orders {:params {:billed [:once]
+                           :accounts [285873023223095]}}
+         [:name :billed]]]})
      nil
      {:conn      conn
       :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
@@ -153,7 +156,6 @@
 (defn parse-params
   "Parse to params and converts them into the needed format"
   [{:keys [fields] :as params}]
-  (let [fs ])
   params)
 
 
@@ -174,7 +176,7 @@
   (let [line-items (when-not (empty? line_items)
                      (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
         fields     (when-not (empty? fields)
-                       (parse-fields db fields))]
+                     (parse-fields db (filter #(identity (:value %)) fields)))]
     (order/create account service
                   (tb/assoc-when
                    {}
@@ -201,7 +203,17 @@
                           :value         "2018-03-21T20:30:00.598Z"}
                          {:service_field 285873023223061 ;; text
                           :value         nil}]}]
-    (parse-fields (d/db odin.datomic/conn) (:fields params)))
+    (parse-fields (d/db odin.datomic/conn) (filter #(identity (:value %)) (:fields params))))
+
+  (let [params {:fields [{:service_field 285873023223075 ;; number
+                          :value         "2"}
+                         {:service_field 285873023223053 ;; date
+                          :value         nil};; "2018-03-22T19:47:30.032Z"}
+                         {:service_field 285873023223060 ;; time
+                          :value         "2018-03-21T20:30:00.598Z"}
+                         {:service_field 285873023223061 ;; text
+                          :value         nil}]}]
+    (filter #(identity (:value %)) (:fields params)))
 
   (parse-fields (d/db odin.datomic/conn) [])
 
