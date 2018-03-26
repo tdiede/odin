@@ -316,11 +316,30 @@
          [below-the-fold (sort-by :index fields)])])))
 
 
+#_(defn active-orders [orders]
+    [:div
+     (.log js/console (count orders))
+     (map
+      #(with-meta [active-order-item %] {:key (:id %)})
+      (sort-by :created > orders))])
+
+
 (defn active-orders [orders]
-  [:div
-   (map
-    #(with-meta [active-order-item %] {:key (:id %)})
-    (sort-by :created > orders))])
+  (let [state (r/atom {:current 1 :q ""})]
+    (fn [orders]
+      (let [{:keys [current q]} @state
+            orders' (->> (drop (* (dec current) 10) orders)
+                        (take (* current 10)))]
+        [:div
+         (.log js/console (count orders))
+         (map
+          #(with-meta [active-order-item %] {:key (:id %)})
+          (sort-by :created > orders'))
+         [ant/pagination
+          {:style {:margin-top "20px"}
+           :current current
+           :total (count orders)
+           :on-change #(swap! state assoc :current %)}]]))))
 
 
 ;; ==============================================================================
@@ -393,6 +412,39 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
+(defn order-history-item
+  [{:keys [name price status fields] :as subscription}]
+  [ant/card
+   [:div.columns
+    [:div.column.is-4
+     [:span [ant/button {:icon "plus"
+                         :style {:width        "30px"
+                                 :align        "center"
+                                 :padding      "0px"
+                                 :font-size    20
+                                 :margin-right "10px"}}]]
+     [:span {:style {:display "inline-block"}}
+      [:p.body name]]]
+    [:div.column.is-2
+     [:p "N/A"]]
+    [:div.column.is-2
+     [:p "billed date"]]
+    [:div.column.is-2
+     [:p.body (if (some? price)
+                (format/currency price)
+                (format/currency 0))]]
+    [:div.column.is-2
+     [ant/tag status]]]])
+
+
+(defn order-history-list [history]
+  [:div
+   (map
+    #(with-meta [order-history-item %] {:key (:id %)})
+    (sort-by :created > history))])
+
+
+
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
@@ -442,7 +494,8 @@
     [:div
      (.log js/console @history)
      [order-history-header]
-     [:h3 "Look at all the things youve ordered, yo"]]))
+     [order-history-list @history]
+     #_[:h3 "Look at all the things youve ordered, yo"]]))
 
 
 
