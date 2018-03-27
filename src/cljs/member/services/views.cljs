@@ -194,7 +194,7 @@
        [ant/button
         {:type     "danger"
          :icon     "close"
-         :on-click #(dispatch [:services.cart.item/remove index])}
+         :on-click #(dispatch [:services.cart.item/remove index name])}
         "Remove item"]]]
      (when-not (empty? fields)
        (.log js/console fields)

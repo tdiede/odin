@@ -30,11 +30,10 @@
 (reg-event-fx
  ::clear-cart
  (fn [_ [k]]
-   (ant/notification-success {:message  "Premium service orders made!"
-                              :duration 2.75})
-   {:dispatch-n [[::save-cart []]
-                 [:ui/loading k false]]
-    :route      (routes/path-for :services/active-orders)}))
+   {:dispatch-n   [[::save-cart []]
+                   [:ui/loading k false]]
+    :notification [:success "Your premium service orders have been placed!"]
+    :route        (routes/path-for :services/active-orders)}))
 
 
 (defmethod routes/dispatches :services/book
@@ -186,7 +185,7 @@
 (reg-event-fx
  :services.add-service/add
  [(path db/path) ]
- (fn [{db :db} _]
+ (fn [{db :db} [k]]
    (let [{:keys [id name description price]} (:adding db)
          adding                              {:index       (count (:cart db))
                                               :service     id
@@ -195,8 +194,10 @@
                                               :price       price
                                               :fields      (:form-data db)}
          new-cart                            (conj (:cart db) adding)]
-     {:dispatch-n [[:services.add-service/close]
-                   [::save-cart new-cart]]})))
+     {:dispatch-n   [[:ui/loading k true]
+                     #_[:services.add-service/close]
+                     #_[::save-cart new-cart]]
+      :notification [:success (str name " has been added to your cart")]})))
 
 
 ;; is this really needed? it seems like it still goes into
@@ -230,11 +231,11 @@
  [(path db/path)]
  (fn [{db :db} [k account]]
    (let [order-params (create-order-params (:cart db) account)]
-     {:dispatch  [:ui/loading k true]
-      :graphql {:mutation   [[:order_create_many {:params order-params}
-                              [:id]]]
-                :on-success [::clear-cart k]
-                :on-failure [:graphql/failure k]}})))
+     {:dispatch [:ui/loading k true]
+      :graphql  {:mutation   [[:order_create_many {:params order-params}
+                               [:id]]]
+                 :on-success [::clear-cart k]
+                 :on-failure [:graphql/failure k]}})))
 
 
 (defn reindex-cart [cart]
@@ -247,9 +248,10 @@
 (reg-event-fx
  :services.cart.item/remove
  [(path db/path)]
- (fn [{db :db} [_ index]]
+ (fn [{db :db} [_ index name]]
    (let [new-cart (reindex-cart (remove #(= index (:index %)) (:cart db)))]
-     {:dispatch [::save-cart new-cart]})))
+     {:dispatch     [::save-cart new-cart]
+      :notification [:success (str name " has been removed from your cart")]})))
 
 
 ;; this is the same as services.add-service/show, should probably rename that to make it generic
@@ -297,12 +299,10 @@
 (reg-event-fx
  ::services-create-card-source-success
  (fn [{:keys [db]} [_ k response]]
-   (ant/notification-success {:message     "Payment method added!"
-                              :description "You can now pay for premium services with your credit card on file"
-                              :duration    2.75})
-   {:dispatch-n [[:ui/loading k false]
-                 [:modal/hide :payment.source/add]]
-    :route      (routes/path-for :services/cart)}))
+   {:dispatch-n   [[:ui/loading k false]
+                   [:modal/hide :payment.source/add]]
+    :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
+    :route        (routes/path-for :services/cart)}))
 
 
 ;; ==============================================================================
