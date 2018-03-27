@@ -234,7 +234,12 @@
 
 (defn fields-card [fields]
   [ant/card {:title "Fields" :extra (r/as-element [add-fields-menu])}
-   (doall (map render-service-field fields))])
+   (doall
+    (map-indexed
+     #(with-meta
+        [render-service-field %2]
+        {:key %1})
+     (sort-by :index fields)))])
 
 
 (defn create-service-form []
@@ -583,10 +588,13 @@
         [:p "No fields found."]
 
         [:div
-         (map
-          (fn [field]
+         (map-indexed
+          #(with-meta
+             [service-entry-field %2]
+             {:key %1})
+          #_(fn [field]
             [service-entry-field field])
-          fields)])]]))
+          (sort-by :index fields))])]]))
 
 
 (defn services-list-container [services]

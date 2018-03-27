@@ -136,25 +136,20 @@
 
   :service_field_option_object
   {:description "The options given to a member in a service field of type `:dropdown`"
-   :fields      {:index       {:type (non-null Int)}
+   :fields      {:index       {:type (non-null :Long)}
+                 :label       {:type (non-null String)}
                  :value       {:type (non-null String)}
-                 :field_index {:type (non-null Int)}}}
-
-  :service_field_option_object_bonus
-  {:description "The options given to a member in a service field of type `:dropdown`"
-   :fields      {:index       {:type Int}
-                 :value       {:type String}
-                 :field_index {:type Int}}}
+                 :field_index {:type (non-null :Long)}}}
 
 
   :service_field_object
   {:description "Custom fields to be defined when a new `service` is created."
-   :fields      {:index    {:type (non-null Int)}
+   :fields      {:index    {:type (non-null :Long)}
                  :id       {:type :Long}
                  :type     {:type (non-null :service_field_type)}
                  :label    {:type (non-null String)}
                  :required {:type Boolean}
-                 :options  {:type (list :service_field_option_object_bonus)}}}
+                 :options  {:type (list :service_field_option_object)}}}
 
 
   :services_query_params

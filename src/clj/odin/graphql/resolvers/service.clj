@@ -128,7 +128,7 @@
   (let [e (d/entity db id)]
     (cond-> []
       (not= (:service-field-option/index e) index)
-      (conj [:db/add id :service-field-option/index index])
+      (conj [:db/add id :service-field-option/index (int index)])
 
       (not= (:service-field-option/label e) label)
       (conj [:db/add id :service-field-option/label label]
@@ -163,7 +163,7 @@
       (conj [:db/add id :service-field/label label])
 
       (not= index (:service-field/index e))
-      (conj [:db/add id :service-field/index index])
+      (conj [:db/add id :service-field/index (int index)])
 
       (not= required (:service-field/required required))
       (conj [:db/add id :service-field/required required])
@@ -338,38 +338,7 @@
                        (update-service-fields-tx (d/db conn) service (:fields params))))
     (d/entity (d/db conn) service_id)))
 
-(comment
-  (defn update-mock
-    [service-id params]
-    (let [service (d/entity (d/db conn) service-id)]
-      @(d/transact conn (concat
-                         (edit-service-tx service (dissoc params :fields))
-                          #_(source/create requester)
-                         (update-service-fields-tx (d/db conn) service (:fields params))))
-      (d/entity (d/db conn) service-id)))
 
-  (update-mock 17592186046081 {:name        "Edited Test Service - the Squeakuel"
-                               :description "further edited service descriptions, and also it's the squeakuel"
-                               :code        "test,edits,plzwork,squeakuel"
-                               :catalogs    [:pets :subscriptions]
-                               :properties  [285873023222998] ;; 2987-> West SoMa, 2998-> Mission
-                               :price       25.0
-                               :cost        3.0
-                               :rental      true
-                               :active      true
-                               :billed      :once
-                               :fields      [{:id       17592186046082
-                                              :index    0
-                                              :type     :text
-                                              :label    "keep me!"
-                                              :required true
-                                              :options  '()}
-                                             {:index 1
-                                              :type  :text
-                                              :label "one more, plz"}]})
-
-
-  )
 
 ;; =============================================================================
 ;; Resolvers
