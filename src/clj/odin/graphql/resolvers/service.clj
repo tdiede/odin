@@ -329,6 +329,8 @@
 
 (defn update!
   [{:keys [conn requester]} {:keys [service_id params]} _]
+  (timbre/info "\n\n ========== let's take a good hard look at what we're working with here ===========")
+  (clojure.pprint/pprint params)
   (let [service (d/entity (d/db conn) service_id)]
     @(d/transact conn (concat
                        (edit-service-tx service (dissoc params :fields))

@@ -158,7 +158,7 @@
    (js/console.log "and my form says" form)
    {:graphql {:mutation
               [[:service_update {:service_id service-id
-                                 :params  (dissoc form :fields)}
+                                 :params  form}
                 [:id]]]
               :on-success [::update-success k]
               :on-failure [:graphql/failure k]}}
@@ -208,6 +208,14 @@
  (fn [_ _]
    {:dispatch [:modal/show :service/create-service-form]}))
 
+(defn vecify-fields
+  "ensure that the list forms returned from graphql are turned into vecs"
+  [fields]
+  (mapv
+   (fn [f]
+     (if (not (nil? (:options f)))
+       (assoc f :options (vec (:options f)))))
+   fields))
 
 (reg-event-db
  :service.form/populate
@@ -227,7 +235,7 @@
                         :rental rental
                         :fields (if (nil? fields)
                                   []
-                                  fields)}))
+                                  (vecify-fields fields))}))
      (assoc db :form db/form-defaults))))
 
 
