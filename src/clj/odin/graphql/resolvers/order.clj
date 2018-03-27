@@ -74,7 +74,7 @@
   "The field value according to the service-field-type"
   [{conn :conn} _ order-field]
   (let [svc-field (:order-field/service-field order-field)
-        value-key (:order/order-field-key svc-field)]
+        value-key (order/order-field-key svc-field)]
     (when (some? value-key)
       (value-key order-field))))
 
@@ -126,10 +126,10 @@
      odin.graphql/schema
      (venia.core/graphql-query
       {:venia/queries
-       [[:orders {:params {:billed [:once]
+       [[:orders {:params {:billed [:monthly]
                            :accounts [285873023223100]}}
          [:name :billed
-          #_[:fields [:id :label :index :value]]]]]})
+          [:fields [:id :type :label :index :value]]]]]})
      nil
      {:conn      conn
       :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
@@ -197,25 +197,27 @@
 
 (comment
 
-  (let [params {:fields [{:service_field 285873023223075 ;; number
+  (let [params {:account 285873023223100
+                :service 285873023223050
+                :fields  [{:service_field 285873023223052
+                           :value         "2018-03-22T19:47:30.032Z"}
+                          {:service_field 285873023223051
+                           :value         "2018-03-22T19:47:30.032Z"}
+                          {:service_field 285873023223053
+                           :value         "Test"}]}]
+    (prepare-order (d/db odin.datomic/conn) params))
+
+
+  (let [params {:fields [{:service_field 285873023223080 ;; number
                           :value         "2"}
-                         {:service_field 285873023223053 ;; date
+                         {:service_field 285873023223051 ;; date
                           :value         nil};; "2018-03-22T19:47:30.032Z"}
-                         {:service_field 285873023223060 ;; time
+                         {:service_field 285873023223051 ;; time
                           :value         "2018-03-21T20:30:00.598Z"}
-                         {:service_field 285873023223061 ;; text
+                         {:service_field 285873023223083 ;; text
                           :value         nil}]}]
     (parse-fields (d/db odin.datomic/conn) (filter #(identity (:value %)) (:fields params))))
 
-  (let [params {:fields [{:service_field 285873023223075 ;; number
-                          :value         "2"}
-                         {:service_field 285873023223053 ;; date
-                          :value         nil};; "2018-03-22T19:47:30.032Z"}
-                         {:service_field 285873023223060 ;; time
-                          :value         "2018-03-21T20:30:00.598Z"}
-                         {:service_field 285873023223061 ;; text
-                          :value         nil}]}]
-    (filter #(identity (:value %)) (:fields params)))
 
   (parse-fields (d/db odin.datomic/conn) [])
 
