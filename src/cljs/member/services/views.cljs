@@ -202,15 +202,17 @@
 
 
 (defn shopping-cart-footer [requester]
-  (let [has-card (subscribe [:payment-sources/has-card? (:id requester)])]
+  (let [has-card   (subscribe [:payment-sources/has-card? (:id requester)])
+        submitting (subscribe [:ui/loading? :services.cart/submit])]
     [:div.cart-footer.has-text-right
      [:p.fs2
       [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
-     [ant/button {:class "ant-btn-xl"
-                  :type "primary"
+     [ant/button {:class    "ant-btn-xl"
+                  :type     "primary"
                   :on-click #(if-not @has-card
                                (dispatch [:modal/show :payment.source/add])
-                               (dispatch [:services.cart/submit requester]))}
+                               (dispatch [:services.cart/submit requester]))
+                  :loading  @submitting}
       "Submit orders"]]))
 
 
@@ -280,31 +282,34 @@
    [column-fields-2 fields]])
 
 
+;; TODO how to make loading indicator for only the item being cancelled
 (defn above-the-fold [{:keys [id name created price status]} is-open]
-  [:div.columns
-   [:div.column.is-6
-    [:span [ant/button {:on-click #(swap! is-open not)
-                        :icon     (if @is-open "minus" "plus")
-                        :style    {:width        "30px"
-                                   :align        "center"
-                                   :padding      "0px"
-                                   :font-size    20
-                                   :margin-right "10px"}}]]
-    [:span {:style {:display "inline-block"}}
-     [:p.body name]]]
-   [:div.column.is-2
-    [:p.body (format/date-short created)]]
-   [:div.column.is-1
-    [:p.body (if (some? price)
-               (format/currency price)
-               (format/currency 0))]]
-   [:div.column.is-1
-    [ant/tag status]]
-   [:div.column.is-2.has-text-right
-    (when (= status :pending)
-      [ant/button {:on-click #(dispatch [:services.order/cancel-order id])
-                   :type     "danger"
-                   :icon     "close"} "Cancel"])]])
+  (let [loading (subscribe [:ui/loading? :services.order/cancel-order])]
+   [:div.columns
+    [:div.column.is-6
+     [:span [ant/button {:on-click #(swap! is-open not)
+                         :icon     (if @is-open "minus" "plus")
+                         :style    {:width        "30px"
+                                    :align        "center"
+                                    :padding      "0px"
+                                    :font-size    20
+                                    :margin-right "10px"}}]]
+     [:span {:style {:display "inline-block"}}
+      [:p.body name]]]
+    [:div.column.is-2
+     [:p.body (format/date-short created)]]
+    [:div.column.is-1
+     [:p.body (if (some? price)
+                (format/currency price)
+                (format/currency 0))]]
+    [:div.column.is-1
+     [ant/tag status]]
+    [:div.column.is-2.has-text-right
+     (when (= status :pending)
+       [ant/button {:on-click #(dispatch [:services.order/cancel-order id])
+                    :type     "danger"
+                    :icon     "close"
+                    :loading  @loading} "Cancel"])]]))
 
 
 (defn active-order-item [{:keys [fields] :as order}]
@@ -464,9 +469,10 @@
        :service     @(subscribe [:services.add-service/adding])
        :form-fields @(subscribe [:services.add-service/form])
        :can-submit  @(subscribe [:services.add-service/can-submit?])
-       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-cancel   #(dispatch [:services.add-service/close :services.add-service/add])
        :on-submit   #(dispatch [:services.add-service/add])
-       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])
+       :loading     @(subscribe [:ui/loading? :services.add-service/add])}]
      [categories]
      [catalog @services]
      [shopping-cart-button]]))
@@ -509,9 +515,10 @@
        :service     @(subscribe [:services.add-service/adding])
        :form-fields @(subscribe [:services.add-service/form])
        :can-submit  @(subscribe [:services.add-service/can-submit?])
-       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-cancel   #(dispatch [:services.add-service/close :services.cart.item/save-edit])
        :on-submit   #(dispatch [:services.cart.item/save-edit])
-       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])
+       :loading     @(subscribe [:ui/loading? :services.cart.item/save-edit])}]
      (if-not (empty? @cart-items)
        [shopping-cart-body (sort-by :index @cart-items) requester]
        [empty-cart])]))

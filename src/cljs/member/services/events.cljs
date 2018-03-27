@@ -29,7 +29,7 @@
 
 (reg-event-fx
  ::clear-cart
- (fn [_ [k]]
+ (fn [_ [_ k]]
    {:dispatch-n   [[::save-cart []]
                    [:ui/loading k false]]
     :notification [:success "Your premium service orders have been placed!"]
@@ -177,8 +177,9 @@
 (reg-event-fx
  :services.add-service/close
  [(path db/path)]
- (fn [{db :db} _]
+ (fn [{db :db} [_ k]]
    {:dispatch-n [[:services.add-service.form/reset]
+                 [:ui/loading k false]
                  [:modal/hide db/modal]]}))
 
 
@@ -195,8 +196,8 @@
                                               :fields      (:form-data db)}
          new-cart                            (conj (:cart db) adding)]
      {:dispatch-n   [[:ui/loading k true]
-                     #_[:services.add-service/close]
-                     #_[::save-cart new-cart]]
+                     [:services.add-service/close k]
+                     [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
 
 
@@ -266,7 +267,7 @@
 (reg-event-fx
  :services.cart.item/save-edit
  [(path db/path)]
- (fn [{db :db} _]
+ (fn [{db :db} [k]]
    (let [new-fields (:form-data db)
          new-cart   (map
                      (fn [item]
@@ -274,7 +275,8 @@
                          (assoc item :fields new-fields)
                          item))
                      (:cart db))]
-     {:dispatch-n [[:services.add-service/close]
+     {:dispatch-n [[:ui/loading k true]
+                   [:services.add-service/close]
                    [::save-cart new-cart]]})))
 
 
@@ -314,9 +316,17 @@
 (reg-event-fx
  :services.order/cancel-order
  [(path db/path)]
- (fn [{db :db} [_ id]]
-   {:db (update-in db [:orders]
-                   #(map (fn [order] (if (= (:id order) id)
-                                      (assoc order :status :cancelled)
-                                      order))
-                         %))}))
+ (fn [{db :db} [k id]]
+   {:dispatch [:ui/loading k true]
+    :graphql {:mutation   [[:cancel_order {:id     id
+                                           :notify true}
+                            [:id :status]]]
+              :on-success [::order-cancel-success k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::order-cancel-success
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n [[:ui/loading k false]
+                 [:services/fetch-orders (get-in db [:account :id])]]}))
