@@ -459,23 +459,35 @@
 
 
 (defn- service-entry-field [{:keys [id index type label required options]}]
-  [:div.columns {:key id}
-   [:div.column.is-1
-    [:p [:b "Type"]]
-    [:div (clojure.core/name type)]]
+  [:divmb0
+   [:div.columns
+    [:div.column.is-1
+     [:p [:b "Type"]]
+     [:div (clojure.core/name type)]]
 
-   [:div.column.is-9
-    [:p [:b "Label"]]
-    [:p label]]
+    [:div.column.is-9
+     [:p [:b "Label"]]
+     [:p label]
+     [:div
+      (when (and (= :dropdown type) (not (empty? options)))
+        [:div
+         [:b "Options: "]
+         (map
+          (fn [option]
+            (with-meta
+              [:span
+               (str
+                (when (not= 0 (:index option))
+                  ", ")
+                (:label option))]
+              {:key (:index option)}))
+          options)])]
+     ]
 
-   [:div.column.is-1
-    [:p [:b "Required?"]]
-    [ant/switch {:checked required}]]
-
-   (when (and (= :dropdown type) (not (empty? options)))
-     [:div.column [:b "Options: "]
-      (map (fn [option]
-             [:span {:key (:label option)} (:label option)]) options)])])
+    [:div.column.is-1
+     [:p [:b "Required?"]]
+     [ant/switch {:checked required}]]]
+   ])
 
 
 (defn- service-entry [service]
@@ -592,8 +604,6 @@
           #(with-meta
              [service-entry-field %]
              {:key (:id %)})
-          #_(fn [field]
-            [service-entry-field field])
           (sort-by :index fields))])]]))
 
 
