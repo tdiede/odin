@@ -526,13 +526,13 @@
          [:p [:b "Properties"]]
          (if (empty? properties)
            [:p "none"]
-           [:p (map-indexed
-                (fn [i property]
-                  (let [property-name (:name  @(subscribe [:property property]))]
-                    (if (zero? i)
-                      property-name
-                      (str ", " property-name))))
-                properties)])]]
+           [:p (doall (map-indexed
+                 (fn [i property]
+                   (let [property-name (:name  @(subscribe [:property property]))]
+                     (if (zero? i)
+                       property-name
+                       (str ", " property-name))))
+                 properties))])]]
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]]
@@ -588,10 +588,10 @@
         [:p "No fields found."]
 
         [:div
-         (map-indexed
+         (map
           #(with-meta
-             [service-entry-field %2]
-             {:key %1})
+             [service-entry-field %]
+             {:key (:id %)})
           #_(fn [field]
             [service-entry-field field])
           (sort-by :index fields))])]]))
