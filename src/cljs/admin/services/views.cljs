@@ -462,11 +462,13 @@
   [:divmb0
    [:div.columns
     [:div.column.is-1
-     [:p [:b "Type"]]
+     (when (= 0 index)
+       [:p [:b "Type"]])
      [:div (clojure.core/name type)]]
 
     [:div.column.is-9
-     [:p [:b "Label"]]
+     (when (= 0 index)
+       [:p [:b "Label"]])
      [:p label]
      [:div
       (when (and (= :dropdown type) (not (empty? options)))
@@ -485,9 +487,9 @@
      ]
 
     [:div.column.is-1
-     [:p [:b "Required?"]]
-     [ant/switch {:checked required}]]]
-   ])
+     (when (= 0 index)
+       [:p [:b "Required?"]])
+     [ant/switch {:checked required}]]]])
 
 
 (defn- service-entry [service]
