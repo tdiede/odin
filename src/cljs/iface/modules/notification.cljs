@@ -2,7 +2,8 @@
   (:require [antizer.reagent :as ant]
             [reagent.core :as r]
             [re-frame.core :refer [reg-event-fx
-                                   reg-fx]]))
+                                   reg-fx]]
+            [toolbelt.core :as tb]))
 
 
 ;; ==============================================================================
@@ -12,12 +13,17 @@
 ;; TODO - extend to include an optional params map
 (reg-fx
  :notification
- (fn [[type message]]
-   (case type
-     :info    (ant/notification-info {:message message})
-     :success (ant/notification-success {:message message})
-     :error   (ant/notification-error {:message message})
-     :warning (ant/notification-warning {:message message}))))
+ (fn [[type message {:keys [description duration]}]]
+   (let [values (tb/assoc-when
+                 {:message message}
+                 :description description
+                 :duration duration)]
+    (case type
+      :info    (ant/notification-info values)
+      :success (ant/notification-success values)
+      :error   (ant/notification-error values)
+      :warning (ant/notification-warning values)))))
+
 
 (reg-event-fx
  :notify/success
