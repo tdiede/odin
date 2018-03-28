@@ -97,7 +97,7 @@
 
 
 ;; ==============================================================================
-;; shopping cart ================================================================
+;; service/order fields =========================================================
 ;; ==============================================================================
 
 ;; TODO make it look pretty?
@@ -131,28 +131,12 @@
    [:p.fs3 value]])
 
 
-;; TODO this hasn't been tested
 (defmethod field-value :dropdown [k value options]
   [:span
    [:p.fs3 value]])
 
 
-(defn- column-fields-2 [fields]
-  [:div
-   (map-indexed
-    (fn [i row]
-      ^{:key i}
-      [:div.columns
-       (for [{:keys [service-id type label value options]} row]
-         ^{:key service-id}
-         [:div.column.is-half.cart-item-info
-          [:span
-           [:p.fs3.bold label]]
-          [field-value (keyword (name type)) value options]])])
-    (partition 2 2 nil fields))])
-
-
-(defn cart-item-data-row [fields]
+(defn fields-data-row [fields]
   [:div.columns
    (map-indexed
     (fn [i {:keys [label value type options] :as field}]
@@ -164,13 +148,18 @@
     fields)])
 
 
-(defn cart-item-data [fields]
+(defn fields-data [fields]
   [:div.cart-item
    (map-indexed
     (fn [i field-pair]
       ^{:key i}
-      [cart-item-data-row field-pair])
+      [fields-data-row field-pair])
     (partition 2 2 nil fields))])
+
+
+;; ==============================================================================
+;; shopping cart ================================================================
+;; ==============================================================================
 
 
 (defn cart-item [{:keys [index name description price fields]}]
@@ -197,8 +186,7 @@
          :on-click #(dispatch [:services.cart.item/remove index name])}
         "Remove item"]]]
      (when-not (empty? fields)
-       (.log js/console fields)
-       [cart-item-data (sort-by :index fields)])]))
+       [fields-data (sort-by :index fields)])]))
 
 
 (defn shopping-cart-footer [requester]
@@ -276,12 +264,6 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
-(defn below-the-fold [fields]
-  [:div
-   #_[:hr {:style {:margin "0.5rem 0 1.75rem 0"}}]
-   [column-fields-2 fields]])
-
-
 (defn above-the-fold [{:keys [id name created price status]} is-open requester]
   (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
         account-id (:id requester)
@@ -323,7 +305,7 @@
       [ant/card
        (r/as-element [above-the-fold order is-open requester])
        (when @is-open
-         [below-the-fold (sort-by :index fields)])])))
+         [fields-data (sort-by :index fields)])])))
 
 
 (defn active-orders [orders requester]
