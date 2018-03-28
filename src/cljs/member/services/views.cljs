@@ -247,15 +247,16 @@
 
 
 ;; ==============================================================================
-;; active orders content ========================================================
+;; orders generic ===============================================================
 ;; ==============================================================================
 
-(defn active-orders-header []
+
+(defn orders-header [type]
   [:div.columns {:style {:padding        "0 1.5rem"
                          :margin-bottom  "0"
                          :text-transform "uppercase"}}
    [:div.column.is-6
-    [:h4.subtitle.is-6.bold "Requested service"]]
+    [:h4.subtitle.is-6.bold (str "Requested " type)]]
    [:div.column.is-2
     [:h4.subtitle.is-6.bold "Request date"]]
    [:div.column.is-1
@@ -268,35 +269,61 @@
   (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
         account-id (:id requester)
         canceling  (subscribe [:orders/canceling])]
-   [:div.columns
-    [:div.column.is-6
-     [:span [ant/button {:on-click #(swap! is-open not)
-                         :icon     (if @is-open "minus" "plus")
-                         :style    {:width        "30px"
-                                    :align        "center"
-                                    :padding      "0px"
-                                    :font-size    20
-                                    :margin-right "10px"}}]]
-     [:span {:style {:display "inline-block"}}
-      [:p.body name]]]
-    [:div.column.is-2
-     [:p.body (format/date-short created)]]
-    [:div.column.is-1
-     [:p.body (if (some? price)
-                (format/currency price)
-                (format/currency 0))]]
-    [:div.column.is-1
-     [ant/tag status]]
-    [:div.column.is-2.has-text-right
-     (when (= status :pending)
-       [ant/button
-        {:on-click #(dispatch [:services.order/cancel-order id account-id])
-         :type     "danger"
-         :icon     "close"
-         :loading  (if (= @canceling id)
-                     @loading
-                     false)}
-        "Cancel"])]]))
+    [:div.columns
+     [:div.column.is-6
+      [:span [ant/button {:on-click #(swap! is-open not)
+                          :icon     (if @is-open "minus" "plus")
+                          :style    {:width        "30px"
+                                     :align        "center"
+                                     :padding      "0px"
+                                     :font-size    20
+                                     :margin-right "10px"}}]]
+      [:span {:style {:display "inline-block"}}
+       [:p.body name]]]
+     [:div.column.is-2
+      [:p.body (format/date-short created)]]
+     [:div.column.is-1
+      [:p.body (if (some? price)
+                 (format/currency price)
+                 (format/currency 0))]]
+     [:div.column.is-1
+      [ant/tag status]]
+     [:div.column.is-2.has-text-right
+      (when (= status :pending)
+        [ant/button
+         {:on-click #(dispatch [:services.order/cancel-order id account-id])
+          :type     "danger"
+          :icon     "close"
+          :loading  (if (= @canceling id)
+                      @loading
+                      false)}
+         "Cancel"])]]))
+
+
+(defn paginated-list [items requester list-item-fn]
+  (let [state (r/atom {:current 1})]
+    (fn [items]
+      (let [{:keys [current]} @state
+            items' (->> (drop (* (dec current) 10) items)
+                        (take (* current 10)))]
+        [:div
+         (map
+          #(with-meta [list-item-fn % requester] {:key (:id %)})
+          items')
+         [ant/pagination
+          {:style {:margin-top "20px"}
+           :current current
+           :total (count items)
+           :on-change #(swap! state assoc :current %)}]]))))
+
+
+;; ==============================================================================
+;; active orders content ========================================================
+;; ==============================================================================
+
+
+(defn active-orders-header []
+  [orders-header "order"])
 
 
 (defn active-order-item [{:keys [fields] :as order} requester]
@@ -309,20 +336,7 @@
 
 
 (defn active-orders [orders requester]
-  (let [state (r/atom {:current 1 :q ""})]
-    (fn [orders]
-      (let [{:keys [current q]} @state
-            orders' (->> (drop (* (dec current) 10) orders)
-                        (take (* current 10)))]
-        [:div
-         (map
-          #(with-meta [active-order-item % requester] {:key (:id %)})
-          (sort-by :created > orders'))
-         [ant/pagination
-          {:style {:margin-top "20px"}
-           :current current
-           :total (count orders)
-           :on-change #(swap! state assoc :current %)}]]))))
+  [paginated-list (sort-by :created > orders) requester active-order-item])
 
 
 ;; ==============================================================================
@@ -331,47 +345,30 @@
 
 
 (defn manage-subscriptions-header []
-  [:div.columns {:style {:padding        "0 1.5rem"
-                         :margin-bottom  "0"
-                         :text-transform "uppercase"}}
-   [:div.column.is-6
-    [:h4.subtitle.is-6.bold "Service subscription"]]
-   [:div.column.is-2
-    [:h4.subtitle.is-6.bold "Billed date"]]
-   [:div.column.is-2
-    [:h4.subtitle.is-6.bold "Price"]]
-   [:div.column.is-2
-    [:h4.subtitle.is-6.bold "Status"]]])
+  [orders-header "subscription"])
+
+
+;; TODO how to link to payments?
+(defn subscription-details [fields payments]
+  [:div
+   [fields-data fields]
+   [:br]
+   [:p.fs3 "Go to "
+    [:a {:href ""} "Payments History"] " to see payments made for this subscription"]])
 
 
 (defn active-subscription-item
-  [{:keys [name price status fields] :as subscription}]
-  [ant/card
-   [:div.columns
-    [:div.column.is-6
-     [:span [ant/button {:icon "plus"
-                         :style {:width        "30px"
-                                 :align        "center"
-                                 :padding      "0px"
-                                 :font-size    20
-                                 :margin-right "10px"}}]]
-     [:span {:style {:display "inline-block"}}
-      [:p.body name]]]
-    [:div.column.is-2
-     [:p "billed date"]]
-    [:div.column.is-2
-     [:p.body (if (some? price)
-                (format/currency price)
-                (format/currency 0))]]
-    [:div.column.is-2
-     [ant/tag status]]]])
+  [{:keys [payments fields] :as subscription} requester]
+  (let [is-open (r/atom false)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold subscription is-open requester])
+       (when @is-open
+         [subscription-details (sort-by :index fields) (sort-by :created > payments)])])))
 
 
-(defn active-subscriptions [subscriptions]
-  [:div
-   (map
-    #(with-meta [active-subscription-item %] {:key (:id %)})
-    (sort-by :created > subscriptions))])
+(defn active-subscriptions [subscriptions requester]
+  [paginated-list (sort-by :created > subscriptions) requester active-subscription-item])
 
 
 ;; ==============================================================================
@@ -463,11 +460,11 @@
      [active-orders (sort-by :created > @orders) requester]]))
 
 
-(defmethod content :services/subscriptions [_]
+(defmethod content :services/subscriptions [{:keys [requester]}]
   (let [subscriptions (subscribe [:orders/subscriptions])]
     [:div
      [manage-subscriptions-header]
-     [active-subscriptions @subscriptions]]))
+     [active-subscriptions @subscriptions requester]]))
 
 
 (defmethod content :services/history [_]
