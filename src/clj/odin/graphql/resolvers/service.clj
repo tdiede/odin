@@ -110,7 +110,6 @@
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
-    (clojure.pprint/pprint params)
     @(d/transact conn [(service/create code name description (parse-mutate-params params))
                        (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))
@@ -118,7 +117,6 @@
 
 (defn delete!
   [{:keys [conn requester]} {:keys [service]} _]
-  (timbre/info (str "attempting to delete service id " service))
   @(d/transact conn [[:db.fn/retractEntity service]
                      (source/create requester)])
   :ok)
@@ -138,7 +136,6 @@
 
 (defn- update-field-options-tx
   [db field existing-options options-params]
-  (println "==============================================================================")
   (let [[new old]        ((juxt remove filter) (comp some? :id) options-params)
         existing-ids     (set (map :db/id existing-options))
         update-ids       (set (map :id old))
@@ -147,7 +144,6 @@
                                 {:db/id                 (:db/id field)
                                  :service-field/options (service/create-option label label {:index index})})
                               new)]
-    (println "FIELD_OPTIONS_TX:" field-options-tx)
     (cond-> []
       (not (empty? to-retract))
       (concat (map #(vector :db.fn/retractEntity %) to-retract))
@@ -337,14 +333,11 @@
 
 (defn update!
   [{:keys [conn requester]} {:keys [service_id params]} _]
-  (timbre/info "\n\n ========== let's take a good hard look at what we're working with here ===========")
-  (clojure.pprint/pprint params)
   (let [service (d/entity (d/db conn) service_id)
         tx      (concat
                  (edit-service-tx service (dissoc params :fields))
                  [(source/create requester)]
                  (update-service-fields-tx (d/db conn) service (:fields params)))]
-    (clojure.pprint/pprint tx)
     @(d/transact conn tx)
     (d/entity (d/db conn) service_id)))
 
