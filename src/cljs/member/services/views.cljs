@@ -282,9 +282,10 @@
    [column-fields-2 fields]])
 
 
-;; TODO how to make loading indicator for only the item being cancelled
-(defn above-the-fold [{:keys [id name created price status]} is-open]
-  (let [loading (subscribe [:ui/loading? :services.order/cancel-order])]
+(defn above-the-fold [{:keys [id name created price status]} is-open requester]
+  (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
+        account-id (:id requester)
+        canceling  (subscribe [:orders/canceling])]
    [:div.columns
     [:div.column.is-6
      [:span [ant/button {:on-click #(swap! is-open not)
@@ -306,39 +307,34 @@
      [ant/tag status]]
     [:div.column.is-2.has-text-right
      (when (= status :pending)
-       [ant/button {:on-click #(dispatch [:services.order/cancel-order id])
-                    :type     "danger"
-                    :icon     "close"
-                    :loading  @loading} "Cancel"])]]))
+       [ant/button
+        {:on-click #(dispatch [:services.order/cancel-order id account-id])
+         :type     "danger"
+         :icon     "close"
+         :loading  (if (= @canceling id)
+                     @loading
+                     false)}
+        "Cancel"])]]))
 
 
-(defn active-order-item [{:keys [fields] :as order}]
+(defn active-order-item [{:keys [fields] :as order} requester]
   (let [is-open (r/atom false)]
     (fn []
       [ant/card
-       (r/as-element [above-the-fold order is-open])
+       (r/as-element [above-the-fold order is-open requester])
        (when @is-open
          [below-the-fold (sort-by :index fields)])])))
 
 
-#_(defn active-orders [orders]
-    [:div
-     (.log js/console (count orders))
-     (map
-      #(with-meta [active-order-item %] {:key (:id %)})
-      (sort-by :created > orders))])
-
-
-(defn active-orders [orders]
+(defn active-orders [orders requester]
   (let [state (r/atom {:current 1 :q ""})]
     (fn [orders]
       (let [{:keys [current q]} @state
             orders' (->> (drop (* (dec current) 10) orders)
                         (take (* current 10)))]
         [:div
-         (.log js/console (count orders))
          (map
-          #(with-meta [active-order-item %] {:key (:id %)})
+          #(with-meta [active-order-item % requester] {:key (:id %)})
           (sort-by :created > orders'))
          [ant/pagination
           {:style {:margin-top "20px"}
@@ -478,21 +474,18 @@
      [shopping-cart-button]]))
 
 
-(defmethod content :services/active-orders [_]
+(defmethod content :services/active-orders [{:keys [requester]}]
   (let [orders (subscribe [:orders/active])]
     [:div
      [active-orders-header]
-     [active-orders @orders]
-     #_[active-order-item]]))
+     [active-orders (sort-by :created > @orders) requester]]))
 
 
 (defmethod content :services/subscriptions [_]
   (let [subscriptions (subscribe [:orders/subscriptions])]
     [:div
-     (.log js/console @subscriptions)
      [manage-subscriptions-header]
-     [active-subscriptions @subscriptions]
-     ]))
+     [active-subscriptions @subscriptions]]))
 
 
 (defmethod content :services/history [_]

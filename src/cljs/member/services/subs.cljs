@@ -171,6 +171,13 @@
 
 
 (reg-sub
+ :orders/canceling
+ :<- [db/path]
+ (fn [db _]
+   (:canceling db)))
+
+
+(reg-sub
  :orders/subscriptions
  :<- [db/path]
  (fn [db _]

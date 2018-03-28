@@ -312,21 +312,24 @@
 ;; ==============================================================================
 
 
-;; TODO implement mutations for this
 (reg-event-fx
  :services.order/cancel-order
  [(path db/path)]
- (fn [{db :db} [k id]]
+ (fn [{db :db} [k id account-id]]
    {:dispatch [:ui/loading k true]
-    :graphql {:mutation   [[:cancel_order {:id     id
-                                           :notify true}
-                            [:id :status]]]
-              :on-success [::order-cancel-success k]
-              :on-failure [:graphql/failure k]}}))
+    :db       (assoc db :canceling id)
+    :graphql  {:mutation   [[:cancel_order {:id     id
+                                            :notify true}
+                             [:id :name]]]
+               :on-success [::order-cancel-success k account-id]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::order-cancel-success
- (fn [{:keys [db]} [_ k response]]
-   {:dispatch-n [[:ui/loading k false]
-                 [:services/fetch-orders (get-in db [:account :id])]]}))
+ [(path db/path)]
+ (fn [{db :db} [_ k account-id response]]
+   {:dispatch-n   [[:ui/loading k false]
+                   [:services/fetch-orders account-id]]
+    :db           (dissoc db :canceling)
+    :notification [:success (str (get-in response [:data :cancel_order :name]) " has been canceled")]}))
