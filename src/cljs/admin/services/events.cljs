@@ -200,7 +200,7 @@
   [service]
   (tb/transform-when-key-exists service
     {:name     #(str % " - copy")
-     :code     (constantly "")
+     :code     #(str % ",copy")
      :catalogs (partial mapv clojure.core/name)
      :fields   (partial mapv #(-> (dissoc % :id)
                             (update :options vec)
