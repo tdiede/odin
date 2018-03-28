@@ -171,8 +171,6 @@
  :service/save-edits
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
-   (js/console.log "updating service " service-id)
-   (js/console.log "and my form says" form)
    {:graphql {:mutation
               [[:service_update {:service_id service-id
                                  :params  form}
@@ -205,7 +203,8 @@
      :code     (constantly "")
      :catalogs (partial mapv clojure.core/name)
      :fields   (partial mapv #(-> (dissoc % :id)
-                            (update :options vec)))}))
+                            (update :options vec)
+                            (update :required boolean)))}))
 
 
 (reg-event-fx
@@ -250,7 +249,9 @@
                         :price price
                         :cost cost
                         :billed billed
-                        :rental rental
+                        :rental (if (nil? rental)
+                                  false
+                                  rental)
                         :fields (if (nil? fields)
                                   []
                                   (vecify-fields fields))}))
@@ -306,7 +307,6 @@
  :service.form.field/update
  [(path db/path)]
  (fn [db [_ index key value]]
-   (js/console.log "field #" index " -- updating " key " with " value)
    (update-in db [:form :fields index] #(assoc % key value))))
 
 
@@ -327,8 +327,7 @@
    (let [new-option
          {:value       ""
           :label       ""
-          :index       (count (get-in db [:form :fields field-index :options]))
-          :field_index field-index}]
+          :index       (count (get-in db [:form :fields field-index :options]))}]
      (update-in db [:form :fields field-index :options] conj new-option))))
 
 
@@ -351,11 +350,8 @@
  :service.form.field.option/reorder
  [(path db/path)]
  (fn [db [_ field index1 index2]]
-   (js/console.log "woah our field looks like this" field)
    (let [option-one (assoc (get-in field [:options index1]) :index index2)
          option-two (assoc (get-in field [:options index2]) :index index1)]
-     (js/console.log "option one is " option-one)
-     (js/console.log "option two is " option-two)
      (update-in db [:form :fields]
                 (fn [fields]
                   (let [fields (vec (sort-by :index fields))]
@@ -381,7 +377,6 @@
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
-   (js/console.log form)
    {:graphql {:mutation [[:service_create {:params form}
                           [:id]]]
               :on-success [::create-success k]
@@ -392,7 +387,6 @@
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (js/console.log response)
    {:dispatch-n [[:services/query]
                  [:service.form/hide]
                  [:service.form/clear]]

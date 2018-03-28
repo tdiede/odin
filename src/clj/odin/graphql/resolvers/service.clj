@@ -110,6 +110,7 @@
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
+    (clojure.pprint/pprint params)
     @(d/transact conn [(service/create code name description (parse-mutate-params params))
                        (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))
