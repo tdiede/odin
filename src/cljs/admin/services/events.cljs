@@ -25,6 +25,7 @@
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
+
 (reg-event-fx
  ::services-query
  [(path db/path)]
@@ -92,13 +93,29 @@
                :on-failure [:graphql/failure k]}}))
 
 
+(defn- parse-field
+  [field]
+  (update field :options #(->> % (sort-by :index) vec)))
+
+
+(defn- parse-service
+  [{:keys [service orders]}]
+  (-> (tb/transform-when-key-exists service
+        {:fields     (fn [fields]
+                       (->> fields
+                            (map parse-field)
+                            (sort-by :index)
+                            (vec)))
+         :properties (comp (partial mapv :id))})
+      (assoc :order-count (count orders))))
+
+
 (reg-event-fx
  ::service-fetch-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [service (get-in response [:data :service])
-         order-count (count (get-in response [:data :orders]))]
-     {:db (norms/assoc-norm db :services/norms (:id service) (assoc service :order-count order-count :properties (mapv :id (:properties service))))
+   (let [parsed (parse-service (:data response))]
+     {:db       (norms/assoc-norm db :services/norms (:id parsed) parsed)
       :dispatch [:ui/loading k false]})))
 
 
@@ -115,6 +132,7 @@
  [(path db/path)]
  (fn [{db :db} _]
    {:db (assoc db :picker-visible false)}))
+
 
 (defmethod routes/dispatches :services/entry
   [route]
@@ -154,15 +172,12 @@
  :service/save-edits
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
-   (js/console.log "updating service " service-id)
-   (js/console.log "and my form says" form)
    {:graphql {:mutation
-              [[:service_update {:id     service-id
-                                 :params form}
+              [[:service_update {:service_id service-id
+                                 :params  form}
                 [:id]]]
               :on-success [::update-success k]
-              :on-failure [:graphql/failure k]}}
-   ))
+              :on-failure [:graphql/failure k]}}))
 
 (reg-event-fx
  ::update-success
@@ -185,10 +200,11 @@
   [service]
   (tb/transform-when-key-exists service
     {:name     #(str % " - copy")
-     :code     (constantly "")
+     :code     #(str % ",copy")
      :catalogs (partial mapv clojure.core/name)
      :fields   (partial mapv #(-> (dissoc % :id)
-                           (update :options vec)))}))
+                            (update :options vec)
+                            (update :required boolean)))}))
 
 
 (reg-event-fx
@@ -207,6 +223,39 @@
  :service.form/show
  (fn [_ _]
    {:dispatch [:modal/show :service/create-service-form]}))
+
+(defn vecify-fields
+  "ensure that the list forms returned from graphql are turned into vecs"
+  [fields]
+  (mapv
+   (fn [f]
+     (if (not (nil? (:options f)))
+       (assoc f :options (vec (:options f)))))
+   fields))
+
+(reg-event-db
+ :service.form/populate
+ [(path db/path)]
+ (fn [db [_ service]]
+   (if (not (nil? service))
+     (let [{:keys [name description code active properties catalogs price cost billed rental fields]} service]
+       (dissoc db :form)
+       (assoc db :form {:name name
+                        :description description
+                        :code code
+                        :active active
+                        :properties properties
+                        :catalogs (map clojure.core/name catalogs)
+                        :price price
+                        :cost cost
+                        :billed billed
+                        :rental (if (nil? rental)
+                                  false
+                                  rental)
+                        :fields (if (nil? fields)
+                                  []
+                                  (vecify-fields fields))}))
+     (assoc db :form db/form-defaults))))
 
 
 (reg-event-db
@@ -250,7 +299,7 @@
 (reg-event-fx
  :service.form/hide
  (fn [_ _]
-   {:dispatch-n [[:service.form/populate nil]
+   {:dispatch-n [[:service.form/clear]
                  [:modal/hide :service/create-service-form]]}))
 
 (defmulti construct-field
@@ -290,11 +339,14 @@
    (update-in db [:form :fields] #(->> (tb/remove-at % index)
                                        (map-indexed (fn [i f] (assoc f :index i)))
                                        vec))))
+
+
 (reg-event-db
  :service.form.field/update
  [(path db/path)]
  (fn [db [_ index key value]]
    (update-in db [:form :fields index] #(assoc % key value))))
+
 
 (reg-event-db
  :service.form.field/reorder
@@ -312,15 +364,16 @@
  (fn [db [_ field-index]]
    (let [new-option
          {:value       ""
-          :index       (count (get-in db [:form :fields field-index :options]))
-          :field_index field-index}]
+          :label       ""
+          :index       (count (get-in db [:form :fields field-index :options]))}]
      (update-in db [:form :fields field-index :options] conj new-option))))
+
 
 (reg-event-db
  :service.form.field.option/update
  [(path db/path)]
  (fn [db [_ field-index option-index value]]
-   (update-in db [:form :fields field-index :options option-index ] #(assoc % :value value))))
+   (update-in db [:form :fields field-index :options option-index ] #(assoc % :value value :label value))))
 
 
 (reg-event-db
@@ -334,11 +387,14 @@
 (reg-event-db
  :service.form.field.option/reorder
  [(path db/path)]
- (fn [db [_ field-index index1 index2]]
-   (let [option-one (assoc (get-in db [:form :fields field-index :options index1]) :index index2)
-         option-two (assoc (get-in db [:form :fields field-index :options index2]) :index index1)]
-     (-> (assoc-in db [:form :fields field-index :options index2] option-one)
-         (assoc-in    [:form :fields field-index :options index1] option-two)))))
+ (fn [db [_ field index1 index2]]
+   (let [option-one (assoc (get-in field [:options index1]) :index index2)
+         option-two (assoc (get-in field [:options index2]) :index index1)]
+     (update-in db [:form :fields]
+                (fn [fields]
+                  (let [fields (vec (sort-by :index fields))]
+                    (-> (assoc-in fields [(:index field) :options index2] option-one)
+                        (assoc-in [(:index field) :options index1] option-two))))))))
 
 (reg-event-fx
  :service.form/update
@@ -370,7 +426,6 @@
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (js/console.log response)
    {:dispatch-n [[:services/query]
                  [:service.form/hide]
                  [:service.form/clear]]
