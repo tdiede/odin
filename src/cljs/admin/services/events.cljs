@@ -25,6 +25,7 @@
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
+
 (reg-event-fx
  ::services-query
  [(path db/path)]
@@ -176,8 +177,7 @@
                                  :params  form}
                 [:id]]]
               :on-success [::update-success k]
-              :on-failure [:graphql/failure k]}}
-   ))
+              :on-failure [:graphql/failure k]}}))
 
 (reg-event-fx
  ::update-success

@@ -61,7 +61,7 @@
                    [:id :price :created :quantity :name :request :summary :status
                     :billed_on :fulfilled_on :projected_fulfillment :cost
                     [:line_items [:id :desc :cost :price]]
-                    [:fields [:id :label :index]]
+                    [:fields [:id :label :index :value]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
                     [:service [:id :name :description :code :cost :billed :price]]
