@@ -61,6 +61,7 @@
                    [:id :price :created :quantity :name :request :summary :status
                     :billed_on :fulfilled_on :projected_fulfillment :cost
                     [:line_items [:id :desc :cost :price]]
+                    [:fields [:id :label :index]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
                     [:service [:id :name :description :code :cost :billed :price]]
@@ -75,6 +76,7 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [order (get-in response [:data :order])]
+     (js/console.log "hey you got an order" order)
      {:db       (norms/assoc-norm db :orders/norms (:id order) order)
       :dispatch [:ui/loading k false]})))
 

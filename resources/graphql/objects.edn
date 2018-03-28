@@ -454,7 +454,7 @@
   :service_field
   {:fields {:id       {:type    (non-null :Long)
                        :resolve (:get :db/id)}
-            :index    {:type    (non-null :Long)
+            :index    {:type    (non-null Int)
                        :resolve (:get :service-field/index)}
             :type     {:type    :service_field_type
                        :resolve (:keyword/name :service-field/type)}

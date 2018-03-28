@@ -94,7 +94,6 @@
 
 (defn- query-orders
   [db params]
-  ;; (timbre/info "\n \n inside query-orders!!!!!!!")
   (->> (parse-gql-params params)
        (apply concat)
        (apply order/query db)))

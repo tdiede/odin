@@ -67,8 +67,8 @@
 (reg-sub
  :services.form.field.option/is-last?
  :<- [:services.form/fields]
- (fn [fields [_ field-index option-index]]
-   (= option-index (dec (count (get-in fields [field-index :options]))))))
+ (fn [fields [_ {:keys [options]} option-index]]
+   (= option-index (dec (count options)))))
 
 
 (reg-sub

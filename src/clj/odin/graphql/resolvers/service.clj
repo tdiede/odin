@@ -83,28 +83,28 @@
 
 #_(comment
 
-  (-> {:description "asdfasdfasdfasfasdf",
-       :properties [285873023222997 285873023222986],
-       :rental false,
-       :name "asdfasdf",
-       :catalogs [],
-       :fields
-       [{:index 0,
-         :type :dropdown,
-         :label "asdfasdf",
-         :required true,
-         :options
-         [{:value "xcv", :index 0, :field_index 0}
-          {:value "sdf", :index 1, :field_index 0}
-          {:value "wer", :index 2, :field_index 0}]}
-        {:index 1, :type :text, :label "sfasdfasdfasdf", :required false}],
-       :billed :monthly,
-       :code "asdf",
-       :cost 50.0,
-       :price 55.0}
-      (parse-mutate-params))
+    (-> {:description "asdfasdfasdfasfasdf",
+         :properties [285873023222997 285873023222986],
+         :rental false,
+         :name "asdfasdf",
+         :catalogs [],
+         :fields
+         [{:index 0,
+           :type :dropdown,
+           :label "asdfasdf",
+           :required true,
+           :options
+           [{:value "xcv", :index 0, :field_index 0}
+            {:value "sdf", :index 1, :field_index 0}
+            {:value "wer", :index 2, :field_index 0}]}
+          {:index 1, :type :text, :label "sfasdfasdfasdf", :required false}],
+         :billed :monthly,
+         :code "asdf",
+         :cost 50.0,
+         :price 55.0}
+        (parse-mutate-params))
 
-  )
+    )
 
 
 (defn create!
@@ -137,10 +137,16 @@
 
 (defn- update-field-options-tx
   [db field existing-options options-params]
-  (let [[new old]    ((juxt remove filter) (comp some? :id) options-params)
-        existing-ids (set (map :db/id existing-options))
-        update-ids   (set (map :id old))
-        to-retract   (set/difference existing-ids update-ids)]
+  (println "==============================================================================")
+  (let [[new old]        ((juxt remove filter) (comp some? :id) options-params)
+        existing-ids     (set (map :db/id existing-options))
+        update-ids       (set (map :id old))
+        to-retract       (set/difference existing-ids update-ids)
+        field-options-tx (map (fn [{:keys [label index]}]
+                                {:db/id                 (:db/id field)
+                                 :service-field/options (service/create-option label label {:index index})})
+                              new)]
+    (println "FIELD_OPTIONS_TX:" field-options-tx)
     (cond-> []
       (not (empty? to-retract))
       (concat (map #(vector :db.fn/retractEntity %) to-retract))
@@ -149,10 +155,7 @@
       (concat (remove empty? (mapcat (partial update-field-option-tx* db) old)))
 
       (not (empty? new))
-      (concat (map (fn [{:keys [label index]}]
-                     {:db/id                 (:db/id field)
-                      :service-field/options (service/create-option label label {:index index})})
-                   new)))))
+      (concat field-options-tx))))
 
 
 (defn- update-field-tx
@@ -188,9 +191,14 @@
 
       (not (empty? new))
       (concat (map (fn [{:keys [label type] :as field}]
-                     {:db/id          (:db/id service)
-                      :service/fields (service/create-field label type field)})
+                     (let [field (update field :options
+                                         (fn [options]
+                                           (when (some? options)
+                                             (map #(service/create-option (:label %) (:label %) %) options))))]
+                       {:db/id          (:db/id service)
+                        :service/fields (service/create-field label type field)}))
                    new)))))
+
 
 (defn update-service-catalogs-tx
   [service catalogs-params]
@@ -205,7 +213,6 @@
 
       (not (empty? removed))
       (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))))
-
 
 
 (defn update-service-properties-tx
@@ -258,10 +265,10 @@
       (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
       (conj [:db/add id :service/billed (keyword "service.billed" (name (:billed updated)))])
 
-      (and (not= (:service/rental existing) (:rental updated)) (not (nil? (:rental updated))))
+      (and (not= (:service/rental existing) (:rental updated)) (some? (:rental updated)))
       (conj [:db/add id :service/rental (:rental updated)])
 
-      (and (not= (:service/active existing) (:active updated) (not (nil? (:active updated)))))
+      (and (not= (:service/active existing) (:active updated)) (some? (:active updated)))
       (conj [:db/add id :service/active (:active updated)])
 
       (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
@@ -322,7 +329,7 @@
                    {:id    17592186046054
                     :index 2
                     :label "dd"}]}]
-      (update-service-fields-tx (d/db conn) service))
+       (update-service-fields-tx (d/db conn) service))
 
   )
 
@@ -331,11 +338,13 @@
   [{:keys [conn requester]} {:keys [service_id params]} _]
   (timbre/info "\n\n ========== let's take a good hard look at what we're working with here ===========")
   (clojure.pprint/pprint params)
-  (let [service (d/entity (d/db conn) service_id)]
-    @(d/transact conn (concat
-                       (edit-service-tx service (dissoc params :fields))
-                       [(source/create requester)]
-                       (update-service-fields-tx (d/db conn) service (:fields params))))
+  (let [service (d/entity (d/db conn) service_id)
+        tx      (concat
+                 (edit-service-tx service (dissoc params :fields))
+                 [(source/create requester)]
+                 (update-service-fields-tx (d/db conn) service (:fields params)))]
+    (clojure.pprint/pprint tx)
+    @(d/transact conn tx)
     (d/entity (d/db conn) service_id)))
 
 
@@ -374,18 +383,61 @@
 
 (comment
 
+  (def data
+    {:description "Have us change your sheets for a fresh set.",
+     :properties  [285873023222987 285873023222998],
+     :rental      nil,
+     :name        "Bed Linen Change - Single",
+     :catalogs    ["cleaning"],
+     :fields
+     [{:id       285873023223512,
+       :index    1,
+       :type     :dropdown,
+       :label    "Hello world",
+       :required false,
+       :options  []}
+      {:id       285873023223076,
+       :index    0,
+       :type     :date,
+       :label    "When would you like your linens changed? alkdjasfsda",
+       :required false,
+       :options  []}],
+     :billed      :once,
+     :active      nil,
+     :code        "cleaning,linen,single",
+     :cost        5.5,
+     :price       20.0})
+
   ;; Run the query.
+  (let [conn odin.datomic/conn]
+    (com.walmartlabs.lacinia/execute
+     odin.graphql/schema
+     (str "mutation"
+          (venia.core/graphql-query
+           {:venia/queries
+            [[:service_update {:service_id 285873023223075
+                               :params     data}
+              [:id]]]}))
+     nil
+     {:conn      conn
+      :requester (d/entity (d/db conn) [:account/email "admin@test.com"])}))
+
   (let [conn odin.datomic/conn]
     (com.walmartlabs.lacinia/execute
      odin.graphql/schema
      (venia.core/graphql-query
       {:venia/queries
-       [[:services {:params {:q          "dog"
-                             :properties [285873023222997]}}
-         [:name]]]})
+       [[:orders {:params {:services [285873023223075]
+                           :datekey  :created
+                           :from     "2018-02-28T08:00:00.400Z"
+                           :to       "2018-03-29T06:59:59.401Z"}}
+         [:id]]]})
      nil
      {:conn      conn
-      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
+      :requester (d/entity (d/db conn) [:account/email "admin@test.com"])}))
+
+
+
 
   (query-services (d/db odin.datomic/conn) {:properties [[:property/code "2072mission"]]})
 

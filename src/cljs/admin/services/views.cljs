@@ -131,37 +131,42 @@
 
 
 (defn service-field-options-entry
-  [{:keys [field_index index value]}]
-  [:div.columns {:key index}
+  [field {:keys [index value]}]
+  [:div.columns
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
-      :default-value       value
-      :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
+      :value       value
+      :on-change   #(dispatch [:service.form.field.option/update (:index field) index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
      {:icon     "close-circle-o"
       :shape    "circle"
       :type     "danger"
-      :on-click #(dispatch [:service.form.field.option/delete field_index index])}]]
+      :on-click #(dispatch [:service.form.field.option/delete (:index field) index])}]]
    [:div.column.is-3
     [ant/button-group
      [ant/button
       {:icon     "up"
        :type     "primary"
        :disabled (zero? index)
-       :on-click #(dispatch [:service.form.field.option/reorder field_index index (dec index)])}]
+       :on-click #(dispatch [:service.form.field.option/reorder field index (dec index)])}]
      [ant/button
       {:icon     "down"
        :type     "primary"
-       :disabled @(subscribe [:services.form.field.option/is-last? field_index index])
-       :on-click #(dispatch [:service.form.field.option/reorder field_index index (inc index)])}]]]])
+       :disabled @(subscribe [:services.form.field.option/is-last? field index])
+       :on-click #(dispatch [:service.form.field.option/reorder field index (inc index)])}]]]])
 
+(defn render-service-field-options-entry
+  [index option]
+  (with-meta
+    [service-field-options-entry index option]
+    {:key (:index option)}))
 
 (defn service-field-options-popover
-  [index options]
+  [{:keys [index] :as field} options]
   [:div
-   (doall (map service-field-options-entry options))
+   (doall (map (partial render-service-field-options-entry field) options))
    [:div.columns
     [:div.column.is-6.is-offset-3
      [ant/button
@@ -169,31 +174,32 @@
        :on-click #(dispatch [:service.form.field.option/create index])}
       "Add Option"]]]])
 
+
 (defn service-field-options-container
-  [index options]
+  [field options]
   [ant/form-item
-   {:label (when (zero? index) "Options")}
+   {:label (when (zero? (:index field)) "Options")}
    [ant/popover
     {:title         "Menu Options"
      :overlay-style {:width "30%"}
-     :content       (r/as-element [service-field-options-popover index options])}
+     :content       (r/as-element [service-field-options-popover field options])}
     [ant/button
      {:style {:width "100%"}}
      (str "Menu Options (" (count options) ")")]]])
+
 
 (defmulti render-service-field :type)
 
 
 (defmethod render-service-field :dropdown
-  [{:keys [index label required type options]}]
-
-  [:div.columns {:key index}
+  [{:keys [index label required type options] :as field}]
+  [:div.columns
    [:div.column.is-1
     [service-field-type index type]]
    [:div.column.is-5
     [service-field-label index label]]
    [:div.column.is-3
-    [service-field-options-container index options]]
+    [service-field-options-container field options]]
    [:div.column.is-1
     [service-field-required index required]]
    [:div.column.is-1
@@ -204,7 +210,7 @@
 
 (defmethod render-service-field :default
   [{:keys [index label required type]}]
-  [:div.columns {:key index}
+  [:div.columns
    [:div.column.is-1
     [service-field-type index type]]
    [:div.column.is-8
@@ -235,11 +241,11 @@
 (defn fields-card [fields]
   [ant/card {:title "Fields" :extra (r/as-element [add-fields-menu])}
    (doall
-    (map-indexed
+    (map
      #(with-meta
-        [render-service-field %2]
-        {:key %1})
-     (sort-by :index fields)))])
+        [render-service-field %]
+        {:key (:index %)})
+     fields))])
 
 
 (defn create-service-form []
@@ -483,8 +489,7 @@
                   ", ")
                 (:label option))]
               {:key (:index option)}))
-          options)])]
-     ]
+          options)])]]
 
     [:div.column.is-1
      (when (= 0 index)
@@ -606,7 +611,7 @@
           #(with-meta
              [service-entry-field %]
              {:key (:id %)})
-          (sort-by :index fields))])]]))
+          fields)])]]))
 
 
 (defn services-list-container [services]

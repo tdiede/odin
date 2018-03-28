@@ -138,8 +138,7 @@
   {:description "The options given to a member in a service field of type `:dropdown`"
    :fields      {:index       {:type (non-null :Long)}
                  :label       {:type (non-null String)}
-                 :value       {:type (non-null String)}
-                 :field_index {:type (non-null :Long)}}}
+                 :value       {:type (non-null String)}}}
 
 
   :service_field_object
