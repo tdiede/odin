@@ -5,6 +5,7 @@
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
             [blueprints.models.source :as source]
+            [clj-time.coerce :as c]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
@@ -69,6 +70,15 @@
                              :order-id (:db/id order)})))
 
 
+(defn field-value
+  "The field value according to the service-field-type"
+  [{conn :conn} _ order-field]
+  (let [svc-field (:order-field/service-field order-field)
+        value-key (order/order-field-key svc-field)]
+    (when (some? value-key)
+      (value-key order-field))))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -86,7 +96,6 @@
 
 (defn- query-orders
   [db params]
-  ;; (timbre/info "\n \n inside query-orders!!!!!!!")
   (->> (parse-gql-params params)
        (apply concat)
        (apply order/query db)))
@@ -106,6 +115,28 @@
   [{conn :conn} {order-id :id} _]
   (d/entity (d/db conn) order-id))
 
+(comment
+
+  (parse-gql-params {:billed [:service.billed/once]})
+
+  ;; Run the query.
+  (let [conn odin.datomic/conn]
+    (com.walmartlabs.lacinia/execute
+     odin.graphql/schema
+     (venia.core/graphql-query
+      {:venia/queries
+       [[:orders {:params {:billed [:monthly]
+                           :accounts [285873023223100]}}
+         [:name :billed
+          [:fields [:id :type :label :index :value]]]]]})
+     nil
+     {:conn      conn
+      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
+
+
+
+  )
+
 
 ;; =============================================================================
 ;; Mutations
@@ -123,30 +154,93 @@
     (and (zero? lcost) (nil? vcost))))
 
 
+(defn parse-params
+  "Parse to params and converts them into the needed format"
+  [{:keys [fields] :as params}]
+  params)
+
+
+(defn parse-fields
+  "Parse and convert fields to the needed format"
+  [db fields]
+  (map
+   (fn [field]
+     (-> (order/order-field (d/entity db (:service_field field)) (:value field))
+         (tb/transform-when-key-exists
+             {:order-field.value/number #(float (tb/str->int %))
+              :order-field.value/date   c/to-date})))
+   fields))
+
+
+(defn prepare-order
+  [db {:keys [account service line_items fields] :as params}]
+  (let [line-items (when-not (empty? line_items)
+                     (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
+        fields     (when-not (empty? fields)
+                     (parse-fields db (filter #(identity (:value %)) fields)))]
+    (order/create account service
+                  (tb/assoc-when
+                   {}
+                   :lines line-items
+                   :summary (:summary params)
+                   :request (:request params)
+                   :price (when (use-order-price? service params)
+                            (:price params))
+                   :cost (when (use-order-cost? service params)
+                           (:cost params))
+                   :variant (:variant params)
+                   :quantity (:quantity params)
+                   :fields (when fields
+                             fields)))))
+
+
+(comment
+
+  (let [params {:account 285873023223100
+                :service 285873023223050
+                :fields  [{:service_field 285873023223052
+                           :value         "2018-03-22T19:47:30.032Z"}
+                          {:service_field 285873023223051
+                           :value         "2018-03-22T19:47:30.032Z"}
+                          {:service_field 285873023223053
+                           :value         "Test"}]}]
+    (prepare-order (d/db odin.datomic/conn) params))
+
+
+  (let [params {:fields [{:service_field 285873023223080 ;; number
+                          :value         "2"}
+                         {:service_field 285873023223051 ;; date
+                          :value         nil};; "2018-03-22T19:47:30.032Z"}
+                         {:service_field 285873023223051 ;; time
+                          :value         "2018-03-21T20:30:00.598Z"}
+                         {:service_field 285873023223083 ;; text
+                          :value         nil}]}]
+    (parse-fields (d/db odin.datomic/conn) (filter #(identity (:value %)) (:fields params))))
+
+
+  (parse-fields (d/db odin.datomic/conn) [])
+
+
+  )
+
+
 (defn create!
   "Create a new order."
-  [{:keys [requester conn]} {{:keys [account service line_items] :as params} :params} _]
-  (let [[account service] (td/entities (d/db conn) account service)
-        line-items        (when-not (empty? line_items)
-                            (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
-        order             (order/create account service
-                                        (tb/assoc-when
-                                         {}
-                                         :lines line-items
-                                         :summary (:summary params)
-                                         :request (:request params)
-                                         :price (when (use-order-price? service params)
-                                                  (:price params))
-                                         :cost (when (use-order-cost? service params)
-                                                 (:cost params))
-                                         :variant (:variant params)
-                                         :quantity (:quantity params)))]
+  [{:keys [requester conn]} {params :params} _]
+  (let [order (prepare-order (d/db conn) (parse-params params))]
     @(d/transact conn [order (source/create requester)])
     (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
 
 
-;; Given set of existing ids, examine set of `old` ids
+(defn create-many!
+  "Create many new orders"
+  [{:keys [requester conn]} {params :params} _]
+  (let [orders (map (comp (partial prepare-order (d/db conn)) parse-params) params)]
+    @(d/transact conn (conj orders (source/create requester)))
+    (map #(d/entity (d/db conn) [:order/uuid (:order/uuid %)]) orders)))
 
+
+;; Given set of existing ids, examine set of `old` ids
 
 (defn- update-line-item-tx
   [db {:keys [id desc cost price] :as item}]
@@ -300,8 +394,9 @@
     (or (account/admin? account) (= (:db/id (order/account order)) (:db/id account)))))
 
 
-(defmethod authorization/authorized? :order/list [_ account _]
-  (account/admin? account))
+(defmethod authorization/authorized? :order/list [{conn :conn} account {params :params}]
+  (or (account/admin? account)
+      (= (:accounts params) [(td/id account)])))
 
 
 (defmethod authorization/authorized? :order/entry [{conn :conn} account params]
@@ -336,11 +431,13 @@
    :order/billed-on    billed-on
    :order/fulfilled-on fulfilled-on
    :order/property     property
+   :order-field/value  field-value
    ;; queries
    :order/list         orders
    :order/entry        order
    ;; mutations
    :order/create!      create!
+   :order/create-many! create-many!
    :order/update!      update!
    :order/place!       place!
    :order/fulfill!     fulfill!

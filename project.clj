@@ -28,7 +28,7 @@
                  ;; Other
                  [kami "0.1.0"]
                  ;; GraphQL
-                 [com.walmartlabs/lacinia "0.21.0"]
+                 [com.walmartlabs/lacinia "0.25.0"]
                  [vincit/venia "0.2.3"]
                  ;; CLJS
                  [tongue "0.2.3"]
@@ -57,7 +57,7 @@
                  [cljsjs/moment "2.17.1-1"]
                  [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
-                 [starcity/blueprints "2.3.1-SNAPSHOT"
+                 [starcity/blueprints "2.4.0-SNAPSHOT"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava]]

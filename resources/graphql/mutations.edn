@@ -94,6 +94,13 @@
    :resolve     :order/create!}
 
 
+  :order_create_many
+  {:type        (list :order)
+   :description "Create many orders at once"
+   :args        {:params {:type (list :mutate_order_params)}}
+   :resolve     :order/create-many!}
+
+
   :update_order
   {:type        :order
    :description "Update a premium service order."
@@ -257,6 +264,20 @@
    :args        {:params {:type :service_create_params}}
    :resolve     :service/create!}
 
+  :service_delete
+  {:type        :Keyword
+   :description "Delete a premium service offering"
+   :args        {:service {:type        (non-null Long)
+                           :description "The service's id."}}
+   :resolve     :service/delete!}
+
+  :service_update
+  {:type        :service
+   :description "edit an existing premium service offering's details"
+   :args        {:service_id {:type        (non-null Long)
+                              :description "The service's id"}
+                 :params     {:type :service_update_params}}
+   :resolve     :service/update!}
 
 
   ;; units ========================================================================

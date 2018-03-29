@@ -25,7 +25,6 @@
     :Keyword
     {:parse     (schema/as-conformer
                  (fn [x]
-                   (timbre/debug "INCOMING DATA:" x (type x) (format "%s/%s" (namespace x) (name x)))
                    (format "%s/%s" (namespace x) (name x))))
      :serialize (schema/as-conformer identity)}
 

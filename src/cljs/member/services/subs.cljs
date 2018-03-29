@@ -1,5 +1,6 @@
 (ns member.services.subs
-  (:require [member.services.db :as db]
+  (:require [clojure.string :as string]
+            [member.services.db :as db]
             [re-frame.core :refer [reg-sub]]
             [toolbelt.core :as tb]))
 
@@ -55,14 +56,13 @@
  :services.book/categories
  :<- [db/path]
  (fn [db _]
-   [{:category :all
-     :label    "All"}
-    {:category :room-upgrades
-     :label    "Room Upgrades"}
-    {:category :laundry-services
-     :label    "Laundry Services"}
-    {:category :pet-services
-     :label    "Pet Services"}]))
+   (-> (reduce (fn [catalogs c]
+                 (conj catalogs {:category c :label (string/capitalize (name c))}))
+               [{:category :all
+                 :label    "All"}]
+               (:catalogs db))
+       (conj {:category :miscellaneous
+              :label    "Miscellaneous"}))))
 
 
 (reg-sub
@@ -81,6 +81,7 @@
                      (assoc query-params :category category))))
 
 
+;; do we still need this?
 ;; gets a category id and checks if it has more than 2 items in it
 (reg-sub
  :services.book.category/has-more?
@@ -128,13 +129,19 @@
 
 
 (reg-sub
- :services.book/catalogues
+ :services.book/services-by-catalog
  :<- [db/path]
- (fn [db _]
-   (:catalogues db)))
+ (fn [db [_ selected]]
+   (case selected
+     :all (:services db)
+     :miscellaneous (get
+                     (group-by #(empty? (:catalogs %)) (:services db))
+                     true)
+     (get
+      (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
+      true))))
 
 
-;; THOUGHT should this be called "cart" instead?
 (reg-sub
  :services.cart/cart
  :<- [db/path]
@@ -154,3 +161,31 @@
  :<- [:services.cart/cart]
  (fn [cart _]
    (reduce #(+ %1 (:price %2)) 0 cart)))
+
+
+(reg-sub
+ :orders/active
+ :<- [db/path]
+ (fn [db _]
+   (filter #(and (not= (:billed %) :monthly) (= (:status %) :pending)) (:orders db))))
+
+
+(reg-sub
+ :orders/canceling
+ :<- [db/path]
+ (fn [db _]
+   (:canceling db)))
+
+
+(reg-sub
+ :orders/subscriptions
+ :<- [db/path]
+ (fn [db _]
+   (filter #(and (= (:billed %) :monthly) (not= (:status %) :cancelled)) (:orders db))))
+
+
+(reg-sub
+ :orders/history
+ :<- [db/path]
+ (fn [db _]
+   (filter #(not= (:status %) :pending) (:orders db))))

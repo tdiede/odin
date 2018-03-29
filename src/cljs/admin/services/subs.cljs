@@ -16,8 +16,13 @@
  :services/list
  :<- [db/path]
  (fn [db _]
-   (let [norms (norms/denormalize db :services/norms)]
-     norms)))
+   (norms/denormalize db :services/norms)))
+
+(reg-sub
+ :service-id
+ :<- [db/path]
+ (fn [db _]
+   (:service-id db)))
 
 (reg-sub
  :service
@@ -62,5 +67,19 @@
 (reg-sub
  :services.form.field.option/is-last?
  :<- [:services.form/fields]
- (fn [fields [_ field-index option-index]]
-   (= option-index (dec (count (get-in fields [field-index :options]))))))
+ (fn [fields [_ {:keys [options]} option-index]]
+   (= option-index (dec (count options)))))
+
+
+(reg-sub
+ :services/is-editing
+ :<- [db/path]
+ (fn [db _]
+   (:is-editing db)))
+
+
+(reg-sub
+ :services/catalogs
+ :<- [:services/list]
+ (fn [services _]
+   (vec (distinct (mapcat :catalogs services)))))

@@ -3,13 +3,12 @@
             [admin.services.db :as db]
             [admin.routes :as routes]
             [admin.services.orders.views :as orders-views]
-            [admin.services.catalogs.views :as catalogs-views]
             [antizer.reagent :as ant]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
             [toolbelt.core :as tb]
             [taoensso.timbre :as timbre]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [iface.components.table :as table]
             [iface.components.service :as service]
@@ -81,7 +80,7 @@
   [ant/form-item
    {:label     (when (zero? index) "Type")
     :read-only true}
-   (drop 1 (str type))]) ;; TODO - figure out why `name` was causing an error
+   (clojure.core/name type)])
 
 (defn service-field-label
   [index label]
@@ -132,37 +131,42 @@
 
 
 (defn service-field-options-entry
-  [{:keys [field_index index value]}]
-  [:div.columns {:key index}
+  [field {:keys [index value]}]
+  [:div.columns
    [:div.column.is-8
     [ant/input
      {:placeholder "label"
       :value       value
-      :on-change   #(dispatch [:service.form.field.option/update field_index index (.. % -target -value)])}]]
+      :on-change   #(dispatch [:service.form.field.option/update (:index field) index (.. % -target -value)])}]]
    [:div.column.is-1
     [ant/button
      {:icon     "close-circle-o"
       :shape    "circle"
       :type     "danger"
-      :on-click #(dispatch [:service.form.field.option/delete field_index index])}]]
+      :on-click #(dispatch [:service.form.field.option/delete (:index field) index])}]]
    [:div.column.is-3
     [ant/button-group
      [ant/button
       {:icon     "up"
        :type     "primary"
        :disabled (zero? index)
-       :on-click #(dispatch [:service.form.field.option/reorder field_index index (dec index)])}]
+       :on-click #(dispatch [:service.form.field.option/reorder field index (dec index)])}]
      [ant/button
       {:icon     "down"
        :type     "primary"
-       :disabled @(subscribe [:services.form.field.option/is-last? field_index index])
-       :on-click #(dispatch [:service.form.field.option/reorder field_index index (inc index)])}]]]])
+       :disabled @(subscribe [:services.form.field.option/is-last? field index])
+       :on-click #(dispatch [:service.form.field.option/reorder field index (inc index)])}]]]])
 
+(defn render-service-field-options-entry
+  [index option]
+  (with-meta
+    [service-field-options-entry index option]
+    {:key (:index option)}))
 
 (defn service-field-options-popover
-  [index options]
+  [{:keys [index] :as field} options]
   [:div
-   (doall (map service-field-options-entry options))
+   (doall (map (partial render-service-field-options-entry field) options))
    [:div.columns
     [:div.column.is-6.is-offset-3
      [ant/button
@@ -170,31 +174,32 @@
        :on-click #(dispatch [:service.form.field.option/create index])}
       "Add Option"]]]])
 
+
 (defn service-field-options-container
-  [index options]
+  [field options]
   [ant/form-item
-   {:label (when (zero? index) "Options")}
+   {:label (when (zero? (:index field)) "Options")}
    [ant/popover
     {:title         "Menu Options"
      :overlay-style {:width "30%"}
-     :content       (r/as-element [service-field-options-popover index options])}
+     :content       (r/as-element [service-field-options-popover field options])}
     [ant/button
      {:style {:width "100%"}}
      (str "Menu Options (" (count options) ")")]]])
+
 
 (defmulti render-service-field :type)
 
 
 (defmethod render-service-field :dropdown
-  [{:keys [index label required type options]}]
-
-  [:div.columns {:key index}
+  [{:keys [index label required type options] :as field}]
+  [:div.columns
    [:div.column.is-1
     [service-field-type index type]]
    [:div.column.is-5
     [service-field-label index label]]
    [:div.column.is-3
-    [service-field-options-container index options]]
+    [service-field-options-container field options]]
    [:div.column.is-1
     [service-field-required index required]]
    [:div.column.is-1
@@ -205,7 +210,7 @@
 
 (defmethod render-service-field :default
   [{:keys [index label required type]}]
-  [:div.columns {:key index}
+  [:div.columns
    [:div.column.is-1
     [service-field-type index type]]
    [:div.column.is-8
@@ -235,11 +240,17 @@
 
 (defn fields-card [fields]
   [ant/card {:title "Fields" :extra (r/as-element [add-fields-menu])}
-   (doall (map render-service-field fields))])
+   (doall
+    (map
+     #(with-meta
+        [render-service-field %]
+        {:key (:index %)})
+     fields))])
 
 
 (defn create-service-form []
-  (let [form (subscribe [:services/form])]
+  (let [form     (subscribe [:services/form])
+        catalogs (subscribe [:services/catalogs])]
     [:div
      [ant/card {:title "Service Details"}
       [:div.columns
@@ -271,11 +282,15 @@
          [ant/select
           {:style       {:width "100%"}
            :mode        "tags"
+           :value       (:catalogs @form)
+           :on-change   #(dispatch [:service.form/update :catalogs (js->clj %)])
            :placeholder "add this service to catalogs"}
-          [ant/select-option {:key 1 :value :pets} "pets"]
-          [ant/select-option {:key 2 :value :laundry} "laundry"]
-          [ant/select-option {:key 3 :value :cleaning} "cleaning"]
-          [ant/select-option {:key 4 :value :subscriptions} "subscriptions"]]]
+          (map-indexed (fn [i catalog]
+                         [ant/select-option
+                          {:key   i
+                           :value (clojure.core/name catalog)}
+                          (clojure.core/name catalog)])
+                       @catalogs)]]
         [ant/form-item
          {:label "Properties"}
          [ant/select
@@ -295,7 +310,9 @@
         [:div.is-pulled-right
          [ant/form-item
           {:label "Active?"}
-          [ant/switch]]]]]]
+          [ant/switch
+           {:checked (:active @form)
+            :on-change #(dispatch [:service.form/update :active %])}]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
       [:div.columns
@@ -303,20 +320,18 @@
         [ant/form-item
          {:label "Price"}
          [ant/input-number
-          {:default-value 10.00
-           :value         (:price @form)
-           :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))
-           :on-change     #(dispatch [:service.form/update :price %])}]]]
+          {:value     (:price @form)
+           :style     {:width "75%"}
+           :formatter (fn [value] (str "$" value))
+           :on-change #(dispatch [:service.form/update :price %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Cost"}
          [ant/input-number
-          {:default-value 10.00
-           :value         (:cost @form)
-           :style         {:width "75%"}
-           :formatter     (fn [value] (str "$" value))
-           :on-change     #(dispatch [:service.form/update :cost %])}]]]
+          {:value     (:cost @form)
+           :style     {:width "75%"}
+           :formatter (fn [value] (str "$" value))
+           :on-change #(dispatch [:service.form/update :cost %])}]]]
        [:div.column.is-3
         [ant/form-item
          {:label "Billed"}
@@ -340,20 +355,21 @@
 (defn create-service-modal []
   (let [form (subscribe [:services/form])]
     [ant/modal
-     {:title     "Create Service"
-      :width     "70%"
-      :visible   @(subscribe [:modal/visible? :service/create-service-form])
-      :ok-text   "Save New Service"
-      :on-cancel #(dispatch [:service.form/hide])
-      :on-ok     (fn []
-                   (let [{name        :name
-                          description :description
-                          code        :code} @form]
-                     (if (every? #(empty? %) [name description code])
-                       (ant/notification-error
-                        {:message "Additional information required"
-                         :description "Please enter a name, description, and code for this service."})
-                       (dispatch [:service/create! @form]))))}
+     {:title       "Create Service"
+      :width       "70%"
+      :visible     @(subscribe [:modal/visible? :service/create-service-form])
+      :ok-text     "Save New Service"
+      :on-cancel   #(dispatch [:service.form/hide])
+      :on-ok       (fn []
+                     (let [{name        :name
+                            description :description
+                            code        :code} @form]
+                       (if (every? #(empty? %) [name description code])
+                         (ant/notification-error
+                          {:message     "Additional information required"
+                           :description "Please enter a name, description, and code for this service."})
+                         (dispatch [:service/create! @form]))))
+      :after-close #(dispatch [:service.form/clear])}
 
      [create-service-form]]))
 
@@ -415,7 +431,6 @@
   (case (vec (rest path))
     [:list]           :services
     [:orders :list]   :orders
-    [:catalogs :list] :catalogs
     :services))
 
 (defn menu [route]
@@ -423,33 +438,89 @@
              :selected-keys          [(path->selected (:path route))]}
    [ant/menu-item {:key :services}
     [:a {:href (routes/path-for :services/list)}
-     "Services"]]
+     "Service Offerings"]]
    [ant/menu-item {:key :orders}
     [:a {:href (routes/path-for :services.orders/list)}
-     "Orders"]]
-   [ant/menu-item {:key :catalogs}
-    [:a {:href (routes/path-for :services.catalogs/list)}
-     "Catalogs"]]])
+     "Manage Orders"]]])
 
 
 (defn- services-list [services]
-  (let [columns [{:title     "Name"
-                  :dataIndex "name"
-                  :key       "name"
-                  :render    #(r/as-element
-                               [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
-                                    :dangerouslySetInnerHTML {:__html %1}}])}]
+  (let [columns     [{:title     "Name"
+                      :dataIndex "name"
+                      :key       "name"
+                      :render    #(r/as-element
+                                   [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
+                                        :dangerouslySetInnerHTML {:__html %1}}])
+                      }]
         search-text @(subscribe [:services/search-text])]
     [ant/table
-     {:columns    columns
+     {:columns     columns
       :show-header false
-      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
+      :dataSource  (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
+
+
+;; =====================================================
+;; service entry (detail view)
+;; =====================================================
+
+
+(defn- service-entry-field [{:keys [id index type label required options]}]
+  [:div
+   [:div.columns
+    [:div.column.is-1
+     (when (= 0 index)
+       [:p [:b "Type"]])
+     [:div (clojure.core/name type)]]
+
+    [:div.column.is-9
+     (when (= 0 index)
+       [:p [:b "Label"]])
+     [:p label]
+     [:div
+      (when (and (= :dropdown type) (not (empty? options)))
+        [:div
+         [:b "Options: "]
+         (map
+          (fn [option]
+            (with-meta
+              [:span
+               (str
+                (when (not= 0 (:index option))
+                  ", ")
+                (:label option))]
+              {:key (:index option)}))
+          options)])]]
+
+    [:div.column.is-1
+     (when (= 0 index)
+       [:p [:b "Required?"]])
+     [ant/switch {:checked required}]]]])
 
 
 (defn- service-entry [service]
   (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service]
     [:div
-     [ant/card {:title "Service Details"}
+     [:div.mb2
+      [:div
+       [ant/button
+        {:on-click #(dispatch [:service/edit-service @service])}
+        "Edit"]
+       [ant/popconfirm
+        {:title      (r/as-element [:div
+                                    [:h4 "Are you sure you want to delete this service offering?"]
+                                    [:div "This action can't be undone. Perhaps you want to "
+                                     [:strong "deactivate"]
+                                     " this service instead?"]])
+         :ok-text    "Yes, delete this service"
+         :ok-type    :danger
+         :on-confirm #(dispatch [:service/delete! (:id @service)])}
+        [ant/button
+         "Delete"]]
+       [ant/button
+        {:on-click #(dispatch [:service/copy-service @service])}
+        "Make a Copy"]]]
+     [ant/card
+      {:title "Service Details"}
       [:div.columns
        [:div.column.is-6
         [:h3 [:b name]]
@@ -463,17 +534,28 @@
          [:p [:b "Catalogs"]]
          (if (nil? catalogs)
            [:p "none"]
-           [:p catalogs])]
+           [:p (map-indexed
+               (fn [i catalog]
+                 (if (zero? i)
+                   (str (clojure.core/name catalog))
+                   (str ", " (clojure.core/name catalog))))
+               catalogs)])]
 
         [:div.mb1
          [:p [:b "Properties"]]
-         (if (nil? properties)
+         (if (empty? properties)
            [:p "none"]
-           [:p properties])]]
+           [:p (doall (map-indexed
+                 (fn [i property]
+                   (let [property-name (:name  @(subscribe [:property property]))]
+                     (if (zero? i)
+                       property-name
+                       (str ", " property-name))))
+                 properties))])]]
 
        [:div.column.is-2
-        [:p.mb1 [:b "Active?"]] ;; TODO - implement "active/inactive" services
-        [ant/switch {:checked true}]]]]
+        [:p.mb1 [:b "Active?"]]
+        [ant/switch {:checked active}]]]]
 
      [ant/card {:title "Pricing/Billing"}
       [:div.columns
@@ -498,7 +580,7 @@
        [:div.column.is-3
         [:div
          [:p [:b "Billed"]]
-         [:p (drop 1 (str billed))]]]
+         [:p billed]]]
 
        [:div.column.is-3
         [:div
@@ -511,74 +593,71 @@
        "Ordered " (str order-count " time(s) between ")
        (let [range (subscribe [:services/range])]
          [ant/date-picker-range-picker
-          {:format              "l"
-           :allow-clear         false
-           :ranges              {"Past Week"     (range-picker-presets 1 "week")
-                                 "Past Month"    (range-picker-presets 1 "month")
-                                 "Past 3 Months" (range-picker-presets 3 "months")
-                                 "Past Year"     (range-picker-presets 1 "year")}
-           :value               (vec (map iso->moment @range))
-           :on-change           #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
+          {:format      "l"
+           :allow-clear false
+           :ranges      {"Past Week"     (range-picker-presets 1 "week")
+                         "Past Month"    (range-picker-presets 1 "month")
+                         "Past 3 Months" (range-picker-presets 3 "months")
+                         "Past Year"     (range-picker-presets 1 "year")}
+           :value       (vec (map iso->moment @range))
+           :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
 
      [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
       (if (nil? fields)
         [:p "No fields found."]
 
         [:div
-         [:div.columns
-          [:div.column.is-1
-           [:p [:b "Type"]]
-           [:div "text"]]
+         (map
+          #(with-meta
+             [service-entry-field %]
+             {:key (:id %)})
+          fields)])]]))
 
-          [:div.column.is-9
-           [:p [:b "Label"]]
-           [:p "What is your weasel's name?"]]
 
-          [:div.column.is-1
-           [:p [:b "Required?"]]
-           [ant/switch {:checked true}]]]
+(defn services-list-container [services]
+  [:div.column.is-3
+   [:div.mb2
+    [ant/button
+     {:style {:width "100%"}
+      :type  :primary
+      :icon  "plus"
+      :on-click #(dispatch [:service.form/show])}
+     "Create a New Service"]]
+   [:div.mb1
+    [service-filter]]
+   [services-list @services]])
 
-         [:div.columns
-          [:div.column.is-1
-           [:p [:b "Type"]]
-           [:div "dropdown"]]
 
-          [:div.column.is-9
-           [:p [:b "Label"]]
-           [:p "When should we pick up your weasel?"]
-           [:div "Options: Morning, Afternoon, Evening"]]
+(defn services-entry-container [route]
+  (if (not (nil? (get-in route [:params :service-id])))
+    (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
+      [:div.column.is-9
+       [service-entry service]])
+    [:p.mt2.ml2
+     "Select a service from the list to see more details."]))
 
-          [:div.column.is-1
-           [:p [:b "Required?"]]
-           [ant/switch {:checked true}]]]])]]))
-
+(defn services-editing-container [route]
+  (let [service-id (subscribe [:service-id])
+        form       (subscribe [:services/form])]
+    [:div.column.is-9
+     [:div.mb2
+      [:div
+       [ant/button
+        {:on-click #(dispatch [:service/cancel-edit])}
+        "Cancel"]
+       [ant/button
+        {:on-click #(dispatch [:service/save-edits @service-id @form])}
+        "Save Changes"]]]
+     [create-service-form]]))
 
 (defn services-subview
   [route]
   (let [services (subscribe [:services/list])]
-    #_[:div
-     [controls @services]
-       [services-table @services]]
-
     [:div.columns
-     [:div.column.is-3
-      [:div.mb2
-       [ant/button
-        {:style {:width "100%"}
-         :type  :primary
-         :icon  "plus"
-         :on-click #(dispatch [:service.form/show])}
-        "Create a New Service"]]
-      [:div.mb1
-       [service-filter]]
-      [services-list @services]]
-
-     (if (not (nil? (get-in route [:params :service-id])))
-       (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
-         [:div.column.is-9
-          [service-entry service]])
-       [:p.mt2.ml2
-        "Select a service from the list to see more details."])]))
+     [services-list-container services]
+     (if @(subscribe [:services/is-editing])
+       [services-editing-container route]
+       [services-entry-container route])]))
 
 
 (defn service-layout [route] ;;receives services, which is obtained from graphql
@@ -595,14 +674,10 @@
    (case (:page route)
      :services/list          [services-subview route]
      :services/entry         [services-subview route]
-     :services.orders/list   [orders-views/subview]
-     :services.catalogs/list [catalogs-views/subview])])
+     :services.orders/list   [orders-views/subview])])
 
 
 
-;; =====================================================
-;; service entry (detail view)
-;; =====================================================
 
 
 
