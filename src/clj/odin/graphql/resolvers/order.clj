@@ -194,50 +194,26 @@
                              fields)))))
 
 
-(comment
-
-  (let [params {:account 285873023223100
-                :service 285873023223050
-                :fields  [{:service_field 285873023223052
-                           :value         "2018-03-22T19:47:30.032Z"}
-                          {:service_field 285873023223051
-                           :value         "2018-03-22T19:47:30.032Z"}
-                          {:service_field 285873023223053
-                           :value         "Test"}]}]
-    (prepare-order (d/db odin.datomic/conn) params))
-
-
-  (let [params {:fields [{:service_field 285873023223080 ;; number
-                          :value         "2"}
-                         {:service_field 285873023223051 ;; date
-                          :value         nil};; "2018-03-22T19:47:30.032Z"}
-                         {:service_field 285873023223051 ;; time
-                          :value         "2018-03-21T20:30:00.598Z"}
-                         {:service_field 285873023223083 ;; text
-                          :value         nil}]}]
-    (parse-fields (d/db odin.datomic/conn) (filter #(identity (:value %)) (:fields params))))
-
-
-  (parse-fields (d/db odin.datomic/conn) [])
-
-
-  )
-
-
 (defn create!
   "Create a new order."
   [{:keys [requester conn]} {params :params} _]
   (let [order (prepare-order (d/db conn) (parse-params params))]
-    @(d/transact conn [order (source/create requester)])
-    (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
+    @(d/transact conn [order
+                       (events/order-created requester (order/uuid order) true)
+                       (source/create requester)])
+    (order/by-uuid (d/db conn) (order/uuid order))))
 
 
 (defn create-many!
   "Create many new orders"
   [{:keys [requester conn]} {params :params} _]
   (let [orders (map (comp (partial prepare-order (d/db conn)) parse-params) params)]
-    @(d/transact conn (conj orders (source/create requester)))
-    (map #(d/entity (d/db conn) [:order/uuid (:order/uuid %)]) orders)))
+    @(d/transact conn (concat
+                       (conj orders (source/create requester))
+                       (map
+                        #(events/order-created requester (order/uuid %) true)
+                        orders)))
+    (map #(order/by-uuid (d/db conn) (order/uuid %)) orders)))
 
 
 ;; Given set of existing ids, examine set of `old` ids
