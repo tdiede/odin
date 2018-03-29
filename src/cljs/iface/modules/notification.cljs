@@ -10,7 +10,7 @@
 ;; events =======================================================================
 ;; ==============================================================================
 
-;; TODO - extend to include an optional params map
+
 (reg-fx
  :notification
  (fn [[type message {:keys [description duration]}]]
@@ -31,6 +31,7 @@
    (ant/notification-info {:message  message
                            :icon     (r/as-element [ant/icon {:type "check" :style {:color "#11c956"}}])
                            :duration 6})))
+
 
 (reg-event-fx
  :notify/failure

@@ -177,16 +177,15 @@
 (reg-event-fx
  :services.add-service/close
  [(path db/path)]
- (fn [{db :db} [_ k]]
+ (fn [{db :db} _]
    {:dispatch-n [[:services.add-service.form/reset]
-                 [:ui/loading k false]
                  [:modal/hide db/modal]]}))
 
 
 (reg-event-fx
  :services.add-service/add
  [(path db/path) ]
- (fn [{db :db} [k]]
+ (fn [{db :db} _]
    (let [{:keys [id name description price]} (:adding db)
          adding                              {:index       (count (:cart db))
                                               :service     id
@@ -195,8 +194,7 @@
                                               :price       price
                                               :fields      (:form-data db)}
          new-cart                            (conj (:cart db) adding)]
-     {:dispatch-n   [[:ui/loading k true]
-                     [:services.add-service/close k]
+     {:dispatch-n   [[:services.add-service/close]
                      [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
 
@@ -205,12 +203,10 @@
 ;; graphql as a string...
 (defn construct-order-fields [fields]
   (map
-   (fn [{:keys [id value type]}]
+   (fn [{:keys [id value]}]
      (tb/assoc-when
       {:service_field id}
-      :value (if (number? value)
-               (float value)
-               value)))
+      :value value))
    fields))
 
 
@@ -267,7 +263,7 @@
 (reg-event-fx
  :services.cart.item/save-edit
  [(path db/path)]
- (fn [{db :db} [k]]
+ (fn [{db :db} _]
    (let [new-fields (:form-data db)
          new-cart   (map
                      (fn [item]
@@ -275,8 +271,7 @@
                          (assoc item :fields new-fields)
                          item))
                      (:cart db))]
-     {:dispatch-n [[:ui/loading k true]
-                   [:services.add-service/close]
+     {:dispatch-n [[:services.add-service/close]
                    [::save-cart new-cart]]})))
 
 

@@ -203,7 +203,6 @@
         keep     (filter #(% catalogs) catalogs-params)
         added    (remove #(% catalogs) catalogs-params)
         removed  (set/difference (set catalogs) (set (concat keep added)))]
-
     (cond-> []
       (not (empty? added))
       (concat (map #(vector :db/add (td/id service) :service/catalogs %) added))
@@ -217,8 +216,6 @@
   (let [existing     (set (map td/id (service/properties service)))
         [keep added] (map set ((juxt filter remove) (partial contains? existing) properties-params))
         removed   (set/difference existing (set/union keep added))]
-
-
     (cond-> []
       (not (empty? added))
       (concat (map #(vector :db/add (td/id service) :service/properties %) added))
@@ -231,19 +228,19 @@
   [existing updated]
   (let [id (:db/id existing)]
     (cond-> []
-      (and (not= (:service/name existing) (:name updated)) (not (nil? (:name updated))))
+      (and (not= (:service/name existing) (:name updated)) (some? (:name updated)))
       (conj [:db/add id :service/name (:name updated)])
 
-      (and (not= (:service/desc existing) (:description updated)) (not (nil? (:description updated))))
+      (and (not= (:service/desc existing) (:description updated)) (some? (:description updated)))
       (conj [:db/add id :service/desc (:description updated)])
 
-      (and (not= (:service/code existing) (:code updated)) (not (nil? (:code updated))))
+      (and (not= (:service/code existing) (:code updated)) (some? (:code updated)))
       (conj [:db/add id :service/code (:code updated)])
 
-      (and (not= (:service/price existing) (:price updated)) (not (nil? (:price updated))))
+      (and (not= (:service/price existing) (:price updated)) (some? (:price updated)))
       (conj [:db/add id :service/price (:price updated)])
 
-      (and (not= (:service/cost existing) (:cost updated)) (not (nil? (:cost updated))))
+      (and (not= (:service/cost existing) (:cost updated)) (some? (:cost updated)))
       (conj [:db/add id :service/cost (:cost updated)])
 
       (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
@@ -255,11 +252,12 @@
       (and (not= (:service/active existing) (:active updated)) (some? (:active updated)))
       (conj [:db/add id :service/active (:active updated)])
 
-      (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
+      (and (not= (:service/catalogs existing) (set (:catalogs updated))) (some? (:catalogs updated)))
       (concat (update-service-catalogs-tx existing (map keyword (:catalogs updated))))
 
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
       (concat (update-service-properties-tx existing (:properties updated))))))
+
 
 (comment
 
@@ -327,7 +325,6 @@
                  (update-service-fields-tx (d/db conn) service (:fields params)))]
     @(d/transact conn tx)
     (d/entity (d/db conn) service_id)))
-
 
 
 (defn delete!
@@ -407,6 +404,7 @@
                       :service/fields (service/create-field label type field)})
                    new)))))
 
+
 (defn update-service-catalogs-tx
   [service catalogs-params]
   (let [catalogs (service/catalogs service)
@@ -422,14 +420,11 @@
       (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))))
 
 
-
 (defn update-service-properties-tx
   [service properties-params]
   (let [existing     (set (map td/id (service/properties service)))
         [keep added] (map set ((juxt filter remove) (partial contains? existing) properties-params))
         removed   (set/difference existing (set/union keep added))]
-
-
     (cond-> []
       (not (empty? added))
       (concat (map #(vector :db/add (td/id service) :service/properties %) added))
@@ -456,7 +451,6 @@
   (timbre/info "\n\n ====================current service name is: "(:service/name existing))
   (let [id (:db/id existing)]
     (cond-> []
-
       ;; special case - there's a name-internal attribute for some reason.
       (and (not= (:service/name existing) (:name updated)) (not (nil? (:name updated))))
       (conj [:db/add id :service/name (:name updated)])
@@ -490,19 +484,13 @@
       (conj [:db/add id :service/active (:active updated)])
 
       ;; catalogs - existing is a set of keywords. updated is a list of keywords.
-      ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
       (concat (update-service-catalogs-tx existing (:catalogs updated)))
 
       ;; properties - existing has a set of lookup refs (by property id). updated is a vector of property ids.
-      ;; also we need to make sure it removes thigns that were not there. THIS CURRENTLY DOES NOT DO THAT.
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      (concat (update-service-properties-tx existing (:properties updated)))
-      #_(conj [:db/add id :service/properties (set (map td/id (:properties updated)))])
+      (concat (update-service-properties-tx existing (:properties updated))))))
 
-      ;; fields - handled by their own special function
-
-      )))
 
 (comment
 
@@ -554,16 +542,13 @@
 
 (defn update!
   [{:keys [conn requester]} {:keys [service-id params]} _]
-  (timbre/info "\n\n--------------- we updatin boyzzzzz ---------------------\n")
-  (timbre/info (str "\n service-id is " service-id))
-  (timbre/info "\n and params are \n")
-  (clojure.pprint/pprint params)
   (let [service (d/entity (d/db conn) service-id)]
     @(d/transact conn (concat
                        (edit-service-tx service params)
                        [(source/create requester)]
                        (update-service-fields-tx (d/db conn) service (:fields params))))
     (d/entity (d/db conn) service-id)))
+
 
 (comment
   (defn update-mock
@@ -587,6 +572,7 @@
 
 
   )
+
 
 ;; =============================================================================
 ;; Resolvers

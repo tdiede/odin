@@ -444,10 +444,9 @@
        :service     @(subscribe [:services.add-service/adding])
        :form-fields @(subscribe [:services.add-service/form])
        :can-submit  @(subscribe [:services.add-service/can-submit?])
-       :on-cancel   #(dispatch [:services.add-service/close :services.add-service/add])
+       :on-cancel   #(dispatch [:services.add-service/close])
        :on-submit   #(dispatch [:services.add-service/add])
-       :on-change   #(dispatch [:services.add-service.form/update %1 %2])
-       :loading     @(subscribe [:ui/loading? :services.add-service/add])}]
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [categories]
      [catalog @services]
      [shopping-cart-button]]))
@@ -487,10 +486,9 @@
        :service     @(subscribe [:services.add-service/adding])
        :form-fields @(subscribe [:services.add-service/form])
        :can-submit  @(subscribe [:services.add-service/can-submit?])
-       :on-cancel   #(dispatch [:services.add-service/close :services.cart.item/save-edit])
+       :on-cancel   #(dispatch [:services.add-service/close])
        :on-submit   #(dispatch [:services.cart.item/save-edit])
-       :on-change   #(dispatch [:services.add-service.form/update %1 %2])
-       :loading     @(subscribe [:ui/loading? :services.cart.item/save-edit])}]
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
        [shopping-cart-body (sort-by :index @cart-items) requester]
        [empty-cart])]))

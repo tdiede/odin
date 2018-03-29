@@ -144,7 +144,7 @@
 
 
 (defn service-modal
-  [{:keys [action is-visible service form-fields can-submit on-cancel on-submit on-change loading]}]
+  [{:keys [action is-visible service form-fields can-submit on-cancel on-submit on-change]}]
   [ant/modal
    {:title     (str action " " (:name service))
     :visible   is-visible
@@ -152,8 +152,7 @@
     :footer    (r/as-element
                 [add-service-modal-footer action can-submit
                  {:on-cancel on-cancel
-                  :on-submit on-submit
-                  :loading loading}])}
+                  :on-submit on-submit}])}
    [:div
     [:p (:description service)]
     [:br]

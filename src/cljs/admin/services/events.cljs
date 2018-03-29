@@ -147,6 +147,8 @@
 ;; ==============================================================================
 ;; editing ======================================================================
 ;; ==============================================================================
+
+
 (reg-event-fx
  :service/edit-service
  [(path db/path)]
@@ -154,11 +156,13 @@
    {:dispatch-n [[:service/toggle-is-editing true]
                  [:service.form/populate service]]}))
 
+
 (reg-event-db
  :service/toggle-is-editing
  [(path db/path)]
  (fn [db [_ val]]
    (assoc db :is-editing val)))
+
 
 (reg-event-fx
  :service/cancel-edit
@@ -166,6 +170,7 @@
  (fn [{db :db} _]
    {:dispatch-n [[:service.form/clear]
                  [:service/toggle-is-editing false]]}))
+
 
 ;; send the entire form to graphql. let the resolver determine which attrs to update
 (reg-event-fx
@@ -179,16 +184,17 @@
               :on-success [::update-success k]
               :on-failure [:graphql/failure k]}}))
 
+
 (reg-event-fx
  ::update-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   {:dispatch-n [[:services/query]
-                 [:service.form/hide]
-                 [:service.form/clear]]
-    :notification [:success "Your changes have been saved!"]
-    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_update :id])))}))
-
+   (let [svc-id (str (get-in response [:data :service_update :id]))]
+    {:dispatch-n [[:services/query]
+                  [:service.form/hide]
+                  [:service.form/clear]]
+     :notification [:success "Your changes have been saved!"]
+     :route (routes/path-for :services/entry :service-id svc-id)})))
 
 
 ;; ==============================================================================
@@ -237,7 +243,7 @@
  :service.form/populate
  [(path db/path)]
  (fn [db [_ service]]
-   (if (not (nil? service))
+   (if (some? service)
      (let [{:keys [name description code active properties catalogs price cost billed rental fields]} service]
        (dissoc db :form)
        (assoc db :form {:name name
@@ -407,8 +413,8 @@
  :service.form/clear
  [(path db/path)]
  (fn [db _]
-   (-> (update-in db [:form] dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
-       (assoc-in [:form] db/form-defaults))))
+   (-> (update db :form dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
+       (assoc :form db/form-defaults))))
 
 
 (reg-event-fx
@@ -426,11 +432,12 @@
  ::create-success
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   {:dispatch-n [[:services/query]
-                 [:service.form/hide]
-                 [:service.form/clear]]
-    :notification [:success "Service created!"]
-    :route (routes/path-for :services/entry :service-id (str (get-in response [:data :service_create :id])))}))
+   (let [svc-id (str (get-in response [:data :service_create :id]))]
+     {:dispatch-n [[:services/query]
+                   [:service.form/hide]
+                   [:service.form/clear]]
+      :notification [:success "Service created!"]
+      :route (routes/path-for :services/entry :service-id svc-id)})))
 
 
 (reg-event-fx
