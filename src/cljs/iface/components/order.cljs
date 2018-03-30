@@ -125,8 +125,10 @@
   [ant/form-item
    {:label label}
    [ant/time-picker
-    {:on-change #(on-change [:fields index] {:service_field id
-                                             :value         (time-fmt/moment->iso %)})}]])
+    {:use-12-hours true
+     :format       "HH:mm"
+     :on-change    #(on-change [:fields index] {:service_field id
+                                                :value         (time-fmt/moment->iso %)})}]])
 
 
 (defmethod order-form-svc-field :dropdown
