@@ -121,8 +121,9 @@
   [{:keys [label value type]}]
   [:div.mb2
    [:div
-    [:p [:b label] " " (if (= type :date)
-                         (format/date-short-num value)
+    [:p [:b label] " " (case type
+                         :date (format/date-time-short value)
+                         :time (format/time-short value)
                          (str value))]]])
 
 
