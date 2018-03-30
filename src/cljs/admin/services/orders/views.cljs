@@ -69,7 +69,7 @@
                  (format/format "Service cost is $%.2f" scost))}
        [:span
         {:dangerouslySetInnerHTML
-         {:__html
+        {:__html
           (str (format/format "$%.2f" (* cost quantity))
                (when (some? scost) "<b>*</b>")
                (when (> quantity 1)
@@ -118,10 +118,28 @@
     :pagination false}])
 
 
+(defn- order-fields-list-entry
+  [{:keys [label value]}]
+  [:div.mb2
+   [:div
+    [:p [:b label] " " (str value)]]])
+
+
+(defn- order-fields-list
+  [fields]
+  [:div
+   [:p.heading "Order Form Details"]
+   (map (fn [field]
+          (with-meta
+            [order-fields-list-entry field]
+            {:key (:id field)}))
+        fields)])
+
+
 (defn order-details
   ([order]
    (order-details order {}))
-  ([{:keys [service status name line_items billed_on fulfilled_on projected_fulfillment] :as order}
+  ([{:keys [service status name fields line_items billed_on fulfilled_on projected_fulfillment] :as order}
     {:keys [on-click] :or {on-click identity}}]
    (timbre/info order)
    [:div
@@ -145,6 +163,9 @@
       [:div.column.is-one-quarter
        [:p.heading "Margin"]
        [:p (order-margin order)]]]
+
+     [order-fields-list fields]
+
      (when (or (some? fulfilled_on) (some? projected_fulfillment))
        [:div.columns
         (when-some [p projected_fulfillment]
@@ -438,11 +459,11 @@
   (let [query-params (subscribe [:services.orders/query-params])]
     [:div
      [:div.columns
-     [:div.column
-      [status-filters]]
-     [:div.column
-      [:div.is-pulled-right
-       [create/button {:on-create [:services.orders/query @query-params]}]]]]
+      [:div.column
+       [status-filters]]
+      [:div.column
+       [:div.is-pulled-right
+        [create/button {:on-create [:services.orders/query @query-params]}]]]]
 
      [controls]
 
