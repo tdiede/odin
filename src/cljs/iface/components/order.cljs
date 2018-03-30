@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [clojure.string :as string]
             [iface.utils.formatters :as format]
+            [iface.utils.time :as time-fmt]
             [reagent.core :as r]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]))
@@ -106,30 +107,36 @@
 
 
 (defmulti order-form-svc-field
-  (fn [field]
+  (fn [field on-change]
     (:type field)))
 
 
 (defmethod order-form-svc-field :date
-  [{:keys [id label required]}]
+  [{:keys [id index label required]} on-change]
   [ant/form-item
    {:label label}
-   [ant/date-picker]])
+   [ant/date-picker
+    {:on-change #(on-change [:fields index] {:service_field id
+                                            :value         (time-fmt/moment->iso %)})}]])
 
 
 (defmethod order-form-svc-field :time
-  [{:keys [id label required]}]
+  [{:keys [id index label required]} on-change]
   [ant/form-item
    {:label label}
-   [ant/time-picker]])
+   [ant/time-picker
+    {:on-change #(on-change [:fields index] {:service_field id
+                                             :value         (time-fmt/moment->iso %)})}]])
 
 
 (defmethod order-form-svc-field :dropdown
-  [{:keys [id label required options]}]
+  [{:keys [id index label required options]} on-change]
   [ant/form-item
    {:label label}
    [ant/select
-    {:style {:width "50%"}}
+    {:style {:width "50%"}
+     :on-change #(on-change [:fields index] {:service_field id
+                                             :value         %})}
     (map (fn [{:keys [index value label]}]
            (with-meta
              [ant/select-option
@@ -140,32 +147,35 @@
 
 
 (defmethod order-form-svc-field :number
-  [{:keys [id label required]}]
+  [{:keys [id index label required]} on-change]
   [ant/form-item
    {:label label}
    [ant/input
-    {:type  :number
-     :style {:width "30%"}}]])
+    {:type      :number
+     :style     {:width "30%"}
+     :on-change #(on-change [:fields index] {:service_field id
+                                             :value         (.. % -target -value)})}]])
 
 
 (defmethod order-form-svc-field :default
-  [{:keys [id label required]}]
+  [{:keys [id index label required] :as field} on-change]
   [ant/form-item
    {:label label}
    [ant/input
-    {:type :text}]])
+    {:type :text
+     :on-change #(on-change [:fields index] {:service_field id
+                                             :value (.. % -target -value)})}]])
 
 
 (defn- render-order-form-svc-fields
-  [field]
+  [field on-change]
   (with-meta
-    [order-form-svc-field field]
+    [order-form-svc-field field on-change]
     {:key (:id field)}))
 
 
 (defn- order-form
   [svc order {:keys [on-change] :or {on-change #(timbre/info %)}}]
-  (js/console.log "heres a service" svc)
   (let [{:keys [quantity cost request variant summary line_items]
          :or   {quantity 1}} order]
     [:div
@@ -194,7 +204,7 @@
 
 
      (when-not (empty? (:fields svc))
-       (map #(render-order-form-svc-fields %) (:fields svc)))
+       (map #(render-order-form-svc-fields % on-change) (:fields svc)))
 
      [ant/form-item
       {:label "Additional Request Notes"

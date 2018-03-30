@@ -18,7 +18,8 @@
 (def default-db
   {:accounts []
    :services []
-   :form     {:quantity 1}})
+   :form     {:quantity 1
+              :fields []}})
 
 
 ;; =============================================================================
@@ -146,13 +147,17 @@
  ::update
  [(path ::path)]
  (fn [{db :db} [_ k v]]
+   (js/console.log "we ::updatin' boyz, k v " k v)
+   (js/console.log "THEORETICAL DB DISPATCH" (vec (flatten (concat [:form] [k]))))
    (let [variant (when (= k :service)
                    (when-let [v (-> (tb/find-by #(= (:id %) v) (:services db))
                                     :variants
                                     first)]
                      (:id v)))]
      (tb/assoc-when
-      {:db (assoc-in db [:form k] v)}
+      ;; i know this looks strange, but it letes us update within nested data structures
+      ;; inside the form without breaking the rest of the code that relies on this event
+      {:db (assoc-in db (vec (flatten (concat [:form] [k]))) v)}
       :dispatch (when-some [v variant] [::update :variant v])))))
 
 
@@ -160,7 +165,7 @@
  ::clear-service
  [(path ::path)]
  (fn [db _]
-   (-> (update-in db [:form] dissoc :service :price :summary :request :cost :variant :line_items)
+   (-> (update-in db [:form] dissoc :service :price :summary :request :cost :variant :line_items :fields)
        (assoc-in [:form :quantity] 1))))
 
 
@@ -168,7 +173,8 @@
  ::clear-form
  [(path ::path)]
  (fn [db _]
-   (assoc db :form {:quantity 1})))
+   (assoc db :form {:quantity 1
+                    :fields   []})))
 
 
 (reg-event-fx
