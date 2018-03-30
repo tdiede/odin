@@ -105,8 +105,67 @@
     (or (when-not (zero? lcost) lcost) cost vcost (:cost service))))
 
 
+(defmulti order-form-svc-field
+  (fn [field]
+    (:type field)))
+
+
+(defmethod order-form-svc-field :date
+  [{:keys [id label required]}]
+  [ant/form-item
+   {:label label}
+   [ant/date-picker]])
+
+
+(defmethod order-form-svc-field :time
+  [{:keys [id label required]}]
+  [ant/form-item
+   {:label label}
+   [ant/time-picker]])
+
+
+(defmethod order-form-svc-field :dropdown
+  [{:keys [id label required options]}]
+  [ant/form-item
+   {:label label}
+   [ant/select
+    {:style {:width "50%"}}
+    (map (fn [{:keys [index value label]}]
+           (with-meta
+             [ant/select-option
+              {:value value}
+              label]
+             {:key index}))
+         options)]])
+
+
+(defmethod order-form-svc-field :number
+  [{:keys [id label required]}]
+  [ant/form-item
+   {:label label}
+   [ant/input
+    {:type  :number
+     :style {:width "30%"}}]])
+
+
+(defmethod order-form-svc-field :default
+  [{:keys [id label required]}]
+  [ant/form-item
+   {:label label}
+   [ant/input
+    {:type :text}]])
+
+
+(defn- render-order-form-svc-fields
+  [field]
+  (with-meta
+    [order-form-svc-field field]
+    {:key (:id field)}))
+
+
 (defn- order-form
   [svc order {:keys [on-change] :or {on-change #(timbre/info %)}}]
+  (js/console.log "heres a service" svc)
   (let [{:keys [quantity cost request variant summary line_items]
          :or   {quantity 1}} order]
     [:div
@@ -133,8 +192,12 @@
           #(with-meta (variant-option %2) {:key %1})
           (:variants svc))]])
 
+
+     (when-not (empty? (:fields svc))
+       (map #(render-order-form-svc-fields %) (:fields svc)))
+
      [ant/form-item
-      {:label "Request Notes"
+      {:label "Additional Request Notes"
        :help  "Information provided to us by the customer when the order was requested."}
       [ant/input
        {:type      :textarea

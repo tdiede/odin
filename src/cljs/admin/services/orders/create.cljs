@@ -125,7 +125,9 @@
    (tb/assoc-when
     {:graphql {:query      [[:accounts {:params {:roles [:member]}} [:id :name :email [:property [:name]]]]
                             [:services [:id :code :name :description :price :billed
-                                        [:variants [:id :name :price]]]]]
+                                        [:variants [:id :name :price]]
+                                        [:fields [:id :index :type :label :required
+                                                  [:options [:index :label :value]]]]]]]
                :on-success [::fetch-success]
                :on-failure [:graphql/failure ::fetch]}}
     :dispatch (when-not bootstrapped [:ui/loading ::fetch true]))))
