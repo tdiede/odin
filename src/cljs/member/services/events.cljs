@@ -80,7 +80,8 @@
  :services/fetch-orders
  (fn [{db :db} [k account]]
    {:graphql {:query [[:orders {:params {:accounts [account]}}
-                       [:id :name :price :status :created :billed
+                       [:id :name :price :status :created :billed :billed_on :fulfilled_on :updated
+                        [:payments [:id :amount :status :paid_on]]
                         [:fields [:id :label :value :type :index]]]]]
               :on-success [::fetch-orders k]
               :on-failure [:graphql/failure k]}}))
@@ -267,7 +268,7 @@
    (let [new-fields (:form-data db)
          new-cart   (map
                      (fn [item]
-                       (if (= (:id item) (:id (:adding db)))
+                       (if (= (:index item) (:index (:adding db)))
                          (assoc item :fields new-fields)
                          item))
                      (:cart db))]

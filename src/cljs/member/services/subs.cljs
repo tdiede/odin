@@ -183,7 +183,7 @@
  :orders/subscriptions
  :<- [db/path]
  (fn [db _]
-   (filter #(and (= (:billed %) :monthly) (not= (:status %) :cancelled)) (:orders db))))
+   (filter #(and (= (:billed %) :monthly) (not= (:status %) :canceled)) (:orders db))))
 
 
 (reg-sub
