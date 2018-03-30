@@ -22,7 +22,7 @@
 
 
 (defn webserver-port
-  "Produce the port that the webserver should start on."
+  "Produce the port that the weberver should start on."
   [config]
   (tb/str->int (get-in config [:webserver :port])))
 

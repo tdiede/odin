@@ -15,6 +15,8 @@
             [ribbon.charge :as rch]
             [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
+            [teller.payment :as teller-payment]
+            [teller.property :as teller-property]
             [toolbelt.async :refer [<!!? <!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
