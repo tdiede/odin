@@ -77,7 +77,6 @@
  (fn [{db :db} [_ k response]]
    (let [order (-> (get-in response [:data :order])
                    (update :fields #(sort-by :index %)))]
-     (js/console.log "hey you got an order" order)
      {:db       (norms/assoc-norm db :orders/norms (:id order) order)
       :dispatch [:ui/loading k false]})))
 

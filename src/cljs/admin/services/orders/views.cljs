@@ -14,8 +14,7 @@
             [iface.utils.formatters :as format]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
-            [toolbelt.core :as tb]
-            [taoensso.timbre :as timbre]))
+            [toolbelt.core :as tb]))
 
 
 
@@ -141,7 +140,6 @@
    (order-details order {}))
   ([{:keys [service status name fields line_items billed_on fulfilled_on projected_fulfillment] :as order}
     {:keys [on-click] :or {on-click identity}}]
-   (timbre/info order)
    [:div
     [:h4.svc-title.mb1
      {:style {:font-weight 600 :margin-bottom 0}}
