@@ -118,10 +118,12 @@
 
 
 (defn- order-fields-list-entry
-  [{:keys [label value]}]
+  [{:keys [label value type]}]
   [:div.mb2
    [:div
-    [:p [:b label] " " (str value)]]])
+    [:p [:b label] " " (if (= type :date)
+                         (format/date-short-num value)
+                         (str value))]]])
 
 
 (defn- order-fields-list
