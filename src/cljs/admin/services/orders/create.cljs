@@ -147,8 +147,6 @@
  ::update
  [(path ::path)]
  (fn [{db :db} [_ k v]]
-   (js/console.log "we ::updatin' boyz, k v " k v)
-   (js/console.log "THEORETICAL DB DISPATCH" (vec (flatten (concat [:form] [k]))))
    (let [variant (when (= k :service)
                    (when-let [v (-> (tb/find-by #(= (:id %) v) (:services db))
                                     :variants
