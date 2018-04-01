@@ -15,8 +15,9 @@
             [ribbon.charge :as rch]
             [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
-            [teller.payment :as teller-payment]
-            [teller.property :as teller-property]
+            [teller.customer :as tcustomer]
+            [teller.payment :as tpayment]
+            [teller.property :as tproperty]
             [toolbelt.async :refer [<!!? <!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
@@ -34,17 +35,6 @@
 ;; =============================================================================
 
 
-;; TODO: add to toolbelt.datomic
-(defn- mapify [entity]
-  (if (td/entityd? entity)
-    (assoc (into {} entity) :db/id (:db/id entity))
-    entity))
-
-(s/fdef mapify
-        :args (s/cat :entity-or-map (s/or :entity td/entityd? :map map?))
-        :ret map?)
-
-
 (def ^:private stripe-charge-key
   ::charge)
 
@@ -52,7 +42,7 @@
 (defn- inject-charge
   "Assoc `stripe-charge` into the payment for use by subresolvers."
   [payment stripe-charge]
-  (assoc (mapify payment) stripe-charge-key stripe-charge))
+  (assoc (td/mapify payment) stripe-charge-key stripe-charge))
 
 
 (defn- get-charge [payment]
@@ -62,14 +52,9 @@
       v)))
 
 
-(defn overdue? [payment]
-  (when-let [due-date (payment/due payment)]
-    (t/after? (t/now) (c/to-date-time due-date))))
-
-
 (defn- rent-late-fee [payment]
   (if-let [license (:member-license/_rent-payments payment)]
-    (if (and (overdue? payment) (member-license/grace-period-over? license))
+    (if (and (tpayment/overdue? payment) (member-license/grace-period-over? license))
       (* (payment/amount payment) 0.1)
       0)
     0))
@@ -275,7 +260,7 @@
        (apply payment/query db)
        (sort-by :payment/paid-on)
        (reverse)
-       (map mapify)))
+       (map td/mapify)))
 
 
 ;; =============================================================================
@@ -284,12 +269,11 @@
 
 (defn payments
   "Query payments based on `params`."
-  [{:keys [conn] :as ctx} {params :params} _]
+  [system {params :params} _]
   (let [result (resolve/resolve-promise)]
     (go
       (try
-        (let [payments (query-payments (d/db conn) params)]
-          (resolve/deliver! result (<!? (merge-stripe-data ctx payments))))
+        (tpayment/query system params)
         (catch Throwable t
           (timbre/error t ::payments params)
           (resolve/deliver! result nil {:message  (.getMessage t)
@@ -330,172 +314,160 @@
                             (t/second st)))))
 
 
-(defmethod create-payment-data :rent [db {:keys [month amount account]}]
+(defmethod create-payment-data :rent
+  [system {:keys [month amount account]}]
   (when (nil? month)
     (resolve/resolve-as nil {:message "When payment type is rent, month must be specified."}))
-  (let [account (d/entity db account)
-        ml      (member-license/active db account)
-        tz      (member-license/time-zone ml)
-        start   (date/beginning-of-month month tz)
-        payment (payment/create amount account
-                                :for :payment.for/rent
-                                :pstart start
-                                :pend (date/end-of-month month tz)
-                                :due (-> (default-due-date start) (date/end-of-day tz)))]
+  (let [account  (d/entity (:db system) account)
+        customer (tcustomer/by-account system account)
+        ml       (member-license/active (:db system) account)
+        tz       (member-license/time-zone ml)
+        start    (date/beginning-of-month month tz)
+        payment  (tpayment/create! customer amount :payment-type/rent
+                                   {:pstart start
+                                    :pend (date/end-of-month month tz)
+                                    :due (-> (default-due-date start) (date/end-of-day tz))})]
     [payment (member-license/add-rent-payments ml payment)]))
 
 
-(defmethod create-payment-data :deposit [db {:keys [amount account]}]
-  (let [account (d/entity db account)
-        deposit (deposit/by-account account)
-        payment (payment/create amount account :for :payment.for/deposit)]
+(defmethod create-payment-data :deposit
+  [system {:keys [amount account]}]
+  (let [account  (d/entity (:db system) account)
+        customer (tcustomer/by-account system account)
+        deposit  (deposit/by-account account)
+        payment  (tpayment/create! customer amount :payment.type/deposit)]
     [payment (deposit/add-payment deposit payment)]))
 
 
 (defn create-payment!
-  [{:keys [conn] :as ctx} {params :params} _]
-  (if-let [tx-data (create-payment-data (d/db conn) params)]
-    (do
-      @(d/transact conn tx-data)
-      (payment/by-id (d/db conn) (payment/id (first tx-data))))
-    (resolve/resolve-as nil {:message "Cannot create payment with specified params."
-                             :params  params})))
+  [system {params :params} _]
+  (resolve/resolve-as nil {:message "Cannot create payment with specified params."
+                           :params  params})
 
 
-;; =============================================================================
-;; Pay Rent
+  ;; =============================================================================
+  ;; Pay Rent
 
 
-(defn- ensure-payment-allowed
-  [db requester payment source]
-  (cond
-    (not (#{:payment.status/due :payment.status/failed}
-          (payment/status payment)))
-    (format "This payment has status %s; cannot pay!"
-            (name (payment/status payment)))
+  (defn- ensure-payment-allowed
+    [db requester payment source]
+    (cond
+      (not (#{:payment.status/due :payment.status/failed}
+            (payment/status payment)))
+      (format "This payment has status %s; cannot pay!"
+              (name (payment/status payment)))
 
-    (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
-              (= (:object source) "bank_account")))
-    "Only bank accounts can be used to pay rent."))
-
-
-(defn- create-bank-charge!
-  "Create a charge for `payment` on Stripe."
-  [{:keys [stripe conn]} account payment customer source-id]
-  (let [license  (member-license/active (d/db conn) account)
-        property (member-license/property license)
-        amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
-        cus-name (or (customer/statement-name customer) (account/full-name account))
-        desc     (format "%s's rent at %s" cus-name (property/name property))]
-    (rch/create! stripe amount source-id
-                 :email (account/email account)
-                 :description desc
-                 :application-fee (int (* (/ (property/ops-fee property) 100) amount))
-                 :customer-id (customer/id customer)
-                 :destination (member-license/rent-connect-id license))))
+      (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
+                (= (:object source) "bank_account")))
+      "Only bank accounts can be used to pay rent."))
 
 
-(defn pay-rent!
-  [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
-  (let [result   (resolve/resolve-promise)
-        payment  (d/entity (d/db conn) id)
-        customer (customer/by-account (d/db conn) requester)]
-    (go
-      (try
-        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
-          (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
-            (resolve/deliver! result nil {:message error})
-            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
-              @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
-                                           (assoc :stripe/source-id (:id source))
-                                           (assoc :payment/status :payment.status/pending)
-                                           (assoc :payment/paid-on (java.util.Date.)))])
-              (resolve/deliver! result (d/entity (d/db conn) id)))))
-        (catch Throwable t
-          (timbre/error t ::pay-rent params)
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))
-    result))
+  (defn- create-bank-charge!
+    "Create a charge for `payment` on Stripe."
+    [{:keys [stripe conn]} account payment customer source-id]
+    (let [license  (member-license/active (d/db conn) account)
+          property (member-license/property license)
+          amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
+          cus-name (or (customer/statement-name customer) (account/full-name account))
+          desc     (format "%s's rent at %s" cus-name (property/name property))]
+      (rch/create! stripe amount source-id
+                   :email (account/email account)
+                   :description desc
+                   :application-fee (int (* (/ (property/ops-fee property) 100) amount))
+                   :customer-id (customer/id customer)
+                   :destination (member-license/rent-connect-id license))))
 
 
-(comment
-
-  (let [stripe    (odin.config/stripe-secret-key odin.config/config)
-        conn      odin.datomic/conn
-        requester (d/entity (d/db conn) [:account/email "member@test.com"])
-        payment   (d/entity (d/db conn) 285873023223183)
-        customer  (customer/by-account (d/db conn) requester)
-        scus      (<!!? (rcu/fetch stripe (customer/id customer)))
-        source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
-        owner     (payment/account payment)]
-    (ensure-payment-allowed (d/db conn) requester payment scus source))
-
-
-  )
-
-
-;; =============================================================================
-;; Pay Deposit
-
-
-(defn pay-deposit!
-  [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
-  (let [result   (resolve/resolve-promise)
-        deposit  (deposit/by-account requester)
-        customer (customer/by-account (d/db conn) requester)]
-    (go
-      (try
-        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source-id))]
-          (if (= (:object source) "bank_account")
-            (let [payment (payment/create (deposit/amount-remaining deposit) requester
-                                          :for :payment.for/deposit
-                                          :source-id source-id)
-                  charge  (<!? (create-bank-charge! ctx requester payment customer source-id))]
-              @(d/transact-async conn [(assoc payment
-                                              :stripe/charge-id (:id charge)
-                                              :payment/paid-on (java.util.Date.))
-                                       (deposit/add-payment deposit payment)])
-              (resolve/deliver! result (d/entity (d/db conn) (:db/id deposit))))
-            (resolve/deliver! result nil {:message "Only bank accounts can be used to pay your deposit."})))
-        (catch Throwable t
-          (timbre/error t ::pay-deposit {:id (:db/id requester) :source source})
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))
-    result))
+  (defn pay-rent!
+    [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
+    (let [result   (resolve/resolve-promise)
+          payment  (d/entity (d/db conn) id)
+          customer (customer/by-account (d/db conn) requester)]
+      (go
+        (try
+          (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
+            (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
+              (resolve/deliver! result nil {:message error})
+              (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
+                @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
+                                             (assoc :stripe/source-id (:id source))
+                                             (assoc :payment/status :payment.status/pending)
+                                             (assoc :payment/paid-on (java.util.Date.)))])
+                (resolve/deliver! result (d/entity (d/db conn) id)))))
+          (catch Throwable t
+            (timbre/error t ::pay-rent params)
+            (resolve/deliver! result nil {:message  (.getMessage t)
+                                          :err-data (ex-data t)}))))
+      result))
 
 
-;; =============================================================================
-;; Resolvers
-;; =============================================================================
+  (comment
+
+    (let [stripe    (odin.config/stripe-secret-key odin.config/config)
+          conn      odin.datomic/conn
+          requester (d/entity (d/db conn) [:account/email "member@test.com"])
+          payment   (d/entity (d/db conn) 285873023223183)
+          customer  (customer/by-account (d/db conn) requester)
+          scus      (<!!? (rcu/fetch stripe (customer/id customer)))
+          source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
+          owner     (payment/account payment)]
+      (ensure-payment-allowed (d/db conn) requester payment scus source))
 
 
-(defmethod authorization/authorized? :payment/list [_ account params]
-  (or (account/admin? account)
-      (= (:db/id account) (get-in params [:params :account]))))
+    )
 
 
-(defmethod authorization/authorized? :payment/pay-rent!
-  [{conn :conn} account params]
-  (let [payment (d/entity (d/db conn) (:id params))]
-    (= (:db/id account) (:db/id (payment/account payment)))))
+  ;; =============================================================================
+  ;; Pay Deposit
 
 
-(def resolvers
-  {;; fields
-   :payment/external-id  external-id
-   :payment/late-fee     late-fee
-   :payment/method       method
-   :payment/status       status
-   :payment/source       source
-   :payment/autopay?     autopay?
-   :payment/type         payment-for
-   :payment/description  description
-   :payment/property     property
-   :payment/order        order
-   ;; queries
-   :payment/list         payments
-   ;; mutations
-   :payment/create!      create-payment!
-   :payment/pay-rent!    pay-rent!
-   :payment/pay-deposit! pay-deposit!
-   })
+  (defn pay-deposit!
+    [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
+    (let [result   (resolve/resolve-promise)
+          deposit  (deposit/by-account requester)
+          customer (customer/by-account (d/db conn) requester)]
+      (go
+        (try
+          (tpayment/create! customer (deposit/amount-remaining deposit) :payment.type/deposit )
+          (catch Throwable t
+            (timbre/error t ::pay-deposit {:id (:db/id requester) :source-id source-id})
+            (resolve/deliver! result nil {:message  (.getMessage t)
+                                          :err-data (ex-data t)}))))
+      result))
+
+
+  ;; =============================================================================
+  ;; Resolvers
+  ;; =============================================================================
+
+
+  (defmethod authorization/authorized? :payment/list [_ account params]
+    (or (account/admin? account)
+        (= (:db/id account) (get-in params [:params :account]))))
+
+
+  (defmethod authorization/authorized? :payment/pay-rent!
+    [{conn :conn} account params]
+    (let [payment (d/entity (d/db conn) (:id params))]
+      (= (:db/id account) (:db/id (payment/account payment)))))
+
+
+  (def resolvers
+    {;; fields
+     :payment/external-id  external-id
+     :payment/late-fee     late-fee
+     :payment/method       method
+     :payment/status       status
+     :payment/source       source
+     :payment/autopay?     autopay?
+     :payment/type         payment-for
+     :payment/description  description
+     :payment/property     property
+     :payment/order        order
+     ;; queries
+     :payment/list         payments
+     ;; mutations
+     :payment/create!      create-payment!
+     :payment/pay-rent!    pay-rent!
+     :payment/pay-deposit! pay-deposit!
+     })

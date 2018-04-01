@@ -8,6 +8,7 @@ To start local development.
 
 ```
 $ lein install
+$ lein cooper
 ```
 
 Start a REPL. In the `user` namespace invoke `go!`.
