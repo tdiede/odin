@@ -26,8 +26,8 @@
             [toolbelt.datomic :as td]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
+            [odin.models.autopay :as autopay]
             [teller.core :as teller]))
-            [odin.models.autopay :as autopay]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from

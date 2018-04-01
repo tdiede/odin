@@ -11,9 +11,12 @@
 
 
 (defstate teller
-  :start (let [conn (teller/datomic-connection
+  :start (let [dt   (teller/datomic-connection
                      (config/datomic-uri config)
-                     (config/stripe-secret-key config))]
+                     (config/datomic-partition config))
+               st   (teller/stripe-connection
+                     (config/stripe-secret-key config))
+               conn (teller/connection dt st)]
            (timbre/info "connecting to teller...")
            (teller/connect conn))
   :stop (do
