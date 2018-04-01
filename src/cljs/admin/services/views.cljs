@@ -454,10 +454,12 @@
                                    [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
                                         :dangerouslySetInnerHTML {:__html %1}}])
                       }]
-        search-text @(subscribe [:services/search-text])]
+        search-text @(subscribe [:services/search-text])
+        is-loading  @(subscribe [:ui/loading? :services/query])]
     [ant/table
      {:columns     columns
       :show-header false
+      :loading     is-loading
       :dataSource  (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 
