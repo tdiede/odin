@@ -13,6 +13,7 @@
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
             [ribbon.charge :as rch]
+            [ribbon.core :as ribbon]
             [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
             [toolbelt.async :refer [<!!? <!?]]
@@ -20,7 +21,8 @@
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
             [clj-time.coerce :as c]
-            [clj-time.core :as t]))
+            [clj-time.core :as t]
+            [odin.models.autopay :as autopay]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -379,7 +381,7 @@
 
 (defn- create-bank-charge!
   "Create a charge for `payment` on Stripe."
-  [{:keys [stripe conn]} account payment customer source-id]
+  [{:keys [stripe conn]} account payment connect-id customer customer-id source-id]
   (let [license  (member-license/active (d/db conn) account)
         property (member-license/property license)
         amount   (cents (+ (payment/amount payment) (rent-late-fee payment)))
@@ -389,23 +391,25 @@
                  :email (account/email account)
                  :description desc
                  :application-fee (int (* (/ (property/ops-fee property) 100) amount))
-                 :customer-id (customer/id customer)
-                 :destination (member-license/rent-connect-id license))))
+                 :customer-id customer-id
+                 :managed-account connect-id)))
 
 
 (defn pay-rent!
   [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
-  (let [result   (resolve/resolve-promise)
-        payment  (d/entity (d/db conn) id)
-        customer (customer/by-account (d/db conn) requester)]
+  (let [result     (resolve/resolve-promise)
+        payment    (d/entity (d/db conn) id)
+        customer   (customer/by-account (d/db conn) requester)
+        license    (member-license/active (d/db conn) requester)
+        connect-id (member-license/rent-connect-id license)]
     (go
       (try
-        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
-          (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
+        (let [[cus src] (<!? (autopay/setup-connect-customer! conn stripe license connect-id source))]
+          (if-let [error (ensure-payment-allowed (d/db conn) requester payment src)]
             (resolve/deliver! result nil {:message error})
-            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
+            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment connect-id customer (:id cus) (:id src))))]
               @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
-                                           (assoc :stripe/source-id (:id source))
+                                           (assoc :stripe/source-id source)
                                            (assoc :payment/status :payment.status/pending)
                                            (assoc :payment/paid-on (java.util.Date.)))])
               (resolve/deliver! result (d/entity (d/db conn) id)))))
@@ -416,39 +420,25 @@
     result))
 
 
-(comment
-
-  (let [stripe    (odin.config/stripe-secret-key odin.config/config)
-        conn      odin.datomic/conn
-        requester (d/entity (d/db conn) [:account/email "member@test.com"])
-        payment   (d/entity (d/db conn) 285873023223183)
-        customer  (customer/by-account (d/db conn) requester)
-        scus      (<!!? (rcu/fetch stripe (customer/id customer)))
-        source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
-        owner     (payment/account payment)]
-    (ensure-payment-allowed (d/db conn) requester payment scus source))
-
-
-  )
-
-
 ;; =============================================================================
 ;; Pay Deposit
 
 
 (defn pay-deposit!
   [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
-  (let [result   (resolve/resolve-promise)
-        deposit  (deposit/by-account requester)
-        customer (customer/by-account (d/db conn) requester)]
+  (let [result     (resolve/resolve-promise)
+        deposit    (deposit/by-account requester)
+        license    (member-license/active (d/db conn) requester)
+        connect-id (member-license/deposit-connect-id license)
+        customer   (customer/by-account (d/db conn) requester)]
     (go
       (try
-        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source-id))]
-          (if (= (:object source) "bank_account")
+        (let [[cus src] (<!? (autopay/setup-connect-customer! conn stripe license connect-id source-id))]
+          (if (= (:object src) "bank_account")
             (let [payment (payment/create (deposit/amount-remaining deposit) requester
                                           :for :payment.for/deposit
                                           :source-id source-id)
-                  charge  (<!? (create-bank-charge! ctx requester payment customer source-id))]
+                  charge  (<!? (create-bank-charge! ctx requester payment connect-id customer (:id cus) (:id src)))]
               @(d/transact-async conn [(assoc payment
                                               :stripe/charge-id (:id charge)
                                               :payment/paid-on (java.util.Date.))

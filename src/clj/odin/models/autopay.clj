@@ -45,7 +45,8 @@
      (let [autopay-source (<!? c)]
        [(and (= (:last4 source) (:last4 autopay-source))
              (= (:account_holder_name source) (:account_holder_name autopay-source))
-             (= (:bank_name source) (:bank_name autopay-source))) autopay-source])
+             (= (:bank_name source) (:bank_name autopay-source)))
+        autopay-source])
      [false nil])))
 
 
@@ -55,6 +56,35 @@
 
 
 ;; turn on autopay ==============================================================
+
+
+;; ==============================================================================
+;; added 03/30/2018 ===============================================================
+;; ==============================================================================
+
+
+(defn- create-connect-customer!
+  "Create the autopay customer with `source-id` as a payment source."
+  [stripe account connect-id source-id]
+  (rcu/create2! stripe (account/email account)
+                :description "autopay"
+                :managed-account connect-id
+                :source source-id))
+
+
+(defn setup-connect-customer!
+  "Create an autopay customer if necessary, and attach the `source-id` to the
+  autopay customer."
+  [conn stripe license connect-id source-id]
+  (go-try
+   (let [account     (member-license/account license)
+         cus         (customer/by-account (d/db conn) account)
+         {token :id} (<!? (rcn/create-bank-token! stripe (customer/id cus) source-id connect-id))
+         customer    (<!? (create-connect-customer! stripe account connect-id token))]
+     [customer (rcu/active-bank-account customer)])))
+
+
+;; ==============================================================================
 
 
 (defn- create-autopay-customer!
