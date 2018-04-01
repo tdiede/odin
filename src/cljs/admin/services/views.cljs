@@ -527,6 +527,13 @@
      [ant/card
       {:title   "Service Details"
        :loading is-loading}
+      (when (and active (empty? properties))
+        [:div.mb2
+         [ant/alert
+          {:type        :warning
+           :show-icon   true
+           :message     "This service is not currently visible to members"
+           :description "While this service is active, it is not availalbe at any properties and members will not be able to see it. To make this service available to members, add some properties below."}]])
       [:div.columns
        [:div.column.is-6
         [:h3 [:b name]]
