@@ -379,7 +379,8 @@
 
 (defn pay-rent!
   [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
-  (let [payment  (d/entity (d/db conn) id)
+  (let [result   (resolve/resolve-promise)
+        payment  (d/entity (d/db conn) id)
         customer (customer/by-account (d/db conn) requester)]
     (go
       (try

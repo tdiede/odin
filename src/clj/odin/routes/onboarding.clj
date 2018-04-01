@@ -35,6 +35,7 @@
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
             [teller.customer :as tcustomer]
+            [teller.source :as tsource]
             [teller.property :as tproperty]))
 
 
@@ -536,7 +537,7 @@
 (defmethod save! :deposit.method/bank
   [conn account _ {token :stripe-token}]
   (if-some [customer (tcustomer/by-account teller account)]
-    (tcustomer/add-source! teller customer token)
+    (tsource/add-source! teller customer token)
     (let [cm (account/current-property (d/db conn) account)]
       (tcustomer/create! teller (account/email account)
                          (cond-> {:source token
