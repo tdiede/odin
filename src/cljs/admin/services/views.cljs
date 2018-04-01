@@ -580,17 +580,15 @@
          (if (nil? price)
            [:p "Quote"]
            [:p (str
-                "$"
-                price
-                (if (= :monthly billed)
-                  "/month"
-                  ""))])]]
+                (format/currency price)
+                (when (= :monthly billed)
+                  "/month"))])]]
        [:div.column.is-3
         [:div
          [:p [:b "Cost"]]
          (if (nil? cost)
            [:p "n/a"]
-           [:p (str "$" cost)])]]
+           [:p (format/currency cost)])]]
 
        [:div.column.is-3
         [:div
