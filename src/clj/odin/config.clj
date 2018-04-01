@@ -67,6 +67,12 @@
   (get-in config [:datomic :uri]))
 
 
+(defn datomic-partition
+  "The datomic partition to use"
+  [config]
+  (get-in config [:datomic :partition]))
+
+
 ;; =============================================================================
 ;; nrepl
 ;; =============================================================================

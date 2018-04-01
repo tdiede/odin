@@ -121,7 +121,7 @@
           :seed/referrals {:txes [(referrals)]}
           :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
                            :requires [:seed/accounts]}
-          :seed/onboard   {:txes [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
-                                                    :email "onboard@test.com")]
+          :seed/onboard   {:txes     [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
+                                                        :email "onboard@test.com")]
                            :requires [:seed/accounts]}}
          (cf/ensure-conforms conn))))
