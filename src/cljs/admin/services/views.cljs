@@ -249,8 +249,9 @@
 
 
 (defn create-service-form []
-  (let [form     (subscribe [:services/form])
-        catalogs (subscribe [:services/catalogs])]
+  (let [form       (subscribe [:services/form])
+        catalogs   (subscribe [:services/catalogs])
+        is-editing (subscribe [:services/is-editing])]
     [:div
      [ant/card {:title "Service Details"}
       [:div.columns
@@ -276,6 +277,7 @@
          [ant/input
           {:placeholder "service code"
            :value       (:code @form)
+           :disabled    @is-editing
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
@@ -311,7 +313,7 @@
          [ant/form-item
           {:label "Active?"}
           [ant/switch
-           {:checked (:active @form)
+           {:checked   (:active @form)
             :on-change #(dispatch [:service.form/update :active %])}]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
@@ -535,23 +537,23 @@
          (if (nil? catalogs)
            [:p "none"]
            [:p (map-indexed
-               (fn [i catalog]
-                 (if (zero? i)
-                   (str (clojure.core/name catalog))
-                   (str ", " (clojure.core/name catalog))))
-               catalogs)])]
+                (fn [i catalog]
+                  (if (zero? i)
+                    (str (clojure.core/name catalog))
+                    (str ", " (clojure.core/name catalog))))
+                catalogs)])]
 
         [:div.mb1
          [:p [:b "Properties"]]
          (if (empty? properties)
            [:p "none"]
            [:p (doall (map-indexed
-                 (fn [i property]
-                   (let [property-name (:name  @(subscribe [:property property]))]
-                     (if (zero? i)
-                       property-name
-                       (str ", " property-name))))
-                 properties))])]]
+                       (fn [i property]
+                         (let [property-name (:name  @(subscribe [:property property]))]
+                           (if (zero? i)
+                             property-name
+                             (str ", " property-name))))
+                       properties))])]]
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]]
