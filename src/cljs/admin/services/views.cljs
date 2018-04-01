@@ -277,7 +277,7 @@
          [ant/input
           {:placeholder "service code"
            :value       (:code @form)
-           ;; :disabled    @is-editing
+           :disabled    @is-editing
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
