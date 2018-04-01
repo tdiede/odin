@@ -502,7 +502,8 @@
 
 
 (defn- service-entry [service]
-  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service]
+  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service
+        is-loading                                                                                                @(subscribe [:ui/loading? :service/fetch])]
     [:div
      [:div.mb2
       [:div
@@ -524,7 +525,8 @@
         {:on-click #(dispatch [:service/copy-service @service])}
         "Make a Copy"]]]
      [ant/card
-      {:title "Service Details"}
+      {:title   "Service Details"
+       :loading is-loading}
       [:div.columns
        [:div.column.is-6
         [:h3 [:b name]]
@@ -561,7 +563,9 @@
         [:p.mb1 [:b "Active?"]]
         [ant/switch {:checked active}]]]]
 
-     [ant/card {:title "Pricing/Billing"}
+     [ant/card
+      {:title   "Pricing/Billing"
+       :loading is-loading}
       [:div.columns
        [:div.column.is-3
         [:div
@@ -591,7 +595,9 @@
          [:p [:b "Rental?"]]
          [ant/checkbox {:checked rental}]]]]]
 
-     [ant/card {:title "Metrics"}
+     [ant/card
+      {:title   "Metrics"
+       :loading is-loading}
       [:p [:b "Usage"]]
       [:p
        "Ordered " (str order-count " time(s) between ")
@@ -606,7 +612,9 @@
            :value       (vec (map iso->moment @range))
            :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
 
-     [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
+     [ant/card
+      {:title   "Order Form Fields"
+       :loading is-loading}
       (if (nil? fields)
         [:p "No fields found."]
 
