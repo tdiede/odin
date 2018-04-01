@@ -277,7 +277,7 @@
          [ant/input
           {:placeholder "service code"
            :value       (:code @form)
-           :disabled    @is-editing
+           ;; :disabled    @is-editing
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
@@ -338,10 +338,10 @@
         [ant/form-item
          {:label "Billed"}
          [ant/select
-          {:style       {:width "75%"}
-           :placeholder "billed"
-           :value       (:billed @form)
-           :on-change   #(dispatch [:service.form/update :billed (keyword %)])}
+          {:style         {:width "75%"}
+           :placeholder   "billed"
+           :default-value (:billed @form)
+           :on-change     #(dispatch [:service.form/update :billed (keyword %)])}
           [ant/select-option {:value :once} "once"]
           [ant/select-option {:value :monthly} "monthly"]]]]
        [:div.column.is-3
