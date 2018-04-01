@@ -26,7 +26,6 @@
    [odin.teller :refer [teller]]
    [reactor.reactor :as reactor]
    [taoensso.timbre :as timbre]
-   [teller.core :as teller]
    [toolbelt.core]
    [clojure.core.async :as a]
    [clojure.java.io :as io]))
@@ -73,16 +72,6 @@
                chan (a/chan (a/sliding-buffer 512))]
            (reactor/start! conn chan conf))
   :stop (reactor/stop! reactor))
-
-
-;; TODO I think this should be incorporated to reactor...
-(defstate teller
-  :start (let [dt   (teller/datomic-connection "datomic:mem://localhost:4334/starcity"
-                                               :db.part/user)
-               st   (teller/stripe-connection "sk_test_mPUtCMOnGXJwD6RAWMPou8PH")
-               conn (teller/connection dt st)]
-           (teller/connect conn))
-  :stop (teller/disconnect teller))
 
 
 (defn go []
