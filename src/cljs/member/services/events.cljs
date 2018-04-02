@@ -117,10 +117,11 @@
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
-     {:graphql {:query [[:services {:params {:properties [property-id]}}
-                         [:id :name :description :price :catalogs
-                          [:fields [:id :index :label :type :required
-                                    [:options [:index :label :value]]]]]]]
+     {:graphql {:query      [[:services {:params {:properties [property-id]
+                                                  :active     true}}
+                              [:id :name :description :price :catalogs :active
+                               [:fields [:id :index :label :type :required
+                                         [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
 
@@ -129,7 +130,8 @@
  :services/catalogs
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [services (sort-by #(clojure.string/lower-case (:name %)) (get-in response [:data :services]))
+   (let [services (->> (get-in response [:data :services])
+                       (sort-by #(clojure.string/lower-case (:name %))))
          clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
      {:db (assoc db :catalogs clist :services services)})))
 

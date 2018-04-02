@@ -136,9 +136,9 @@
 
   :service_field_option_object
   {:description "The options given to a member in a service field of type `:dropdown`"
-   :fields      {:index       {:type (non-null :Long)}
-                 :label       {:type (non-null String)}
-                 :value       {:type (non-null String)}}}
+   :fields      {:index {:type (non-null :Long)}
+                 :label {:type (non-null String)}
+                 :value {:type (non-null String)}}}
 
 
   :service_field_object
@@ -159,7 +159,9 @@
                               :description "List of catalogs we want services from"}
                  :properties {:type        (list :Long)
                               :description "List of property IDs"}
-                 :billed     {:type (list :service_billed)}}}
+                 :billed     {:type (list :service_billed)}
+                 :active     {:type        Boolean
+                              :description "Is this service being offered?"}}}
 
 
   :service_create_params
@@ -179,17 +181,17 @@
 
   :service_update_params
   {:description "Parameters to update a new service"
-   :fields {:name        {:type String}
-            :code        {:type String}
-            :description {:type String}
-            :catalogs    {:type (list String)}
-            :active      {:type Boolean}
-            :fields      {:type (list :service_field_object)}
-            :properties  {:type (list :Long)}
-            :price       {:type Float}
-            :cost        {:type Float}
-            :billed      {:type :service_billed}
-            :rental      {:type Boolean}}}
+   :fields      {:name        {:type String}
+                 :code        {:type String}
+                 :description {:type String}
+                 :catalogs    {:type (list String)}
+                 :active      {:type Boolean}
+                 :fields      {:type (list :service_field_object)}
+                 :properties  {:type (list :Long)}
+                 :price       {:type Float}
+                 :cost        {:type Float}
+                 :billed      {:type :service_billed}
+                 :rental      {:type Boolean}}}
 
 
   :units_query_params
