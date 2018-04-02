@@ -517,7 +517,7 @@
                    {:title     "Price"
                     :dataIndex :price
                     :render    (table/wrap-cljs #(if (some? %) (format/currency %) "n/a"))}]
-     :dataSource  orders
+     :dataSource  (map-indexed #(assoc %2 :key %1) orders)
      :pagination  {:size              :small
                    :default-page-size 4}
      :show-header false}]])

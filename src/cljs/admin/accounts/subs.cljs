@@ -88,6 +88,7 @@
  :<- [:accounts.list/query-params]
  :<- [:accounts]
  (fn [[params accounts] _]
+   (js/console.log accounts)
    (->> accounts
         (role-filter params)
         (sort-accounts params))))
@@ -200,8 +201,8 @@
 
 (reg-sub
  :account/orders
+ :<- [db/path]
  (fn [db [_ account-id]]
-   (->> (get-in db [:admin.services.orders.db/orders :orders/norms :norms])
-        (map second)
-        (filter #(= account-id (get-in % [:account :id])))
+   (->> (norms/get-norm db :accounts/norms account-id)
+        :orders
         (sort-by :created))))
