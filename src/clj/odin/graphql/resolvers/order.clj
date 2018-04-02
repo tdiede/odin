@@ -178,7 +178,7 @@
   (let [line-items (when-not (empty? line_items)
                      (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
         fields     (when-not (empty? fields)
-                     (parse-fields db (filter #(identity (:value %)) fields)))]
+                     (parse-fields db fields))]
     (order/create account service
                   (tb/assoc-when
                    {}
