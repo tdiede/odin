@@ -7,6 +7,7 @@
             [antizer.reagent :as ant]
             [clojure.string :as string]
             [iface.components.membership :as membership]
+            [iface.components.order :as order]
             [iface.components.table :as table]
             [iface.loading :as loading]
             [iface.components.typography :as typography]
@@ -482,15 +483,57 @@
     "Reassign"]])
 
 
+;;TODO - this is straight up copied from admin.services.orders.views -> modularize!
+(defn- status-icon-class [status]
+  (get
+   {:placed    "has-text-info"
+    :fulfilled "has-text-primary"
+    :failed    "has-text-warning"
+    :charged   "has-text-success"
+    :canceld   "has-text-danger"}
+   status))
+
+
+(defn- render-status [_ {status :status}]
+  [ant/tooltip {:title status}
+   [ant/icon {:class (status-icon-class (keyword status))
+              :type  (order/status-icon (keyword status))}]])
+
+
+
+
+(defn membership-orders-list [account orders]
+  [ant/card
+   {:title (str (format/make-first-name-possessive (:name account)) "Premium Service Orders")}
+   [ant/table
+    {:columns     [{:title     ""
+                    :dataIndex :status
+                    :render    (table/wrap-cljs render-status)}
+                   {:title     "Service"
+                    :dataIndex :name
+                    :render    #(r/as-element
+                                 [:a {:href                    (routes/path-for :services.orders/entry :order-id (.-id %2))
+                                      :dangerouslySetInnerHTML {:__html %1}}])}
+                   {:title     "Price"
+                    :dataIndex :price
+                    :render    (table/wrap-cljs #(if (some? %) (format/currency %) "n/a"))}]
+     :dataSource  orders
+     :pagination  {:size              :small
+                   :default-page-size 4}
+     :show-header false}]])
+
+
 (defn membership-view [account]
   (let [license   (most-current-license account)
-        is-active (= :active (:status license))]
+        is-active (= :active (:status license))
+        orders    @(subscribe [:account/orders (:id account)])]
     [:div.columns
      [:div.column
       [membership/license-summary license
        (when is-active {:content [membership-actions account]})]]
      [:div.column
-      (when is-active [status-bar account])]]))
+      (when is-active [status-bar account])
+      (when is-active [membership-orders-list account orders])]]))
 
 
 

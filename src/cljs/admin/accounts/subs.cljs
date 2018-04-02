@@ -193,3 +193,15 @@
  :<- [db/path]
  (fn [db [_ note-id]]
    (get-in db [:commenting-notes note-id :text])))
+
+
+;; orders =======================================================================
+
+
+(reg-sub
+ :account/orders
+ (fn [db [_ account-id]]
+   (->> (get-in db [:admin.services.orders.db/orders :orders/norms :norms])
+        (map second)
+        (filter #(= account-id (get-in % [:account :id])))
+        (sort-by :created))))
