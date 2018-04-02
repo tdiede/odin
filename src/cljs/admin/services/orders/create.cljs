@@ -18,7 +18,8 @@
 (def default-db
   {:accounts []
    :services []
-   :form     {:quantity 1}})
+   :form     {:quantity 1
+              :fields []}})
 
 
 ;; =============================================================================
@@ -125,7 +126,9 @@
    (tb/assoc-when
     {:graphql {:query      [[:accounts {:params {:roles [:member]}} [:id :name :email [:property [:name]]]]
                             [:services [:id :code :name :description :price :billed
-                                        [:variants [:id :name :price]]]]]
+                                        [:variants [:id :name :price]]
+                                        [:fields [:id :index :type :label :required
+                                                  [:options [:index :label :value]]]]]]]
                :on-success [::fetch-success]
                :on-failure [:graphql/failure ::fetch]}}
     :dispatch (when-not bootstrapped [:ui/loading ::fetch true]))))
@@ -150,7 +153,9 @@
                                     first)]
                      (:id v)))]
      (tb/assoc-when
-      {:db (assoc-in db [:form k] v)}
+      ;; i know this looks strange, but it letes us update within nested data structures
+      ;; inside the form without breaking the rest of the code that relies on this event
+      {:db (assoc-in db (vec (flatten (concat [:form] [k]))) v)}
       :dispatch (when-some [v variant] [::update :variant v])))))
 
 
@@ -158,7 +163,7 @@
  ::clear-service
  [(path ::path)]
  (fn [db _]
-   (-> (update-in db [:form] dissoc :service :price :summary :request :cost :variant :line_items)
+   (-> (update-in db [:form] dissoc :service :price :summary :request :cost :variant :line_items :fields)
        (assoc-in [:form :quantity] 1))))
 
 
@@ -166,7 +171,8 @@
  ::clear-form
  [(path ::path)]
  (fn [db _]
-   (assoc db :form {:quantity 1})))
+   (assoc db :form {:quantity 1
+                    :fields   []})))
 
 
 (reg-event-fx

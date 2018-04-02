@@ -81,32 +81,6 @@
      :fields   (partial map parse-service-field)}))
 
 
-#_(comment
-
-    (-> {:description "asdfasdfasdfasfasdf",
-         :properties [285873023222997 285873023222986],
-         :rental false,
-         :name "asdfasdf",
-         :catalogs [],
-         :fields
-         [{:index 0,
-           :type :dropdown,
-           :label "asdfasdf",
-           :required true,
-           :options
-           [{:value "xcv", :index 0, :field_index 0}
-            {:value "sdf", :index 1, :field_index 0}
-            {:value "wer", :index 2, :field_index 0}]}
-          {:index 1, :type :text, :label "sfasdfasdfasdf", :required false}],
-         :billed :monthly,
-         :code "asdf",
-         :cost 50.0,
-         :price 55.0}
-        (parse-mutate-params))
-
-    )
-
-
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
@@ -227,6 +201,8 @@
 (defn edit-service-tx
   [existing updated]
   (let [id (:db/id existing)]
+    (println "================== yo look at this service what just came in and we gonna transact")
+    (clojure.pprint/pprint updated)
     (cond-> []
       (and (not= (:service/name existing) (:name updated)) (some? (:name updated)))
       (conj [:db/add id :service/name (:name updated)])
@@ -243,7 +219,7 @@
       (and (not= (:service/cost existing) (:cost updated)) (some? (:cost updated)))
       (conj [:db/add id :service/cost (:cost updated)])
 
-      (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
+      (and (some? (:billed updated)) (not= (name (:service/billed existing)) (name (:billed updated))))
       (conj [:db/add id :service/billed (keyword "service.billed" (name (:billed updated)))])
 
       (and (not= (:service/rental existing) (:rental updated)) (some? (:rental updated)))
@@ -257,63 +233,6 @@
 
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
       (concat (update-service-properties-tx existing (:properties updated))))))
-
-
-(comment
-
-  (def conn odin.datomic/conn)
-
-  (td/mapify (d/entity (d/db conn) 17592186046043))
-
-  (def service (d/entity (d/db conn) 17592186046114))
-
-  (->> {:id          17592186046114
-        :name        "Edited Test Service"
-        :description "edited service descriptions"
-        :code        "test,edits,plzwork"
-        :catalogs    [:storage :subscriptions]
-        :properties  [285873023222987 285873023222998] ;; 2987-> West SoMa, 2998-> Mission
-        :price       15.0
-        :cost        3.0
-        :active      true
-        :billed      :once
-        :fields      [{:id       17592186046082
-                       :index    0
-                       :type     :text
-                       :label    "keep me!"
-                       :required true
-                       :options  '()}
-                      {:index 1
-                       :type :text
-                       :label "one more, plz"}]}
-       (edit-service-tx service))
-
-
-  (->> [{:id    17592186046076
-         :index 0
-         :label "blah blah"}
-        {:index    2
-         :label    "This is a date field"
-         :type     :date
-         :required false}
-        {:id      17592186046049
-         :index   1
-         :label   "These are options."
-         :options [{:id    17592186046050
-                    :index 0
-                    :label "aa"}
-                   ;; {:id    17592186046051
-                   ;;  :index 2
-                   ;;  :label "bb"}
-                   {:id    17592186046052
-                    :index 1
-                    :label "cc"}
-                   {:id    17592186046054
-                    :index 2
-                    :label "dd"}]}]
-       (update-service-fields-tx (d/db conn) service))
-
-  )
 
 
 (defn update!
@@ -335,7 +254,7 @@
   :ok)
 
 
-(defn- update-field-option-tx*
+#_(defn- update-field-option-tx*
   [db {:keys [id index label] :as params}]
   (let [e (d/entity db id)]
     (cond-> []
@@ -347,7 +266,7 @@
             [:db/add id :service-field-option/value label]))))
 
 
-(defn- update-field-options-tx
+#_(defn- update-field-options-tx
   [db field existing-options options-params]
   (let [[new old]    ((juxt remove filter) (comp some? :id) options-params)
         existing-ids (set (map :db/id existing-options))
@@ -367,7 +286,7 @@
                    new)))))
 
 
-(defn- update-field-tx
+#_(defn- update-field-tx
   [db {:keys [id label index required options]}]
   (let [e (d/entity db id)]
     (cond-> []
@@ -384,7 +303,7 @@
       (concat (update-field-options-tx db e (:service-field/options e) options)))))
 
 
-(defn update-service-fields-tx
+#_(defn update-service-fields-tx
   [db service fields-params]
   (let [fields       (service/fields service)
         [new old]    ((juxt remove filter) (comp some? :id) fields-params)
@@ -405,7 +324,7 @@
                    new)))))
 
 
-(defn update-service-catalogs-tx
+#_(defn update-service-catalogs-tx
   [service catalogs-params]
   (let [catalogs (service/catalogs service)
         keep     (filter #(% catalogs) catalogs-params)
@@ -420,7 +339,7 @@
       (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))))
 
 
-(defn update-service-properties-tx
+#_(defn update-service-properties-tx
   [service properties-params]
   (let [existing     (set (map td/id (service/properties service)))
         [keep added] (map set ((juxt filter remove) (partial contains? existing) properties-params))
@@ -433,145 +352,7 @@
       (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
 
 
-(comment
 
-  (let [service      (d/entity (d/db conn) 17592186046059)
-        existing     (set (map td/id (service/properties service)))
-        incoming     [285873023222987 285873023222998 285873023223414]
-        [keep added] (map set ((juxt filter remove) (partial contains? existing) incoming))
-        to-retract   (set/difference existing (set/union keep added))
-        ]
-    [keep added to-retract])
-
-  )
-
-
-(defn edit-service-tx
-  [existing updated]
-  (timbre/info "\n\n ====================current service name is: "(:service/name existing))
-  (let [id (:db/id existing)]
-    (cond-> []
-      ;; special case - there's a name-internal attribute for some reason.
-      (and (not= (:service/name existing) (:name updated)) (not (nil? (:name updated))))
-      (conj [:db/add id :service/name (:name updated)])
-
-      ;; special case - it's `desc` in datomic, but `description` everywhere else
-      (and (not= (:service/desc existing) (:description updated)) (not (nil? (:description updated))))
-      (conj [:db/add id :service/desc (:description updated)])
-
-      ;; default case
-      (and (not= (:service/code existing) (:code updated)) (not (nil? (:code updated))))
-      (conj [:db/add id :service/code (:code updated)])
-
-      ;; default case
-      (and (not= (:service/price existing) (:price updated)) (not (nil? (:price updated))))
-      (conj [:db/add id :service/price (:price updated)])
-
-      ;; default case
-      (and (not= (:service/cost existing) (:cost updated)) (not (nil? (:cost updated))))
-      (conj [:db/add id :service/cost (:cost updated)])
-
-      ;; special case - the billed keyword values are namespaced in datomic, but not in the client
-      (and (not= (name (:service/billed existing)) (name (:billed updated))) (not (nil? (:billed updated))))
-      (conj [:db/add id :service/billed (keyword "service.billed" (name (:billed updated)))])
-
-      ;; default case
-      (and (not= (:service/rental existing) (:rental updated)) (not (nil? (:rental updated))))
-      (conj [:db/add id :service/rental (:rental updated)])
-
-      ;; default case
-      (and (not= (:service/active existing) (:active updated) (not (nil? (:active updated)))))
-      (conj [:db/add id :service/active (:active updated)])
-
-      ;; catalogs - existing is a set of keywords. updated is a list of keywords.
-      (and (not= (:service/catalogs existing) (set (:catalogs updated))) (not (nil? (:catalogs updated))))
-      (concat (update-service-catalogs-tx existing (:catalogs updated)))
-
-      ;; properties - existing has a set of lookup refs (by property id). updated is a vector of property ids.
-      (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      (concat (update-service-properties-tx existing (:properties updated))))))
-
-
-(comment
-
-  (def conn odin.datomic/conn)
-
-  (td/mapify (d/entity (d/db conn) 17592186046043))
-
-  (def service (d/entity (d/db conn) 17592186046059))
-
-  (->> {:id          17592186046059
-        :name        "Weaselish Steaming"
-        :description "Let's steam some weasels."
-        :code        "test,edits,plzwork"
-        :catalogs    [:storage :subscriptions]
-        :properties  [285873023222987 285873023222998] ;; 2987-> West SoMa, 2998-> Mission
-        :price       15.0
-        :cost        3.0
-        :active      true
-        :billed      :once}
-       (edit-service-tx service))
-
-
-  (->> [{:id    17592186046048
-         :index 0
-         :label "blah blah"}
-        {:index    2
-         :label    "This is a date field"
-         :type     :date
-         :required false}
-        {:id      17592186046049
-         :index   1
-         :label   "These are options."
-         :options [{:id    17592186046050
-                    :index 0
-                    :label "aa"}
-                   ;; {:id    17592186046051
-                   ;;  :index 2
-                   ;;  :label "bb"}
-                   {:id    17592186046052
-                    :index 1
-                    :label "cc"}
-                   {:id    17592186046054
-                    :index 2
-                    :label "dd"}]}]
-      (update-service-fields-tx (d/db conn) service))
-
-  )
-
-
-(defn update!
-  [{:keys [conn requester]} {:keys [service-id params]} _]
-  (let [service (d/entity (d/db conn) service-id)]
-    @(d/transact conn (concat
-                       (edit-service-tx service params)
-                       [(source/create requester)]
-                       (update-service-fields-tx (d/db conn) service (:fields params))))
-    (d/entity (d/db conn) service-id)))
-
-
-(comment
-  (defn update-mock
-    [service-id params]
-    (let [service (d/entity (d/db conn) service-id)]
-      @(d/transact conn (concat
-                         (edit-service-tx service params)
-                          #_(source/create requester)
-                         (update-service-fields-tx (d/db conn) service (:fields params))))
-      (d/entity (d/db conn) service-id)))
-
-  (update-mock 17592186046059 {:name        "Party"
-                               :description "Party party party hard / party in a dude's back yard / party once and party twice / party hard, to be precise"
-                               :code        "party,party,party,hard"
-                               :catalogs    '(:subscriptions :storage)
-                               :properties  [285873023222987]
-                               :price       27.0
-                               :cost        1.50
-                               :active      false
-                               :billed      :monthly})
-
-
-  )
 
 
 ;; =============================================================================
@@ -604,80 +385,3 @@
    ;; queries
    :service/query   query
    :service/entry   entry})
-
-
-(comment
-
-  (def data
-    {:description "Have us change your sheets for a fresh set.",
-     :properties  [285873023222987 285873023222998],
-     :rental      nil,
-     :name        "Bed Linen Change - Single",
-     :catalogs    ["cleaning"],
-     :fields
-     [{:id       285873023223512,
-       :index    1,
-       :type     :dropdown,
-       :label    "Hello world",
-       :required false,
-       :options  []}
-      {:id       285873023223076,
-       :index    0,
-       :type     :date,
-       :label    "When would you like your linens changed? alkdjasfsda",
-       :required false,
-       :options  []}],
-     :billed      :once,
-     :active      nil,
-     :code        "cleaning,linen,single",
-     :cost        5.5,
-     :price       20.0})
-
-  ;; Run the query.
-  (let [conn odin.datomic/conn]
-    (com.walmartlabs.lacinia/execute
-     odin.graphql/schema
-     (str "mutation"
-          (venia.core/graphql-query
-           {:venia/queries
-            [[:service_update {:service_id 285873023223075
-                               :params     data}
-              [:id]]]}))
-     nil
-     {:conn      conn
-      :requester (d/entity (d/db conn) [:account/email "admin@test.com"])}))
-
-  (let [conn odin.datomic/conn]
-    (com.walmartlabs.lacinia/execute
-     odin.graphql/schema
-     (venia.core/graphql-query
-      {:venia/queries
-       [[:orders {:params {:services [285873023223075]
-                           :datekey  :created
-                           :from     "2018-02-28T08:00:00.400Z"
-                           :to       "2018-03-29T06:59:59.401Z"}}
-         [:id]]]})
-     nil
-     {:conn      conn
-      :requester (d/entity (d/db conn) [:account/email "admin@test.com"])}))
-
-
-
-
-  (query-services (d/db odin.datomic/conn) {:properties [[:property/code "2072mission"]]})
-
-  (let [conn odin.datomic/conn]
-    (account/current-property (d/db conn) (d/entity (d/db conn) [:account/email "member@test.com"])))
-
-
-  (com.walmartlabs.lacinia/execute odin.graphql/schema
-                                   (venia.core/graphql-query
-                                    {:venia.core/queries
-                                     [[:service_create {:params {:name "Weasel Steaming"
-                                                                 :code "pets,weasels"
-                                                                 :desc "Let us give your weasel the royal treatment."}}
-                                       [:id]]]})
-                                   nil
-                                   {:conn      odin.datomic/conn
-                                    :requester (d/entity (d/db :conn) [:account/email "admin@test.com"])})
-  )

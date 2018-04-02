@@ -249,8 +249,9 @@
 
 
 (defn create-service-form []
-  (let [form     (subscribe [:services/form])
-        catalogs (subscribe [:services/catalogs])]
+  (let [form       (subscribe [:services/form])
+        catalogs   (subscribe [:services/catalogs])
+        is-editing (subscribe [:services/is-editing])]
     [:div
      [ant/card {:title "Service Details"}
       [:div.columns
@@ -276,6 +277,7 @@
          [ant/input
           {:placeholder "service code"
            :value       (:code @form)
+           :disabled    @is-editing
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
         [ant/form-item ;; TODO - make this all dynamic.
          {:label "Catalogs"}
@@ -311,7 +313,7 @@
          [ant/form-item
           {:label "Active?"}
           [ant/switch
-           {:checked (:active @form)
+           {:checked   (:active @form)
             :on-change #(dispatch [:service.form/update :active %])}]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
@@ -336,10 +338,10 @@
         [ant/form-item
          {:label "Billed"}
          [ant/select
-          {:style       {:width "75%"}
-           :placeholder "billed"
-           :value       (:billed @form)
-           :on-change   #(dispatch [:service.form/update :billed (keyword %)])}
+          {:style         {:width "75%"}
+           :placeholder   "billed"
+           :default-value (:billed @form)
+           :on-change     #(dispatch [:service.form/update :billed (keyword %)])}
           [ant/select-option {:value :once} "once"]
           [ant/select-option {:value :monthly} "monthly"]]]]
        [:div.column.is-3
@@ -452,10 +454,12 @@
                                    [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
                                         :dangerouslySetInnerHTML {:__html %1}}])
                       }]
-        search-text @(subscribe [:services/search-text])]
+        search-text @(subscribe [:services/search-text])
+        is-loading  @(subscribe [:ui/loading? :services/query])]
     [ant/table
      {:columns     columns
       :show-header false
+      :loading     is-loading
       :dataSource  (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 
@@ -498,7 +502,8 @@
 
 
 (defn- service-entry [service]
-  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service]
+  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service
+        is-loading                                                                                                @(subscribe [:ui/loading? :service/fetch])]
     [:div
      [:div.mb2
       [:div
@@ -520,7 +525,15 @@
         {:on-click #(dispatch [:service/copy-service @service])}
         "Make a Copy"]]]
      [ant/card
-      {:title "Service Details"}
+      {:title   "Service Details"
+       :loading is-loading}
+      (when (and active (empty? properties))
+        [:div.mb2
+         [ant/alert
+          {:type        :warning
+           :show-icon   true
+           :message     "This service is not currently visible to members"
+           :description "While this service is active, it is not availalbe at any properties and members will not be able to see it. To make this service available to members, add some properties below."}]])
       [:div.columns
        [:div.column.is-6
         [:h3 [:b name]]
@@ -535,29 +548,31 @@
          (if (nil? catalogs)
            [:p "none"]
            [:p (map-indexed
-               (fn [i catalog]
-                 (if (zero? i)
-                   (str (clojure.core/name catalog))
-                   (str ", " (clojure.core/name catalog))))
-               catalogs)])]
+                (fn [i catalog]
+                  (if (zero? i)
+                    (str (clojure.core/name catalog))
+                    (str ", " (clojure.core/name catalog))))
+                catalogs)])]
 
         [:div.mb1
          [:p [:b "Properties"]]
          (if (empty? properties)
            [:p "none"]
            [:p (doall (map-indexed
-                 (fn [i property]
-                   (let [property-name (:name  @(subscribe [:property property]))]
-                     (if (zero? i)
-                       property-name
-                       (str ", " property-name))))
-                 properties))])]]
+                       (fn [i property]
+                         (let [property-name (:name  @(subscribe [:property property]))]
+                           (if (zero? i)
+                             property-name
+                             (str ", " property-name))))
+                       properties))])]]
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]]
         [ant/switch {:checked active}]]]]
 
-     [ant/card {:title "Pricing/Billing"}
+     [ant/card
+      {:title   "Pricing/Billing"
+       :loading is-loading}
       [:div.columns
        [:div.column.is-3
         [:div
@@ -587,7 +602,9 @@
          [:p [:b "Rental?"]]
          [ant/checkbox {:checked rental}]]]]]
 
-     [ant/card {:title "Metrics"}
+     [ant/card
+      {:title   "Metrics"
+       :loading is-loading}
       [:p [:b "Usage"]]
       [:p
        "Ordered " (str order-count " time(s) between ")
@@ -602,7 +619,9 @@
            :value       (vec (map iso->moment @range))
            :on-change   #(dispatch [:service.range/change (moment->iso (first %)) (moment->iso (second %))])}])]]
 
-     [ant/card {:title "Fields" :extra "Information to be provided by the member when they place an order."}
+     [ant/card
+      {:title   "Order Form Fields"
+       :loading is-loading}
       (if (nil? fields)
         [:p "No fields found."]
 

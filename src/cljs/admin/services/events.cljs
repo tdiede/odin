@@ -172,14 +172,22 @@
                  [:service/toggle-is-editing false]]}))
 
 
+(defn prepare-edits
+  "ensure form is ready to be sent across to graphql"
+  [form]
+  (tb/transform-when-key-exists form
+    {:catalogs #(map clojure.core/name %)}))
+
+
 ;; send the entire form to graphql. let the resolver determine which attrs to update
 (reg-event-fx
  :service/save-edits
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
+   (js/console.log "saving edits..." form)
    {:graphql {:mutation
               [[:service_update {:service_id service-id
-                                 :params  form}
+                                 :params  (prepare-edits form)}
                 [:id]]]
               :on-success [::update-success k]
               :on-failure [:graphql/failure k]}}))
@@ -261,44 +269,6 @@
                         :fields (if (nil? fields)
                                   []
                                   (vecify-fields fields))}))
-     (assoc db :form db/form-defaults))))
-
-
-(reg-event-db
- :service.form/populate-from-service
- [(path db/path)]
- (fn [db [_ {:keys [name description code properties catalogs price cost rental fields]}]]
-   (let [populated-form
-         (tb/assoc-some db/form-defaults
-                        :name name
-                        :description description
-                        :code code
-                        :properties properties
-                        :catalogs catalogs
-                        :price price
-                        :cost cost
-                        :rental rental
-                        :fields fields)]
-     (assoc db :form populated-form))))
-
-
-(reg-event-db
- :service.form/populate
- [(path db/path)]
- (fn [db [_ service]]
-   (if (not (nil? service))
-     (let [{:keys [name description code properties catalogs price cost rental fields]} service]
-       (assoc db :form {:name name
-                        :description description
-                        :code code
-                        :properties properties
-                        :catalogs catalogs
-                        :price price
-                        :cost cost
-                        :rental rental
-                        :fields (if (nil? fields)
-                                  []
-                                  fields)}))
      (assoc db :form db/form-defaults))))
 
 
