@@ -360,13 +360,28 @@
    [fields-data fields]
    [:br]
    [:p.fs3 "Go to "
-    [:a {:href ""} "Payments History"] " to see payments made for this subscription"]])
+    [:a {:href (routes/path-for :profile.payment/history)} "Payments History"] " to see payments made for this service"]])
+
+
+;; TODO need to actually test this...
+;; subscriptions are not getting their payments created
+(defn get-payment-status [payment]
+  (let [status (:status payment)]
+    (case status
+      :due     :processing
+      :paid    :charged
+      :pending :processing
+      :failed  :processing
+      status)))
 
 
 (defn active-subscription-item
   [{:keys [payments fields] :as subscription} requester]
   (let [is-open       (r/atom false)
-        subscription' (assoc subscription :date (:created subscription) :cancel-btn true)]
+        status        (if (not (empty? payments))
+                        (get-payment-status (first (sort-by :created > payments)))
+                        (:status subscription))
+        subscription' (assoc subscription :date (:created subscription) :status status :cancel-btn true)]
     (fn []
       [ant/card
        (r/as-element [above-the-fold subscription' is-open requester])
@@ -398,26 +413,26 @@
 
 
 ;; is it useful to have more payment information?
+;; TODO gather feedback on completed services?
 (defn order-history-item
-  [{:keys [name price status fields updated] :as order} requester]
+  [{:keys [name price status fields updated payments] :as order} requester]
   (let [is-open (r/atom false)
         order'  (assoc order :date (:updated order) :cancel-btn false)]
     (fn []
       [ant/card
        (r/as-element [above-the-fold order' is-open requester])
        (when @is-open
-         [fields-data (sort-by :index fields)])])))
+         [subscription-details (sort-by :index fields) (sort-by :created > payments)]
+         #_[fields-data (sort-by :index fields)])])))
 
 
 (defn order-history-list [history requester]
   [paginated-list (sort-by :updated > history) requester order-history-item])
 
 
-
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
-
 
 
 (defmulti content :page)
