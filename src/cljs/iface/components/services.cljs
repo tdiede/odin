@@ -91,7 +91,6 @@
        :on-change #(on-change (:index field) (.. % -target -value))}]]]])
 
 
-;; TODO need to test this one
 (defmethod form-fields :dropdown [k field {on-change :on-change}]
   [:div.columns
    [:div.column
@@ -111,9 +110,10 @@
    [:div.column
     [ant/form-item {:label (:label field)}
      [ant/input-number
-      {:default-value 1
-       :value         (:value field)
-       :min           1
+      {:value         (if (:value field)
+                        (:value field)
+                        0)
+       :min           0
        :max           99
        :on-change     #(on-change (:index field) %)}]]]])
 
