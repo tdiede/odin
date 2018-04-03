@@ -1,35 +1,20 @@
 (ns odin.graphql.resolvers.payment-source
   (:refer-clojure :exclude [type name])
   (:require [blueprints.models.account :as account]
-            [blueprints.models.customer :as customer]
-            [blueprints.models.member-license :as member-license]
-            [blueprints.models.payment :as payment]
-            [blueprints.models.property :as property]
-            [clojure.core.async :as async :refer [<! go]]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [odin.graphql.resolvers.payment :as payment-resolvers]
-            [odin.graphql.resolvers.utils :refer [context?]]
-            [odin.models.autopay :as autopay]
             [odin.models.payment-source :as payment-source]
-            [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
-            [toolbelt.async :as ta :refer [<!? go-try]]
-            [toolbelt.core :as tb]
-            [blueprints.seed.accounts :as accounts]))
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Helpers
 ;; =============================================================================
-
-
-(defn- bank-account? [source]
-  (some? (#{"bank_account"} (:object source))))
 
 
 (defn- error-message [t]
@@ -38,15 +23,6 @@
 (s/fdef error-message
         :args (s/cat :throwable tb/throwable?)
         :ret string?)
-
-
-(defn- source-customer [db source]
-  (let [customer-id (d/q '[:find ?e .
-                           :in $ ?customer-id
-                           :where
-                           [?e :stripe-customer/customer-id ?customer-id]]
-                         db (:customer source))]
-    (d/entity db [:stripe-customer/customer-id (:customer source)])))
 
 
 ;; =============================================================================
@@ -141,71 +117,11 @@
 ;; =============================================================================
 
 
-;; =============================================================================
-;; Delete
-
-
-(defn- delete-bank-source!*
-  "Attempt to delete the bank source; if successful, remove the bank token from
-  the Stripe customer. An exception will be put onto the `out` channel if
-  unsuccessful."
-  [{:keys [conn stripe]} source]
-  (go-try
-   (let [res (<!? (rcu/delete-source! stripe (:customer source) (:id source)))]
-     @(d/transact-async conn [[:db/retract
-                               [:stripe-customer/customer-id (:customer source)]
-                               :stripe-customer/bank-account-token
-                               (:id source)]])
-     res)))
-
-(s/fdef delete-bank-source!*
-        :args (s/cat :ctx context? :source map?)
-        :ret ta/chan?)
-
-
-(defn delete-bank-source!
-  "Delete a bank source. Produces a channel that will contain an exception in
-  the event of failure."
-  [{:keys [conn stripe] :as ctx} source]
-  (go-try
-   (if-let [c (autopay/autopay-source (d/db conn) stripe source)]
-     (if (= (:fingerprint source) (:fingerprint (<!? c)))
-       ;; if the fingerprints are equal, `source` is being used for autopay
-       (throw (ex-info "Cannot delete source, as it's being used for autopay!"
-                       {:source source}))
-       ;; if they're not equal, this is not the autopay source; delete
-       (<!? (delete-bank-source!* ctx source)))
-     ;; no autopay account, so source can be deleted
-     (<!? (delete-bank-source!* ctx source)))))
-
-
-(defn delete-source!
-  "Delete the `source`. Checks if source is a bank account, and if so, checks
-  if it is also present on a connected account (autopay)."
-  [{:keys [stripe] :as ctx} source]
-  (go-try
-   (if (bank-account? source)
-     (<!? (delete-bank-source! ctx source)) ; DONE: WORKS WHEN NOT AUTOPAY!
-     (<!? (rcu/delete-source! stripe (:customer source) (:id source))))))
-
-
 (defn delete!
   "Delete the payment source with `id`. If the source is a bank account, will
   also delete it on the connected account."
-  [{:keys [conn stripe requester] :as ctx} {id :id} _]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (let [source (<! (payment-source/fetch-source (d/db conn) stripe requester id))]
-        (if (tb/throwable? source)
-          (resolve/deliver! result nil {:message  "Could not find source!"
-                                        :err-data (ex-data source)})
-          (try
-            (<!? (delete-source! ctx source))
-            (resolve/deliver! result source)
-            (catch Throwable t
-              (resolve/deliver! result nil {:message  (error-message t)
-                                            :err-data (ex-data t)}))))))
-    result))
+  [{:keys [teller] :as ctx} {id :id} _]
+  #_(tsource/delete! (tsource/by-id teller id)))
 
 
 ;; =============================================================================
@@ -257,7 +173,7 @@
         (catch Throwable t
           (timbre/error t ::verify-bank-account {:email (account/email requester)
                                                  :id id})
-          (resolve/resolve-as nil {:message (.getMessage t)}))))))
+          (resolve/resolve-as nil {:message (error-message t)}))))))
 
 
 ;; =============================================================================
@@ -271,22 +187,7 @@
 (defn set-autopay!
   "Set a source as the autopay source. Source must be a bank account source."
   [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
-  (let [result  (resolve/resolve-promise)
-        license (member-license/active (d/db conn) requester)]
-    (if-not (is-bank-id? id)
-      (resolve/deliver! result nil {:message "Only bank accounts can be used for autopay."})
-      (go
-        (try
-          (let [_         (<!? (autopay/turn-on-autopay! conn stripe license id))
-                customer  (customer/autopay (d/db conn) requester)
-                source-id (customer/bank-token customer)
-                source    (<!? (rcu/fetch-source stripe (customer/id customer) source-id
-                                                 :managed-account (member-license/rent-connect-id license)))]
-            (resolve/deliver! result source))
-          (catch Throwable t
-            (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)})))))
-    result))
+  )
 
 
 ;; =============================================================================
@@ -297,19 +198,7 @@
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
   [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
-  (let [result  (resolve/resolve-promise)
-        license (member-license/active (d/db conn) requester)]
-    (if-not (is-bank-id? id)
-      (resolve/deliver! result nil {:message "Only bank accounts can be used for autopay."})
-      (go
-        (try
-          (let [_      (<!? (autopay/turn-off-autopay! conn stripe license id))
-                source (<!? (payment-source/fetch-source (d/db conn) stripe requester id))]
-            (resolve/deliver! result source))
-          (catch Throwable t
-            (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)})))))
-    result))
+  )
 
 
 ;; =============================================================================
@@ -319,17 +208,8 @@
 (defn set-default!
   "Set a source as the default payment source. The default payment source will
   be used for premium service requests."
-  [{:keys [conn requester stripe]} {:keys [id]} _]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (let [cus-ent  (customer/by-account (d/db conn) requester)
-              customer (<!? (rcu/update! stripe (customer/id cus-ent) :default-source id))]
-          (resolve/deliver! result (tb/find-by (comp (partial = id) :id) (rcu/sources customer))))
-        (catch Throwable t
-          (resolve/deliver! result nil {:message  (error-message t)
-                                        :err-data (ex-data t)}))))
-    result))
+  [{:keys [teller]} {:keys [id]} _]
+  (tsource/set-default! (tsource/by-id teller id) :payment.type/order))
 
 
 ;; =============================================================================
