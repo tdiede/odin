@@ -32,9 +32,7 @@
  :<- [db/path]
  (fn [db _]
    (let [services (norms/denormalize db :services/norms)]
-     (js/console.log (sort-by-name-and-active services))
-     (->> (norms/denormalize db :services/norms)
-          (sort-by-name-and-active)))))
+     (sort-by-name-and-active services))))
 
 
 (reg-sub
