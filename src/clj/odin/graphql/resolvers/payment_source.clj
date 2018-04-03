@@ -20,7 +20,8 @@
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
             [toolbelt.async :as ta :refer [<!? go-try]]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [blueprints.seed.accounts :as accounts]))
 
 ;; =============================================================================
 ;; Helpers
@@ -246,22 +247,17 @@
 (defn verify-bank!
   "Verify a bank account given the two microdeposit amounts that were made to
   the bank account."
-  [{:keys [conn stripe requester] :as ctx} {:keys [id deposits]} _]
-  (let [result (resolve/resolve-promise)]
-    (if-not (deposits-valid? deposits)
-      (resolve/deliver! result nil {:message  "Please provide valid deposit amounts."
-                                    :deposits deposits})
-      (go
-        (try
-          (let [[dep1 dep2]     deposits
-                {sid :id
-                 cid :customer} (<!? (payment-source/fetch-source (d/db conn) stripe requester id))
-                bank            (<!? (rcu/verify-bank-account! stripe cid sid dep1 dep2))]
-            (resolve/deliver! result bank))
-          (catch Throwable t
-            (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)})))))
-    result))
+  [{:keys [conn stripe requester teller] :as ctx} {:keys [id deposits]} _]
+  (if-not (deposits-valid? deposits)
+    (resolve/resolve-as nil {:message  "Please provide valid deposit amounts."
+                             :deposits deposits})
+    (let [source (tsource/by-id teller id)]
+      (try
+        (tsource/verify-bank-account! source deposits)
+        (catch Throwable t
+          (timbre/error t ::verify-bank-account {:email (account/email requester)
+                                                 :id id})
+          (resolve/resolve-as nil {:message (.getMessage t)}))))))
 
 
 ;; =============================================================================
