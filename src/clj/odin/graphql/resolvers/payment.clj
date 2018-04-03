@@ -273,11 +273,11 @@
 
 (defn payments
   "Query payments based on `params`."
-  [system {params :params} _]
+  [{:keys [conn] :as ctx} {params :params} _]
   (let [result (resolve/resolve-promise)]
     (go
       (try
-        (tpayment/query system params)
+        (tpayment/query (d/db conn) params)
         (catch Throwable t
           (timbre/error t ::payments params)
           (resolve/deliver! result nil {:message  (.getMessage t)
@@ -295,11 +295,10 @@
 
 
 (defmulti create-payment-data (fn [_ params] (:type params)))
-
-
 (defmethod create-payment-data :default [db _] nil)
 
 
+;; TODO move to Teller as a helper, may already be there
 (defn- default-due-date
   "The default due date is the fifth day of the same month as `start` date.
   Preserves the original year, month, hour, minute and second of `start` date."
@@ -313,42 +312,7 @@
                             (t/second st)))))
 
 
-(defmethod create-payment-data :rent
-  [system {:keys [month amount account]}]
-  (when (nil? month)
-    (resolve/resolve-as nil {:message "When payment type is rent, month must be specified."}))
-  (let [account  (d/entity (:db system) account)
-        customer (tcustomer/by-account system account)
-        ml       (member-license/active (:db system) account)
-        tz       (member-license/time-zone ml)
-        start    (date/beginning-of-month month tz)
-        payment  (tpayment/create! customer amount :payment-type/rent
-                                   {:pstart start
-                                    :pend (date/end-of-month month tz)
-                                    :due (-> (default-due-date start) (date/end-of-day tz))})]
-    [payment (member-license/add-rent-payments ml payment)]))
-
-
-(defmethod create-payment-data :deposit
-  [system {:keys [amount account]}]
-  (let [account  (d/entity (:db system) account)
-        customer (tcustomer/by-account system account)
-        deposit  (deposit/by-account account)
-        payment  (tpayment/create! customer amount :payment.type/deposit)]
-    [payment (deposit/add-payment deposit payment)]))
-
-
-(defn create-payment!
-  [system {params :params} _]
-  (resolve/resolve-as nil {:message "Cannot create payment with specified params."
-                           :params  params}))
-
-
-;; =============================================================================
-;; Pay Rent
-
-
-;; TODO move this to teller
+;; ;; TODO move this to teller
 (defn- ensure-payment-allowed
   [db requester payment source]
   (cond
@@ -360,6 +324,48 @@
     (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
               (= (:object source) "bank_account")))
     "Only bank accounts can be used to pay rent."))
+
+
+
+(defmethod create-payment-data :rent
+  [db {:keys [month amount account]}]
+  (when (nil? month)
+    (resolve/resolve-as nil {:message "When payment type is rent, month must be specified."}))
+  (let [account  (d/entity db account)
+      ;;  customer (tcustomer/by-account account)
+        ml       (member-license/active db account)
+        tz       (member-license/time-zone ml)
+        start    (date/beginning-of-month month tz)
+      ;;  payment  (tpayment/create! customer amount :payment-type/rent
+                                   ;; {:pstart start
+                                   ;;  :pend (date/end-of-month month tz)
+        ;;  :due (-> (default-due-date start) (date/end-of-day tz))})
+        ]
+    [{}]))
+
+(defmethod create-payment-data :deposit
+  [db {:keys [amount account]}]
+  (let [account  (d/entity db account)
+        ;; customer (tcustomer/by-account account)
+        deposit  (deposit/by-account account)
+        ;;  payment  (tpayment/create! customer amount :payment.type/deposit)
+        ]
+    [{}]))
+
+
+;; ;; =============================================================================
+;; ;; Pay _
+
+
+(defn create-payment!
+  [{:keys [conn] :as ctx} {params :params} _]
+  (println (params))
+  (println (resolve/resolve-as))
+  (resolve/resolve-as nil {:message "Cannot create payment with specified params."
+                             :params  params}))
+
+
+
 
 
 (defn- create-bank-charge!
@@ -393,10 +399,6 @@
           (resolve/deliver! result nil {:message  (.getMessage t)
                                         :err-data (ex-data t)}))))
     result))
-
-
-;; =============================================================================
-;; Pay Deposit
 
 
 (defn pay-deposit!
