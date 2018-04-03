@@ -12,11 +12,30 @@
    (db/path db)))
 
 
+(defn- sort-by-name
+  [services]
+  (sort-by #(clojure.string/lower-case (:name %)) services))
+
+
+(defn- sort-by-name-and-active
+  [services]
+  ;; if active is nil, group it with the falses.
+  (->> (group-by #(= true (:active %)) services)
+       (vals)
+       (reverse)
+       (mapv sort-by-name)
+       (flatten)))
+
+
 (reg-sub
  :services/list
  :<- [db/path]
  (fn [db _]
-   (norms/denormalize db :services/norms)))
+   (let [services (norms/denormalize db :services/norms)]
+     (js/console.log (sort-by-name-and-active services))
+     (->> (norms/denormalize db :services/norms)
+          (sort-by-name-and-active)))))
+
 
 (reg-sub
  :service-id
@@ -24,11 +43,13 @@
  (fn [db _]
    (:service-id db)))
 
+
 (reg-sub
  :service
  :<- [db/path]
  (fn [db [_ service-id]]
    (norms/get-norm db :services/norms service-id)))
+
 
 (reg-sub
  :services/range
