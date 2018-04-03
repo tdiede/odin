@@ -411,22 +411,6 @@
 (defn case-insensitive-includes? [str1 str2]
   (string/includes? (string/lower-case str1) (string/lower-case str2)))
 
-(defn services-table [services]
-  (let [columns [{:title     "Name"
-                  :dataIndex "name"
-                  :key       "name"
-                  :render    #(r/as-element
-                               [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
-                                    :dangerouslySetInnerHTML {:__html %1}}])}
-                 {:title     "Price"
-                  :dataIndex "price"
-                  :key       "price"
-                  :render    (table/wrap-cljs render-price)}]
-        search-text @(subscribe [:services/search-text])]
-    [ant/table
-     {:columns    columns
-      :pagination {:position :top}
-      :dataSource (filter #(case-insensitive-includes? (:name %) search-text) services)}]))
 
 (defn- path->selected
   [path]
@@ -434,6 +418,7 @@
     [:list]           :services
     [:orders :list]   :orders
     :services))
+
 
 (defn menu [route]
   [ant/menu {:mode                  :horizontal
