@@ -490,7 +490,7 @@
     :fulfilled "has-text-primary"
     :failed    "has-text-warning"
     :charged   "has-text-success"
-    :canceld   "has-text-danger"}
+    :canceled  "has-text-danger"}
    status))
 
 
