@@ -300,6 +300,7 @@
  ::services-create-card-source-success
  (fn [{:keys [db]} [_ k response]]
    {:dispatch-n   [[:ui/loading k false]
+                   [:services.cart/submit (:account db)]
                    [:modal/hide :payment.source/add]]
     :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
     :route        (routes/path-for :services/cart)}))
