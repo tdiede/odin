@@ -5,28 +5,22 @@
             [blueprints.models.member-license :as member-license]
             [blueprints.models.payment :as payment]
             [blueprints.models.property :as property]
-            [clj-time.coerce :as c]
-            [clj-time.core :as t]
             [clojure.core.async :as async :refer [<! go]]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
-            [odin.config :as config]
             [odin.graphql.authorization :as authorization]
             [odin.graphql.resolvers.payment :as payment-resolvers]
             [odin.graphql.resolvers.utils :refer [context?]]
-            [ribbon.charge :as rch]
-            [ribbon.connect :as rcn]
-            [ribbon.customer :as rcu]
-            [ribbon.plan :as rp]
-            [ribbon.subscription :as rs]
-            [taoensso.timbre :as timbre]
-            [toolbelt.async :as ta :refer [<!? go-try]]
-            [toolbelt.core :as tb]
-            [toolbelt.date :as date]
             [odin.models.autopay :as autopay]
-            [odin.models.payment-source :as payment-source]))
+            [odin.models.payment-source :as payment-source]
+            [ribbon.customer :as rcu]
+            [taoensso.timbre :as timbre]
+            [teller.customer :as tcustomer]
+            [teller.source :as tsource]
+            [toolbelt.async :as ta :refer [<!? go-try]]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Helpers
@@ -59,133 +53,74 @@
 ;; =============================================================================
 
 
+(defn id
+  [_ _ source]
+  (tsource/id source))
+
+
 (defn account
   "The account that owns this payment source."
-  [{conn :conn} _ source]
-  ;; find a payment that was used with this source
-  (try
-    (payment-source/source-account (d/db conn) source)
-    (catch Throwable t
-      (timbre/error t)
-      (resolve/resolve-as nil {:message "Something went wrong!"}))))
+  [_ _ source]
+  (tcustomer/account (tsource/customer source)))
 
 
-(defn autopay?
-  "Is this source being used for autopay?"
-  [{:keys [conn stripe]} _ source]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (let [[is-source _] (<!? (autopay/is-autopay-source? (d/db conn) stripe source))]
-          (resolve/deliver! result is-source))
-        (catch Throwable t
-          ;; (resolve/deliver! result nil))))
-          (resolve/deliver! result nil {:message (error-message t)
-                                        :err-data (ex-data t)}))))
-    result))
+(defn last4
+  "The last four digits of the source's account/card number."
+  [_ _ source]
+  (tsource/last4 source))
 
 
 (defn default?
-  "Is this source the default source?"
-  [{:keys [conn stripe]} _ source]
-  (let [result (resolve/resolve-promise)]
-    (if-let [customer (::customer source)]
-      (resolve/deliver! result (= (:id source) (:default_source customer)))
-      (go
-        (try
-          (let [cus-ent  (source-customer (d/db conn) source)
-                customer (<!? (rcu/fetch stripe (customer/id cus-ent)))]
-            (resolve/deliver! result (= (:id source) (:default_source customer))))
-          (catch Throwable t
-            (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)})))))
-    result))
-
-
-(defn type
-  "The type of source, #{:bank :card}."
+  "Is this source the default source for premium service orders?"
   [_ _ source]
-  (case (:object source)
-    "bank_account" :bank
-    "card"         :card
-    (resolve/resolve-as :unknown {:message (format "Unrecognized source type '%s'" (:object source))})))
+  (some? (:payment.type/order (tsource/payment-types source))))
 
 
 (defn expiration
   "Returns the expiration date for a credit card. Returns nil if bank."
   [_ _ source]
-  (when-let [year (:exp_year source)]
-    (str (:exp_month source) "/" year)))
+  (when (tsource/card? source)
+    (str (tsource/exp-month source) "/" (tsource/exp-year source))))
+
+
+(defn customer
+  "Returns the customer for a source."
+  [_ _ source]
+  "some string")
+
+
+(defn status
+  "The status of source."
+  [_ _ source]
+  (when (tsource/bank-account? source)
+    (tsource/status source)))
+
+
+(defn autopay?
+  "Is this source being used for autopay?"
+  [_ _ source]
+  ;; TODO return once subscriptions API is complete
+  false)
+
+
+(defn type
+  "The type of source, #{:bank :card}."
+  [_ _ source]
+  (keyword (clojure.core/name (tsource/type source))))
 
 
 (defn name
   "The name of this source."
   [_ _ source]
-  (case (:object source)
-    "bank_account" (:bank_name source)
-    "card"         (:brand source)
-    "unknown"))
-
-
-(defn- query-payments [db & source-ids]
-  (->> (d/q '[:find [?p ...]
-              :in $ [?source-id ...]
-              :where
-              [?p :stripe/source-id ?source-id]]
-            db source-ids)
-       (map (partial d/entity db))
-       (sort-by :payment/paid-on)
-       (reverse)))
-
-
-(defn- merge-autopay-payments
-  [{:keys [conn stripe]} source]
-  (go
-    (let [db      (d/db conn)
-          account (customer/account (customer/by-customer-id db (:customer source)))]
-      (try
-        (if-let [ap-cus (customer/autopay db account)] ; if there's an autopay account...
-          ;; there's an autopay account...get the payments
-          (let [managed  (property/rent-connect-id (customer/managing-property ap-cus))
-                customer (<!? (rcu/fetch stripe (customer/id ap-cus)
-                                         :managed-account managed))
-                sources  (rcu/sources customer)]
-            ;; It's still possible that the bank account we're looking at is
-            ;; different from the one linked to the managed account--use the
-            ;; `:fingerprint` attribute to find out
-            (if-let [ap-source (tb/find-by (comp #{(:fingerprint source)} :fingerprint) sources)]
-              (query-payments db (:id ap-source) (:id source))
-              (query-payments db (:id source))))
-          ;; no autopay account, so no autopay payments
-          (query-payments db (:id source)))
-        (catch Throwable t
-          (timbre/error t ::merge-autopay-payments
-                        {:source   (:id source)
-                         :customer (:customer source)
-                         :account  (:db/id account)
-                         :email    (:account/email account)})
-          [])))))
-
-
-(defn- get-payments
-  [{:keys [conn] :as ctx} source]
-  (if-not (bank-account? source)
-    (go (query-payments (d/db conn) (:id source)))
-    (merge-autopay-payments ctx source)))
+  (if (tsource/card? source)
+    (tsource/brand source)
+    (tsource/bank-name source)))
 
 
 (defn payments
   "Payments associated with this `source`."
-  [ctx _ source]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (let [payments (<!? (get-payments ctx source))]
-          (resolve/deliver! result (<!? (payment-resolvers/merge-stripe-data ctx payments))))
-        (catch Throwable t
-          (resolve/deliver! result nil {:message  (error-message t)
-                                        :err-data (ex-data t)}))))
-    result))
+  [_ _ source]
+  [])
 
 
 ;; =============================================================================
@@ -195,19 +130,9 @@
 
 (defn sources
   "Retrieve payment sources."
-  [{:keys [conn stripe] :as context} {:keys [account]} _]
-  (let [account  (d/entity (d/db conn) account)
-        customer (customer/by-account (d/db conn) account)
-        result   (resolve/resolve-promise)]
-    (if (nil? customer)
-      (resolve/deliver! result [])
-      (go
-        (try
-          (resolve/deliver! result (<!? (payment-source/sources-by-account stripe customer)))
-          (catch Throwable t
-            (resolve/deliver! result nil {:message  (error-message t)
-                                          :err-data (ex-data t)})))))
-    result))
+  [{:keys [teller]} {:keys [account]} _]
+  (when-let [customer (tcustomer/by-account teller account)]
+    (tcustomer/sources customer)))
 
 
 ;; =============================================================================
@@ -289,42 +214,24 @@
 (defn- fetch-or-create-customer!
   "Produce the customer for `requester` if there is one; otherwise, createa a
   new customer."
-  [{:keys [conn stripe requester]}]
-  (go-try
-   (if-let [customer (customer/by-account (d/db conn) requester)]
-     customer
-     (let [cus (<!? (rcu/create2! stripe (account/email requester)))]
-       @(d/transact-async conn [(customer/create (:id cus) requester)])
-       (customer/by-customer-id (d/db conn) (:id cus))))))
+  [teller account]
+  (if-let [customer (tcustomer/by-account teller account)]
+    customer
+    (tcustomer/create! teller (account/email account) {:account account})))
 
 
+;; NOTE: The `requester` in `ctx` is the *account* entity that is making the
+;; request
 (defn add-source!
   "Add a new source to the requester's Stripe customer, or create the customer
   and add the source if it doesn't already exist."
-  [{:keys [conn stripe] :as ctx} {:keys [token]} _]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (let [customer (<!? (fetch-or-create-customer! ctx))
-              cus      (<!? (rcu/fetch stripe (customer/id customer)))
-              source   (<!? (rcu/add-source! stripe (customer/id customer) token))]
-          ;; NOTE: Not sure that this is even necessary any longer.
-          (when (= (:object source) "bank_account")
-            @(d/transact-async conn [[:db/add (:db/id customer)
-                                      :stripe-customer/bank-account-token (:id source)]]))
-          (when (and (= (:object source) "card")
-                     (not= (rcu/default-source-type cus) "card"))
-            (<!? (rcu/update! stripe (:id cus) :default-source (:id source))))
-          (resolve/deliver! result source))
-        (catch Throwable t
-          (resolve/deliver! result nil {:message  (error-message t)
-                                        :err-data (ex-data t)}))))
-    result))
+  [{:keys [teller requester] :as ctx} {:keys [token]} _]
+  (let [customer (fetch-or-create-customer! teller requester)]
+    (tsource/add-source! customer token)))
 
 
 ;; =============================================================================
 ;; Verify Bank Account
-
 
 (s/def ::deposit (s/and pos-int? (partial > 100)))
 (s/def ::deposits
@@ -440,14 +347,18 @@
 
 (def resolvers
   {;; fields
-   :payment.source/autopay?        autopay?
-   :payment.source/account         account
-   :payment.source/type            type
-   :payment.source/name            name
-   :payment.source/payments        payments
-   :payment.source/default?        default?
-   :payment.source/expiration      expiration
-   ;; queries
+   :payment-source/id              id
+   :payment-source/account         account
+   :payment-source/last4           last4
+   :payment-source/default?        default?
+   :payment-source/expiration      expiration
+   :payment-source/customer        customer
+   :payment-source/status          status
+   :payment-source/autopay?        autopay?
+   :payment-source/type            type
+   :payment-source/name            name
+   :payment-source/payments        payments
+   ;; queri-s
    :payment.sources/list           sources
    ;; mutations
    :payment.sources/delete!        delete!
