@@ -483,44 +483,32 @@
     "Reassign"]])
 
 
-;;TODO - this is straight up copied from admin.services.orders.views -> modularize!
-(defn- status-icon-class [status]
-  (get
-   {:placed    "has-text-info"
-    :fulfilled "has-text-primary"
-    :failed    "has-text-warning"
-    :charged   "has-text-success"
-    :canceled  "has-text-danger"}
-   status))
-
-
 (defn- render-status [_ {status :status}]
   [ant/tooltip {:title status}
-   [ant/icon {:class (status-icon-class (keyword status))
+   [ant/icon {:class (order/status-icon-class (keyword status))
               :type  (order/status-icon (keyword status))}]])
-
-
 
 
 (defn membership-orders-list [account orders]
   [ant/card
    {:title (str (format/make-first-name-possessive (:name account)) "Premium Service Orders")}
    [ant/table
-    {:columns     [{:title     ""
-                    :dataIndex :status
-                    :render    (table/wrap-cljs render-status)}
-                   {:title     "Service"
-                    :dataIndex :name
-                    :render    #(r/as-element
-                                 [:a {:href                    (routes/path-for :services.orders/entry :order-id (.-id %2))
-                                      :dangerouslySetInnerHTML {:__html %1}}])}
-                   {:title     "Price"
-                    :dataIndex :price
-                    :render    (table/wrap-cljs #(if (some? %) (format/currency %) "n/a"))}]
-     :dataSource  (map-indexed #(assoc %2 :key %1) orders)
-     :pagination  {:size              :small
-                   :default-page-size 4}
-     :show-header false}]])
+    (let [service-route #(routes/path-for :services.orders/entry :order-id (.-id %))]
+      {:columns     [{:title     ""
+                      :dataIndex :status
+                      :render    (table/wrap-cljs render-status)}
+                     {:title     "Service"
+                      :dataIndex :name
+                      :render    #(r/as-element
+                                   [:a {:href                    (service-route %2)
+                                        :dangerouslySetInnerHTML {:__html %1}}])}
+                     {:title     "Price"
+                      :dataIndex :price
+                      :render    (table/wrap-cljs #(if (some? %) (format/currency %) "n/a"))}]
+       :dataSource  (map-indexed #(assoc %2 :key %1) orders)
+       :pagination  {:size              :small
+                     :default-page-size 4}
+       :show-header false})]])
 
 
 (defn membership-view [account]

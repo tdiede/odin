@@ -119,6 +119,7 @@
 
 
 (defn make-possessive
+  "Given a `name`, produce that name in the possessive form."
   [name]
   (if (not= \s (last name))
     (str name "'s ")

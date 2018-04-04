@@ -88,7 +88,6 @@
  :<- [:accounts.list/query-params]
  :<- [:accounts]
  (fn [[params accounts] _]
-   (js/console.log accounts)
    (->> accounts
         (role-filter params)
         (sort-accounts params))))
