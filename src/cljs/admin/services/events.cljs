@@ -7,7 +7,8 @@
                                    path]]
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]
-            [antizer.reagent :as ant]))
+            [antizer.reagent :as ant]
+            [devtools.defaults :as d]))
 
 
 
@@ -186,7 +187,6 @@
  :service/save-edits
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
-   (js/console.log "saving edits..." form)
    {:graphql {:mutation
               [[:service_update {:service_id service-id
                                  :params  (prepare-edits form)}
@@ -200,11 +200,11 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [svc-id (str (get-in response [:data :service_update :id]))]
-    {:dispatch-n [[:services/query]
-                  [:service.form/hide]
-                  [:service.form/clear]]
-     :notification [:success "Your changes have been saved!"]
-     :route (routes/path-for :services/entry :service-id svc-id)})))
+     {:dispatch-n [[:services/query]
+                   [:service.form/hide]
+                   [:service.form/clear]]
+      :notification [:success "Your changes have been saved!"]
+      :route (routes/path-for :services/entry :service-id svc-id)})))
 
 
 ;; ==============================================================================
@@ -272,6 +272,7 @@
                                   []
                                   (vecify-fields fields))}))
      (assoc db :form db/form-defaults))))
+
 
 
 (reg-event-fx
@@ -385,8 +386,50 @@
  :service.form/clear
  [(path db/path)]
  (fn [db _]
-   (-> (update db :form dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
-       (assoc :form db/form-defaults))))
+   (-> (assoc db :form db/form-defaults)
+       (assoc :form-validation db/form-validation-defaults))))
+
+
+(reg-event-fx
+ :service.create/validate
+ [(path db/path)]
+ (fn [{db :db} [_ form]]
+   (let [{name :name
+          description :description
+          code :code} form]
+     {:db       (-> (assoc-in db [:form-validation :name] (not (empty? name)))
+                    (assoc-in [:form-validation :description] (not (empty? description)))
+                    (assoc-in [:form-validation :code] (not (or (empty? code)
+                                                                 (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
+      :dispatch [::validate-create form]})))
+
+
+(reg-event-fx
+ ::validate-create
+ [(path db/path)]
+ (fn [{db :db} [_ form]]
+   (when (not-any? false? (vals (:form-validation db)))
+     {:dispatch [:service/create! form]})))
+
+
+(reg-event-fx
+ :service.edit/validate
+ [(path db/path)]
+ (fn [{db :db} [_ service-id form]]
+   (let [{name :name
+          description :description} form]
+     {:db (-> (assoc-in db [:form-validation :name] (not (empty? name)))
+              (assoc-in [:form-validation :description] (not (empty? description)))
+              (assoc-in [:form-validation :code] true)) ;; ensure that we don't check the code, since it could not have changed
+      :dispatch [::validate-edits service-id form]})))
+
+
+(reg-event-fx
+ ::validate-edits
+ [(path db/path)]
+ (fn [{db :db} [_ service-id form]]
+   (when (not-any? false? (vals (:form-validation db)))
+     {:dispatch [:service/save-edits service-id form]})))
 
 
 (reg-event-fx

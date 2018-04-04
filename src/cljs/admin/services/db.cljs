@@ -18,11 +18,19 @@
                     :rental      false
                     :fields      []})
 
+
+(def form-validation-defaults
+  {:name        true
+   :description true
+   :code        true})
+
+
 (def default-value
-  (merge {path {:from        ""
-                :to          ""
-                :service-id  nil
-                :search-text ""
-                :is-editing  false
-                :form        form-defaults}}
+  (merge {path {:from            ""
+                :to              ""
+                :service-id      nil
+                :search-text     ""
+                :is-editing      false
+                :form            form-defaults
+                :form-validation form-validation-defaults}}
          orders-db/default-value))

@@ -257,14 +257,26 @@
       [:div.columns
        [:div.column.is-6
         [ant/form-item
-         {:label "Service Name"
-          :type  "text"}
+         (merge
+          {:label "service name"
+           :type  "text"}
+          (if @(subscribe [:service.form/is-valid? :name])
+            {}
+            {:help            "Please provide a name for this service."
+             :has-feedback    true
+             :validate-status "error"}))
          [ant/input
           {:placeholder "service name"
            :value       (:name @form)
            :on-change   #(dispatch [:service.form/update :name (.. % -target -value)])}]]
         [ant/form-item
-         {:label "Description"}
+         (merge
+          {:label "Description"}
+          (if @(subscribe [:service.form/is-valid? :description])
+            {}
+            {:help            "Please provide a description for this service."
+             :has-feedback    true
+             :validate-status "error"}))
          [ant/input-text-area
           {:rows        6
            :placeholder "description"
@@ -272,8 +284,15 @@
            :on-change   #(dispatch [:service.form/update :description (.. % -target -value)])}]]]
        [:div.column.is-4
         [ant/form-item
-         {:label "Code"
-          :type  "text"}
+         (merge
+          {:label "Code"
+           :type  "text"
+           :extra "This code must be unique to only this service."}
+          (if @(subscribe [:service.form/is-valid? :code])
+            {}
+            {:help            "Please provide a unique code for this service."
+             :has-feedback    true
+             :validate-status "error"}))
          [ant/input
           {:placeholder "service code"
            :value       (:code @form)
@@ -362,15 +381,7 @@
       :visible     @(subscribe [:modal/visible? :service/create-service-form])
       :ok-text     "Save New Service"
       :on-cancel   #(dispatch [:service.form/hide])
-      :on-ok       (fn []
-                     (let [{name        :name
-                            description :description
-                            code        :code} @form]
-                       (if (every? #(empty? %) [name description code])
-                         (ant/notification-error
-                          {:message     "Additional information required"
-                           :description "Please enter a name, description, and code for this service."})
-                         (dispatch [:service/create! @form]))))
+      :on-ok       #(dispatch [:service.create/validate @form])
       :after-close #(dispatch [:service.form/clear])}
 
      [create-service-form]]))
@@ -648,7 +659,7 @@
         {:on-click #(dispatch [:service/cancel-edit])}
         "Cancel"]
        [ant/button
-        {:on-click #(dispatch [:service/save-edits @service-id @form])}
+        {:on-click #(dispatch [:service.edit/validate @service-id @form])}
         "Save Changes"]]]
      [create-service-form]]))
 

@@ -102,3 +102,11 @@
  :<- [:services/list]
  (fn [services _]
    (vec (distinct (mapcat :catalogs services)))))
+
+
+
+(reg-sub
+ :service.form/is-valid?
+ :<- [db/path]
+ (fn [db [_ k]]
+   (get-in db [:form-validation k])))
