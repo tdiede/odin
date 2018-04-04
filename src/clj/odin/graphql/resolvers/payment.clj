@@ -27,7 +27,8 @@
             [clj-time.coerce :as c]
             [clj-time.core :as t]
             [odin.models.autopay :as autopay]
-            [teller.core :as teller]))
+            [teller.core :as teller]
+            [teller.source :as tsource]))
 
 ;;; NOTE: Think about error handling. At present, errors will propogate at the
 ;;; field level, not the top level. This means that if a single request from
@@ -69,31 +70,30 @@
 ;; =============================================================================
 
 
+;; TODO: This is lame
 (defn autopay?
   "Is this an autopay payment?"
   [_ _ payment]
-  (payment/autopay? payment))
+  )
 
 
 (defn external-id
   "Retrieve the external id for this payment, if any."
   [_ _ payment]
-  (or (payment/charge-id payment) (payment/invoice-id)))
+  )
 
 
 (defn late-fee
   "Any late fees associated with this payment."
   [{conn :conn} _ payment]
-  (let [payment (d/entity (d/db conn) (:db/id payment))]
-    (when (= :payment.for/rent (payment/payment-for2 (d/db conn) payment))
-      (rent-late-fee payment))))
+  )
 
 
+;; TODO: rename
 (defn payment-for
   "What is this payment for?"
   [{conn :conn} _ payment]
-  (when-some [x (payment/payment-for2 (d/db conn) payment)]
-    (keyword (name x))))
+  )
 
 
 (defn- deposit-desc
@@ -130,18 +130,10 @@
         nil))))
 
 
-(defn- charge-method
-  [stripe-charge]
-  (case (get-in stripe-charge [:source :object])
-    "bank_account" :ach
-    "card"         :card
-    :other))
-
-
 (defn method
   "The method with which this payment was made."
   [_ _ payment]
-  (try
+  #_(try
     (let [charge (get-charge payment)]
       (cond
         (:payment/check payment) :check
@@ -156,94 +148,30 @@
 (defn status
   "The status of this payment."
   [_ _ payment]
-  (keyword (name (payment/status payment))))
+  )
 
 
 (defn source
   "The payment source used to make this payment, if any."
   [_ _ payment]
-  (try
-    (-> payment get-charge :source)
-    (catch Throwable t
-      (resolve/resolve-as {} {:message  (.getMessage t)
-                              :err-data (ex-data t)}))))
+  )
 
 
 (defn order
   "The order associated with this payment, if any."
-  [{conn :conn} _ payment]
-  (order/by-payment (d/db conn) payment))
+  [_ _ payment]
+  #_(order/by-payment (d/db conn) payment))
 
 
 (defn property
   "The property associated with the account that made this payment, if any."
-  [{conn :conn} _ payment]
-  (let [created (td/created-at (d/db conn) payment)
-        license (member-license/active (d/as-of (d/db conn) created)
-                                       (payment/account payment))]
-    (member-license/property license)))
+  [_ _ payment]
+  )
 
 
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
-
-
-;; =============================================================================
-;; Payments + Stripe
-
-
-(defn- managed-account
-  "Produce the Stripe managed account if the payment was made on one."
-  [db payment]
-  (when-let [p (payment/property payment)]
-    (cond
-      (payment/autopay? payment)
-      (property/rent-connect-id p)
-
-      ;; (= :payment.for/deposit (payment/payment-for2 db payment))
-      ;; (property/deposit-connect-id p)
-
-      :otherwise nil)))
-
-
-(defn- fetch-charge
-  "Fetch the charge from the correct place (possibly a managed account). Returns
-  a channel on which the result of the fetch operation will be put."
-  [{:keys [stripe conn]} payment]
-  (let [charge-id (payment/charge-id payment)]
-    (if-let [managed (managed-account (d/db conn) payment)]
-      (rch/fetch stripe charge-id :managed-account managed)
-      (rch/fetch stripe charge-id))))
-
-
-(defn process-payment
-  [ctx payment out]
-  (go
-    (try
-      (if-let [charge-id (payment/charge-id payment)]
-        (let [charge (<!? (fetch-charge ctx payment))]
-          (>! out (inject-charge payment charge)))
-        (>! out payment))
-      (catch Throwable t
-        (timbre/warnf t "failed to fetch charge for payment: %s" (:db/id payment))
-        (>! out payment)))
-    (async/close! out)))
-
-
-(def ^:private concurrency
-  5)
-
-
-(defn merge-stripe-data
-  "Provided context `ctx` and `payments`, fetch all required data from Stripe
-  and merge it into the payments."
-  [{:keys [stripe] :as ctx} payments]
-  (let [in  (chan)
-        out (chan)]
-    (async/pipeline-async concurrency out (partial process-payment ctx) in)
-    (async/onto-chan in payments)
-    (async/into [] out)))
 
 
 (defn- parse-gql-params
@@ -253,18 +181,7 @@
    :statuses (when-some [xs statuses]
                (map #(keyword "payment.status" (name %)) xs))
    :types (when-some [xs types]
-            (map #(keyword "payment.for" (name %)) xs))))
-
-
-(defn- query-payments
-  "Query payments for `account` from `db`."
-  [db params]
-  (->> (parse-gql-params params)
-       (apply concat)
-       (apply payment/query db)
-       (sort-by :payment/paid-on)
-       (reverse)
-       (map td/mapify)))
+            (map #(keyword "payment.type" (name %)) xs))))
 
 
 ;; =============================================================================
@@ -274,15 +191,12 @@
 (defn payments
   "Query payments based on `params`."
   [{:keys [conn] :as ctx} {params :params} _]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (tpayment/query (d/db conn) params)
-        (catch Throwable t
-          (timbre/error t ::payments params)
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))
-    result))
+  (try
+    (tpayment/query (d/db conn) (parse-gql-params params))
+    (catch Throwable t
+      (timbre/error t ::query params)
+      (resolve/deliver! result nil {:message  (.getMessage t)
+                                    :err-data (ex-data t)}))))
 
 
 ;; =============================================================================
@@ -292,10 +206,6 @@
 
 ;; =============================================================================
 ;; Create Payments
-
-
-(defmulti create-payment-data (fn [_ params] (:type params)))
-(defmethod create-payment-data :default [db _] nil)
 
 
 ;; TODO move to Teller as a helper, may already be there
@@ -400,34 +310,33 @@
                  :managed-account connect-id)))
 
 
+;; make payments ===============================================================
+
+
+;; TODO: How to deal with passing the fee?
+;; TODO: How do we communicate what the fee will be to the person making the
+;; payment?
+;; TODO: We'll need to be able to update the fee amount before we make the
+;; charge if they're going to be paying with a card
+
+
 (defn pay-rent!
-  [{:keys [stripe conn requester] :as ctx} {:keys [id source] :as params} _]
-  (let [result     (resolve/resolve-promise)
-        payment    (d/entity (d/db conn) id)
-        customer   (customer/by-account (d/db conn) requester)
-        license    (member-license/active (d/db conn) requester)
-        connect-id (member-license/rent-connect-id license)]
-    (go
-      (try
-        (let [[cus src] (<!? (autopay/setup-connect-customer! conn stripe license connect-id source))]
-          (if-let [error (ensure-payment-allowed (d/db conn) requester payment src)]
-            (resolve/deliver! result nil {:message error})
-            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment connect-id customer (:id cus) (:id src))))]
-              @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
-                                           (assoc :stripe/source-id source)
-                                           (assoc :payment/status :payment.status/pending)
-                                           (assoc :payment/paid-on (java.util.Date.)))])
-              (resolve/deliver! result (d/entity (d/db conn) id)))))
-        (catch Throwable t
-          (timbre/error t ::pay-rent params)
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))
-    result))
+  [{:keys [teller requester] :as ctx} {:keys [id source] :as params} _]
+  (let [payment  (tpayment/by-id teller id)
+        source   (tsource/by-id teller source)
+        customer (tcustomer/by-account teller requester)]
+    (try
+      (tpayment/charge! payment {:source source})
+      (catch Throwable t
+        (timbre/error t ::pay-rent params)
+        (resolve/deliver! result nil {:message  (.getMessage t)
+                                      :err-data (ex-data t)})))))
 
 
+;; TODO: Refactor using above as reference
 (defn pay-deposit!
   [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
-  (let [result     (resolve/resolve-promise)
+  #_(let [result     (resolve/resolve-promise)
         deposit    (deposit/by-account requester)
         license    (member-license/active (d/db conn) requester)
         connect-id (member-license/deposit-connect-id license)
