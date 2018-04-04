@@ -15,13 +15,14 @@
 ;; list =========================================================================
 ;; ==============================================================================
 
+
 (reg-event-fx
  :services/query
  [(path db/path)]
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :catalogs :price]]]
+                             [:id :name :code :active :catalogs :price]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -71,6 +72,7 @@
                                (.minute 59)
                                (.second 59)
                                (.toISOString)))}))
+
 
 
 (reg-event-fx
