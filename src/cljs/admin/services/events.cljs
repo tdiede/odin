@@ -384,9 +384,7 @@
  :service.form/clear
  [(path db/path)]
  (fn [db _]
-   (-> (update db :form dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
-       (assoc :form db/form-defaults)
-       (dissoc :form-validation)
+   (-> (assoc db :form db/form-defaults)
        (assoc :form-validation db/form-validation-defaults))))
 
 
