@@ -257,6 +257,7 @@
   "Charge an order."
   [{:keys [conn requester stripe]} {:keys [id]} _]
   (let [order  (d/entity (d/db conn) id)
+        ;; TODO: is there a source that can be used to charge premium service payments?
         source (<!!? (payment-source/service-source (d/db conn) stripe (order/account order)))]
     (cond
       (nil? source)
