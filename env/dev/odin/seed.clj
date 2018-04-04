@@ -7,7 +7,8 @@
             [toolbelt.core :as tb]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [teller.property :as tproperty]))
 
 
 (defn- referrals []
@@ -103,6 +104,12 @@
   (c/to-date (t/date-time 2017 (inc (rand-int 12)) (inc (rand-int 28)))))
 
 
+(defn seed-teller [teller]
+  (let [fees (tproperty/fees (tproperty/fee 5))]
+    (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com" "acct_1C5LJXEd7myLyyjs" "acct_1C3TmPHnEDeEkGIS" {:fees fees :community [:property/code "52gilbert"]})
+    (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com" "acct_1C3S9tD1iZkoyuLX" "acct_1C3TmMEBSLaHdiO2" {:fees fees :community [:property/code "2072mission"]})))
+
+
 (defn seed [conn]
   (let [db          (d/db conn)
         license     (license/by-term db 3)
@@ -114,7 +121,7 @@
           :seed/referrals {:txes [(referrals)]}
           :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
                            :requires [:seed/accounts]}
-          :seed/onboard   {:txes [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
-                                                    :email "onboard@test.com")]
+          :seed/onboard   {:txes     [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
+                                                        :email "onboard@test.com")]
                            :requires [:seed/accounts]}}
          (cf/ensure-conforms conn))))

@@ -32,7 +32,8 @@
     (->conn req)
     (->requester req)
     (->stripe req)
-    (->config req)))
+    (->config req)
+    (->teller req)))
 
 
 (defn result->status [{:keys [errors] :as result}]

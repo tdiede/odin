@@ -23,6 +23,7 @@
    [odin.config :as config :refer [config]]
    [odin.core]
    [odin.seed :as seed]
+   [odin.teller :refer [teller]]
    [reactor.reactor :as reactor]
    [taoensso.timbre :as timbre]
    [toolbelt.core]
@@ -53,7 +54,9 @@
 (defstate seeder
   :start (when (in-memory-db? (config/datomic-uri config))
            (timbre/debug "seeding dev database...")
-           (seed/seed conn)))
+           (seed/seed conn)
+           ;; TODO why can it not see implementation of method create on tproperty
+           (seed/seed-teller teller)))
 
 
 (defstate reactor

@@ -3,9 +3,10 @@
              :secure-sessions #profile {:prod    true
                                         :default false}}
 
- :datomic {:uri #or [#env DATOMIC_URI
-                     ^:ref [:secrets :datomic :uri]
-                     "datomic:mem://localhost:4334/starcity"]}
+ :datomic {:partition :db.part/starcity
+           :uri       #or [#env DATOMIC_URI
+                           ^:ref [:secrets :datomic :uri]
+                           "datomic:mem://localhost:4334/starcity"]}
 
  :root-domain #profile {:dev   "http://localhost:8080"
                         :stage "https://staging.starcity.com"

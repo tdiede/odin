@@ -18,9 +18,11 @@
     "license": "ISC",
     "homepage": "https://my.starcity.com",
     "dependencies": {
-        "antd": "2.13.4",
+        "antd": "^2.13.13",
         "bulma": "0.5.3",
+        "less": "~2.7.3",
         "less-plugin-clean-css": "^1.5.1",
+        "npm": "^5.8.0",
         "spinkit": "^1.2.5"
     }
 }
