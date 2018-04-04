@@ -7,7 +7,8 @@
                                    path]]
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]
-            [antizer.reagent :as ant]))
+            [antizer.reagent :as ant]
+            [devtools.defaults :as d]))
 
 
 
@@ -198,11 +199,11 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [svc-id (str (get-in response [:data :service_update :id]))]
-    {:dispatch-n [[:services/query]
-                  [:service.form/hide]
-                  [:service.form/clear]]
-     :notification [:success "Your changes have been saved!"]
-     :route (routes/path-for :services/entry :service-id svc-id)})))
+     {:dispatch-n [[:services/query]
+                   [:service.form/hide]
+                   [:service.form/clear]]
+      :notification [:success "Your changes have been saved!"]
+      :route (routes/path-for :services/entry :service-id svc-id)})))
 
 
 ;; ==============================================================================
@@ -270,6 +271,7 @@
                                   []
                                   (vecify-fields fields))}))
      (assoc db :form db/form-defaults))))
+
 
 
 (reg-event-fx
@@ -384,7 +386,31 @@
  [(path db/path)]
  (fn [db _]
    (-> (update db :form dissoc :name :description :code :properties :catalogs :price :cost :rental :fields)
-       (assoc :form db/form-defaults))))
+       (assoc :form db/form-defaults)
+       (dissoc :form-validation)
+       (assoc :form-validation db/form-validation-defaults))))
+
+
+(reg-event-fx
+ :service.create/validate
+ [(path db/path)]
+ (fn [{db :db} _]
+   (let [name        (get-in db [:form :name])
+         description (get-in db [:form :description])
+         code        (get-in db [:form :code])]
+     {:db       (-> (assoc-in db [:form-validation :name] (not (empty? name)))
+                    (assoc-in [:form-validation :description] (not (empty? description)))
+                    (assoc-in [:form-validation :code] (not (or (empty? code)
+                                                                 (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
+      :dispatch [::validate]})))
+
+
+(reg-event-fx
+ ::validate
+ [(path db/path)]
+ (fn [{db :db} _]
+   (when (not-any? false? (vals (:form-validation db)))
+     {:dispatch [:service/create!]})))
 
 
 (reg-event-fx
