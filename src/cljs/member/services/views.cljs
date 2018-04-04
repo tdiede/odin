@@ -265,7 +265,12 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
-(defn above-the-fold [{:keys [id name created price status]} is-open requester]
+(defn status-tag [txt]
+  (let [status (clojure.string/capitalize (name txt))]
+    [:span.tag.is-hollow status]))
+
+
+(defn above-the-fold [{:keys [id name date price status billed cancel-btn]} is-open requester]
   (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
         account-id (:id requester)
         canceling  (subscribe [:orders/canceling])]
@@ -281,15 +286,15 @@
       [:span {:style {:display "inline-block"}}
        [:p.body name]]]
      [:div.column.is-2
-      [:p.body (format/date-short created)]]
+      [:p.body (format/date-short date)]]
      [:div.column.is-1
       [:p.body (if (some? price)
                  (format/currency price)
                  (format/currency 0))]]
      [:div.column.is-1
-      [ant/tag status]]
+      [status-tag status]]
      [:div.column.is-2.has-text-right
-      (when (= status :pending)
+      (when (and cancel-btn (or (= status :pending) (= billed :monthly)))
         [ant/button
          {:on-click #(dispatch [:services.order/cancel-order id account-id])
           :type     "danger"
@@ -327,10 +332,11 @@
 
 
 (defn active-order-item [{:keys [fields] :as order} requester]
-  (let [is-open (r/atom false)]
+  (let [is-open (r/atom false)
+        order'  (assoc order :date (:created order) :cancel-btn true)]
     (fn []
       [ant/card
-       (r/as-element [above-the-fold order is-open requester])
+       (r/as-element [above-the-fold order' is-open requester])
        (when @is-open
          [fields-data (sort-by :index fields)])])))
 
@@ -354,15 +360,31 @@
    [fields-data fields]
    [:br]
    [:p.fs3 "Go to "
-    [:a {:href ""} "Payments History"] " to see payments made for this subscription"]])
+    [:a {:href (routes/path-for :profile.payment/history)} "Payments History"] " to see payments made for this service"]])
+
+
+;; TODO need to actually test this...
+;; subscriptions are not getting their payments created
+(defn get-payment-status [payment]
+  (let [status (:status payment)]
+    (case status
+      :due     :processing
+      :paid    :charged
+      :pending :processing
+      :failed  :processing
+      status)))
 
 
 (defn active-subscription-item
   [{:keys [payments fields] :as subscription} requester]
-  (let [is-open (r/atom false)]
+  (let [is-open       (r/atom false)
+        status        (if (not (empty? payments))
+                        (get-payment-status (first (sort-by :created > payments)))
+                        (:status subscription))
+        subscription' (assoc subscription :date (:created subscription) :status status :cancel-btn true)]
     (fn []
       [ant/card
-       (r/as-element [above-the-fold subscription is-open requester])
+       (r/as-element [above-the-fold subscription' is-open requester])
        (when @is-open
          [subscription-details (sort-by :index fields) (sort-by :created > payments)])])))
 
@@ -380,55 +402,37 @@
   [:div.columns {:style {:padding        "0 1.5rem"
                          :margin-bottom  "0"
                          :text-transform "uppercase"}}
-   [:div.column.is-4
-    [:h4.subtitle.is-6.bold "Service service"]]
+   [:div.column.is-6
+    [:h4.subtitle.is-6.bold "Requested order"]]
    [:div.column.is-2
-    [:h4.subtitle.is-6.bold "Completed"]]
-   [:div.column.is-2
-    [:h4.subtitle.is-6.bold "Date charged"]]
-   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Updated on"]]
+   [:div.column.is-1
     [:h4.subtitle.is-6.bold "Price"]]
-   [:div.column.is-2
+   [:div.column.is-3
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
+;; is it useful to have more payment information?
+;; TODO gather feedback on completed services?
 (defn order-history-item
-  [{:keys [name price status fields] :as subscription}]
-  [ant/card
-   [:div.columns
-    [:div.column.is-4
-     [:span [ant/button {:icon "plus"
-                         :style {:width        "30px"
-                                 :align        "center"
-                                 :padding      "0px"
-                                 :font-size    20
-                                 :margin-right "10px"}}]]
-     [:span {:style {:display "inline-block"}}
-      [:p.body name]]]
-    [:div.column.is-2
-     [:p "N/A"]]
-    [:div.column.is-2
-     [:p "billed date"]]
-    [:div.column.is-2
-     [:p.body (if (some? price)
-                (format/currency price)
-                (format/currency 0))]]
-    [:div.column.is-2
-     [ant/tag status]]]])
+  [{:keys [name price status fields updated payments] :as order} requester]
+  (let [is-open (r/atom false)
+        order'  (assoc order :date (:updated order) :cancel-btn false)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold order' is-open requester])
+       (when @is-open
+         [subscription-details (sort-by :index fields) (sort-by :created > payments)]
+         #_[fields-data (sort-by :index fields)])])))
 
 
-(defn order-history-list [history]
-  [:div
-   (map
-    #(with-meta [order-history-item %] {:key (:id %)})
-    (sort-by :created > history))])
-
+(defn order-history-list [history requester]
+  [paginated-list (sort-by :updated > history) requester order-history-item])
 
 
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
-
 
 
 (defmulti content :page)
@@ -466,7 +470,7 @@
      [active-subscriptions @subscriptions requester]]))
 
 
-(defmethod content :services/history [_]
+(defmethod content :services/history [{:keys [requester]}]
   (let [history (subscribe [:orders/history])]
     [:div
      (.log js/console @history)

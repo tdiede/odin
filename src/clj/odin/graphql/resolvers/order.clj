@@ -125,9 +125,10 @@
      odin.graphql/schema
      (venia.core/graphql-query
       {:venia/queries
-       [[:orders {:params {:billed [:monthly]
+       [[:orders {:params {;; :billed [:monthly]
                            :accounts [285873023223100]}}
-         [:name :billed
+         [:id :name :billed
+          [:payments [:id :amount :status :paid_on]]
           [:fields [:id :type :label :index :value]]]]]})
      nil
      {:conn      conn
@@ -177,7 +178,7 @@
   (let [line-items (when-not (empty? line_items)
                      (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
         fields     (when-not (empty? fields)
-                     (parse-fields db (filter #(identity (:value %)) fields)))]
+                     (parse-fields db fields))]
     (order/create account service
                   (tb/assoc-when
                    {}

@@ -167,7 +167,9 @@
  :orders/active
  :<- [db/path]
  (fn [db _]
-   (filter #(and (not= (:billed %) :monthly) (= (:status %) :pending)) (:orders db))))
+   (filter
+    #(and (not= (:billed %) :monthly) (some (fn [v] (= v (:status %))) [:pending :placed]))
+    (:orders db))))
 
 
 (reg-sub
@@ -181,11 +183,11 @@
  :orders/subscriptions
  :<- [db/path]
  (fn [db _]
-   (filter #(and (= (:billed %) :monthly) (not= (:status %) :cancelled)) (:orders db))))
+   (filter #(and (= (:billed %) :monthly) (not= (:status %) :canceled)) (:orders db))))
 
 
 (reg-sub
  :orders/history
  :<- [db/path]
  (fn [db _]
-   (filter #(not= (:status %) :pending) (:orders db))))
+   (filter #(not (some (fn [v] (= v (:status %))) [:pending :placed])) (:orders db))))

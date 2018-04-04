@@ -80,7 +80,8 @@
  :services/fetch-orders
  (fn [{db :db} [k account]]
    {:graphql {:query [[:orders {:params {:accounts [account]}}
-                       [:id :name :price :status :created :billed
+                       [:id :name :price :status :created :billed :billed_on :fulfilled_on :updated
+                        [:payments [:id :amount :status :paid_on]]
                         [:fields [:id :label :value :type :index]]]]]
               :on-success [::fetch-orders k]
               :on-failure [:graphql/failure k]}}))
@@ -116,10 +117,11 @@
  ::fetch-catalogs
  (fn [{db :db} [_ k response]]
    (let [property-id (get-in response [:data :account :property :id])]
-     {:graphql {:query [[:services {:params {:properties [property-id]}}
-                         [:id :name :description :price :catalogs
-                          [:fields [:id :index :label :type :required
-                                    [:options [:index :label :value]]]]]]]
+     {:graphql {:query      [[:services {:params {:properties [property-id]
+                                                  :active     true}}
+                              [:id :name :description :price :catalogs :active
+                               [:fields [:id :index :label :type :required
+                                         [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
 
@@ -128,7 +130,8 @@
  :services/catalogs
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [services (sort-by #(clojure.string/lower-case (:name %)) (get-in response [:data :services]))
+   (let [services (->> (get-in response [:data :services])
+                       (sort-by #(clojure.string/lower-case (:name %))))
          clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
      {:db (assoc db :catalogs clist :services services)})))
 
@@ -267,7 +270,7 @@
    (let [new-fields (:form-data db)
          new-cart   (map
                      (fn [item]
-                       (if (= (:id item) (:id (:adding db)))
+                       (if (= (:index item) (:index (:adding db)))
                          (assoc item :fields new-fields)
                          item))
                      (:cart db))]
@@ -297,6 +300,7 @@
  ::services-create-card-source-success
  (fn [{:keys [db]} [_ k response]]
    {:dispatch-n   [[:ui/loading k false]
+                   [:services.cart/submit (:account db)]
                    [:modal/hide :payment.source/add]]
     :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
     :route        (routes/path-for :services/cart)}))
