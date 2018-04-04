@@ -282,19 +282,9 @@
    (if (some? date) (format/date-short-num date) "N/A")])
 
 
-(defn- status-icon-class [status]
-  (get
-   {:placed    "has-text-info"
-    :fulfilled "has-text-primary"
-    :failed    "has-text-warning"
-    :charged   "has-text-success"
-    :canceld   "has-text-danger"}
-   status))
-
-
 (defn- render-status [_ {status :status}]
   [ant/tooltip {:title status}
-   [ant/icon {:class (status-icon-class (keyword status))
+   [ant/icon {:class (order/status-icon-class (keyword status))
               :type  (order/status-icon (keyword status))}]])
 
 

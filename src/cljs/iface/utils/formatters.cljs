@@ -118,6 +118,21 @@
   (->> (string/split name #" ") (map first) (apply str)))
 
 
+(defn make-possessive
+  "Given a `name`, produce that name in the possessive form."
+  [name]
+  (if (not= \s (last name))
+    (str name "'s ")
+    (str name "' ")))
+
+(defn make-first-name-possessive
+  "Given a full `name`, produce the given name in the possessive form."
+  [name]
+  (->> (string/split name #" ")
+       (first)
+       (make-possessive)))
+
+
 (defn sstr [args]
   (->> (interpose " " [args]) (apply str)))
 

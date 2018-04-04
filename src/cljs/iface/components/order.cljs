@@ -20,6 +20,18 @@
        status))
 
 
+(defn status-icon-class
+  "antd icon classes that represent the status of an order"
+  [status]
+  (get
+   {:placed    "has-text-info"
+    :fulfilled "has-text-primary"
+    :failed    "has-text-warning"
+    :charged   "has-text-success"
+    :canceled  "has-text-danger"}
+   status))
+
+
 (defn price-text
   [price billed quantity]
   (cond

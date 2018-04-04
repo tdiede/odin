@@ -75,7 +75,9 @@
                                     [:pet [:type :breed :weight :sterile :vaccines :bitten :demeanor :daytime_care]]]]
                      [:active_license license-selectors]
                      ;; TODO: Move to separate query
-                     [:licenses license-selectors]]]]
+                     [:licenses license-selectors]]]
+                   [:orders {:params {:accounts [account-id]}}
+                    [:id :price :created :name :status]]]
                   :on-success [::account-fetch k opts]
                   :on-failure [:graphql/failure k]}})))
 
@@ -84,8 +86,10 @@
  ::account-fetch
  [(path db/path)]
  (fn [{db :db} [_ k opts response]]
-   (let [account (get-in response [:data :account])]
-     {:db         (norms/assoc-norm db :accounts/norms (:id account) account)
+   (let [account (get-in response [:data :account])
+         orders  (get-in response [:data :orders])]
+     {:db         (->> (assoc account :orders orders)
+                       (norms/assoc-norm db :accounts/norms (:id account)))
       :dispatch-n (tb/conj-when
                    [[:ui/loading k false]]
                    (when-let [ev (:on-success opts)] (conj ev account)))})))
