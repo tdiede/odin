@@ -88,6 +88,6 @@
 
 (reg-sub
  :service.form/is-valid?
- :<-[db/path]
+ :<- [db/path]
  (fn [db [_ k]]
    (get-in db [:form-validation k])))
