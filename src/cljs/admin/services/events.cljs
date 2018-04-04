@@ -391,42 +391,43 @@
 (reg-event-fx
  :service.create/validate
  [(path db/path)]
- (fn [{db :db} _]
-   (let [name        (get-in db [:form :name])
-         description (get-in db [:form :description])
-         code        (get-in db [:form :code])]
+ (fn [{db :db} [_ form]]
+   (let [{name :name
+          description :description
+          code :code} form]
      {:db       (-> (assoc-in db [:form-validation :name] (not (empty? name)))
                     (assoc-in [:form-validation :description] (not (empty? description)))
                     (assoc-in [:form-validation :code] (not (or (empty? code)
                                                                  (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
-      :dispatch [::validate-create]})))
+      :dispatch [::validate-create form]})))
+
 
 (reg-event-fx
  ::validate-create
  [(path db/path)]
- (fn [{db :db} _]
+ (fn [{db :db} [_ form]]
    (when (not-any? false? (vals (:form-validation db)))
-     {:dispatch [:service/create! (:form db)]})))
+     {:dispatch [:service/create! form]})))
 
 
 (reg-event-fx
  :service.edit/validate
  [(path db/path)]
- (fn [{db :db} [_ service-id]]
-   (let [name (get-in db [:form :name])
-         description (get-in db [:form :description])]
+ (fn [{db :db} [_ service-id form]]
+   (let [{name :name
+          description :description} form]
      {:db (-> (assoc-in db [:form-validation :name] (not (empty? name)))
               (assoc-in [:form-validation :description] (not (empty? description)))
               (assoc-in [:form-validation :code] true)) ;; ensure that we don't check the code, since it could not have changed
-      :dispatch [::validate-edits service-id]})))
+      :dispatch [::validate-edits service-id form]})))
 
 
 (reg-event-fx
  ::validate-edits
  [(path db/path)]
- (fn [{db :db} [_ service-id]]
+ (fn [{db :db} [_ service-id form]]
    (when (not-any? false? (vals (:form-validation db)))
-     {:dispatch [:service/save-edits service-id (:form db)]})))
+     {:dispatch [:service/save-edits service-id form]})))
 
 
 (reg-event-fx

@@ -381,7 +381,7 @@
       :visible     @(subscribe [:modal/visible? :service/create-service-form])
       :ok-text     "Save New Service"
       :on-cancel   #(dispatch [:service.form/hide])
-      :on-ok       #(dispatch [:service.create/validate])
+      :on-ok       #(dispatch [:service.create/validate @form])
       :after-close #(dispatch [:service.form/clear])}
 
      [create-service-form]]))
@@ -674,7 +674,7 @@
         {:on-click #(dispatch [:service/cancel-edit])}
         "Cancel"]
        [ant/button
-        {:on-click #(dispatch [:service.edit/validate @service-id])}
+        {:on-click #(dispatch [:service.edit/validate @service-id @form])}
         "Save Changes"]]]
      [create-service-form]]))
 
