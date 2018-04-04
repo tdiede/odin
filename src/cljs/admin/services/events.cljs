@@ -185,7 +185,6 @@
  :service/save-edits
  [(path db/path)]
  (fn [{db :db} [k service-id form]]
-   (js/console.log "saving edits..." form)
    {:graphql {:mutation
               [[:service_update {:service_id service-id
                                  :params  (prepare-edits form)}
@@ -402,15 +401,34 @@
                     (assoc-in [:form-validation :description] (not (empty? description)))
                     (assoc-in [:form-validation :code] (not (or (empty? code)
                                                                  (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
-      :dispatch [::validate]})))
-
+      :dispatch [::validate-create]})))
 
 (reg-event-fx
- ::validate
+ ::validate-create
  [(path db/path)]
  (fn [{db :db} _]
    (when (not-any? false? (vals (:form-validation db)))
      {:dispatch [:service/create!]})))
+
+
+(reg-event-fx
+ :service.edit/validate
+ [(path db/path)]
+ (fn [{db :db} [_ service-id]]
+   (let [name (get-in db [:form :name])
+         description (get-in db [:form :description])]
+     {:db (-> (assoc-in db [:form-validation :name] (not (empty? name)))
+              (assoc-in [:form-validation :description] (not (empty? description)))
+              (assoc-in [:form-validation :code] true)) ;; ensure that we don't check the code, since it could not have changed
+      :dispatch [::validate-edits service-id]})))
+
+
+(reg-event-fx
+ ::validate-edits
+ [(path db/path)]
+ (fn [{db :db} [_ service-id]]
+   (when (not-any? false? (vals (:form-validation db)))
+     {:dispatch [:service/save-edits service-id (:form db)]})))
 
 
 (reg-event-fx

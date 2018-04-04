@@ -674,7 +674,7 @@
         {:on-click #(dispatch [:service/cancel-edit])}
         "Cancel"]
        [ant/button
-        {:on-click #(dispatch [:service/save-edits @service-id @form])}
+        {:on-click #(dispatch [:service.edit/validate @service-id])}
         "Save Changes"]]]
      [create-service-form]]))
 
