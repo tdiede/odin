@@ -20,7 +20,7 @@
 (defn- sort-by-name-and-active
   [services]
   ;; if active is nil, group it with the falses.
-  (->> (group-by #(= true (:active %)) services)
+  (->> (group-by :active services)
        (vals)
        (reverse)
        (mapv sort-by-name)
