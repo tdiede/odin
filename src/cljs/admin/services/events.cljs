@@ -408,7 +408,7 @@
  [(path db/path)]
  (fn [{db :db} _]
    (when (not-any? false? (vals (:form-validation db)))
-     {:dispatch [:service/create!]})))
+     {:dispatch [:service/create! (:form db)]})))
 
 
 (reg-event-fx
