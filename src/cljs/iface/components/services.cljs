@@ -110,9 +110,7 @@
    [:div.column
     [ant/form-item {:label (:label field)}
      [ant/input-number
-      {:value         (if (:value field)
-                        (:value field)
-                        0)
+      {:value         (:value field 0)
        :min           0
        :max           99
        :on-change     #(on-change (:index field) %)}]]]])
