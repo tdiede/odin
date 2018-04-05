@@ -1,69 +1,334 @@
 (ns member.services.events
-  (:require [member.routes :as routes]
+  (:require [akiroz.re-frame.storage :refer [reg-co-fx!]]
+            [antizer.reagent :as ant]
+            [member.routes :as routes]
             [member.services.db :as db]
-            [re-frame.core :refer [reg-event-fx reg-event-db path]]
+            [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
             [toolbelt.core :as tb]))
 
 
-(defmethod routes/dispatches :member.services/book [{:keys [params page] :as route}]
-  (if (empty? params)
-    [[:member.services/set-default-route route]]
-    [[:member.services/fetch (db/parse-query-params page params)]]))
+(reg-co-fx! db/path
+            {:fx   :cart
+             :cofx :cart})
 
 
 (reg-event-fx
- :member.services/set-default-route
+ ::load-cart
+ [(inject-cofx :cart) (path db/path)]
+ (fn [{:keys [cart db]} _]
+   {:db (assoc db :cart (or cart []))}))
+
+
+(reg-event-fx
+ ::save-cart
+ [(path db/path)]
+ (fn [{:keys [db]} [_ new-cart]]
+   {:db   (assoc db :cart new-cart)
+    :cart new-cart}))
+
+
+(reg-event-fx
+ ::clear-cart
+ (fn [_ [_ k]]
+   {:dispatch-n   [[::save-cart []]
+                   [:ui/loading k false]]
+    :notification [:success "Your premium service orders have been placed!"]
+    :route        (routes/path-for :services/active-orders)}))
+
+
+(defmethod routes/dispatches :services/book
+  [{:keys [params page requester] :as route}]
+  (if (empty? params)
+    [[:services/set-default-route route]]
+    [[:services/fetch (db/parse-query-params page params)]
+     [:services/fetch-catalogs]
+     [::load-cart]]))
+
+
+(defmethod routes/dispatches :services/active-orders
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
+
+
+(defmethod routes/dispatches :services/manage
+  [_]
+  [[::load-cart]])
+
+
+(defmethod routes/dispatches :services/cart
+  [{:keys [requester] :as route}]
+  [[:payment-sources/fetch (:id requester)]
+   [::load-cart]])
+
+
+(reg-event-fx
+ :services/set-default-route
  [(path db/path)]
  (fn [{db :db} [_ {page :page}]]
    {:route (db/params->route page (:params db))}))
 
 
 (reg-event-fx
- :member.services/fetch
+ :services/fetch
  [(path db/path)]
  (fn [{db :db} [_ query-params]]
    {:db (assoc db :params query-params)}))
 
 
 (reg-event-fx
- :member.services.section/select
+ :services/fetch-orders
+ (fn [{db :db} [k account]]
+   {:graphql {:query [[:orders {:params {:accounts [account]}}
+                       [:id :name :price :status :created :billed :billed_on :fulfilled_on :updated
+                        [:payments [:id :amount :status :paid_on]]
+                        [:fields [:id :label :value :type :index]]]]]
+              :on-success [::fetch-orders k]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::fetch-orders
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   {:db (assoc db :orders (get-in response [:data :orders]))}))
+
+
+(reg-event-fx
+ :services/fetch-catalogs
+ (fn [{db :db} [k]]
+   {:dispatch-n [[:ui/loading k true]
+                 [::fetch-property k (get-in db [:account :id])]]}))
+
+
+(reg-event-fx
+ ::fetch-property
+ (fn [{db :db} [_ k account-id]]
+   {:graphql {:query      [[:account {:id account-id}
+                            [[:property [:id]]]]]
+              :on-success [::fetch-catalogs k]
+              :on-failure [:graphql/failure k]}}))
+
+
+;; when we implement the `active` attribute for services
+;; will need to add `:active true` to `query params`
+;; we dont want to show members inactive services
+(reg-event-fx
+ ::fetch-catalogs
+ (fn [{db :db} [_ k response]]
+   (let [property-id (get-in response [:data :account :property :id])]
+     {:graphql {:query      [[:services {:params {:properties [property-id]
+                                                  :active     true}}
+                              [:id :name :description :price :catalogs :active
+                               [:fields [:id :index :label :type :required
+                                         [:options [:index :label :value]]]]]]]
+                :on-success [:services/catalogs k]
+                :on-failure [:graphql/failure k]}})))
+
+
+(reg-event-fx
+ :services/catalogs
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [services (->> (get-in response [:data :services])
+                       (sort-by #(clojure.string/lower-case (:name %))))
+         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+     {:db (assoc db :catalogs clist :services services)})))
+
+
+(reg-event-fx
+ :services.section/select
  [(path db/path)]
  (fn [_ [_ section]]
-   (let [page (if (= section :book) :services/book :services/manage)]
+   (let [page (keyword (str "services/" section))]
      {:route (routes/path-for page)})))
 
 
 (reg-event-db
- :member.services.add-service.form/update
+ :services.add-service.form/update
  [(path db/path)]
- (fn [db [_ key value]]
-   (assoc-in db [:form-data key] value)))
+ (fn [db [_ index value]]
+   (update db :form-data
+           (fn [fields]
+             (map
+              (fn [field]
+                (if (= (:index field) index)
+                  (assoc field :value value)
+                  field))
+              fields)))))
 
 
 (reg-event-db
- :member.services.add-service.form/reset
+ :services.add-service.form/reset
  [(path db/path)]
  (fn [db _]
    (dissoc db :form-data)))
 
 
 (reg-event-fx
- :member.services.add-service/show
+ :services.add-service/show
  [(path db/path)]
- (fn [db _]
-   {:dispatch [:modal/show db/modal]}))
+ (fn [{db :db} [_ {:keys [id name description price fields]}]]
+   (let [service {:id          id
+                  :name        name
+                  :description description
+                  :price       price}]
+     {:dispatch [:modal/show db/modal]
+      :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
 
 (reg-event-fx
- :member.services.add-service/close
+ :services.add-service/close
  [(path db/path)]
- (fn [{db :db} [_ modal]]
-   {:dispatch-n [[:member.services.add-service.form/reset]
+ (fn [{db :db} _]
+   {:dispatch-n [[:services.add-service.form/reset]
                  [:modal/hide db/modal]]}))
 
 
-;; (reg-event-db
-;;  :member.services.add-service/add
-;;  ;; [{path db/path}]
-;;  (fn [db]
-;;    (assoc-in db [:cart] "test")))
+(reg-event-fx
+ :services.add-service/add
+ [(path db/path) ]
+ (fn [{db :db} _]
+   (let [{:keys [id name description price]} (:adding db)
+         adding                              {:index       (count (:cart db))
+                                              :service     id
+                                              :name        name
+                                              :description description
+                                              :price       price
+                                              :fields      (:form-data db)}
+         new-cart                            (conj (:cart db) adding)]
+     {:dispatch-n   [[:services.add-service/close]
+                     [::save-cart new-cart]]
+      :notification [:success (str name " has been added to your cart")]})))
+
+
+;; is this really needed? it seems like it still goes into
+;; graphql as a string...
+(defn construct-order-fields [fields]
+  (map
+   (fn [{:keys [id value]}]
+     (tb/assoc-when
+      {:service_field id}
+      :value value))
+   fields))
+
+
+(defn create-order-params
+  "Constructs `mutate_order_params` from app db"
+  [cart account]
+  (map
+   (fn [item]
+     (let [fields (construct-order-fields (:fields item))]
+       (tb/assoc-when
+        {:account (:id account)
+         :service (:service item)}
+        :fields  fields)))
+   cart))
+
+
+(reg-event-fx
+ :services.cart/submit
+ [(path db/path)]
+ (fn [{db :db} [k account]]
+   (let [order-params (create-order-params (:cart db) account)]
+     {:dispatch [:ui/loading k true]
+      :graphql  {:mutation   [[:order_create_many {:params order-params}
+                               [:id]]]
+                 :on-success [::clear-cart k]
+                 :on-failure [:graphql/failure k]}})))
+
+
+(defn reindex-cart [cart]
+  (map-indexed
+   (fn [i item]
+     (assoc item :index i))
+   (sort-by :index cart)))
+
+
+(reg-event-fx
+ :services.cart.item/remove
+ [(path db/path)]
+ (fn [{db :db} [_ index name]]
+   (let [new-cart (reindex-cart (remove #(= index (:index %)) (:cart db)))]
+     {:dispatch     [::save-cart new-cart]
+      :notification [:success (str name " has been removed from your cart")]})))
+
+
+;; this is the same as services.add-service/show, should probably rename that to make it generic
+(reg-event-fx
+ :services.cart.item/edit
+ [(path db/path)]
+ (fn [{db :db} [_ service fields]]
+   {:dispatch [:modal/show db/modal]
+    :db       (assoc db :adding service :form-data fields)}))
+
+
+(reg-event-fx
+ :services.cart.item/save-edit
+ [(path db/path)]
+ (fn [{db :db} _]
+   (let [new-fields (:form-data db)
+         new-cart   (map
+                     (fn [item]
+                       (if (= (:index item) (:index (:adding db)))
+                         (assoc item :fields new-fields)
+                         item))
+                     (:cart db))]
+     {:dispatch-n [[:services.add-service/close]
+                   [::save-cart new-cart]]})))
+
+
+
+;; =============================================================================
+;; Add Card
+;; =============================================================================
+
+;; Cards have no `submit` event, as this is handled by the Stripe JS API.
+;; We skip immediately to `success`, where we've
+;; received a token for the new card from Stripe.
+
+(reg-event-fx
+ :services.cart.add.card/save-stripe-token!
+ (fn [_ [k token]]
+   {:dispatch [:ui/loading k true]
+    :graphql  {:mutation   [[:add_payment_source {:token token} [:id]]]
+               :on-success [::services-create-card-source-success k]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::services-create-card-source-success
+ (fn [{:keys [db]} [_ k response]]
+   {:dispatch-n   [[:ui/loading k false]
+                   [:services.cart/submit (:account db)]
+                   [:modal/hide :payment.source/add]]
+    :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
+    :route        (routes/path-for :services/cart)}))
+
+
+;; ==============================================================================
+;; orders =======================================================================
+;; ==============================================================================
+
+
+(reg-event-fx
+ :services.order/cancel-order
+ [(path db/path)]
+ (fn [{db :db} [k id account-id]]
+   {:dispatch [:ui/loading k true]
+    :db       (assoc db :canceling id)
+    :graphql  {:mutation   [[:cancel_order {:id     id
+                                            :notify true}
+                             [:id :name]]]
+               :on-success [::order-cancel-success k account-id]
+               :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::order-cancel-success
+ [(path db/path)]
+ (fn [{db :db} [_ k account-id response]]
+   {:dispatch-n   [[:ui/loading k false]
+                   [:services/fetch-orders account-id]]
+    :db           (dissoc db :canceling)
+    :notification [:success (str (get-in response [:data :cancel_order :name]) " has been canceled")]}))

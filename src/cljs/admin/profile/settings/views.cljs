@@ -1,7 +1,7 @@
 (ns admin.profile.settings.views
   (:require [antizer.reagent :as ant]
             [iface.form :as form]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [re-frame.core :refer [dispatch subscribe]]
             [reagent.core :as r]))
 

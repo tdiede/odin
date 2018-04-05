@@ -1,6 +1,8 @@
 (ns member.services.views
   (:require [antizer.reagent :as ant]
-            [iface.typography :as typography]
+            [iface.components.form :as form]
+            [iface.components.services :as services]
+            [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [member.content :as content]
             [member.routes :as routes]
@@ -11,36 +13,41 @@
             [toolbelt.core :as tb]))
 
 
-(def modal :member.services/add-service)
-
-
 (defn menu []
-  (let [section (subscribe [:member.services/section])]
+  (let [section (subscribe [:services/section])
+        count (subscribe [:services.cart/item-count])]
     [ant/menu {:mode          :horizontal
                :selected-keys [@section]
-               :on-click      #(dispatch [:member.services.section/select
-                                          (keyword (aget % "key"))])}
-     [ant/menu-item {:key "book"} "Book services"]
-     [ant/menu-item {:key "manage"} "Manage services"]]))
+               :on-click      #(dispatch [:services.section/select
+                                          (aget % "key")])}
+     [ant/menu-item {:key "book"
+                     :class "book-services"}
+      "Book services"]
+     [ant/menu-item {:key "cart"}
+      [ant/icon {:type "shopping-cart"}] @count]
+     [ant/menu-item {:key "history" :style {:float "right"}} "Order history"]
+     [ant/menu-item {:key "subscriptions" :style {:float "right"}} "Subscriptions"]
+     [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]]))
 
 
-;; -----------------------------------------------------------------------------------------------------
-;; BOOK SERVICES
-;; -----------------------------------------------------------------------------------------------------
+;; ==============================================================================
+;; BOOK SERVICES ================================================================
+;; ==============================================================================
 
 
 (defn category-icon [{:keys [category label]}]
-  (let [selected (subscribe [:member.services.book/category])
-        route    (subscribe [:member.services.book.category/route category])]
+  (let [selected (subscribe [:services.book/category])
+        route    (subscribe [:services.book.category/route category])
+        icon (str "/assets/svg/catalog/" (name category) ".svg")]
     [:div.category-icon.column
      {:class (when (= category @selected) "is-active")}
      [:a {:href @route}
-      [:img {:src "http://via.placeholder.com/150x150"}]
+      [:img {:src icon}]
       [:p label]]]))
 
 
 (defn categories []
-  (let [categories (subscribe [:member.services.book/categories])]
+  (let [categories (subscribe [:services.book/categories])]
     [:div.container.catalogue-menu
      [:div.columns
       (doall
@@ -49,331 +56,455 @@
         @categories))]]))
 
 
-(defn service [service]
+(defn service-item [{:keys [name description price] :as service}]
   [ant/card
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 (:title service)]]
+      [:h4.subtitle.is-5 {:dangerouslySetInnerHTML {:__html name}}]]
      [:div.column.is-6
-      [:p.fs3 (:description service)]]
+      [:p.fs3 description]]
      [:div.column.is-1
-      [:p.price (format/currency (:price service))]]
+      [:p.price (if (some? price)
+                  (format/currency price)
+                  (format/currency 0))]]
      [:div.column.is-2
       [ant/button
-       {:on-click #(dispatch [:modal/show modal])}
+       {:on-click #(dispatch [:services.add-service/show service])}
        "Request Service"]]]]])
 
 
-(defn catalogue [{:keys [title services code] :as c}]
-  (let [route (subscribe [:member.services.book.category/route code])
-        selected (subscribe [:member.services.book/category])]
+(defn catalog [services]
+  (let [selected @(subscribe [:services.book/category])]
     [:div.catalogue
-     [:div.columns {:style {:margin-bottom "0px"}}
-      [:div.column.is-10
-       [:h3.title.is-4 title]]
-      (when (= @selected :all)
-        [:div.column.is-2.has-text-right {:style {:display "table"}}
-         [:a {:href @route
-              :style {:display        "table-cell"
-                      :vertical-align "middle"
-                      :padding-top    8}}
-          "See More"
-          [ant/icon {:style {:margin-left 4} :type "right"}]]])]
-     (doall
-      (map-indexed #(with-meta [service %2] {:key %1}) services))]))
+     [:div.colums {:style {:margin-bottom "0px"}}
+      [:div.colums.is-10
+       [:h3.title.is-4 (clojure.string/capitalize (name selected)) " Services"]]
+      (doall
+       (map-indexed #(with-meta [service-item %2] {:key %1}) services))]]))
 
 
-(defn shopping-cart []
-  [ant/affix {:offsetBottom 20}
-   [:div.has-text-right
-    [ant/button
-     {:size :large
-      :type :primary
-      :class "ant-btn-xl"}
-     "Checkout - $50 (2)"]]
-   #_[:div.shopping-cart
-      [:div.columns
-       [:div.column.is-7
-        [:h4.subtitle.is-5 "X services being requested"]]
-       [:div.column.is-1
-        [:p.price (format/currency 150.0)]]
-       [:div.column.is-4.has-text-right
-        [ant/button "Submit Request"]]]]])
+(defn shopping-cart-button []
+  (let [item-count (subscribe [:services.cart/item-count])
+        total-cost (subscribe [:services.cart/total-cost])]
+    [ant/affix {:offsetBottom 20}
+     [:div.has-text-right
+      [ant/button
+       {:size :large
+        :type :primary
+        :class "ant-btn-xl"
+        :on-click #(dispatch [:services.section/select "cart"])}
+       "Checkout - $" @total-cost " (" @item-count ")"]]]))
 
 
-;; -----------------------------------------------------------------------------------------------------------
-;; Add service modal
+;; ==============================================================================
+;; service/order fields =========================================================
+;; ==============================================================================
+
+;; TODO make it look pretty?
+
+(defmulti field-value (fn [k value options] k))
 
 
-(defn ante-meridiem? [x]
-  (< x 12))
+(defmethod field-value :time [k value options]
+  [:span
+   [:p.fs3 (format/time-short value)]])
 
 
-(defn number->time [n]
-  (cond-> (js/moment)
-    (= n (Math/floor n))    (.minute 0)
-    (not= n (Math/floor n)) (.minute (* 60 (mod n 1)))
-    true                    (.hour (Math/floor n))
-    true                    (.second 0)))
+(defmethod field-value :date [k value options]
+  [:span
+   [:p.fs3 (format/date-short value)]])
 
 
-(defn moment->hhmm
-  [m]
-  (.format m "h:mm A"))
+(defmethod field-value :variants [k value options]
+  (let [vlabel (reduce (fn [v option] (if (= (keyword value) (:key option)) (:label option) v)) nil options)]
+    [:span
+     [:p.fs3 vlabel]]))
 
 
-(defn time-picker*** [{:keys [on-change] :or {on-change identity} :as props}]
-  [ant/select (assoc props :on-change (comp on-change number->time js/parseFloat))
-   (doall
-    (for [t (reduce #(conj %1 %2 (+ %2 0.5)) [] (range 9 21))]
-      (let [meridiem (if (ante-meridiem? t) "am" "pm")
-            t'       (if (<= t 12.5) t (- t 12))]
-        ^{:key (str t)}
-        [ant/select-option {:value (str t)}
-         (str (int (Math/floor t')) (if (integer? t) ":00" ":30") meridiem)])))])
+(defmethod field-value :text [k value options]
+  [:span
+   [:p.fs3 value]])
 
 
-(defn generate-time-range
-  [start end interval]
-  (let [time-range (range start end (float (/ interval 60)))]
-    (map number->time time-range)))
+(defmethod field-value :number [k value options]
+  [:span
+   [:p.fs3 value]])
 
 
-;; TODO: implement on-change, will probably have to ask josh what that thing is
-;; TODO: actually parameterize start end and interval
-(defn time-picker
-  [{:keys [on-change start end interval placeholder]
-    :or   {on-change identity
-           start     9
-           end       17
-           interval  30}
-    :as   props}]
-  [ant/select props
-   (doall
-    (for [t (generate-time-range start end interval)]
-      ^{:key (str t)}
-      [ant/select-option {:value t}
-       (moment->hhmm t)]))])
+(defmethod field-value :dropdown [k value options]
+  [:span
+   [:p.fs3 value]])
 
 
-(defn get-fields [fields type]
-  (filter #(= type (:type %)) fields))
-
-
-(defn- column-fields [fields component-fn]
-  [:div
+(defn fields-data-row [fields]
+  [:div.columns
    (map-indexed
-    (fn [i row]
+    (fn [i {:keys [label value type options] :as field}]
       ^{:key i}
-      [:div.columns
-       (for [field row]
-         ^{:key (:id field)}
-         [:div.column.is-half
-          [ant/form-item {:label (:label field)}
-           (r/as-element (component-fn field))]])])
+      [:div.column.is-half.cart-item-info
+       [:span
+        [:p.fs3.bold label]]
+       [field-value (keyword (name type)) value options]])
+    fields)])
+
+
+(defn fields-data [fields]
+  [:div.cart-item
+   (map-indexed
+    (fn [i field-pair]
+      ^{:key i}
+      [fields-data-row field-pair])
     (partition 2 2 nil fields))])
 
 
-(defmulti form-fields (fn [k data fields opts] k))
+;; ==============================================================================
+;; shopping cart ================================================================
+;; ==============================================================================
 
 
-(defmethod form-fields :date [k data fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
-     [ant/date-picker
-      {:style         {:width "100%"}
-       :value         (when-let [date (get data (:key field))]
-                        (js/moment date))
-       :on-change     #(on-change (:key field) (when-let [x %] (.toISOString x)))
-       :disabled-date (fn [current]
-                        (and current (< (.valueOf current) (.valueOf (js/moment.)))))
-       :show-today    false}])])
+(defn cart-item [{:keys [index name description price fields]}]
+  (let [service-item {:index       index
+                      :name        name
+                      :description description
+                      :price       price}]
+    [ant/card {:style {:margin "10px 0"}}
+     [:div.columns
+      [:div.column.is-6
+       [:h4.subtitle.is-5 name]]
+      [:div.column.is-2
+       [:p.price (if (some? price)
+                   (format/currency price)
+                   (format/currency 0))]]
+      [:div.column.is-2.align-right
+       [ant/button {:icon     "edit"
+                    :on-click #(dispatch [:services.cart.item/edit service-item fields])}
+        "Edit Item"]]
+      [:div.column.is-2
+       [ant/button
+        {:type     "danger"
+         :icon     "close"
+         :on-click #(dispatch [:services.cart.item/remove index name])}
+        "Remove item"]]]
+     (when-not (empty? fields)
+       [fields-data (sort-by :index fields)])]))
 
 
-(defmethod form-fields :time [k data fields {on-change :on-change}]
-  [column-fields (get-fields fields k)
-   (fn [field]
-     [time-picker {:size      :large
-                   ;; TODO:
-                   :start     9
-                   :end       17
-                   :interval  45
-                   :value nil
-                   :placeholder "Select a time"
-                   ;; :value (when-let [time (get data (:key field))]
-                   ;;          (js/moment time))
-                   :on-change #(on-change (:key field) (.toISOString %))}])])
+(defn shopping-cart-footer [requester]
+  (let [has-card   (subscribe [:payment-sources/has-card? (:id requester)])
+        submitting (subscribe [:ui/loading? :services.cart/submit])]
+    [:div.cart-footer.has-text-right
+     [:p.fs2
+      [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
+     [ant/button {:class    "ant-btn-xl"
+                  :type     "primary"
+                  :on-click #(if-not @has-card
+                               (dispatch [:modal/show :payment.source/add])
+                               (dispatch [:services.cart/submit requester]))
+                  :loading  @submitting}
+      "Submit orders"]]))
 
 
-(defmethod form-fields :variants [k data fields {on-change :on-change}]
+(defn shopping-cart-body [cart-items requester]
   [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/radio-group
-          {:value     (keyword (get data (:key field)))
-           :on-change #(on-change (:key field) (.. % -target -value))}
-          (map-indexed
-           #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
-           (:options field))]]]])
-    (get-fields fields k))])
+   (doall
+    (map-indexed #(with-meta [cart-item %2] {:key %1}) cart-items))
+   [shopping-cart-footer requester]])
 
 
-(defmethod form-fields :desc [k data fields {on-change :on-change}]
-  [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/input
-          {:type      :textarea
-           :value     (get data (:key field))
-           :on-change #(on-change (:key field) (.. % -target -value))}]]]])
-    (get-fields fields k))])
+(defn empty-cart []
+  [:div.empty-cart
+   [:p.fs3.bold "There are no premium services selected"]
+   [:p.fs3 "Go to "
+    [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
 
 
-(defn add-service-form
-  [form-data fields opts]
-  [:form
-   [form-fields :date form-data fields opts]
-   [form-fields :time form-data fields opts]
-   [form-fields :variants form-data fields opts]
-   [form-fields :desc form-data fields opts]])
+
+;; add credit card modal ========================================================
 
 
-(defn add-service-modal-footer
-  [can-submit {:keys [on-cancel on-submit is-loading]}]
-  [:div
-   [ant/button
-    {:size     :large
-     :on-click on-cancel}
-    "Cancel"]
-   [ant/button
-    {:type     :primary
-     :size     :large
-     :disabled (not can-submit)
-     :on-click on-submit
-     :loading  is-loading}
-    "Add"]])
+(defn modal-add-credit-card []
+  (let [is-visible (subscribe [:modal/visible? :payment.source/add])]
+    (r/create-class
+     {:component-will-mount
+      (fn [_]
+        (dispatch [:stripe/load-scripts "v2"])
+        (dispatch [:stripe/load-scripts "v3"]))
+      :reagent-render
+      (fn []
+        [ant/modal
+         {:title     "Add credit card"
+          :width     640
+          :visible   @is-visible
+          :on-ok     #(dispatch [:modal/hide :payment.souce/add])
+          :on-cancel #(dispatch [:modal/hide :payment.source/add])
+          :footer    nil}
+         [:div
+          (r/as-element (ant/create-form
+                         (form/credit-card
+                          {:is-submitting @(subscribe [:ui/loading? :services.cart.add.card/save-stripe-token!])
+                           :on-add-card   #(dispatch [:services.cart.add.card/save-stripe-token! %])
+                           :on-click      #(dispatch [:modal/hide :payment.source/add])})))]])})))
 
 
-(defn add-service-modal []
-  (let [is-visible      (subscribe [:modal/visible? :member.services/add-service])
-        item            (subscribe [:member.services.add-service/currently-adding])
-        form-data       (subscribe [:member.services.add-service/form])
-        required-fields (into [] (filter #(= true (:required %)) (:fields @item)))
-        can-submit      (subscribe [:member.services.add-service/can-submit? required-fields])]
-    (.log js/console @form-data)
-    [ant/modal
-     {:title     (str "Add " (:title (:service @item)))
-      :visible   @is-visible
-      :on-cancel #(dispatch [:member.services.add-service/close modal])
-      :footer    (r/as-element
-                  [add-service-modal-footer @can-submit
-                   {:on-cancel #(dispatch [:member.services.add-service/close modal])
-                    :on-submit #(dispatch [:member.services.add-service/add])}])}
-     [:div
-      [:p (:description (:service @item))]
-      [:br]
-      [add-service-form @form-data (:fields @item)
-       {:on-change #(dispatch [:member.services.add-service.form/update %1 %2])}]]]))
+;; ==============================================================================
+;; orders generic ===============================================================
+;; ==============================================================================
 
 
-;; -----------------------------------------------------------------------------------------------------
-;; SHOPPING CART
-;; -----------------------------------------------------------------------------------------------------
+(defn orders-header [type]
+  [:div.columns {:style {:padding        "0 1.5rem"
+                         :margin-bottom  "0"
+                         :text-transform "uppercase"}}
+   [:div.column.is-6
+    [:h4.subtitle.is-6.bold (str "Requested " type)]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Request date"]]
+   [:div.column.is-1
+    [:h4.subtitle.is-6.bold "Price"]]
+   [:div.column.is-3
+    [:h4.subtitle.is-6.bold "Status"]]])
 
 
-(defn input-data [data-fields]
-  [column-fields data-fields
-   (fn [data-field]
-     [:div.column.is-2
-      [:p (:label data-field)]]
-     [:div.column.is-4
-      [:p (:start-date data-field)]])])
+(defn status-tag [txt]
+  (let [status (clojure.string/capitalize (name txt))]
+    [:span.tag.is-hollow status]))
 
 
-(defn cart-item-data [item]
-  [:div
-   [:hr]
-   [input-data (get-fields :data item)]
-   [ant/button "Edit Item"]])
-
-
-(defn test-div [word]
-  [:div
-   [:h1 word]])
-
-
-(defn cart-item [item]
-  [ant/card
-   [:div.service
+(defn above-the-fold [{:keys [id name date price status billed cancel-btn]} is-open requester]
+  (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
+        account-id (:id requester)
+        canceling  (subscribe [:orders/canceling])]
     [:div.columns
-     [:div.column.is-3
-      [:h4.subtitle.is-5 (:title item)]]
      [:div.column.is-6
-      [:p.fs3 (:description item)]]
-     [:div.column.is-1
-      [:p.price (format/currency (:price item))]]
+      [:span [ant/button {:on-click #(swap! is-open not)
+                          :icon     (if @is-open "minus" "plus")
+                          :style    {:width        "30px"
+                                     :align        "center"
+                                     :padding      "0px"
+                                     :font-size    20
+                                     :margin-right "10px"}}]]
+      [:span {:style {:display "inline-block"}}
+       [:p.body name]]]
      [:div.column.is-2
-      [ant/button
-       ;; on click must remove item from cart-items
-       ;; {:on-click #(dispatch [:modal/show modal])}
-       "Cancel"]]]
-    #_(when (not-empty (:data item))
-      [cart-item-data item])]]
-  )
+      [:p.body (format/date-short date)]]
+     [:div.column.is-1
+      [:p.body (if (some? price)
+                 (format/currency price)
+                 (format/currency 0))]]
+     [:div.column.is-1
+      [status-tag status]]
+     [:div.column.is-2.has-text-right
+      (when (and cancel-btn (or (= status :pending) (= billed :monthly)))
+        [ant/button
+         {:on-click #(dispatch [:services.order/cancel-order id account-id])
+          :type     "danger"
+          :icon     "close"
+          :loading  (if (= @canceling id)
+                      @loading
+                      false)}
+         "Cancel"])]]))
 
-;; -----------------------------------------------------------------------------------------------------
-;; PREMIUM SERVICES CONTENT
-;; -----------------------------------------------------------------------------------------------------
+
+(defn paginated-list [items requester list-item-fn]
+  (let [state (r/atom {:current 1})]
+    (fn [items]
+      (let [{:keys [current]} @state
+            items' (->> (drop (* (dec current) 10) items)
+                        (take (* current 10)))]
+        [:div
+         (map
+          #(with-meta [list-item-fn % requester] {:key (:id %)})
+          items')
+         [ant/pagination
+          {:style {:margin-top "20px"}
+           :current current
+           :total (count items)
+           :on-change #(swap! state assoc :current %)}]]))))
+
+
+;; ==============================================================================
+;; active orders content ========================================================
+;; ==============================================================================
+
+
+(defn active-orders-header []
+  [orders-header "order"])
+
+
+(defn active-order-item [{:keys [fields] :as order} requester]
+  (let [is-open (r/atom false)
+        order'  (assoc order :date (:created order) :cancel-btn true)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold order' is-open requester])
+       (when @is-open
+         [fields-data (sort-by :index fields)])])))
+
+
+(defn active-orders [orders requester]
+  [paginated-list (sort-by :created > orders) requester active-order-item])
+
+
+;; ==============================================================================
+;; manage subscriptions =========================================================
+;; ==============================================================================
+
+
+(defn manage-subscriptions-header []
+  [orders-header "subscription"])
+
+
+;; TODO how to link to payments?
+(defn subscription-details [fields payments]
+  [:div
+   [fields-data fields]
+   [:br]
+   [:p.fs3 "Go to "
+    [:a {:href (routes/path-for :profile.payment/history)} "Payments History"] " to see payments made for this service"]])
+
+
+;; TODO need to actually test this...
+;; subscriptions are not getting their payments created
+(defn get-payment-status [payment]
+  (let [status (:status payment)]
+    (case status
+      :due     :processing
+      :paid    :charged
+      :pending :processing
+      :failed  :processing
+      status)))
+
+
+(defn active-subscription-item
+  [{:keys [payments fields] :as subscription} requester]
+  (let [is-open       (r/atom false)
+        status        (if (not (empty? payments))
+                        (get-payment-status (first (sort-by :created > payments)))
+                        (:status subscription))
+        subscription' (assoc subscription :date (:created subscription) :status status :cancel-btn true)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold subscription' is-open requester])
+       (when @is-open
+         [subscription-details (sort-by :index fields) (sort-by :created > payments)])])))
+
+
+(defn active-subscriptions [subscriptions requester]
+  [paginated-list (sort-by :created > subscriptions) requester active-subscription-item])
+
+
+;; ==============================================================================
+;; order history ================================================================
+;; ==============================================================================
+
+
+(defn order-history-header []
+  [:div.columns {:style {:padding        "0 1.5rem"
+                         :margin-bottom  "0"
+                         :text-transform "uppercase"}}
+   [:div.column.is-6
+    [:h4.subtitle.is-6.bold "Requested order"]]
+   [:div.column.is-2
+    [:h4.subtitle.is-6.bold "Updated on"]]
+   [:div.column.is-1
+    [:h4.subtitle.is-6.bold "Price"]]
+   [:div.column.is-3
+    [:h4.subtitle.is-6.bold "Status"]]])
+
+
+;; is it useful to have more payment information?
+;; TODO gather feedback on completed services?
+(defn order-history-item
+  [{:keys [name price status fields updated payments] :as order} requester]
+  (let [is-open (r/atom false)
+        order'  (assoc order :date (:updated order) :cancel-btn false)]
+    (fn []
+      [ant/card
+       (r/as-element [above-the-fold order' is-open requester])
+       (when @is-open
+         [subscription-details (sort-by :index fields) (sort-by :created > payments)]
+         #_[fields-data (sort-by :index fields)])])))
+
+
+(defn order-history-list [history requester]
+  [paginated-list (sort-by :updated > history) requester order-history-item])
+
+
+;; ==============================================================================
+;; premium services content =====================================================
+;; ==============================================================================
 
 
 (defmulti content :page)
 
 
 (defmethod content :services/book [_]
-  (let [selected (subscribe [:member.services.book/category])
-        catalogues (subscribe [:member.services.book/catalogues])
-        c        (first (filter #(= @selected (:code %)) @catalogues))]
+  (let [selected (subscribe [:services.book/category])
+        services (subscribe [:services.book/services-by-catalog @selected])]
     [:div
+     [services/service-modal
+      {:action      "Add"
+       :is-visible  @(subscribe [:services.add-service/visible?])
+       :service     @(subscribe [:services.add-service/adding])
+       :form-fields @(subscribe [:services.add-service/form])
+       :can-submit  @(subscribe [:services.add-service/can-submit?])
+       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-submit   #(dispatch [:services.add-service/add])
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      [categories]
-     (if (= @selected :all)
-       (doall
-        (->> (map (fn [c] (update c :services #(take 2 %))) @catalogues)
-             (map-indexed #(with-meta [catalogue %2] {:key %1}))))
-       [catalogue c])
-     [shopping-cart]]))
+     [catalog @services]
+     [shopping-cart-button]]))
 
 
-(defmethod content :services/manage [_]
-  [:div
-   [:h3 "Manage some services, yo"]])
-
-
-(defmethod content :services/cart [_]
-  (let [cart-items (subscribe [:member.services.cart/requested-items])
-        ;; first-item (first @cart-items)
-        first-item (last @cart-items)
-        ]
+(defmethod content :services/active-orders [{:keys [requester]}]
+  (let [orders (subscribe [:orders/active])]
     [:div
-     [:h1.title.is-3 "Shopping cart"]
-     (doall
-      (map-indexed #(with-meta [cart-item %2] {:key %1}) @cart-items))
-     ]))
+     [active-orders-header]
+     [active-orders (sort-by :created > @orders) requester]]))
+
+
+(defmethod content :services/subscriptions [{:keys [requester]}]
+  (let [subscriptions (subscribe [:orders/subscriptions])]
+    [:div
+     [manage-subscriptions-header]
+     [active-subscriptions @subscriptions requester]]))
+
+
+(defmethod content :services/history [{:keys [requester]}]
+  (let [history (subscribe [:orders/history])]
+    [:div
+     (.log js/console @history)
+     [order-history-header]
+     [order-history-list @history]
+     #_[:h3 "Look at all the things youve ordered, yo"]]))
+
+
+
+(defmethod content :services/cart [{:keys [requester] :as route}]
+  (let [cart-items (subscribe [:services.cart/cart])]
+    [:div
+     [modal-add-credit-card]
+     [services/service-modal
+      {:action      "Edit"
+       :is-visible  @(subscribe [:services.add-service/visible?])
+       :service     @(subscribe [:services.add-service/adding])
+       :form-fields @(subscribe [:services.add-service/form])
+       :can-submit  @(subscribe [:services.add-service/can-submit?])
+       :on-cancel   #(dispatch [:services.add-service/close])
+       :on-submit   #(dispatch [:services.cart.item/save-edit])
+       :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
+     (if-not (empty? @cart-items)
+       [shopping-cart-body (sort-by :index @cart-items) requester]
+       [empty-cart])]))
 
 
 
 (defmethod content/view :services [route]
-  [:div
-   [add-service-modal]
-   (typography/view-header "Premium Services" "Order and manage premium services.")
-   [menu]
-   (content route)
-   ])
+  (let [header  (subscribe [:services/header])
+        subhead (subscribe [:services/subhead])]
+    [:div
+     (typography/view-header @header @subhead)
+     [:div.mb3
+      [menu]]
+     (content route)]))

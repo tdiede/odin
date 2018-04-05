@@ -6,10 +6,31 @@
 
 (def path ::path)
 
+(def form-defaults {:name        ""
+                    :description ""
+                    :code        ""
+                    :properties  []
+                    :catalogs    []
+                    :active      false
+                    :price       0.0
+                    :cost        0.0
+                    :billed      :once
+                    :rental      false
+                    :fields      []})
+
+
+(def form-validation-defaults
+  {:name        true
+   :description true
+   :code        true})
+
 
 (def default-value
-  (merge {path {:from        ""
-                :to          ""
-                :service-id  nil
-                :search-text ""}}
+  (merge {path {:from            ""
+                :to              ""
+                :service-id      nil
+                :search-text     ""
+                :is-editing      false
+                :form            form-defaults
+                :form-validation form-validation-defaults}}
          orders-db/default-value))

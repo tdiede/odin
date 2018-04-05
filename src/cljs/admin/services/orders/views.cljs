@@ -9,13 +9,12 @@
             [iface.components.order :as order]
             [iface.components.table :as table]
             [iface.loading :as loading]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.components.payments :as payments]
             [iface.utils.formatters :as format]
             [reagent.core :as r]
             [re-frame.core :refer [subscribe dispatch]]
-            [toolbelt.core :as tb]
-            [taoensso.timbre :as timbre]))
+            [toolbelt.core :as tb]))
 
 
 
@@ -69,7 +68,7 @@
                  (format/format "Service cost is $%.2f" scost))}
        [:span
         {:dangerouslySetInnerHTML
-         {:__html
+        {:__html
           (str (format/format "$%.2f" (* cost quantity))
                (when (some? scost) "<b>*</b>")
                (when (> quantity 1)
@@ -118,12 +117,32 @@
     :pagination false}])
 
 
+(defn- order-fields-list-entry
+  [{:keys [label value type]}]
+  [:div.mb2
+   [:div
+    [:p [:b label] " " (case type
+                         :date (format/date-time-short value)
+                         :time (format/time-short value)
+                         (str value))]]])
+
+
+(defn- order-fields-list
+  [fields]
+  [:div
+   [:p.heading "Order Form Details"]
+   (map (fn [field]
+          (with-meta
+            [order-fields-list-entry field]
+            {:key (:id field)}))
+        fields)])
+
+
 (defn order-details
   ([order]
    (order-details order {}))
-  ([{:keys [service status name line_items billed_on fulfilled_on projected_fulfillment] :as order}
+  ([{:keys [service status name fields line_items billed_on fulfilled_on projected_fulfillment] :as order}
     {:keys [on-click] :or {on-click identity}}]
-   (timbre/info order)
    [:div
     [:h4.svc-title.mb1
      {:style {:font-weight 600 :margin-bottom 0}}
@@ -145,6 +164,9 @@
       [:div.column.is-one-quarter
        [:p.heading "Margin"]
        [:p (order-margin order)]]]
+
+     [order-fields-list fields]
+
      (when (or (some? fulfilled_on) (some? projected_fulfillment))
        [:div.columns
         (when-some [p projected_fulfillment]
@@ -260,19 +282,9 @@
    (if (some? date) (format/date-short-num date) "N/A")])
 
 
-(defn- status-icon-class [status]
-  (get
-   {:placed    "has-text-info"
-    :fulfilled "has-text-primary"
-    :failed    "has-text-warning"
-    :charged   "has-text-success"
-    :canceld   "has-text-danger"}
-   status))
-
-
 (defn- render-status [_ {status :status}]
   [ant/tooltip {:title status}
-   [ant/icon {:class (status-icon-class (keyword status))
+   [ant/icon {:class (order/status-icon-class (keyword status))
               :type  (order/status-icon (keyword status))}]])
 
 
@@ -438,11 +450,11 @@
   (let [query-params (subscribe [:services.orders/query-params])]
     [:div
      [:div.columns
-     [:div.column
-      [status-filters]]
-     [:div.column
-      [:div.is-pulled-right
-       [create/button {:on-create [:services.orders/query @query-params]}]]]]
+      [:div.column
+       [status-filters]]
+      [:div.column
+       [:div.is-pulled-right
+        [create/button {:on-create [:services.orders/query @query-params]}]]]]
 
      [controls]
 

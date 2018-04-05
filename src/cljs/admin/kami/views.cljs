@@ -3,7 +3,7 @@
             [admin.routes :as routes]
             [antizer.reagent :as ant]
             [iface.card :as card]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.utils.formatters :as format]
             [reagent.core :as r]
             [re-frame.core :as rf :refer [dispatch subscribe]]))

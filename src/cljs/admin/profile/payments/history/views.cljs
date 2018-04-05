@@ -1,6 +1,6 @@
 (ns admin.profile.payments.history.views
   (:require [antizer.reagent :as ant]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.components.payments :as payments]
             [re-frame.core :refer [subscribe]]
             [toolbelt.core :as tb]))

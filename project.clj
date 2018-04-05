@@ -28,7 +28,7 @@
                  ;; Other
                  [kami "0.1.0"]
                  ;; GraphQL
-                 [com.walmartlabs/lacinia "0.21.0"]
+                 [com.walmartlabs/lacinia "0.25.0"]
                  [vincit/venia "0.2.3"]
                  ;; CLJS
                  [tongue "0.2.3"]
@@ -55,9 +55,9 @@
                  [starcity.re-frame/stripe-fx "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [cljsjs/moment "2.17.1-1"]
-
+                 [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
-                 [starcity/blueprints "2.3.0"
+                 [starcity/blueprints "2.4.0"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava]]
@@ -76,7 +76,7 @@
                  [starcity/toolbelt-async "0.4.0"]
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
-                 [starcity/toolbelt-datomic "0.2.0"]
+                 [starcity/toolbelt-datomic "0.5.0"]
                  [starcity/toolbelt-re-frame "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [enlive "1.1.6"]]
