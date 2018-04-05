@@ -7,8 +7,7 @@
                                    path]]
             [toolbelt.core :as tb]
             [iface.utils.norms :as norms]
-            [antizer.reagent :as ant]
-            [devtools.defaults :as d]))
+            [antizer.reagent :as ant]))
 
 
 
