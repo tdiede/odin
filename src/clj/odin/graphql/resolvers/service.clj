@@ -198,6 +198,7 @@
       (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
 
 
+
 (defn edit-service-tx
   [existing updated]
   (let [id (:db/id existing)]

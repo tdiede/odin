@@ -497,9 +497,19 @@
      [ant/switch {:checked required}]]]])
 
 
+(defn- service-entry-fee
+  [fee]
+  [:div.columns
+   [:div.column.is-1
+    [:p (format/currency (:price fee))]]
+   [:div.column.is-7
+    [:p (:name fee)]]])
+
+
 (defn- service-entry [service]
-  (let [{:keys [id name description code active price cost billed rental catalogs properties order-count fields]} @service
-        is-loading                                                                                                @(subscribe [:ui/loading? :service/fetch])]
+  (let [{:keys [id name description code active price cost billed fees
+                rental catalogs properties order-count fields]} @service
+        is-loading                                              @(subscribe [:ui/loading? :service/fetch])]
     [:div
      [:div.mb2
       [:div
@@ -594,7 +604,17 @@
        [:div.column.is-3
         [:div
          [:p [:b "Rental?"]]
-         [ant/checkbox {:checked rental}]]]]]
+         [ant/checkbox {:checked rental}]]]]
+      [:div
+       [:p [:b "Fees" ]]
+       (if (empty? fees)
+         [:p "none"]
+         (map
+         #(with-meta
+            [service-entry-fee %]
+            {:key (:id %)})
+         fees))]]
+
 
      [ant/card
       {:title   "Metrics"
