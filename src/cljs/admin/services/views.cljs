@@ -668,6 +668,7 @@
     [:p.mt2.ml2
      "Select a service from the list to see more details."]))
 
+
 (defn services-editing-container [route]
   (let [service-id (subscribe [:service-id])
         form       (subscribe [:services/form])]
@@ -681,6 +682,7 @@
         {:on-click #(dispatch [:service.edit/validate @service-id @form])}
         "Save Changes"]]]
      [create-service-form]]))
+
 
 (defn services-subview
   [route]
