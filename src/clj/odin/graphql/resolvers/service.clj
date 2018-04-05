@@ -201,8 +201,6 @@
 (defn edit-service-tx
   [existing updated]
   (let [id (:db/id existing)]
-    (println "================== yo look at this service what just came in and we gonna transact")
-    (clojure.pprint/pprint updated)
     (cond-> []
       (and (not= (:service/name existing) (:name updated)) (some? (:name updated)))
       (conj [:db/add id :service/name (:name updated)])
@@ -248,7 +246,6 @@
 
 (defn delete!
   [{:keys [conn requester]} {:keys [service]} _]
-  (timbre/info (str "attempting to delete service id " service))
   @(d/transact conn [[:db.fn/retractEntity service]
                      (source/create requester)])
   :ok)
