@@ -37,11 +37,12 @@
 
 (defn category-icon [{:keys [category label]}]
   (let [selected (subscribe [:services.book/category])
-        route    (subscribe [:services.book.category/route category])]
+        route    (subscribe [:services.book.category/route category])
+        icon (str "/assets/svg/catalog/" (name category) ".svg")]
     [:div.category-icon.column
      {:class (when (= category @selected) "is-active")}
      [:a {:href @route}
-      [:img {:src "http://via.placeholder.com/150x150"}]
+      [:img {:src icon}]
       [:p label]]]))
 
 
