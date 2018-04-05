@@ -636,9 +636,8 @@
      [ant/card
       {:title   "Order Form Fields"
        :loading is-loading}
-      (if (nil? fields)
-        [:p "No fields found."]
-
+      (if (empty? fields)
+        [:p "none"]
         [:div
          (map
           #(with-meta
