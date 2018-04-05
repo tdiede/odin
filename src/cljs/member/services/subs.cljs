@@ -61,7 +61,7 @@
                [{:category :all
                  :label    "All"}]
                (:catalogs db))
-       (conj {:category :miscellaneous
+       (conj {:category :misc
               :label    "Miscellaneous"}))))
 
 
@@ -133,10 +133,10 @@
  :<- [db/path]
  (fn [db [_ selected]]
    (case selected
-     :all (:services db)
-     :miscellaneous (get
-                     (group-by #(empty? (:catalogs %)) (:services db))
-                     true)
+     :all  (:services db)
+     :misc (get
+            (group-by #(empty? (:catalogs %)) (:services db))
+            true)
      (get
       (group-by #(some (fn [c] (= c selected)) (:catalogs %)) (:services db))
       true))))
