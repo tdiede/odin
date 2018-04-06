@@ -245,7 +245,7 @@
 
 
 (defn fees-edit-item
-  [{:keys [name price]}]
+  [{:keys [name price] :as fee}]
   [:p (str name " (" (format/currency price) ")")])
 
 
@@ -277,7 +277,7 @@
        [:div.column.is-6
         [ant/form-item
          (merge
-          {:label "service name"
+          {:label "Service Name"
            :type  "text"}
           (if @(subscribe [:service.form/is-valid? :name])
             {}

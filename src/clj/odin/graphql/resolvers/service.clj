@@ -84,6 +84,7 @@
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
+    (timbre/info "\n\n=============== yo we made a service with a fee in it mabye check it out========")
     @(d/transact conn [(service/create code name description (parse-mutate-params params))
                        (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))
@@ -198,6 +199,21 @@
       (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
 
 
+(defn update-service-fees-tx
+  [service fees-params]
+  (timbre/info "\n\n-------------------- heyo look at this we're looking at fees ---------------------")
+  (clojure.pprint/pprint fees-params)
+  (let [existing     (set (map td/id (service/fees service)))
+        [keep added] (map set ((juxt filter remove) (partial contains? existing) fees-params))
+        removed      (set/difference existing (set/union keep added))]
+    (cond-> []
+      (not (empty? added))
+      (concat (map #(vector :db/add (td/id service) :service/fees %) added))
+
+      (not (empty? removed))
+      (concat (map #(vector :db/retract (td/id service) :service/fees %) removed)))))
+
+
 
 (defn edit-service-tx
   [existing updated]
@@ -231,7 +247,10 @@
       (concat (update-service-catalogs-tx existing (map keyword (:catalogs updated))))
 
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      (concat (update-service-properties-tx existing (:properties updated))))))
+      (concat (update-service-properties-tx existing (:properties updated)))
+
+      (and (not= (set (map td/id (:service/fees existing))) (set (map td/id (:fees updated)))))
+      (concat (update-service-fees-tx existing (:fees updated))))))
 
 
 (defn update!

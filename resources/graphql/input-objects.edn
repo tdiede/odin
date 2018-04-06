@@ -192,7 +192,8 @@
                  :price       {:type Float}
                  :cost        {:type Float}
                  :billed      {:type :service_billed}
-                 :rental      {:type Boolean}}}
+                 :rental      {:type Boolean}
+                 :fees        {:type (list :Long)}}}
 
 
   :units_query_params

@@ -255,7 +255,7 @@
  [(path db/path)]
  (fn [db [_ service]]
    (if (some? service)
-     (let [{:keys [name description code active properties catalogs price cost billed rental fields]} service]
+     (let [{:keys [name description code active properties catalogs price cost billed rental fields fees]} service]
        (dissoc db :form)
        (assoc db :form {:name name
                         :description description
@@ -271,7 +271,10 @@
                                   rental)
                         :fields (if (nil? fields)
                                   []
-                                  (vecify-fields fields))}))
+                                  (vecify-fields fields))
+                        :fees    (if (nil? fees)
+                                   []
+                                   (map :id fees))}))
      (assoc db :form db/form-defaults))))
 
 
