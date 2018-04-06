@@ -66,10 +66,6 @@
        (.second 59))])
 
 
-
-
-
-
 ;; ==============================================================================
 ;; create service form ==========================================================
 ;; ==============================================================================
@@ -248,6 +244,25 @@
      fields))])
 
 
+(defn add-fees-menu-item
+  [{:keys [id name price]}]
+  [ant/menu-item {:key id} (str name " (" (format/currency price) ")")])
+
+
+(defn add-fees-menu
+  [fees]
+  (let [menu
+        [ant/menu {:on-click #(dispatch [:service.form.fee/add (long (aget % "key"))])}
+         (doall (map add-fees-menu-item fees))]]
+    [ant/dropdown
+     {:overlay (r/as-element menu)}
+     [ant/button
+      {:type "dashed"
+       :icon "plus"
+       :style {:width "100%"}}
+      "Add Fee"]]))
+
+
 (defn create-service-form []
   (let [form       (subscribe [:services/form])
         catalogs   (subscribe [:services/catalogs])
@@ -298,7 +313,7 @@
            :value       (:code @form)
            :disabled    @is-editing
            :on-change   #(dispatch [:service.form/update :code (.. % -target -value)])}]]
-        [ant/form-item ;; TODO - make this all dynamic.
+        [ant/form-item
          {:label "Catalogs"}
          [ant/select
           {:style       {:width "100%"}
@@ -336,39 +351,58 @@
             :on-change #(dispatch [:service.form/update :active %])}]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
-      [:div.columns
-       [:div.column.is-3
-        [ant/form-item
-         {:label "Price"}
-         [ant/input-number
-          {:value     (:price @form)
-           :style     {:width "75%"}
-           :formatter (fn [value] (str "$" value))
-           :on-change #(dispatch [:service.form/update :price %])}]]]
-       [:div.column.is-3
-        [ant/form-item
-         {:label "Cost"}
-         [ant/input-number
-          {:value     (:cost @form)
-           :style     {:width "75%"}
-           :formatter (fn [value] (str "$" value))
-           :on-change #(dispatch [:service.form/update :cost %])}]]]
-       [:div.column.is-3
-        [ant/form-item
-         {:label "Billed"}
-         [ant/select
-          {:style         {:width "75%"}
-           :placeholder   "billed"
-           :default-value (:billed @form)
-           :on-change     #(dispatch [:service.form/update :billed (keyword %)])}
-          [ant/select-option {:value :once} "once"]
-          [ant/select-option {:value :monthly} "monthly"]]]]
-       [:div.column.is-3
-        [ant/form-item
-         {:label "Rental?"}
-         [ant/checkbox
-          {:checked   (:rental @form)
-           :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]]]
+      [:div
+       [:div.columns
+        [:div.column.is-3
+         [ant/form-item
+          {:label "Price"}
+          [ant/input-number
+           {:value     (:price @form)
+            :style     {:width "75%"}
+            :formatter (fn [value] (str "$" value))
+            :on-change #(dispatch [:service.form/update :price %])}]]]
+        [:div.column.is-3
+         [ant/form-item
+          {:label "Cost"}
+          [ant/input-number
+           {:value     (:cost @form)
+            :style     {:width "75%"}
+            :formatter (fn [value] (str "$" value))
+            :on-change #(dispatch [:service.form/update :cost %])}]]]
+        [:div.column.is-3
+         [ant/form-item
+          {:label "Billed"}
+          [ant/select
+           {:style         {:width "75%"}
+            :placeholder   "billed"
+            :default-value (:billed @form)
+            :on-change     #(dispatch [:service.form/update :billed (keyword %)])}
+           [ant/select-option {:value :once} "once"]
+           [ant/select-option {:value :monthly} "monthly"]]]]
+        [:div.column.is-3
+         [ant/form-item
+          {:label "Rental?"}
+          [ant/checkbox
+           {:checked   (:rental @form)
+            :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]]
+       [:hr]
+       [:div
+        [:div.columns
+         [:div.column.is-1
+          [ant/form-item
+           {:label "Fees"}]]
+         [:div.column.is-6
+          [add-fees-menu @(subscribe [:services/fees])]]]
+        [:div
+         (if (empty? (:fees @form))
+           "none"
+           (doall (map
+             (fn [fee-id]
+               (let [fee @(subscribe [:service fee-id])]
+                 (with-meta
+                   [:p (str (:name fee) " (" (format/currency (:price fee)) ")") ]
+                   {:key (:id fee)})  ))
+             (:fees @form))))]]]]
 
      [fields-card (:fields @form)]]))
 
@@ -610,10 +644,10 @@
        (if (empty? fees)
          [:p "none"]
          (map
-         #(with-meta
-            [service-entry-fee %]
-            {:key (:id %)})
-         fees))]]
+          #(with-meta
+             [service-entry-fee %]
+             {:key (:id %)})
+          fees))]]
 
 
      [ant/card

@@ -376,6 +376,16 @@
                     (-> (assoc-in fields [(:index field) :options index2] option-one)
                         (assoc-in [(:index field) :options index1] option-two))))))))
 
+
+(reg-event-db
+ :service.form.fee/add
+ [(path db/path)]
+ (fn [db [_ fee-id]]
+   (js/console.log "inside form.fee/add and the id is " fee-id)
+   (js/console.log "oh and the form's fees are" (get-in db [:form :fees]))
+   (update-in db [:form :fees] conj fee-id)))
+
+
 (reg-event-fx
  :service.form/update
  [(path db/path)]
