@@ -274,7 +274,7 @@
                                   (vecify-fields fields))
                         :fees    (if (nil? fees)
                                    []
-                                   (map :id fees))}))
+                                   (mapv :id fees))}))
      (assoc db :form db/form-defaults))))
 
 

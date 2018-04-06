@@ -245,8 +245,12 @@
 
 
 (defn fees-edit-item
-  [{:keys [name price] :as fee}]
-  [:p (str name " (" (format/currency price) ")")])
+  [{:keys [name price]}]
+  [:p [ant/button
+       {:type  "danger"
+        :shape "circle"
+        :icon  "close-circle-o"}]
+   (str " " name " (" (format/currency price) ")") ])
 
 
 (defn add-fees-menu-item
