@@ -244,6 +244,11 @@
      fields))])
 
 
+(defn fees-edit-item
+  [{:keys [name price]}]
+  [:p (str name " (" (format/currency price) ")")])
+
+
 (defn add-fees-menu-item
   [{:keys [id name price]}]
   [ant/menu-item {:key id} (str name " (" (format/currency price) ")")])
@@ -257,10 +262,9 @@
     [ant/dropdown
      {:overlay (r/as-element menu)}
      [ant/button
-      {:type "dashed"
-       :icon "plus"
-       :style {:width "100%"}}
-      "Add Fee"]]))
+      {:style {:width "80%"}}
+      "Add Fee"
+      [ant/icon {:type "down"}]]]))
 
 
 (defn create-service-form []
@@ -360,16 +364,7 @@
            {:value     (:price @form)
             :style     {:width "75%"}
             :formatter (fn [value] (str "$" value))
-            :on-change #(dispatch [:service.form/update :price %])}]]]
-        [:div.column.is-3
-         [ant/form-item
-          {:label "Cost"}
-          [ant/input-number
-           {:value     (:cost @form)
-            :style     {:width "75%"}
-            :formatter (fn [value] (str "$" value))
-            :on-change #(dispatch [:service.form/update :cost %])}]]]
-        [:div.column.is-3
+            :on-change #(dispatch [:service.form/update :price %])}]]
          [ant/form-item
           {:label "Billed"}
           [ant/select
@@ -381,28 +376,34 @@
            [ant/select-option {:value :monthly} "monthly"]]]]
         [:div.column.is-3
          [ant/form-item
+          {:label "Cost"}
+          [ant/input-number
+           {:value     (:cost @form)
+            :style     {:width "75%"}
+            :formatter (fn [value] (str "$" value))
+            :on-change #(dispatch [:service.form/update :cost %])}]]
+         [ant/form-item
           {:label "Rental?"}
           [ant/checkbox
            {:checked   (:rental @form)
-            :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]]
-       [:hr]
-       [:div
-        [:div.columns
-         [:div.column.is-1
-          [ant/form-item
-           {:label "Fees"}]]
-         [:div.column.is-6
-          [add-fees-menu @(subscribe [:services/fees])]]]
-        [:div
-         (if (empty? (:fees @form))
-           "none"
-           (doall (map
-             (fn [fee-id]
-               (let [fee @(subscribe [:service fee-id])]
-                 (with-meta
-                   [:p (str (:name fee) " (" (format/currency (:price fee)) ")") ]
-                   {:key (:id fee)})  ))
-             (:fees @form))))]]]]
+            :on-change #(dispatch [:service.form/update :rental (.. % -target -checked)])}]]]
+
+        [:div.column.is-6
+         [:div
+          [ant/form-item {:label "Fees"}]]
+         [:div.mt2
+          [add-fees-menu @(subscribe [:services/fees])]]
+         [:div.mb2
+          [:br]
+          (if (empty? (:fees @form))
+            "No fees yet!"
+            (doall (map
+                    (fn [fee-id]
+                      (let [fee @(subscribe [:service fee-id])]
+                        (with-meta
+                          [fees-edit-item fee]
+                          {:key (:id fee)})  ))
+                    (:fees @form))))]]]]]
 
      [fields-card (:fields @form)]]))
 
