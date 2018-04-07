@@ -245,11 +245,12 @@
 
 
 (defn fees-edit-item
-  [{:keys [name price]}]
+  [{:keys [name price id]}]
   [:p [ant/button
-       {:type  "danger"
-        :shape "circle"
-        :icon  "close-circle-o"}]
+       {:type     "danger"
+        :shape    "circle"
+        :icon     "close-circle-o"
+        :on-click #(dispatch [:service.form.fee/remove id])}]
    (str " " name " (" (format/currency price) ")") ])
 
 

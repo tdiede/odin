@@ -384,9 +384,20 @@
  :service.form.fee/add
  [(path db/path)]
  (fn [db [_ fee-id]]
-   (js/console.log "inside form.fee/add and the id is " fee-id)
-   (js/console.log "oh and the form's fees are" (get-in db [:form :fees]))
    (update-in db [:form :fees] conj fee-id)))
+
+
+
+
+(reg-event-db
+ :service.form.fee/remove
+ [(path db/path)]
+ (fn [db [_ fee-id]]
+   (update-in db [:form :fees]
+              (fn [fs]
+                (filter
+                 #(not= fee-id %)
+                 fs)))))
 
 
 (reg-event-fx
@@ -414,7 +425,7 @@
      {:db       (-> (assoc-in db [:form-validation :name] (not (empty? name)))
                     (assoc-in [:form-validation :description] (not (empty? description)))
                     (assoc-in [:form-validation :code] (not (or (empty? code)
-                                                                 (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
+                                                                (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
       :dispatch [::validate-create form]})))
 
 
