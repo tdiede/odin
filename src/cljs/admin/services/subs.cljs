@@ -36,6 +36,13 @@
 
 
 (reg-sub
+ :services/fees
+ :<- [:services/list]
+ (fn [services _]
+   (filter #(clojure.string/starts-with? (:code %) "fee") services)))
+
+
+(reg-sub
  :service-id
  :<- [db/path]
  (fn [db _]

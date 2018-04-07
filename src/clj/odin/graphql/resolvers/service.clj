@@ -198,11 +198,23 @@
       (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
 
 
+(defn update-service-fees-tx
+  [service fees-params]
+  (let [existing     (set (map td/id (service/fees service)))
+        [keep added] (map set ((juxt filter remove) (partial contains? existing) fees-params))
+        removed      (set/difference existing (set/union keep added))]
+    (cond-> []
+      (not (empty? added))
+      (concat (map #(vector :db/add (td/id service) :service/fees %) added))
+
+      (not (empty? removed))
+      (concat (map #(vector :db/retract (td/id service) :service/fees %) removed)))))
+
+
+
 (defn edit-service-tx
   [existing updated]
   (let [id (:db/id existing)]
-    (println "================== yo look at this service what just came in and we gonna transact")
-    (clojure.pprint/pprint updated)
     (cond-> []
       (and (not= (:service/name existing) (:name updated)) (some? (:name updated)))
       (conj [:db/add id :service/name (:name updated)])
@@ -232,7 +244,10 @@
       (concat (update-service-catalogs-tx existing (map keyword (:catalogs updated))))
 
       (and (not= (set (map td/id (:service/properties existing))) (set (map td/id (:properties updated)))))
-      (concat (update-service-properties-tx existing (:properties updated))))))
+      (concat (update-service-properties-tx existing (:properties updated)))
+
+      (and (not= (set (map td/id (:service/fees existing))) (set (map td/id (:fees updated)))))
+      (concat (update-service-fees-tx existing (:fees updated))))))
 
 
 (defn update!
@@ -248,111 +263,9 @@
 
 (defn delete!
   [{:keys [conn requester]} {:keys [service]} _]
-  (timbre/info (str "attempting to delete service id " service))
   @(d/transact conn [[:db.fn/retractEntity service]
                      (source/create requester)])
   :ok)
-
-
-#_(defn- update-field-option-tx*
-  [db {:keys [id index label] :as params}]
-  (let [e (d/entity db id)]
-    (cond-> []
-      (not= (:service-field-option/index e) index)
-      (conj [:db/add id :service-field-option/index index])
-
-      (not= (:service-field-option/label e) label)
-      (conj [:db/add id :service-field-option/label label]
-            [:db/add id :service-field-option/value label]))))
-
-
-#_(defn- update-field-options-tx
-  [db field existing-options options-params]
-  (let [[new old]    ((juxt remove filter) (comp some? :id) options-params)
-        existing-ids (set (map :db/id existing-options))
-        update-ids   (set (map :id old))
-        to-retract   (set/difference existing-ids update-ids)]
-    (cond-> []
-      (not (empty? to-retract))
-      (concat (map #(vector :db.fn/retractEntity %) to-retract))
-
-      (not (empty? old))
-      (concat (remove empty? (mapcat (partial update-field-option-tx* db) old)))
-
-      (not (empty? new))
-      (concat (map (fn [{:keys [label index]}]
-                     {:db/id                 (:db/id field)
-                      :service-field/options (service/create-option label label {:index index})})
-                   new)))))
-
-
-#_(defn- update-field-tx
-  [db {:keys [id label index required options]}]
-  (let [e (d/entity db id)]
-    (cond-> []
-      (not= label (:service-field/label e))
-      (conj [:db/add id :service-field/label label])
-
-      (not= index (:service-field/index e))
-      (conj [:db/add id :service-field/index index])
-
-      (not= required (:service-field/required required))
-      (conj [:db/add id :service-field/required required])
-
-      (and (some? options) (not (empty? options)))
-      (concat (update-field-options-tx db e (:service-field/options e) options)))))
-
-
-#_(defn update-service-fields-tx
-  [db service fields-params]
-  (let [fields       (service/fields service)
-        [new old]    ((juxt remove filter) (comp some? :id) fields-params)
-        existing-ids (set (map :db/id fields))
-        update-ids   (set (map :id old))
-        to-retract   (set/difference existing-ids update-ids)]
-    (cond-> []
-      (not (empty? to-retract))
-      (concat (map #(vector :db.fn/retractEntity %) to-retract))
-
-      (not (empty? old))
-      (concat (remove empty? (mapcat (partial update-field-tx db) old)))
-
-      (not (empty? new))
-      (concat (map (fn [{:keys [label type] :as field}]
-                     {:db/id          (:db/id service)
-                      :service/fields (service/create-field label type field)})
-                   new)))))
-
-
-#_(defn update-service-catalogs-tx
-  [service catalogs-params]
-  (let [catalogs (service/catalogs service)
-        keep     (filter #(% catalogs) catalogs-params)
-        added    (remove #(% catalogs) catalogs-params)
-        removed  (set/difference (set catalogs) (set (concat keep added)))]
-
-    (cond-> []
-      (not (empty? added))
-      (concat (map #(vector :db/add (td/id service) :service/catalogs %) added))
-
-      (not (empty? removed))
-      (concat (map #(vector :db/retract (td/id service) :service/catalogs %) removed)))))
-
-
-#_(defn update-service-properties-tx
-  [service properties-params]
-  (let [existing     (set (map td/id (service/properties service)))
-        [keep added] (map set ((juxt filter remove) (partial contains? existing) properties-params))
-        removed   (set/difference existing (set/union keep added))]
-    (cond-> []
-      (not (empty? added))
-      (concat (map #(vector :db/add (td/id service) :service/properties %) added))
-
-      (not (empty? removed))
-      (concat (map #(vector :db/retract (td/id service) :service/properties %) removed)))))
-
-
-
 
 
 ;; =============================================================================

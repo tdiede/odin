@@ -15,6 +15,7 @@
                     :price       0.0
                     :cost        0.0
                     :billed      :once
+                    :fees        []
                     :rental      false
                     :fields      []})
 
