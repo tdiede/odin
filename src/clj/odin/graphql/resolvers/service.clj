@@ -84,7 +84,6 @@
 (defn create!
   [{:keys [conn requester]} {params :params} _]
   (let [{:keys [code name description]} params]
-    (timbre/info "\n\n=============== yo we made a service with a fee in it mabye check it out========")
     @(d/transact conn [(service/create code name description (parse-mutate-params params))
                        (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))
@@ -201,8 +200,6 @@
 
 (defn update-service-fees-tx
   [service fees-params]
-  (timbre/info "\n\n-------------------- heyo look at this we're looking at fees ---------------------")
-  (clojure.pprint/pprint fees-params)
   (let [existing     (set (map td/id (service/fees service)))
         [keep added] (map set ((juxt filter remove) (partial contains? existing) fees-params))
         removed      (set/difference existing (set/union keep added))]
