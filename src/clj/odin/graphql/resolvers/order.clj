@@ -335,11 +335,27 @@
         order-amount (order/cost (order/by-subscription-id id))
         source       (or source (tcustomer/source customer :payment.type/order))
         pass-fee     (tsource/card? source)]
-    (try
-      (tpayment/create! customer order-amount :payment.type/order {:source source})
-      (catch Throwable t
-        (timbre/error t ::order {:id id :source source})
-        (resolve/resolve-as nil {:message (error-message t)})))))
+    (cond
+      (nil? source)
+      (resolve/resolve-as nil {:message  "Cannot charge order; no service source linked!"
+                               :err-data {:order-id id}})
+
+      (not (order/fulfilled? order))
+      (resolve/resolve-as nil {:message  "Order must be in fulfilled status!"
+                               :err-data {:order-id       id
+                                          :current-status (order/status order)}})
+
+      (nil? (order/computed-price order))
+      (resolve/resolve-as nil {:message  "Cannot charge order without a price!"
+                               :err-data {:order-id id}})
+
+      :otherwise
+      (try
+        (tpayment/create! customer order-amount :payment.type/order {:source source})
+        (catch Throwable t
+          (timbre/error t ::order {:order-id id :source source})
+          (resolve/resolve-as nil {:message (error-message t)
+                                   :err-data {:order-id id}}))))))
 
 
 (defn cancel!
