@@ -195,7 +195,7 @@
     (tpayment/query (d/db conn) (parse-gql-params params))
     (catch Throwable t
       (timbre/error t ::query params)
-      (resolve/deliver! result nil {:message  (.getMessage t)
+      (resolve/resolve-as {} nil {:message  (.getMessage t)
                                     :err-data (ex-data t)}))))
 
 
@@ -329,7 +329,7 @@
       (tpayment/charge! payment {:source source})
       (catch Throwable t
         (timbre/error t ::pay-rent params)
-        (resolve/deliver! result nil {:message  (.getMessage t)
+        (resolve/resolve-as  {} nil {:message  (.getMessage t)
                                       :err-data (ex-data t)})))))
 
 
@@ -393,7 +393,7 @@
    ;; queries
    :payment/list         payments
    ;; mutations
-   :payment/create!      create-payment!
+   ;; :payment/create!   create-payment!
    :payment/pay-rent!    pay-rent!
    :payment/pay-deposit! pay-deposit!
    })

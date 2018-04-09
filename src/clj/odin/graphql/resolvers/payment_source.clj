@@ -10,6 +10,7 @@
             [taoensso.timbre :as timbre]
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
+            [teller.spec :as tspec]
             [toolbelt.core :as tb]))
 
 ;; =============================================================================
@@ -117,11 +118,16 @@
 ;; =============================================================================
 
 
+;; =============================================================================
+;; Delete Source
+
+
 (defn delete!
   "Delete the payment source with `id`. If the source is a bank account, will
   also delete it on the connected account."
   [{:keys [teller] :as ctx} {id :id} _]
   #_(tsource/delete! (tsource/by-id teller id)))
+;; TODO make sure teller does all this for bank, card, connected, platform
 
 
 ;; =============================================================================
@@ -137,8 +143,7 @@
     (tcustomer/create! teller (account/email account) {:account account})))
 
 
-;; NOTE: The `requester` in `ctx` is the *account* entity that is making the
-;; request
+;; NOTE: The `requester` in `ctx` is the *account* entity making the request.
 (defn add-source!
   "Add a new source to the requester's Stripe customer, or create the customer
   and add the source if it doesn't already exist."
@@ -150,21 +155,25 @@
 ;; =============================================================================
 ;; Verify Bank Account
 
-(s/def ::deposit (s/and pos-int? (partial > 100)))
+
+(s/def ::deposit
+  (s/and pos-int? (partial > 100)))
+
+(defn- deposit? [x]
+  (s/valid? ::deposit x))
+
 (s/def ::deposits
-  (s/cat :deposit-1 ::deposit
-         :deposit-2 ::deposit))
+  (s/coll-of deposit? :kind vector? :count 2))
 
-
-(defn- deposits-valid? [deposits]
+(defn- deposits? [deposits]
   (s/valid? ::deposits deposits))
 
 
 (defn verify-bank!
   "Verify a bank account given the two microdeposit amounts that were made to
   the bank account."
-  [{:keys [conn stripe requester teller] :as ctx} {:keys [id deposits]} _]
-  (if-not (deposits-valid? deposits)
+  [{:keys [teller requester] :as ctx} {:keys [id deposits]} _]
+  (if-not (deposits? deposits)
     (resolve/resolve-as nil {:message  "Please provide valid deposit amounts."
                              :deposits deposits})
     (let [source (tsource/by-id teller id)]
@@ -172,7 +181,7 @@
         (tsource/verify-bank-account! source deposits)
         (catch Throwable t
           (timbre/error t ::verify-bank-account {:email (account/email requester)
-                                                 :id id})
+                                                 :id    id})
           (resolve/resolve-as nil {:message (error-message t)}))))))
 
 
@@ -180,13 +189,9 @@
 ;; Set Autopay
 
 
-(defn- is-bank-id? [source-id]
-  (string/starts-with? source-id "ba_"))
-
-
 (defn set-autopay!
   "Set a source as the autopay source. Source must be a bank account source."
-  [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
+  [{:keys [teller requester] :as ctx} {:keys [id]} _]
   )
 
 
@@ -197,7 +202,7 @@
 (defn unset-autopay!
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
-  [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
+  [{:keys [teller requester] :as ctx} {:keys [id]} _]
   )
 
 
