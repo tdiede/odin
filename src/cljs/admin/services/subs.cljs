@@ -39,7 +39,7 @@
  :services/fees
  :<- [:services/list]
  (fn [services _]
-   (filter #(clojure.string/starts-with? (:code %) "fee") services)))
+   (filter #(= :fee (:type %)) services)))
 
 
 (reg-sub
