@@ -171,6 +171,7 @@
                  :description {:type (non-null String)}
                  :catalogs    {:type (list String)}
                  :active      {:type Boolean}
+                 :type        {:type :service_type}
                  :fields      {:type (list :service_field_object)}
                  :properties  {:type (list :Long)}
                  :price       {:type Float}
@@ -187,6 +188,7 @@
                  :description {:type String}
                  :catalogs    {:type (list String)}
                  :active      {:type Boolean}
+                 :type        {:type :service_type}
                  :fields      {:type (list :service_field_object)}
                  :properties  {:type (list :Long)}
                  :price       {:type Float}

@@ -88,6 +88,7 @@
   [params]
   (tb/transform-when-key-exists params
     {:billed   #(keyword "service.billed" (name %))
+     :type     #(keyword "service.type" (name %))
      :catalogs (partial map #(if (string? %) (keyword %) %))
      :fields   (partial map parse-service-field)}))
 
@@ -235,6 +236,9 @@
 
       (and (not= (:service/code existing) (:code updated)) (some? (:code updated)))
       (conj [:db/add id :service/code (:code updated)])
+
+      (and (not= (:service/type existing) (:type updated)) (some? (:type updated)))
+      (conj [:db/add id :service/type (keyword "service.type" (name (:type updated)))])
 
       (and (not= (:service/price existing) (:price updated)) (some? (:price updated)))
       (conj [:db/add id :service/price (:price updated)])

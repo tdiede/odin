@@ -12,6 +12,7 @@
                     :properties  []
                     :catalogs    []
                     :active      false
+                    :type        :service
                     :price       0.0
                     :cost        0.0
                     :billed      :once

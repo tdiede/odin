@@ -279,7 +279,7 @@
     [:div
      [ant/card {:title "Service Details"}
       [:div.columns
-       [:div.column.is-6
+       [:div.column.is-5
         [ant/form-item
          (merge
           {:label "Service Name"
@@ -351,13 +351,26 @@
                    :key   id}
                   name])
                @(subscribe [:properties/list]))]]]
-       [:div.column.is-1
-        [:div.is-pulled-right
+       [:div.column.is-2
+        [:div
          [ant/form-item
           {:label "Active?"}
           [ant/switch
            {:checked   (:active @form)
-            :on-change #(dispatch [:service.form/update :active %])}]]]]]]
+            :on-change #(dispatch [:service.form/update :active %])}]]
+
+         [ant/form-item
+          {:label "Type"}
+          [ant/select
+           {:style {:width "100%"}
+            :default-value (:type @form)
+            :on-change #(dispatch [:service.form/update :type (keyword %)])}
+           [ant/select-option
+            {:value :service}
+            "service"]
+           [ant/select-option
+            {:value :fee}
+            "fee"]]]]]]]
 
      [ant/card {:title "Pricing/Billing"}
       [:div
