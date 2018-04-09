@@ -19,7 +19,6 @@
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
             [teller.property :as tproperty]
-            [teller.utils :as tutils]
             [toolbelt.async :refer [<!!? <!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
@@ -115,7 +114,7 @@
   (let [payment (d/entity (d/db conn) (td/id payment))] ; ensure we're working with an entity
     (letfn [(-rent-desc [payment]
               (->> [(payment/period-start payment) (payment/period-end payment)]
-                   (map date/short-date)
+                   #_(map date/short-date)
                    (apply format "rent for %s-%s")))
             (-order-desc [payment]
               (let [order        (order/by-payment (d/db conn) payment)
@@ -195,8 +194,8 @@
     (tpayment/query (d/db conn) (parse-gql-params params))
     (catch Throwable t
       (timbre/error t ::query params)
-      (resolve/deliver! result nil {:message  (.getMessage t)
-                                    :err-data (ex-data t)}))))
+      (resolve/resolve-as nil {:message  (.getMessage t)
+                               :err-data (ex-data t)}))))
 
 
 ;; =============================================================================
@@ -244,16 +243,46 @@
 ;; TODO: We'll need to be able to update the fee amount before we make the
 ;; charge if they're going to be paying with a card
 (defn pay-rent!
-  [{:keys [teller requester] :as ctx} {:keys [id source] :as params} _]
-  (let [payment  (tpayment/by-id teller id)
-        source   (tsource/by-id teller source)
-        customer (tcustomer/by-account teller requester)]
-    (try
-      (tpayment/charge! payment {:source source})
-      (catch Throwable t
-        (timbre/error t ::pay-rent params)
-        (resolve/deliver! result nil {:message  (.getMessage t)
-                                      :err-data (ex-data t)})))))
+  [{:keys [stripe conn requester teller] :as ctx} {:keys [id source] :as params} _]
+  (let [payment    (payment/by-id teller id)
+        #_#_#_#_#_#_customer   (customer/by-account (d/db conn) requester)
+        license    (member-license/active (d/db conn) requester)
+        connect-id (member-license/rent-connect-id license)]
+    #_(go
+      (try
+        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
+          (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
+            (resolve/deliver! result nil {:message error})
+            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
+              @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
+                                           (assoc :stripe/source-id (:id source))
+                                           (assoc :payment/status :payment.status/pending)
+                                           (assoc :payment/paid-on (java.util.Date.)))])
+              (resolve/deliver! result (d/entity (d/db conn) id)))))
+        (catch Throwable t
+          (timbre/error t ::pay-rent params)
+          (resolve/deliver! result nil {:message  (.getMessage t)
+                                        :err-data (ex-data t)}))))))
+
+
+(comment
+
+  (let [stripe    (odin.config/stripe-secret-key odin.config/config)
+        conn      odin.datomic/conn
+        requester (d/entity (d/db conn) [:account/email "member@test.com"])
+        payment   (d/entity (d/db conn) 285873023223183)
+        customer  (customer/by-account (d/db conn) requester)
+        scus      (<!!? (rcu/fetch stripe (customer/id customer)))
+        source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
+        owner     (payment/account payment)]
+    (ensure-payment-allowed (d/db conn) requester payment scus source))
+
+
+  )
+
+
+;; =============================================================================
+;; Pay Deposit
 
 
 ;; TODO: Refactor using above as reference
@@ -305,7 +334,7 @@
    ;; queries
    :payment/list         payments
    ;; mutations
-   :payment/create!      create-payment!
+   ;; :payment/create!      create-payment!
    :payment/pay-rent!    pay-rent!
    :payment/pay-deposit! pay-deposit!
    })
