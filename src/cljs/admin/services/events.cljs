@@ -262,7 +262,7 @@
                         :active      active
                         :properties  properties
                         :catalogs    (map clojure.core/name catalogs)
-                        :type        type
+                        :type        (if (some? type) type :service)
                         :price       price
                         :cost        cost
                         :billed      billed

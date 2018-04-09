@@ -710,7 +710,7 @@
       :type  :primary
       :icon  "plus"
       :on-click #(dispatch [:service.form/show])}
-     "Create a New Service"]]
+     "Create New Service/Fee"]]
    [:div.mb1
     [service-filter]]
    [services-list @services]])
