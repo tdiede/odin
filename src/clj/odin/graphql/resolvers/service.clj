@@ -1,4 +1,5 @@
 (ns odin.graphql.resolvers.service
+
   (:require [blueprints.models.account :as account]
             [blueprints.models.service :as service]
             [com.walmartlabs.lacinia.resolve :as resolve]
@@ -26,6 +27,15 @@
   (keyword "service.billed" (name billed)))
 
 
+(defn svc-type
+  [_ _ service]
+  (-> (service/type service) name keyword))
+
+(defn make-type-key
+  [svc-type]
+  (keyword "service.type" (name svc-type)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -34,7 +44,8 @@
 (defn- query-services
   [db params]
   (->> (tb/transform-when-key-exists params {:properties (partial map (partial d/entity db))
-                                             :billed     (partial map make-billed-key)})
+                                             :billed     (partial map make-billed-key)
+                                             :type       (partial make-type-key)})
        (service/query db)))
 
 
@@ -291,6 +302,7 @@
 (def resolvers
   {;; fields
    :service/billed  billed
+   :service/type    svc-type
    ;; mutations
    :service/create! create!
    :service/delete! delete!

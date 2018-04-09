@@ -65,4 +65,8 @@
 
   :service_field_type
   {:description "Different types of input fields presented to members when they order a premium service"
-   :values      [:text :dropdown :number :date :time]}}}
+   :values      [:text :dropdown :number :date :time]}
+
+  :service_type
+  {:description "Types of offerings that appear in the services view (services, fees, events tickets, etc.)"
+   :values      [:service :fee]}}}
