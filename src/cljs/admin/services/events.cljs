@@ -254,26 +254,27 @@
  [(path db/path)]
  (fn [db [_ service]]
    (if (some? service)
-     (let [{:keys [name description code active properties catalogs price cost billed rental fields fees]} service]
+     (let [{:keys [name description code active type properties catalogs price cost billed rental fields fees]} service]
        (dissoc db :form)
-       (assoc db :form {:name name
+       (assoc db :form {:name        name
                         :description description
-                        :code code
-                        :active active
-                        :properties properties
-                        :catalogs (map clojure.core/name catalogs)
-                        :price price
-                        :cost cost
-                        :billed billed
-                        :rental (if (nil? rental)
-                                  false
-                                  rental)
-                        :fields (if (nil? fields)
-                                  []
-                                  (vecify-fields fields))
-                        :fees    (if (nil? fees)
-                                   []
-                                   (mapv :id fees))}))
+                        :code        code
+                        :active      active
+                        :properties  properties
+                        :catalogs    (map clojure.core/name catalogs)
+                        :type        type
+                        :price       price
+                        :cost        cost
+                        :billed      billed
+                        :rental      (if (nil? rental)
+                                       false
+                                       rental)
+                        :fields      (if (nil? fields)
+                                       []
+                                       (vecify-fields fields))
+                        :fees        (if (nil? fees)
+                                       []
+                                       (mapv :id fees))}))
      (assoc db :form db/form-defaults))))
 
 

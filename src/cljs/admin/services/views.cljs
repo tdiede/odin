@@ -560,7 +560,7 @@
 
 
 (defn- service-entry [service]
-  (let [{:keys [id name description code active price cost billed fees
+  (let [{:keys [id name description code active price cost billed fees type
                 rental catalogs properties order-count fields]} @service
         is-loading                                              @(subscribe [:ui/loading? :service/fetch])]
     [:div
@@ -627,7 +627,10 @@
 
        [:div.column.is-2
         [:p.mb1 [:b "Active?"]]
-        [ant/switch {:checked active}]]]]
+        [ant/switch {:checked active}]
+
+        [:p.mt2 [:b "Type"]]
+        [:p type]]]]
 
      [ant/card
       {:title   "Pricing/Billing"
