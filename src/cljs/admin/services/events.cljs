@@ -81,7 +81,7 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :active :code :price :cost :billed :rental :catalogs
+                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs
                               [:fees [:id :name :price]]
                               [:fields [:id :index :type :label :required
                                         [:options [:index :value :label]]]]
