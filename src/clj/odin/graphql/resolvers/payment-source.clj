@@ -112,11 +112,6 @@
   (when-let [customer (tcustomer/by-account teller account)]
     (tcustomer/sources customer)))
 
-(comment
-
-
-
-  )
 
 ;; =============================================================================
 ;; Mutations
@@ -210,7 +205,6 @@
 (defn set-autopay!
   "Set a source as the autopay source. Source must be a bank account source."
   [{:keys [teller requester] :as ctx} {:keys [id]} _]
-  ;; TODO
   )
 
 
@@ -222,7 +216,6 @@
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
   [{:keys [teller requester] :as ctx} {:keys [id]} _]
-  ;; TODO
   )
 
 

@@ -191,12 +191,28 @@
    :resolve     :payment.sources/delete!}
 
 
+  :close_payment_source
+  {:type        :payment_source
+   :description "Close a payment source to be inactive."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe source id."}}
+   :resolve     :payment.sources/close!}
+
+
   :add_payment_source
   {:type        :payment_source
    :description "Add a new source to the requesting users's account."
    :args        {:token {:type        (non-null String)
                          :description "The token to create the source with."}}
    :resolve     :payment.sources/add-source!}
+
+
+  :set_default_source
+  {:type        :payment_source
+   :description "Set the source as the default payment source."
+   :args        {:id {:type        (non-null String)
+                      :description "The Stripe id of the source to use as the defaullt source."}}
+   :resolve     :payment.sources/set-default!}
 
 
   :verify_bank_source
@@ -223,14 +239,6 @@
    :args        {:id {:type        (non-null String)
                       :description "The Stripe id of the source used for autopay."}}
    :resolve     :payment.sources/unset-autopay!}
-
-
-  :set_default_source
-  {:type        :payment_source
-   :description "Set the source as the default payment source."
-   :args        {:id {:type        (non-null String)
-                      :description "The Stripe id of the source to use as the defaullt source."}}
-   :resolve     :payment.sources/set-default!}
 
 
   ;; properties ===================================================================
