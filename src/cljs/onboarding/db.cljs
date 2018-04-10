@@ -111,12 +111,9 @@
                  {:key      :storage
                   :requires #{:services/moving}
                   :label    "Storage Options"}
-                 {:key      :customize
-                  :requires #{:services/storage}
-                  :label    "Room Customization"}
                  {:key      :cleaning
                   :label    "Cleaning &amp; Laundry"
-                  :requires #{:services/customize}}
+                  :requires #{:services/storage}}
                  {:key      :upgrades
                   :label    "Room Upgrades"
                   :requires #{:services/cleaning}}]}
@@ -141,7 +138,6 @@
                               :admin/emergency
                               :services/moving
                               :services/storage
-                              :services/customize
                               :services/cleaning
                               :services/upgrades}}]}]))
 
@@ -346,9 +342,6 @@
   :services/storage)
 
 (defmethod next-prompt* :services/storage [_ _]
-  :services/customize)
-
-(defmethod next-prompt* :services/customize [_ _]
   :services/cleaning)
 
 (defmethod next-prompt* :services/cleaning [_ _]
@@ -398,8 +391,7 @@
 (defmethod previous-prompt :admin/emergency [_ _] :overview/start)
 (defmethod previous-prompt :services/moving [_ _] :admin/emergency)
 (defmethod previous-prompt :services/storage [_ _] :services/moving)
-(defmethod previous-prompt :services/customize [_ _] :services/storage)
-(defmethod previous-prompt :services/cleaning [_ _] :services/customize)
+(defmethod previous-prompt :services/cleaning [_ _] :services/storage)
 (defmethod previous-prompt :services/upgrades [_ _] :services/cleaning)
 (defmethod previous-prompt :deposit/method [_ _] :services/upgrades)
 (defmethod previous-prompt :deposit.method/bank [_ _] :deposit/method)
@@ -415,6 +407,5 @@
   (boolean (#{:admin/emergency
               :services/moving
               :services/storage
-              :services/customize
               :services/cleaning
               :services/upgrades} keypath)))

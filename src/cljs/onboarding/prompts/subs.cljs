@@ -32,9 +32,6 @@
    :services/storage
    "Do you have belongings that you don't use often but can't part with?"
 
-   :services/customize
-   "Would you like to customize your room to reflect your tastes?"
-
    :services/cleaning
    "No time for chores? Let us take care of the dirty work."
 

@@ -40,9 +40,6 @@
 (defmethod init-prompt :services/storage [db keypath]
   (enforce-seen db keypath))
 
-(defmethod init-prompt :services/customize [db keypath]
-  (enforce-seen db keypath))
-
 (defmethod init-prompt :services/cleaning [db keypath]
   (enforce-seen db keypath))
 

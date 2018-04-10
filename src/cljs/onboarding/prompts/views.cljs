@@ -4,7 +4,6 @@
             [onboarding.prompts.admin.emergency]
             [onboarding.prompts.services.moving]
             [onboarding.prompts.services.storage]
-            [onboarding.prompts.services.customize]
             [onboarding.prompts.services.cleaning]
             [onboarding.prompts.services.upgrades]
             [onboarding.prompts.deposit.method]
