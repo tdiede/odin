@@ -31,6 +31,7 @@
   [_ _ service]
   (-> (service/type service) name keyword))
 
+
 (defn make-type-key
   [svc-type]
   (keyword "service.type" (name svc-type)))
@@ -87,8 +88,8 @@
 (defn- parse-mutate-params
   [params]
   (tb/transform-when-key-exists params
-    {:billed   #(keyword "service.billed" (name %))
-     :type     #(keyword "service.type" (name %))
+    {:billed   make-billed-key
+     :type     make-type-key
      :catalogs (partial map #(if (string? %) (keyword %) %))
      :fields   (partial map parse-service-field)}))
 
