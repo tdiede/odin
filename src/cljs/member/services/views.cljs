@@ -310,17 +310,18 @@
   (let [state (r/atom {:current 1})]
     (fn [items]
       (let [{:keys [current]} @state
-            items' (->> (drop (* (dec current) 10) items)
-                        (take (* current 10)))]
+            items'            (->> (drop (* (dec current) 10) items)
+                                   (take (* current 10)))]
         [:div
          (map
           #(with-meta [list-item-fn % requester] {:key (:id %)})
           items')
-         [ant/pagination
-          {:style {:margin-top "20px"}
-           :current current
-           :total (count items)
-           :on-change #(swap! state assoc :current %)}]]))))
+         (when (> (count items) 10)
+           [ant/pagination
+            {:style     {:margin-top "20px"}
+             :current   current
+             :total     (count items)
+             :on-change #(swap! state assoc :current %)}])]))))
 
 
 ;; ==============================================================================
@@ -342,8 +343,21 @@
          [fields-data (sort-by :index fields)])])))
 
 
-(defn active-orders [orders requester]
+(defn active-orders-list [orders requester]
   [paginated-list (sort-by :created > orders) requester active-order-item])
+
+
+(defn active-orders [orders requester]
+  [:div
+   [active-orders-header]
+   [active-orders-list orders requester]])
+
+
+(defn empty-orders []
+  [:div.empty-cart
+   [:p.fs3.bold "You don't have any active orders at the moment"]
+   [:p.fs3 "Go to "
+    [:a {:href "book"} "Book services"] " to request services"]])
 
 
 ;; ==============================================================================
@@ -390,8 +404,21 @@
          [subscription-details (sort-by :index fields) (sort-by :created > payments)])])))
 
 
-(defn active-subscriptions [subscriptions requester]
+(defn active-subscriptions-list [subscriptions requester]
   [paginated-list (sort-by :created > subscriptions) requester active-subscription-item])
+
+
+(defn active-subscriptions [subscriptions requester]
+  [:div
+   [manage-subscriptions-header]
+   [active-subscriptions-list subscriptions requester]])
+
+
+(defn empty-subscriptions []
+  [:div.empty-cart
+   [:p.fs3.bold "You don't have any active subscriptions"]
+   [:p.fs3 "Go to "
+    [:a {:href "book"} "Book services"] " to request services"]])
 
 
 ;; ==============================================================================
@@ -431,6 +458,19 @@
   [paginated-list (sort-by :updated > history) requester order-history-item])
 
 
+(defn order-history [history requester]
+  [:div
+   [order-history-header]
+   [order-history-list history requester]])
+
+
+(defn empty-history []
+  [:div.empty-cart
+   [:p.fs3.bold "You don't have an order history yet"]
+   [:p.fs3 "Go to "
+    [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
+
+
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
@@ -460,24 +500,25 @@
 (defmethod content :services/active-orders [{:keys [requester]}]
   (let [orders (subscribe [:orders/active])]
     [:div
-     [active-orders-header]
-     [active-orders (sort-by :created > @orders) requester]]))
+     (if-not (empty? @orders)
+       [active-orders (sort-by :created > @orders) requester]
+       [empty-orders])]))
 
 
 (defmethod content :services/subscriptions [{:keys [requester]}]
   (let [subscriptions (subscribe [:orders/subscriptions])]
     [:div
-     [manage-subscriptions-header]
-     [active-subscriptions @subscriptions requester]]))
+     (if-not (empty? @subscriptions)
+       [active-subscriptions @subscriptions requester]
+       [empty-subscriptions])]))
 
 
 (defmethod content :services/history [{:keys [requester]}]
   (let [history (subscribe [:orders/history])]
     [:div
-     (.log js/console @history)
-     [order-history-header]
-     [order-history-list @history]
-     #_[:h3 "Look at all the things youve ordered, yo"]]))
+     (if-not (empty? @history)
+       [order-history @history requester]
+       [empty-history])]))
 
 
 
