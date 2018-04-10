@@ -1,6 +1,7 @@
 (ns member.services.events
   (:require [akiroz.re-frame.storage :refer [reg-co-fx!]]
             [antizer.reagent :as ant]
+            [clojure.string :as string]
             [member.routes :as routes]
             [member.services.db :as db]
             [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
@@ -119,11 +120,15 @@
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query      [[:services {:params {:properties [property-id]
                                                   :active     true}}
-                              [:id :name :description :price :catalogs :active
+                              [:id :name :description :price :catalogs :active :billed
                                [:fields [:id :index :label :type :required
                                          [:options [:index :label :value]]]]]]]
                 :on-success [:services/catalogs k]
                 :on-failure [:graphql/failure k]}})))
+
+
+(defn parse-special-chars [str]
+  (string/replace str "&amp;" "&"))
 
 
 (reg-event-fx
@@ -131,8 +136,10 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [services (->> (get-in response [:data :services])
-                       (sort-by #(clojure.string/lower-case (:name %))))
+                       (map #(assoc % :name (parse-special-chars (:name %)) :description (parse-special-chars (:description %))))
+                       (sort-by #(string/lower-case (:name %))))
          clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+     (.log js/console "services" services)
      {:db (assoc db :catalogs clist :services services)})))
 
 

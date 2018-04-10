@@ -61,7 +61,7 @@
    [:div.service
     [:div.columns
      [:div.column.is-3
-      [:h4.subtitle.is-5 {:dangerouslySetInnerHTML {:__html name}}]]
+      [:h4.subtitle.is-5 name]]
      [:div.column.is-6
       [:p.fs3 description]]
      [:div.column.is-1
