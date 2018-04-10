@@ -43,6 +43,7 @@
     [[:services/set-default-route route]]
     [[:services/fetch (db/parse-query-params page params)]
      [:services/fetch-catalogs]
+     [:services/fetch-orders (:id requester)]
      [::load-cart]]))
 
 
@@ -52,9 +53,16 @@
    [::load-cart]])
 
 
-(defmethod routes/dispatches :services/manage
-  [_]
-  [[::load-cart]])
+(defmethod routes/dispatches :services/subscriptions
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
+
+
+(defmethod routes/dispatches :services/order-history
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
 
 
 (defmethod routes/dispatches :services/cart
@@ -77,6 +85,10 @@
    {:db (assoc db :params query-params)}))
 
 
+(defn parse-special-chars [str]
+  (string/replace str "&amp;" "&"))
+
+
 (reg-event-fx
  :services/fetch-orders
  (fn [{db :db} [k account]]
@@ -92,7 +104,9 @@
  ::fetch-orders
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   {:db (assoc db :orders (get-in response [:data :orders]))}))
+   (let [orders (->> (get-in response [:data :orders])
+                     (map #(assoc % :name (parse-special-chars (:name %)))))]
+     {:db (assoc db :orders orders)})))
 
 
 (reg-event-fx
@@ -127,10 +141,6 @@
                 :on-failure [:graphql/failure k]}})))
 
 
-(defn parse-special-chars [str]
-  (string/replace str "&amp;" "&"))
-
-
 (reg-event-fx
  :services/catalogs
  [(path db/path)]
@@ -139,7 +149,6 @@
                        (map #(assoc % :name (parse-special-chars (:name %)) :description (parse-special-chars (:description %))))
                        (sort-by #(string/lower-case (:name %))))
          clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
-     (.log js/console "services" services)
      {:db (assoc db :catalogs clist :services services)})))
 
 
@@ -335,7 +344,9 @@
  ::order-cancel-success
  [(path db/path)]
  (fn [{db :db} [_ k account-id response]]
-   {:dispatch-n   [[:ui/loading k false]
-                   [:services/fetch-orders account-id]]
-    :db           (dissoc db :canceling)
-    :notification [:success (str (get-in response [:data :cancel_order :name]) " has been canceled")]}))
+   (let [order-name (->> (get-in response [:data :cancel_order :name])
+                         (parse-special-chars))]
+    {:dispatch-n   [[:ui/loading k false]
+                    [:services/fetch-orders account-id]]
+     :db           (dissoc db :canceling)
+     :notification [:success (str order-name " has been canceled")]})))
