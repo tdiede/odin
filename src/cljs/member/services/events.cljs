@@ -148,7 +148,11 @@
    (let [services (->> (get-in response [:data :services])
                        (map #(assoc % :name (parse-special-chars (:name %)) :description (parse-special-chars (:description %))))
                        (sort-by #(string/lower-case (:name %))))
-         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+         clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
+                    (distinct)
+                    (map #(when-not (= :onboarding %) %))
+                    (remove nil?)
+                    (sort))]
      {:db (assoc db :catalogs clist :services services)})))
 
 
@@ -346,7 +350,7 @@
  (fn [{db :db} [_ k account-id response]]
    (let [order-name (->> (get-in response [:data :cancel_order :name])
                          (parse-special-chars))]
-    {:dispatch-n   [[:ui/loading k false]
-                    [:services/fetch-orders account-id]]
-     :db           (dissoc db :canceling)
-     :notification [:success (str order-name " has been canceled")]})))
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/fetch-orders account-id]]
+      :db           (dissoc db :canceling)
+      :notification [:success (str order-name " has been canceled")]})))
