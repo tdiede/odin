@@ -6,6 +6,10 @@
             [teller.core :as teller]))
 
 
+;; context ==============================
+
+
+;; TODO pull out conn and stripe
 (s/def ::conn td/conn?)
 (s/def ::requester td/entityd?)
 (s/def ::stripe ribbon/conn?)
@@ -13,6 +17,7 @@
 (s/def ::teller teller/connection?)
 
 
+;; TODO pull out conn and stripe
 (s/def ::ctx
   (s/keys :req-un [::stripe ::requester ::conn ::config ::teller]))
 
@@ -21,6 +26,7 @@
   (s/valid? ::ctx x))
 
 
+;; TODO pull out conn and stripe
 (defn context
   "Construct a new context map."
   [conn requester stripe config teller]

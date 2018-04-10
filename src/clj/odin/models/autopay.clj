@@ -5,19 +5,17 @@
             [blueprints.models.property :as property]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
+            [clojure.spec.alpha :as s]
             [datomic.api :as d]
+            [odin.models.payment-source :as payment-source]
             [ribbon.connect :as rcn]
+            [ribbon.core :as ribbon]
             [ribbon.customer :as rcu]
             [ribbon.plan :as rp]
             [ribbon.subscription :as rs]
             [toolbelt.async :as ta :refer [<!? go-try]]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]
-            [clojure.spec.alpha :as s]
-            [ribbon.core :as ribbon]
-            [odin.models.payment-source :as payment-source]
-            [taoensso.timbre :as timbre]))
-
+            [toolbelt.datomic :as td]))
 
 ;; other ========================================================================
 

@@ -6,12 +6,12 @@
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [odin.models.payment-source :as payment-source]
             [taoensso.timbre :as timbre]
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
             [teller.spec :as tspec]
             [toolbelt.core :as tb]))
+
 
 ;; =============================================================================
 ;; Helpers
@@ -51,7 +51,7 @@
 (defn default?
   "Is this source the default source for premium service orders?"
   [_ _ source]
-  (some? (:payment.type/order (tsource/payment-types source))))
+  (tsource/default? source))
 
 
 (defn expiration
@@ -112,6 +112,11 @@
   (when-let [customer (tcustomer/by-account teller account)]
     (tcustomer/sources customer)))
 
+(comment
+
+
+
+  )
 
 ;; =============================================================================
 ;; Mutations
@@ -123,11 +128,24 @@
 
 
 (defn delete!
-  "Delete the payment source with `id`. If the source is a bank account, will
+  "Delete the payment source with `id`.
+
+  If the source is a bank account, will
   also delete it on the connected account."
   [{:keys [teller] :as ctx} {id :id} _]
   #_(tsource/delete! (tsource/by-id teller id)))
 ;; TODO make sure teller does all this for bank, card, connected, platform
+
+
+;; =============================================================================
+;; Close Source
+
+
+(defn close!
+  "Close the payment source with `id`."
+  [{:keys [teller] :as ctx} {id :id} _]
+  #_(tsource/close! (tsource/by-id teller id)))
+;; TODO make sure this is correct implement this
 
 
 ;; =============================================================================
@@ -192,6 +210,7 @@
 (defn set-autopay!
   "Set a source as the autopay source. Source must be a bank account source."
   [{:keys [teller requester] :as ctx} {:keys [id]} _]
+  ;; TODO
   )
 
 
@@ -203,6 +222,7 @@
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
   [{:keys [teller requester] :as ctx} {:keys [id]} _]
+  ;; TODO
   )
 
 
@@ -239,12 +259,13 @@
    :payment-source/type            type
    :payment-source/name            name
    :payment-source/payments        payments
-   ;; queri-s
+   ;; queries
    :payment.sources/list           sources
    ;; mutations
    :payment.sources/delete!        delete!
+   :payment.sources/close!         close!
    :payment.sources/add-source!    add-source!
+   :payment.sources/set-default!   set-default!
    :payment.sources/verify-bank!   verify-bank!
    :payment.sources/set-autopay!   set-autopay!
-   :payment.sources/unset-autopay! unset-autopay!
-   :payment.sources/set-default!   set-default!})
+   :payment.sources/unset-autopay! unset-autopay!})
