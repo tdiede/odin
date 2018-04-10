@@ -235,6 +235,13 @@
     "Only bank accounts can be used to pay rent."))
 
 
+(defn create-payment!
+  "TODO: FIXME"
+  [_ _ _]
+  )
+
+
+;; make payments ===============================================================
 
 
 ;; TODO: How to deal with passing the fee?
@@ -334,7 +341,7 @@
    ;; queries
    :payment/list         payments
    ;; mutations
-   ;; :payment/create!      create-payment!
+   :payment/create!      create-payment!
    :payment/pay-rent!    pay-rent!
    :payment/pay-deposit! pay-deposit!
    })

@@ -105,9 +105,17 @@
 
 
 (defn seed-teller [teller]
-  (let [fees (tproperty/fees (tproperty/fee 5))]
-    (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com" "acct_1C5LJXEd7myLyyjs" "acct_1C3TmPHnEDeEkGIS" {:fees fees :community [:property/code "52gilbert"]})
-    (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com" "acct_1C3S9tD1iZkoyuLX" "acct_1C3TmMEBSLaHdiO2" {:fees fees :community [:property/code "2072mission"]})))
+  (let [fees (tproperty/construct-fees (tproperty/fee 5))]
+    (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
+                       {:fees      fees
+                        :deposit   "acct_1C5LJXEd7myLyyjs"
+                        :ops       "acct_1C3TmPHnEDeEkGIS"
+                        :community [:property/code "52gilbert"]})
+    (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com"
+                       {:fees      fees
+                        :deposit   "acct_1C3S9tD1iZkoyuLX"
+                        :ops       "acct_1C3TmMEBSLaHdiO2"
+                        :community [:property/code "2072mission"]})))
 
 
 (defn seed [conn]

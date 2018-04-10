@@ -23,7 +23,7 @@
   (tsource/id source))
 
 
-#_(defn account
+(defn account
   "The account that owns this payment source."
   [_ _ source]
   (tcustomer/account (tsource/customer source)))
@@ -212,7 +212,7 @@
 (def resolvers
   {;; fields
    :payment-source/id              id
-   ;; :payment-source/account         account
+   :payment-source/account         account
    :payment-source/last4           last4
    :payment-source/default?        default?
    :payment-source/expiration      expiration
