@@ -229,14 +229,16 @@
       :notification [:success (str name " has been added to your cart")]})))
 
 
-;; is this really needed? it seems like it still goes into
-;; graphql as a string...
-(defn construct-order-fields [fields]
+(defn construct-order-fields
+  "When field type is of `text` we replace all instances of `\n` for a space"
+  [fields]
   (map
-   (fn [{:keys [id value]}]
+   (fn [{:keys [id value type]}]
      (tb/assoc-when
       {:service_field id}
-      :value value))
+      :value (if (= type :text)
+               (string/replace value "\n" " ")
+               value)))
    fields))
 
 
