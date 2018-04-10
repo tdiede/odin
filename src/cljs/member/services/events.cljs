@@ -141,17 +141,24 @@
                 :on-failure [:graphql/failure k]}})))
 
 
+(defn onboarding? [service]
+  (let [svc-cat (set (:catalogs service))]
+    (if (= #{:onboarding} svc-cat)
+      true
+      false)))
+
+
 (reg-event-fx
  :services/catalogs
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [services (->> (get-in response [:data :services])
+                       (remove onboarding?)
                        (map #(assoc % :name (parse-special-chars (:name %)) :description (parse-special-chars (:description %))))
                        (sort-by #(string/lower-case (:name %))))
          clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
                     (distinct)
-                    (map #(when-not (= :onboarding %) %))
-                    (remove nil?)
+                    (remove #(= :onboarding %))
                     (sort))]
      {:db (assoc db :catalogs clist :services services)})))
 
