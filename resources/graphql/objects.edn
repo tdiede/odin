@@ -453,7 +453,9 @@
             :fields      {:type    (list :service_field)
                           :resolve (:get :service/fields)}
             :fees        {:type    (list :service)
-                          :resolve (:get :service/fees)}}}
+                          :resolve (:get :service/fees)}
+            :type        {:type    :service_type
+                          :resolve :service/type}}}
 
 
   :service_field

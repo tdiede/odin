@@ -1,4 +1,5 @@
 (ns odin.graphql.resolvers.service
+
   (:require [blueprints.models.account :as account]
             [blueprints.models.service :as service]
             [com.walmartlabs.lacinia.resolve :as resolve]
@@ -26,6 +27,16 @@
   (keyword "service.billed" (name billed)))
 
 
+(defn svc-type
+  [_ _ service]
+  (-> (service/type service) name keyword))
+
+
+(defn make-type-key
+  [svc-type]
+  (keyword "service.type" (name svc-type)))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -34,7 +45,8 @@
 (defn- query-services
   [db params]
   (->> (tb/transform-when-key-exists params {:properties (partial map (partial d/entity db))
-                                             :billed     (partial map make-billed-key)})
+                                             :billed     (partial map make-billed-key)
+                                             :type       (partial make-type-key)})
        (service/query db)))
 
 
@@ -76,7 +88,8 @@
 (defn- parse-mutate-params
   [params]
   (tb/transform-when-key-exists params
-    {:billed   #(keyword "service.billed" (name %))
+    {:billed   make-billed-key
+     :type     make-type-key
      :catalogs (partial map #(if (string? %) (keyword %) %))
      :fields   (partial map parse-service-field)}))
 
@@ -225,6 +238,9 @@
       (and (not= (:service/code existing) (:code updated)) (some? (:code updated)))
       (conj [:db/add id :service/code (:code updated)])
 
+      (and (not= (:service/type existing) (:type updated)) (some? (:type updated)))
+      (conj [:db/add id :service/type (keyword "service.type" (name (:type updated)))])
+
       (and (not= (:service/price existing) (:price updated)) (some? (:price updated)))
       (conj [:db/add id :service/price (:price updated)])
 
@@ -291,6 +307,7 @@
 (def resolvers
   {;; fields
    :service/billed  billed
+   :service/type    svc-type
    ;; mutations
    :service/create! create!
    :service/delete! delete!
