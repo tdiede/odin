@@ -34,9 +34,10 @@
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
+            [odin.teller :refer [teller]]
+            [teller.property :as tproperty]
             [teller.customer :as tcustomer]
-            [teller.source :as tsource]
-            [teller.property :as tproperty]))
+            [teller.source :as tsource]))
 
 
 ;; ==============================================================================
@@ -552,20 +553,39 @@
 
 (defmethod save! :deposit.method/verify
   [conn account _ {:keys [amount-1 amount-2]}]
-  (let [stripe   (config/stripe-secret-key config)
-        customer (customer/by-account (d/db conn) account)
-        cus      (<!!? (rcu/fetch stripe (customer/id customer)))]
-    (if (rcu/verification-failed? cus)
-      (let [sid (:id (tb/find-by rcu/failed-bank-account? (rcu/bank-accounts cus)))]
-        @(d/transact conn [(events/delete-source (customer/id customer) sid)])
-        (throw (ex-info "Verification has failed!" {:message verification-failed-error})))
-      (do
-        (<!!? (rcu/verify-bank-account! stripe
-                                        (customer/id customer)
-                                        (:id (rcu/unverified-bank-account cus))
-                                        amount-1 amount-2))
-        @(d/transact conn [(assoc {:db/id (td/id customer)}
-                                  :stripe-customer/bank-account-token (:id (rcu/unverified-bank-account cus)))])))))
+  (let [customer (tcustomer/by-account account)
+        source   (first (tcustomer/sources customer))]
+    (try
+      (tsource/verify-bank-account! source [amount-1 amount-2])
+      (catch clojure.lang.ExceptionInfo t
+        (let [data (ex-data t)
+              msg  (.getMessage t)
+              err  (case (-> data :cause)
+                     :permanently-failed verification-failed-error
+                     msg)]
+          (timbre/error t ::verification-error (merge data {:source  (td/id source)
+                                                            :account (account/email account)}))
+          (throw (ex-info msg {:message err}))))
+      (catch Throwable t
+        (timbre/error t ::verification-error)
+        (throw (ex-info (.getMessage t) {:message "An unknown error has occurred."}))))))
+
+;; (defmethod save! :deposit.method/verify
+;;   [conn account _ {:keys [amount-1 amount-2]}]
+;;   (let [stripe   (config/stripe-secret-key config)
+;;         customer (customer/by-account (d/db conn) account)
+;;         cus      (<!!? (rcu/fetch stripe (customer/id customer)))]
+;;     (if (rcu/verification-failed? cus)
+;;       (let [sid (:id (tb/find-by rcu/failed-bank-account? (rcu/bank-accounts cus)))]
+;;         @(d/transact conn [(events/delete-source (customer/id customer) sid)])
+;;         (throw (ex-info "Verification has failed!" {:message verification-failed-error})))
+;;       (do
+;;         (<!!? (rcu/verify-bank-account! stripe
+;;                                         (customer/id customer)
+;;                                         (:id (rcu/unverified-bank-account cus))
+;;                                         amount-1 amount-2))
+;;         @(d/transact conn [(assoc {:db/id (td/id customer)}
+;;                                   :stripe-customer/bank-account-token (:id (rcu/unverified-bank-account cus)))])))))
 
 
 (defn- charge-amount

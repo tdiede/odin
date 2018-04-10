@@ -45,6 +45,9 @@
         :ret ::ctx)
 
 
+;; errors ===============================
+
+
 (defn error-message [t]
   (or (:message (ex-data t)) (.getMessage t) "Unknown error!"))
 

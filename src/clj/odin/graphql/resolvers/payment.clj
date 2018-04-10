@@ -19,7 +19,6 @@
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
             [teller.property :as tproperty]
-            [teller.utils :as tutils]
             [toolbelt.async :refer [<!!? <!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
@@ -115,7 +114,7 @@
   (let [payment (d/entity (d/db conn) (td/id payment))] ; ensure we're working with an entity
     (letfn [(-rent-desc [payment]
               (->> [(payment/period-start payment) (payment/period-end payment)]
-                   (map date/short-date)
+                   #_(map date/short-date)
                    (apply format "rent for %s-%s")))
             (-order-desc [payment]
               (let [order        (order/by-payment (d/db conn) payment)
@@ -195,8 +194,8 @@
     (tpayment/query (d/db conn) (parse-gql-params params))
     (catch Throwable t
       (timbre/error t ::query params)
-      (resolve/resolve-as {} nil {:message  (.getMessage t)
-                                    :err-data (ex-data t)}))))
+      (resolve/resolve-as nil {:message  (.getMessage t)
+                               :err-data (ex-data t)}))))
 
 
 ;; =============================================================================
@@ -304,9 +303,6 @@
    :payment/list         payments
    ;; mutations
    ;; :payment/create!   create-payment!
-   :payment/pay-rent!    pay-rent!
-   :payment/pay-deposit! pay-deposit!
-   })
    :payment/pay-rent!    pay-rent!
    :payment/pay-deposit! pay-deposit!
    })
