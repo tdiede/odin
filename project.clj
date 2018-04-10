@@ -26,7 +26,7 @@
                  [ring-middleware-format "0.7.2"
                   :exclusions [ring/ring-core]]
                  ;; Other
-                 [kami "0.1.0"]
+                 [kami "0.1.0" :exclusions [starcity/blueprints]]
                  ;; GraphQL
                  [com.walmartlabs/lacinia "0.25.0"]
                  [vincit/venia "0.2.3"]
@@ -59,7 +59,6 @@
                  ;; DB
                  [starcity/blueprints "2.4.1"
                   :exclusions [com.datomic/datomic-free
-                               com.andrewmcveigh/cljs-time
                                com.google.guava/guava]]
                  ;; dep resolution
                  [com.google.guava/guava "21.0"]
