@@ -59,7 +59,7 @@
                  [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
                  [starcity/teller "0.1.0-SNAPSHOT"]
-                 [starcity/blueprints "2.3.0"
+                 [starcity/blueprints "3.0.0-SNAPSHOT"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava
@@ -76,11 +76,10 @@
                   :exclusions [com.fasterxml.jackson.core/jackson-core]]
                  [com.taoensso/timbre "4.10.0"]
                  [starcity/ribbon "0.11.0"]
-                 [starcity/teller "0.1.0-SNAPSHOT"]
                  [starcity/toolbelt-async "0.4.0"]
                  [starcity/toolbelt-core "0.4.0"]
                  [starcity/toolbelt-date "0.3.0"]
-                 [starcity/toolbelt-datomic "0.5.1-SNAPSHOT"]
+                 [starcity/toolbelt-datomic "0.5.0"]
                  [starcity/toolbelt-re-frame "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [enlive "1.1.6"]]

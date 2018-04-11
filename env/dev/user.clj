@@ -55,7 +55,6 @@
   :start (when (in-memory-db? (config/datomic-uri config))
            (timbre/debug "seeding dev database...")
            (seed/seed conn)
-           ;; TODO why can it not see implementation of method create on tproperty
            (seed/seed-teller teller)))
 
 

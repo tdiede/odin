@@ -1,38 +1,23 @@
 (ns odin.graphql.resolvers.payment
   (:require [blueprints.models.account :as account]
-            [blueprints.models.customer :as customer]
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
             [blueprints.models.payment :as payment]
-            [blueprints.models.property :as property]
             [blueprints.models.security-deposit :as deposit]
             [blueprints.models.service :as service]
-            [clojure.core.async :as async :refer [>! chan go]]
-            [clojure.spec.alpha :as s]
+            [clj-time.coerce :as c]
+            [clj-time.core :as t]
+            [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [ribbon.charge :as rch]
-            [ribbon.core :as ribbon]
-            [ribbon.customer :as rcu]
             [taoensso.timbre :as timbre]
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
-            [teller.property :as tproperty]
-            [toolbelt.async :refer [<!!? <!?]]
+            [teller.source :as tsource]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]
-            [clj-time.coerce :as c]
-            [clj-time.core :as t]
-            [odin.models.autopay :as autopay]
-            [teller.core :as teller]
-            [teller.source :as tsource]))
-
-;;; NOTE: Think about error handling. At present, errors will propogate at the
-;;; field level, not the top level. This means that if a single request from
-;;; Stripe fails, we'll get back partial results. This seems desirable.
-
+            [toolbelt.datomic :as td]))
 
 ;; =============================================================================
 ;; Helpers
@@ -69,30 +54,26 @@
 ;; =============================================================================
 
 
-;; TODO: This is lame
 (defn autopay?
   "Is this an autopay payment?"
   [_ _ payment]
-  )
-
-
-(defn external-id
-  "Retrieve the external id for this payment, if any."
-  [_ _ payment]
-  )
+  (and (some? (tpayment/subscription payment))
+       (= :payment.type/rent (tpayment/type payment))))
 
 
 (defn late-fee
   "Any late fees associated with this payment."
-  [{conn :conn} _ payment]
+  [_ _ payment]
   )
 
 
-;; TODO: rename
-(defn payment-for
+(defn payment-type
   "What is this payment for?"
-  [{conn :conn} _ payment]
-  )
+  [_ _ payment]
+  (-> (tpayment/type payment)
+      name
+      (string/replace "-" "_")
+      keyword))
 
 
 (defn- deposit-desc
@@ -101,7 +82,10 @@
   (let [deposit   (deposit/by-account account)
         first-py? (or (= (count (deposit/payments deposit)) 1)
                       (= (td/id payment)
-                         (->> (deposit/payments deposit) (sort-by :payment/amount <) first td/id)))]
+                         (->> (deposit/payments deposit)
+                              (map (juxt td/id tpayment/amount))
+                              (sort-by second <)
+                              ffirst)))]
     (cond
       (= :deposit.type/full (deposit/type deposit)) "entire security deposit payment"
       first-py?                                     "first security deposit installment"
@@ -111,6 +95,7 @@
 (defn description
   "A description of this payment. Varies based on payment type."
   [{conn :conn} _ payment]
+<<<<<<< HEAD
   (let [payment (d/entity (d/db conn) (td/id payment))] ; ensure we're working with an entity
     (letfn [(-rent-desc [payment]
               (->> [(payment/period-start payment) (payment/period-end payment)]
@@ -127,21 +112,35 @@
         :payment.for/rent    (-rent-desc payment)
         :payment.for/order   (-order-desc payment)
         nil))))
+=======
+  (letfn [(-rent-desc [payment]
+            (->> [(tpayment/period-start payment) (tpayment/period-end payment)]
+                 (map date/short)
+                 (apply format "rent for %s-%s")))
+          (-order-desc [payment]
+            (let [order        (order/by-payment (d/db conn) payment)
+                  service-desc (service/name (order/service order))]
+              (or (when-let [d (order/summary order)]
+                    (format "%s (%s)" d service-desc))
+                  service-desc)))]
+    (case (tpayment/type payment)
+      :payment.type/deposit (deposit-desc (tcustomer/account (tpayment/customer payment)) payment)
+      :payment.type/rent    (-rent-desc payment)
+      :payment.type/order   (-order-desc payment)
+      nil)))
+>>>>>>> add teller payment resolvers wip
 
 
 (defn method
   "The method with which this payment was made."
   [_ _ payment]
-  #_(try
-    (let [charge (get-charge payment)]
+  (when-not (#{:payment.status/due} (tpayment/status payment))
+    (let [source (tpayment/source payment)]
       (cond
-        (:payment/check payment) :check
-        (some? charge)           (charge-method charge)
-        (payment/paid? payment)  :other
-        :otherwise               nil))
-    (catch Throwable t
-      (resolve/resolve-as :unknown {:message  (.getMessage t)
-                                    :err-data (ex-data t)}))))
+        (tsource/bank-account? source) :ach
+        (tsource/card? source)         :card
+        (tpayment/check payment)       :check
+        :else                          :other))))
 
 
 (defn status
@@ -159,7 +158,7 @@
 (defn order
   "The order associated with this payment, if any."
   [_ _ payment]
-  #_(order/by-payment (d/db conn) payment))
+  )
 
 
 (defn property
@@ -167,6 +166,32 @@
   [_ _ payment]
   )
 
+(comment
+
+  (do
+    (require '[com.walmartlabs.lacinia :refer [execute]])
+    (require '[odin.datomic :refer [conn]])
+    (require '[odin.teller :refer [teller]])
+    (require '[datomic.api :as d])
+    (require '[venia.core :as venia]))
+
+
+  (let [customer (tcustomer/by-email teller "member@test.com")]
+    (tpayment/query teller {:customers [customer]}))
+
+
+  (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
+    (execute odin.graphql/schema
+             (venia/graphql-query
+              {:venia/queries
+               [[:payments {:params {:account account-id}}
+                 [:autopay :type]]]})
+             nil
+             {:conn      conn
+              :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
+              :teller    teller}))
+
+  )
 
 ;; =============================================================================
 ;; Queries
@@ -174,13 +199,15 @@
 
 
 (defn- parse-gql-params
-  [{:keys [statuses types] :as params}]
+  [{:keys [teller]} {:keys [statuses types account] :as params}]
   (tb/assoc-when
    params
    :statuses (when-some [xs statuses]
                (map #(keyword "payment.status" (name %)) xs))
    :types (when-some [xs types]
-            (map #(keyword "payment.type" (name %)) xs))))
+            (map #(keyword "payment.type" (name %)) xs))
+   :customers (when-some [a account]
+                [(tcustomer/by-account teller a)])))
 
 
 ;; =============================================================================
@@ -189,13 +216,16 @@
 
 (defn payments
   "Query payments based on `params`."
-  [{:keys [conn] :as ctx} {params :params} _]
+  [{:keys [teller] :as ctx} {params :params} _]
   (try
-    (tpayment/query (d/db conn) (parse-gql-params params))
+    (tpayment/query teller (parse-gql-params ctx params))
     (catch Throwable t
       (timbre/error t ::query params)
       (resolve/resolve-as nil {:message  (.getMessage t)
                                :err-data (ex-data t)}))))
+
+
+
 
 
 ;; =============================================================================
@@ -272,22 +302,6 @@
                                         :err-data (ex-data t)}))))))
 
 
-(comment
-
-  (let [stripe    (odin.config/stripe-secret-key odin.config/config)
-        conn      odin.datomic/conn
-        requester (d/entity (d/db conn) [:account/email "member@test.com"])
-        payment   (d/entity (d/db conn) 285873023223183)
-        customer  (customer/by-account (d/db conn) requester)
-        scus      (<!!? (rcu/fetch stripe (customer/id customer)))
-        source    (<!!? (rcu/fetch-source stripe (:id scus) "ba_1AjwecIvRccmW9nO175kwr0e"))
-        owner     (payment/account payment)]
-    (ensure-payment-allowed (d/db conn) requester payment scus source))
-
-
-  )
-
-
 ;; =============================================================================
 ;; Pay Deposit
 
@@ -328,13 +342,14 @@
 
 (def resolvers
   {;; fields
-   :payment/external-id  external-id
+   :payment/id           (fn [_ _ payment] (tpayment/id payment))
+   :payment/entity-id    (fn [_ _ payment] (td/id payment))
    :payment/late-fee     late-fee
    :payment/method       method
    :payment/status       status
    :payment/source       source
    :payment/autopay?     autopay?
-   :payment/type         payment-for
+   :payment/type         payment-type
    :payment/description  description
    :payment/property     property
    :payment/order        order
