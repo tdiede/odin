@@ -33,7 +33,7 @@
  (fn [_ [_ k]]
    {:dispatch-n   [[::save-cart []]
                    [:ui/loading k false]]
-    :notification [:success "Your premium service orders have been placed!"]
+    :notification [:success "Your orders have been placed!"]
     :route        (routes/path-for :services/active-orders)}))
 
 
@@ -331,7 +331,7 @@
    {:dispatch-n   [[:ui/loading k false]
                    [:services.cart/submit (:account db)]
                    [:modal/hide :payment.source/add]]
-    :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
+    :notification [:success "Payment method added!" {:description "You can now pay for services with your credit card on file"}]
     :route        (routes/path-for :services/cart)}))
 
 

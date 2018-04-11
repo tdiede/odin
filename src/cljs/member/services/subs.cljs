@@ -30,12 +30,12 @@
  :<- [:route/current]
  (fn [{page :page} _]
    (case page
-     :services/book          "Premium Services"
+     :services/book          "Helping Hands"
      :services/cart          "Shopping Cart"
      :services/active-orders "Requested Services"
      :services/subscriptions "Active Subscriptions"
      :services/history       "Order History"
-     "Premium Services")))
+     "Helping Hands")))
 
 
 ;; NOTE We need better subheads for these sections
@@ -44,7 +44,7 @@
  :<- [:route/current]
  (fn [{page :page} _]
    (case page
-     :services/book          "Browse and order premium services"
+     :services/book          "Browse and order services"
      :services/cart          "Review and confirm your order"
      :services/active-orders "Manage your active requests"
      :services/subscriptions "Manage your current subscriptions"

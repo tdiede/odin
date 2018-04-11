@@ -195,7 +195,7 @@
         submitting (subscribe [:ui/loading? :services.cart/submit])]
     [:div.cart-footer.has-text-right
      [:p.fs2
-      [:b "NOTE: "] "Premium Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
+      [:b "NOTE: "] "Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
      [ant/button {:class    "ant-btn-xl"
                   :type     "primary"
                   :on-click #(if-not @has-card
@@ -214,9 +214,9 @@
 
 (defn empty-cart []
   [:div.empty-cart
-   [:p.fs3.bold "There are no premium services selected"]
+   [:p.fs3.bold "There are no services selected"]
    [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
+    [:a {:href "book"} "Book services"] " to add services to your requests"]])
 
 
 
@@ -468,7 +468,7 @@
   [:div.empty-cart
    [:p.fs3.bold "You don't have an order history yet"]
    [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to add premium services to your requests"]])
+    [:a {:href "book"} "Book services"] " to add services to your requests"]])
 
 
 ;; ==============================================================================
