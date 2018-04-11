@@ -1,6 +1,5 @@
 (ns odin.graphql.resolvers.payment
   (:require [blueprints.models.account :as account]
-            [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
             [blueprints.models.payment :as payment]
             [blueprints.models.security-deposit :as deposit]
@@ -17,41 +16,24 @@
             [teller.source :as tsource]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]))
+            [toolbelt.datomic :as td]
+            [teller.core :as teller]))
 
-;; =============================================================================
-;; Helpers
-;; =============================================================================
-
-
-(def ^:private stripe-charge-key
-  ::charge)
+;; ==============================================================================
+;; fields =======================================================================
+;; ==============================================================================
 
 
-(defn- inject-charge
-  "Assoc `stripe-charge` into the payment for use by subresolvers."
-  [payment stripe-charge]
-  (assoc (td/mapify payment) stripe-charge-key stripe-charge))
+(defn account
+  "The account associated with this payment."
+  [_ _ payment]
+  (tcustomer/account (tpayment/customer payment)))
 
 
-(defn- get-charge [payment]
-  (let [v (get payment stripe-charge-key)]
-    (if (tb/throwable? v)
-      (throw v)
-      v)))
-
-
-(defn- rent-late-fee [payment]
-  (if-let [license (:member-license/_rent-payments payment)]
-    (if (and (tpayment/overdue? payment) (member-license/grace-period-over? license))
-      (* (payment/amount payment) 0.1)
-      0)
-    0))
-
-
-;; =============================================================================
-;; Fields
-;; =============================================================================
+(defn amount
+  "The amount in dollars on this payment."
+  [_ _ payment]
+  (tpayment/amount payment))
 
 
 (defn autopay?
@@ -61,10 +43,19 @@
        (= :payment.type/rent (tpayment/type payment))))
 
 
+(defn check
+  "The check associated with this payment, if any."
+  [_ _ payment]
+  (tpayment/check payment))
+
+
 (defn late-fee
   "Any late fees associated with this payment."
   [_ _ payment]
-  )
+  (->> (tpayment/associated payment)
+       (filter tpayment/late-fee?)
+       (map tpayment/amount)
+       (apply +)))
 
 
 (defn payment-type
@@ -209,16 +200,14 @@
 
 
 
-;; =============================================================================
-;; Mutations
-;; =============================================================================
+;; ==============================================================================
+;; mutations ====================================================================
+;; ==============================================================================
 
 
-;; =============================================================================
-;; Create Payments
+;; helpers =====================================================================
 
 
-;; TODO move to Teller as a helper, may already be there
 (defn- default-due-date
   "The default due date is the fifth day of the same month as `start` date.
   Preserves the original year, month, hour, minute and second of `start` date."
@@ -232,18 +221,20 @@
                             (t/second st)))))
 
 
-;; ;; TODO move this to teller
 (defn- ensure-payment-allowed
-  [db requester payment source]
-  (cond
-    (not (#{:payment.status/due :payment.status/failed}
-          (payment/status payment)))
-    (format "This payment has status %s; cannot pay!"
-            (name (payment/status payment)))
+  [payment source]
+  (let [retry (#{:payment.status/due :payment.status/failed} (payment/status payment))
+        rent  (= (tpayment/type payment) :payment.type/rent)
+        bank  (tsource/bank-account? source)]
+    (cond
+      (not retry)
+      (format "This payment has status %s; cannot pay!" (name (payment/status payment)))
 
-    (not (and (= (payment/payment-for2 db payment) :payment.for/rent)
-              (= (:object source) "bank_account")))
-    "Only bank accounts can be used to pay rent."))
+      (not (and rent bank))
+      "Only bank accounts can be used to pay rent.")))
+
+
+;; create =======================================================================
 
 
 (defn create-payment!
@@ -261,11 +252,12 @@
 ;; TODO: We'll need to be able to update the fee amount before we make the
 ;; charge if they're going to be paying with a card
 (defn pay-rent!
-  [{:keys [stripe conn requester teller] :as ctx} {:keys [id source] :as params} _]
-  (let [payment    (payment/by-id teller id)
-        #_#_#_#_#_#_customer   (customer/by-account (d/db conn) requester)
-        license    (member-license/active (d/db conn) requester)
-        connect-id (member-license/rent-connect-id license)]
+  [{:keys [requester teller] :as ctx} {:keys [id source] :as params} _]
+  (let [payment (tpayment/by-id teller id)
+        source  (tsource/by-id teller source)]
+    (if-let [error (ensure-payment-allowed payment source)]
+      (resolve/resolve-as nil {:message error})
+      (tpayment/charge! payment {:source source}))
     #_(go
       (try
         (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
@@ -282,9 +274,6 @@
           (resolve/deliver! result nil {:message  (.getMessage t)
                                         :err-data (ex-data t)}))))))
 
-
-;; =============================================================================
-;; Pay Deposit
 
 
 ;; TODO: Refactor using above as reference
@@ -324,16 +313,22 @@
 (def resolvers
   {;; fields
    :payment/id           (fn [_ _ payment] (tpayment/id payment))
+   :payment/account      account
+   :payment/amount       amount
+   :payment/autopay?     autopay?
+   :payment/check        check
+   :payment/created      (fn [{conn :conn} _ payment]
+                           ;; TODO: Provide this via some sort of public api
+                           (->> payment teller/entity (td/created-at (d/db conn))))
+   :payment/description  description
    :payment/entity-id    (fn [_ _ payment] (td/id payment))
    :payment/late-fee     late-fee
    :payment/method       method
-   :payment/status       status
-   :payment/source       source
-   :payment/autopay?     autopay?
-   :payment/type         payment-type
-   :payment/description  description
-   :payment/property     property
    :payment/order        order
+   :payment/property     property
+   :payment/source       source
+   :payment/status       status
+   :payment/type         payment-type
    ;; queries
    :payment/list         payments
    ;; mutations
