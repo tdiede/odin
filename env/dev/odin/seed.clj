@@ -8,7 +8,9 @@
             [clj-time.coerce :as c]
             [clj-time.core :as t]
             [clojure.string :as string]
-            [teller.property :as tproperty]))
+            [teller.property :as tproperty]
+            [teller.payment :as tpayment]
+            [teller.customer :as tcustomer]))
 
 
 (defn- referrals []
@@ -24,20 +26,6 @@
 
 (defn- rand-unit [property]
   (-> property :property/units vec rand-nth :db/id))
-
-
-;; TODO: Add to toolbelt
-(defn distinct-by
-  "Returns elements of xs which return unique values according to f. If multiple
-  elements of xs return the same value under f, the first is returned"
-  [f xs]
-  (let [s (atom #{})]
-    (for [x     xs
-          :let  [id (f x)]
-          :when (not (contains? @s id))]
-      (do (swap! s conj id)
-          x))))
-
 
 (defn rand-text []
   (->> ["Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio." "Sed bibendum." "Donec at pede." "Fusce suscipit, wisi nec facilisis facilisis, est dui fermentum leo, quis tempor ligula erat quis odio." "Pellentesque condimentum, magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque sit amet urna." "Fusce commodo." "Nullam tempus." "Etiam vel tortor sodales tellus ultricies commodo." "Donec at pede." "Nullam rutrum." "Nullam eu ante vel est convallis dignissim." "Aenean in sem ac leo mollis blandit." "Cras placerat accumsan nulla." "Integer placerat tristique nisl." "Phasellus purus." "Nullam eu ante vel est convallis dignissim." "Nullam tristique diam non turpis." "Aliquam erat volutpat." "In id erat non orci commodo lobortis." "Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus." "Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia eros." "Phasellus neque orci, porta a, aliquet quis, semper a, massa." "Lorem ipsum dolor sit amet, consectetuer adipiscing elit." "Donec hendrerit tempor tellus." "Pellentesque condimentum, magna ut suscipit hendrerit, ipsum augue ornare nulla, non luctus diam neque sit amet urna." "Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus." "Cras placerat accumsan nulla." "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus." "Vivamus id enim." "Mauris mollis tincidunt felis." "Integer placerat tristique nisl." "Nunc eleifend leo vitae magna." "Phasellus neque orci, porta a, aliquet quis, semper a, massa." "Aliquam posuere." "Nunc rutrum turpis sed pede." "Pellentesque dapibus suscipit ligula." "Curabitur vulputate vestibulum lorem." "Vestibulum convallis, lorem a tempus semper, dui dui euismod elit, vitae placerat urna tortor vitae lacus." "Donec pretium posuere tellus." "Fusce sagittis, libero non molestie mollis, magna orci ultrices dolor, at vulputate neque nulla lacinia eros."]
@@ -83,11 +71,10 @@
     [acct (fill-application db app)]))
 
 
-;; TODO: Seed each application with a full application.
 (defn- accounts [db]
   (let [license    (license/by-term db 3)
         property   (d/entity db [:property/internal-name "2072mission"])
-        distinct   (fn [coll] (distinct-by (comp :account/email #(tb/find-by :account/email %)) coll))
+        distinct   (fn [coll] (tb/distinct-by (comp :account/email #(tb/find-by :account/email %)) coll))
         members    (->> (repeatedly #(accounts/member (rand-unit property) (:db/id license)))
                         (take 13)
                         distinct
@@ -104,7 +91,7 @@
   (c/to-date (t/date-time 2017 (inc (rand-int 12)) (inc (rand-int 28)))))
 
 
-(defn seed-teller [teller]
+(defn- seed-properties [teller]
   (let [fees (tproperty/construct-fees (tproperty/fee 5))]
     (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
                        {:fees      fees
@@ -116,6 +103,29 @@
                         :deposit   "acct_1C3S9tD1iZkoyuLX"
                         :ops       "acct_1C3TmMEBSLaHdiO2"
                         :community [:property/code "2072mission"]})))
+
+
+(def mock-visa
+  {:object    "card"
+   :exp_month 12
+   :exp_year  23
+   :number    "4242424242424242"})
+
+
+(defn- seed-payments [teller]
+  (let [customer (tcustomer/create! teller "member@test.com"
+                                    {:account  [:account/email "member@test.com"]
+                                     :source   mock-visa
+                                     :property (tproperty/by-id teller "52gilbert")})]
+    (tpayment/create! customer 500.0 :payment.type/deposit)
+    (tpayment/create! customer 25.0 :payment.type/application-fee)
+    (tpayment/create! customer 2000.0 :payment.type/rent {:period [#inst "2018-05-31"
+                                                                   #inst "2018-06-30"]})))
+
+
+(defn seed-teller [teller]
+  (seed-properties teller)
+  (seed-payments teller))
 
 
 (defn seed [conn]

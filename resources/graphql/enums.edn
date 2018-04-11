@@ -33,7 +33,7 @@
 
   :payment_type
   {:description "Different types of payment."
-   :values      [:order :rent :deposit]}
+   :values      [:order :rent :deposit :application_fee :guest_booking :late_fee]}
 
   :payments_date_key
   {:description "Allowed keys for date-based payment queries."
