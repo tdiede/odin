@@ -4,7 +4,21 @@ A Clojure library designed to ... well, that part is up to you.
 
 ## Usage
 
-FIXME
+To start local development.
+
+```
+$ lein install
+$ lein cooper
+```
+
+Start a REPL. In the `user` namespace invoke `go!`.
+
+```
+user> (go!)
+```
+
+Note the web server starts up on port 8082.
+
 
 ## License
 

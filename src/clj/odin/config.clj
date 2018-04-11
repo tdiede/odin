@@ -22,7 +22,7 @@
 
 
 (defn webserver-port
-  "Produce the port that the webserver should start on."
+  "Produce the port that the weberver should start on."
   [config]
   (tb/str->int (get-in config [:webserver :port])))
 
@@ -65,6 +65,12 @@
   "URI of the Datomic database connection."
   [config]
   (get-in config [:datomic :uri]))
+
+
+(defn datomic-partition
+  "The datomic partition to use"
+  [config]
+  (get-in config [:datomic :partition]))
 
 
 ;; =============================================================================

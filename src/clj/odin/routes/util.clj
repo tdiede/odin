@@ -26,3 +26,7 @@
 
 (defn ->config [req]
   (get-in req [:deps :config]))
+
+
+(defn ->teller [req]
+  (get-in req [:deps :teller]))

@@ -8,13 +8,17 @@
             [clj-time.coerce :as c]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
+            [odin.graphql.resolvers.utils :refer [error-message]]
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
             [toolbelt.async :refer [<!!?]]
             [odin.models.payment-source :as payment-source]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [teller.payment :as tpayment]
+            [teller.source :as tsource]
+            [teller.customer :as tcustomer]))
 
 ;; =============================================================================
 ;; Fields
@@ -107,7 +111,7 @@
     (query-orders (d/db conn) params)
     (catch Throwable t
       (timbre/error t "error querying orders")
-      (resolve/resolve-as nil {:message  (.getMessage t)
+      (resolve/resolve-as nil {:message  (error-message t)
                                :err-data (ex-data t)}))))
 
 
@@ -327,9 +331,11 @@
 
 (defn charge!
   "Charge an order."
-  [{:keys [conn requester stripe]} {:keys [id]} _]
-  (let [order  (d/entity (d/db conn) id)
-        source (<!!? (payment-source/service-source (d/db conn) stripe (order/account order)))]
+  [{:keys [teller requester conn]} {:keys [id]} _]
+  (let [customer (tcustomer/by-account teller requester)
+        order    (d/entity (d/db conn) id)
+        price    (order/computed-price order)
+        source   (tcustomer/source customer :payment.type/order)]
     (cond
       (nil? source)
       (resolve/resolve-as nil {:message  "Cannot charge order; no service source linked!"
@@ -340,16 +346,19 @@
                                :err-data {:order-id       id
                                           :current-status (order/status order)}})
 
-      (nil? (order/computed-price order))
+      (nil? price)
       (resolve/resolve-as nil {:message  "Cannot charge order without a price!"
                                :err-data {:order-id id}})
 
       :otherwise
-      (do
-        @(d/transact conn [[:db/add id :order/status :order.status/processing]
-                           (source/create requester)
-                           (events/process-order requester order)])
-        (d/entity (d/db conn) id)))))
+      (try
+        (let [payment (tpayment/create! customer price :payment.type/order {:source source})
+              tx-res  @(d/transact conn [[:db/add id :order/payments [:payment/id (tpayment/id payment)]]])]
+          (d/entity (:db-after tx-res) id))
+        (catch Throwable t
+          (timbre/error t ::order {:order-id id :source source})
+          (resolve/resolve-as nil {:message  (error-message t)
+                                   :err-data {:order-id id}}))))))
 
 
 (defn cancel!
