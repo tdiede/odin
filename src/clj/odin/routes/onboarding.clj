@@ -20,7 +20,7 @@
             [clj-time.core :as t]
             [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [compojure.core :refer [defroutes GET POST]]
+            [compojure.core :as compojure :refer [defroutes GET POST DELETE]]
             [datomic.api :as d]
             [ribbon.charge :as rc]
             [ribbon.customer :as rcu]
@@ -32,7 +32,8 @@
             [toolbelt.async :refer [<!!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]))
+            [toolbelt.datomic :as td]
+            [ring.util.response :as response]))
 
 
 ;; ==============================================================================
@@ -784,37 +785,72 @@
         :ret ::fee-totals)
 
 
-;; TODO:
-(defn- generate-fee-orders [totals]
-  (let []))
-
-(s/fdef generate-fee-orders
-        :args (s/cat :totals ::fee-totals)
-        :ret vector?)
-
-
 (comment
   (let [fees (all-fees (d/db conn) [:account/email "onboard@test.com"])]
     #_(fee-service-names (d/db conn) [:account/email "onboard@test.com"] (first fees))
-    (fee-amount-total (d/db conn) [:account/email "onboard@test.com"] fees))
+    (fee-amount-total (d/db conn) [:account/email "onboard@test.com"]))
 
 
 
   )
 
 
-;; TODO:
-(defn- inject-fees
-  [db-before account tx-data]
-  (let [db-after      (d/with db-before tx-data)
-        totals-before (set (fee-amount-total db-before account))
-        totals-after  (set (fee-amount-total db-after account))]
-    (cond
-      (= totals-before totals-after)
-      tx-data
+(defn- find-existing-order
+  [db account fee-id]
+  (->> (d/q '[:find ?o .
+              :in $ ?a ?s
+              :where
+              [?o :order/account ?a]
+              [?o :order/service ?s]]
+            db (td/id account) fee-id)
+       (d/entity db)))
 
-      )
-    tx-data))
+
+(defn- update-fee-order-tx
+  [order {:keys [price desc] :as fee-total}]
+  (cond-> []
+    (not= (order/computed-price order) price)
+    (conj [:db/add (td/id order) :order/price price])
+
+    (not= (order/summary order) desc)
+    (conj [:db/add (td/id order) :order/summary desc])))
+
+
+(defn- create-fee-order-tx
+  [account {:keys [fee-id price desc] :as fee-total}]
+  [(order/create account fee-id {:price price :summary desc})])
+
+
+(defn- remove-fees
+  [db account new-totals]
+  (let [old-totals (fee-amount-total db account)
+        diffed     (set/difference (set (map :fee-id old-totals))
+                                   (set (map :fee-id new-totals)))]
+    (when-not (empty? diffed)
+      (map
+       (fn [fee-id]
+         [:db.fn/retractEntity (td/id (find-existing-order db account fee-id))])
+       diffed))))
+
+
+(defn- create-or-update-fees
+  [db account fee-totals]
+  (reduce
+   (fn [acc fee-total]
+     (->> (if-let [existing (find-existing-order db account (:fee-id fee-total))]
+            (update-fee-order-tx existing fee-total)
+            (create-fee-order-tx account fee-total))
+          (concat acc)))
+   []
+   fee-totals))
+
+
+(defn- inject-fees
+  [db account tx-data]
+  (let [totals (-> (d/with db tx-data) :db-after (fee-amount-total account))]
+    (concat (remove-fees db account totals)
+            (create-or-update-fees db account totals)
+            tx-data)))
 
 
 (defn orders-tx
@@ -827,7 +863,7 @@
         tx-data  (->> ((juxt create-orders update-orders remove-orders)
                        db account params existing)
                       (apply concat))]
-    (inject-installation-fee db account tx-data)))
+    (inject-fees db account tx-data)))
 
 (s/fdef orders-tx
         :args (s/cat :db td/db?
@@ -963,6 +999,40 @@
                    (-> (transit-ok {:message "ok"})
                        (assoc :session session))))))
 
+
+(defn- clientize [order]
+  (let [clientized (order/clientize order)]
+    (assoc clientized :service-type (service/type (order/service order)))))
+
+
+(defn fetch-orders [req]
+  (let [account (->requester req)]
+    (-> {:result (->> (order/orders (->db req) account)
+                      (map clientize)
+                      (sort-by :price #(if (and %1 %2) (> %1 %2) false)))}
+        (response/response)
+        (response/content-type "application/transit+json"))))
+
+
+(defn delete-order
+  [req order-id]
+  (let [account (->requester req)
+        order   (d/entity (->db req) order-id)]
+    (cond
+      (not= (td/id account) (-> order order/account td/id))
+      (-> (response/response {:error "You do not own this order."})
+          (response/content-type "application/transit+json")
+          (response/status 403))
+
+      (= (service/type (order/service order)) :service.type/fee)
+      (transit-unprocessable {:error "You cannot remove fees."})
+
+      :otherwise
+      (do
+        @(d/transact (->conn req) (inject-fees (->db req) account [[:db.fn/retractEntity order-id]]))
+        (transit-ok {})))))
+
+
 (defroutes routes
   (GET "/" []
        (fn [req]
@@ -979,6 +1049,14 @@
                 (transit-ok {:result (fetch conn (d/entity (d/db conn) (:db/id account)) step)})
                 (catch Exception e
                   (on-error conn account step e)))))))
+
+  (compojure/context "/orders" []
+    (compojure/routes
+        (GET "/" [] fetch-orders)
+
+      (DELETE "/:order-id" [order-id]
+              (fn [req]
+                (delete-order req (tb/str->int order-id))))))
 
   (POST "/finish" [] finish-handler))
 

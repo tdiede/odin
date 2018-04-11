@@ -55,38 +55,11 @@
     :dataIndex :action
     :className "no-break column-center"
     :render    (table/wrap-cljs
-                (fn [_ {id :id}]
-                  [:a {:on-click #(do (.preventDefault %)
-                                      (dispatch [:order/delete id]))}
-                   "Remove"]))}
-
-   ])
-
-;; (def ^:private columns
-;;   [(column "name"
-;;            :title "Order"
-;;            :class "width-75"
-;;            :render (fn [name {:keys [desc rental]}]
-;;                      [:div
-;;                       [:span [:b {:dangerouslySetInnerHTML {:__html name}}]
-;;                        (when rental [:i " (rental)"])]
-;;                       [:p {:style                   {:word-break "break-word"}
-;;                            :dangerouslySetInnerHTML {:__html desc}}]]))
-;;    (column "quantity"
-;;            ;; :class "column-right no-break"
-;;            :render (fn [q _]
-;;                      [:span {:dangerouslySetInnerHTML {:__html (or q "&mdash;")}}]))
-;;    (column "price"
-;;            ;; :class "column-right no-break"
-;;            :render (fn [price {:keys [billed quantity]}]
-;;                      (let [bill (if (= billed "monthly") "/mo" "")]
-;;                        (if (nil? price) "Quote" (str "$" price bill)))))
-;;    (column "action"
-;;            ;; :class "no-break column-center"
-;;            :render (fn [_ {id :id}]
-;;                      [:a {:on-click #(do (.preventDefault %)
-;;                                          (dispatch [:order/delete id]))}
-;;                       "Remove"]))])
+                (fn [_ {:keys [id service-type] :as record}]
+                  (when-not (= service-type "fee")
+                    [:a {:on-click #(do (.preventDefault %)
+                                        (dispatch [:order/delete id]))}
+                     "Remove"])))}])
 
 
 ;; =============================================================================

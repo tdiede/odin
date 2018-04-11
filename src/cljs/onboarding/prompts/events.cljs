@@ -57,7 +57,7 @@
  :orders/fetch
  (fn [_ [_ keypath]]
    {:http-xhrio {:method          :get
-                 :uri             "/api/orders"
+                 :uri             "/api/onboarding/orders"
                  :response-format (ajax/transit-response-format)
                  :on-success      [:orders.fetch/success]
                  :on-failure      [:orders.fetch/failure keypath]}}))
@@ -248,7 +248,7 @@
  (fn [{:keys [db]} [_ order-id]]
    {:db         (assoc db :orders/loading true)
     :http-xhrio {:method          :delete
-                 :uri             (str "/api/orders/" order-id)
+                 :uri             (str "/api/onboarding/orders/" order-id)
                  :format          (ajax/transit-request-format)
                  :response-format (ajax/transit-response-format)
                  :on-success      [:order.delete/success order-id]
