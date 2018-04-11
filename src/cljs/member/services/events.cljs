@@ -5,7 +5,9 @@
             [member.services.db :as db]
             [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
             [iface.utils.time :as time]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [iface.utils.norms :as norms]
+            [clojure.set :as set]))
 
 
 (reg-co-fx! db/path
@@ -27,23 +29,24 @@
    (let [last-modified (or (:last-modified store) (time/now))]
      (if (>= (* -1 (time/days-between last-modified)) 2)
        {:dispatch [::load-cart-empty]}
-       {:dispatch [::check-token]}))))
+       {:dispatch [::check-hash]}))))
 
 
 (reg-event-fx
- ::check-token
- [(inject-cofx :store) (path db/path)]
- (fn [{:keys [store db]} _]
-   (js/console.log "checking tokens for maximum freshness...")
-   {:dispatch [::check-spec]}))
+ ::check-hash
+ [(inject-cofx :store)]
+ (fn [{:keys [store db]} k]
+   {:dispatch [::fetch-property k (get-in db [:account :id]) [::check-hashes]]}))
 
 
 (reg-event-fx
- ::check-spec
+ ::check-hashes
  [(inject-cofx :store) (path db/path)]
- (fn [{:keys [store db]} _]
-   (js/console.log "diffing specs for great good...")
-   {:dispatch [::load-cart-from-store]}))
+ (fn [{:keys [store db]} [_ _ services]]
+   (if (= (set/intersection (set (map hash services)) (::hashes store))
+          (::hashes store))
+     {:dispatch [::load-cart-from-store]}
+     {:dispatch [::load-cart-empty]})))
 
 
 (reg-event-fx
@@ -141,42 +144,50 @@
  :services/fetch-catalogs
  (fn [{db :db} [k]]
    {:dispatch-n [[:ui/loading k true]
-                 [::fetch-property k (get-in db [:account :id])]]}))
+                 [::fetch-property k (get-in db [:account :id]) [:services/catalogs]]]}))
 
 
 (reg-event-fx
  ::fetch-property
- (fn [{db :db} [_ k account-id]]
+ (fn [{db :db} [_ k account-id on-success]]
+   (when (nil? on-success)
+     (throw (ex-info "Please provide an `on-success` event." {})))
    {:graphql {:query      [[:account {:id account-id}
                             [[:property [:id]]]]]
-              :on-success [::fetch-catalogs k]
+              :on-success [::fetch-catalogs k on-success]
               :on-failure [:graphql/failure k]}}))
 
 
-;; when we implement the `active` attribute for services
-;; will need to add `:active true` to `query params`
-;; we dont want to show members inactive services
 (reg-event-fx
  ::fetch-catalogs
- (fn [{db :db} [_ k response]]
+ (fn [_ [_ k on-success response]]
+   (when (nil? on-success)
+     (throw (ex-info "Please provide an `on-success` event." {})))
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query      [[:services {:params {:properties [property-id]
                                                   :active     true}}
                               [:id :name :description :price :catalogs :active
                                [:fields [:id :index :label :type :required
                                          [:options [:index :label :value]]]]]]]
-                :on-success [:services/catalogs k]
+                :on-success [::extract-services k on-success]
                 :on-failure [:graphql/failure k]}})))
+
+
+(reg-event-fx
+ ::extract-services
+ (fn [_ [_ k on-success response]]
+   {:dispatch (conj on-success k (get-in response [:data :services]))}))
 
 
 (reg-event-fx
  :services/catalogs
  [(path db/path)]
- (fn [{db :db} [_ k response]]
-   (let [services (->> (get-in response [:data :services])
-                       (sort-by #(clojure.string/lower-case (:name %))))
-         clist (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
-     {:db (assoc db :catalogs clist :services services)})))
+ (fn [{db :db} [_ k services]]
+   (let [services (sort-by #(clojure.string/lower-case (:name %)) services)
+         clist    (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+     {:dispatch [:ui/loading k false]
+      :db       (-> (assoc db :catalogs clist :services services)
+                    (norms/normalize :services/norms services))})))
 
 
 (reg-event-fx
@@ -241,12 +252,18 @@
                                               :fields      (:form-data db)}
          new-cart                            (conj (:cart db) adding)]
      {:dispatch-n   [[:services.add-service/close]
+                     [::store-hash (norms/get-norm db :services/norms id)]
                      [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
 
 
-;; is this really needed? it seems like it still goes into
-;; graphql as a string...
+(reg-event-fx
+ ::store-hash
+ [(inject-cofx :store)]
+ (fn [{:keys [store]} [_ service]]
+   {:store (update store ::hashes #(if (set? %) (conj % (hash service)) #{(hash service)}))}))
+
+
 (defn construct-order-fields [fields]
   (map
    (fn [{:keys [id value]}]
