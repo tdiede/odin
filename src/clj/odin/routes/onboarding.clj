@@ -511,19 +511,6 @@
      :catalogue (generate-catalog (d/db conn) account "Storage" :storage)}))
 
 
-(comment
-
-
-  (def acct (d/entity (d/db conn) [:account/email "onboard@test.com"]))
-
-  (order-params (d/db conn) acct :storage)
-
-  (map (juxt :db/id (comp :db/id :order/service)) (ordered-from-catalogs (d/db conn) acct [:storage]))
-
-
-  )
-
-
 (defmethod fdata :services/cleaning
   [_ account _]
   (let [onboard (onboard/by-account account)]
