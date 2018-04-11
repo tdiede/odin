@@ -238,7 +238,7 @@
    (fn [{:keys [id value type]}]
      (tb/assoc-when
       {:service_field id}
-      :value (if (= type :text)
+      :value (if (and (= type :text) (some? value))
                (string/replace value "\n" " ")
                value)))
    fields))

@@ -190,4 +190,5 @@
  :orders/history
  :<- [db/path]
  (fn [db _]
-   (filter #(not (some (fn [v] (= v (:status %))) [:pending :placed])) (:orders db))))
+   (filter #(or (and (= (:billed %) :monthly) (= (:status %) :canceled))
+             (and (= (:billed %) :once) (not (some (fn [v] (= v (:status %))) [:pending :placed])))) (:orders db))))
