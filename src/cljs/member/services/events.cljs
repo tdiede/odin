@@ -195,11 +195,12 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [id name description price fields]}]]
+ (fn [{db :db} [_ {:keys [id name description price fields billed]}]]
    (let [service {:id          id
                   :name        name
                   :description description
-                  :price       price}]
+                  :price       price
+                  :billed      billed}]
      {:dispatch [:modal/show db/modal]
       :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
@@ -216,12 +217,13 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id name description price]} (:adding db)
+   (let [{:keys [id name description price billed]} (:adding db)
          adding                              {:index       (count (:cart db))
                                               :service     id
                                               :name        name
                                               :description description
                                               :price       price
+                                              :billed      billed
                                               :fields      (:form-data db)}
          new-cart                            (conj (:cart db) adding)]
      {:dispatch-n   [[:services.add-service/close]

@@ -30,6 +30,16 @@
      [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]]))
 
 
+(defn format-price
+  "Accepts a price and billed status and returns a string with the correct price"
+  [price billed]
+  (str (if (some? price)
+         (format/currency price)
+         (format/currency 0))
+       (when (= billed :monthly)
+         "/mo")))
+
+
 ;; ==============================================================================
 ;; BOOK SERVICES ================================================================
 ;; ==============================================================================
@@ -56,7 +66,7 @@
         @categories))]]))
 
 
-(defn service-item [{:keys [name description price] :as service}]
+(defn service-item [{:keys [name description price billed] :as service}]
   [ant/card
    [:div.service
     [:div.columns
@@ -65,9 +75,7 @@
      [:div.column.is-6
       [:p.fs3 description]]
      [:div.column.is-1
-      [:p.price (if (some? price)
-                  (format/currency price)
-                  (format/currency 0))]]
+      [:p.price (format-price price billed)]]
      [:div.column.is-2
       [ant/button
        {:on-click #(dispatch [:services.add-service/show service])}
@@ -163,7 +171,7 @@
 ;; ==============================================================================
 
 
-(defn cart-item [{:keys [index name description price fields]}]
+(defn cart-item [{:keys [index name description price fields billed]}]
   (let [service-item {:index       index
                       :name        name
                       :description description
@@ -173,9 +181,7 @@
       [:div.column.is-6
        [:h4.subtitle.is-5 name]]
       [:div.column.is-2
-       [:p.price (if (some? price)
-                   (format/currency price)
-                   (format/currency 0))]]
+       [:p.price (format-price price billed)]]
       [:div.column.is-2.align-right
        [ant/button {:icon     "edit"
                     :on-click #(dispatch [:services.cart.item/edit service-item fields])}
@@ -289,9 +295,7 @@
      [:div.column.is-2
       [:p.body (format/date-short date)]]
      [:div.column.is-1
-      [:p.body (if (some? price)
-                 (format/currency price)
-                 (format/currency 0))]]
+      [:p.body (format-price price billed)]]
      [:div.column.is-1
       [status-tag status]]
      [:div.column.is-2.has-text-right
@@ -369,7 +373,6 @@
   [orders-header "subscription"])
 
 
-;; TODO how to link to payments?
 (defn subscription-details [fields payments]
   [:div
    [fields-data fields]
