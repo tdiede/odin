@@ -11,7 +11,8 @@
             [taoensso.timbre :as timbre]
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [teller.payment :as tpayment]))
 
 ;; =============================================================================
 ;; Fields
@@ -84,8 +85,8 @@
 
 (defn payments
   "Payments associated with this `source`."
-  [_ _ source]
-  [])
+  [{teller :teller} _ source]
+  (tpayment/query teller {:sources [source]}))
 
 
 ;; =============================================================================
@@ -109,7 +110,7 @@
   "Delete the payment source with `id`. If the source is a bank account, will
   also delete it on the connected account."
   [{:keys [teller] :as ctx} {id :id} _]
-  #_(tsource/delete! (tsource/by-id teller id)))
+  (tsource/close! (tsource/by-id teller id)))
 
 
 ;; =============================================================================
