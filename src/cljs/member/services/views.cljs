@@ -273,9 +273,15 @@
     [:h4.subtitle.is-6.bold "Status"]]])
 
 
-(defn status-tag [txt]
-  (let [status (clojure.string/capitalize (name txt))]
-    [:span.tag.is-hollow status]))
+(defn status-tag [status]
+  (case status
+    :placed     [:span.tag.is-placed (name status)]
+    :fulfilled  [:span.tag.is-fulfilled (name status)]
+    :processing [:span.tag.is-processing (name status)]
+    :failed     [:span.tag.is-processing "processing"]
+    :charged    [:span.tag.is-success (name status)]
+    :canceled   [:span.tag.is-cancel (name status)]
+    [:span.tag.is-hollow (name status)]))
 
 
 (defn above-the-fold [{:keys [id name date price status billed cancel-btn]} is-open requester]
