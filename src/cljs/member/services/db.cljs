@@ -133,6 +133,7 @@
          :catalogues    sample-catalogues
          :adding        nil
          :cart          []
+         ;; :last-modified ""
          :form-data     []
          :orders        []}})
 

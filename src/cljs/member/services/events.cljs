@@ -4,27 +4,70 @@
             [member.routes :as routes]
             [member.services.db :as db]
             [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
+            [iface.utils.time :as time]
             [toolbelt.core :as tb]))
 
 
 (reg-co-fx! db/path
-            {:fx   :cart
-             :cofx :cart})
+            {:fx   :store
+             :cofx :store})
 
 
 (reg-event-fx
  ::load-cart
- [(inject-cofx :cart) (path db/path)]
- (fn [{:keys [cart db]} _]
-   {:db (assoc db :cart (or cart []))}))
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} _]
+   {:dispatch [::check-last-modified]}))
+
+
+(reg-event-fx
+ ::check-last-modified
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} _]
+   (let [last-modified (or (:last-modified store) (time/now))]
+     (if (>= (* -1 (time/days-between last-modified)) 2)
+       {:dispatch [::load-cart-empty]}
+       {:dispatch [::check-token]}))))
+
+
+(reg-event-fx
+ ::check-token
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} _]
+   (js/console.log "checking tokens for maximum freshness...")
+   {:dispatch [::check-spec]}))
+
+
+(reg-event-fx
+ ::check-spec
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} _]
+   (js/console.log "diffing specs for great good...")
+   {:dispatch [::load-cart-from-store]}))
+
+
+(reg-event-fx
+ ::load-cart-from-store
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} _]
+   {:db (assoc db :cart (or (:cart store) []))}))
+
+
+(reg-event-fx
+ ::load-cart-empty
+ [(path db/path)]
+ (fn [db _]
+   {:dispatch [::save-cart []]}))
 
 
 (reg-event-fx
  ::save-cart
- [(path db/path)]
- (fn [{:keys [db]} [_ new-cart]]
-   {:db   (assoc db :cart new-cart)
-    :cart new-cart}))
+ [(inject-cofx :store) (path db/path)]
+ (fn [{:keys [store db]} [_ new-cart]]
+   {:db    (assoc db :cart new-cart)
+    :store (assoc store
+                  :cart new-cart
+                  :last-modified (time/moment->iso (time/now)))}))
 
 
 (reg-event-fx
