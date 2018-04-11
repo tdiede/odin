@@ -87,7 +87,8 @@
     [:div.catalogue
      [:div.colums {:style {:margin-bottom "0px"}}
       [:div.colums.is-10
-       [:h3.title.is-4 (clojure.string/capitalize (name selected)) " Services"]]
+       [:h3.title.is-4 {:style {:margin-bottom "10px"}}
+        (clojure.string/capitalize (name selected))]]
       (doall
        (map-indexed #(with-meta [service-item %2] {:key %1}) services))]]))
 
@@ -200,7 +201,7 @@
   (let [has-card   (subscribe [:payment-sources/has-card? (:id requester)])
         submitting (subscribe [:ui/loading? :services.cart/submit])]
     [:div.cart-footer.has-text-right
-     [:p.fs2
+     [:p
       [:b "NOTE: "] "Service requests are treated as individual billable items. You will be charged for each service as it is fulfilled."]
      [ant/button {:class    "ant-btn-xl"
                   :type     "primary"
@@ -208,7 +209,7 @@
                                (dispatch [:modal/show :payment.source/add])
                                (dispatch [:services.cart/submit requester]))
                   :loading  @submitting}
-      "Submit orders"]]))
+      "Order now"]]))
 
 
 (defn shopping-cart-body [cart-items requester]
