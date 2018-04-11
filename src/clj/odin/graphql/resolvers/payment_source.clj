@@ -3,6 +3,7 @@
   (:require [blueprints.models.account :as account]
             [clojure.spec.alpha :as s]
             [clojure.string :as string]
+            [odin.graphql.resolvers.utils :refer [error-message]]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
@@ -11,19 +12,6 @@
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
             [toolbelt.core :as tb]))
-
-;; =============================================================================
-;; Helpers
-;; =============================================================================
-
-
-(defn- error-message [t]
-  (or (:message (ex-data t)) (.getMessage t)))
-
-(s/fdef error-message
-        :args (s/cat :throwable tb/throwable?)
-        :ret string?)
-
 
 ;; =============================================================================
 ;; Fields
