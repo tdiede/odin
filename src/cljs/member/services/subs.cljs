@@ -55,14 +55,17 @@
 (reg-sub
  :services.book/categories
  :<- [db/path]
- (fn [db _]
-   (-> (reduce (fn [catalogs c]
-                 (conj catalogs {:category c :label (string/capitalize (name c))}))
-               [{:category :all
-                 :label    "All"}]
-               (:catalogs db))
-       (conj {:category :misc
-              :label    "Miscellaneous"}))))
+ :<- [:services.book/services-by-catalog :misc]
+ (fn [[db misc] _]
+   (let [categories (reduce (fn [catalogs c]
+                              (conj catalogs {:category c :label (string/capitalize (name c))}))
+                            [{:category :all
+                              :label    "All"}]
+                            (:catalogs db))]
+     (if-not (empty? misc)
+       (conj categories {:category :misc
+                         :label    "Miscellaneous"})
+       categories))))
 
 
 (reg-sub
@@ -191,4 +194,4 @@
  :<- [db/path]
  (fn [db _]
    (filter #(or (and (= (:billed %) :monthly) (= (:status %) :canceled))
-             (and (= (:billed %) :once) (not (some (fn [v] (= v (:status %))) [:pending :placed])))) (:orders db))))
+                (and (= (:billed %) :once) (not (some (fn [v] (= v (:status %))) [:pending :placed])))) (:orders db))))
