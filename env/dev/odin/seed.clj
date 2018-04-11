@@ -117,8 +117,8 @@
                                     {:account  [:account/email "member@test.com"]
                                      :source   mock-visa
                                      :property (tproperty/by-id teller "52gilbert")})]
-    (tpayment/create! customer 500.0 :payment.type/deposit)
     (tpayment/create! customer 25.0 :payment.type/application-fee)
+    (tpayment/create! customer 500.0 :payment.type/deposit)
     (tpayment/create! customer 2000.0 :payment.type/rent {:period [#inst "2018-05-31"
                                                                    #inst "2018-06-30"]})))
 

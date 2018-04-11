@@ -14,6 +14,7 @@
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
             [teller.source :as tsource]
+            [teller.subscription :as tsubscription]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
@@ -25,32 +26,84 @@
 
 
 (defn account
-  "The account associated with this payment."
+  "The account associated with this `payment`."
   [_ _ payment]
   (tcustomer/account (tpayment/customer payment)))
 
 
 (defn amount
-  "The amount in dollars on this payment."
+  "The amount in dollars on this `payment`."
   [_ _ payment]
   (tpayment/amount payment))
 
 
 (defn autopay?
-  "Is this an autopay payment?"
+  "Is this an autopay `payment`?"
   [_ _ payment]
   (and (some? (tpayment/subscription payment))
        (= :payment.type/rent (tpayment/type payment))))
 
 
 (defn check
-  "The check associated with this payment, if any."
+  "The check associated with this `payment`, if any."
   [_ _ payment]
   (tpayment/check payment))
 
 
+;; TODO: Provide this via some sort of public api
+(defn created
+  "The instant this `payment` was created."
+  [{:keys [teller]} _ payment]
+  (->> payment teller/entity (td/created-at (d/db (teller/db payment)))))
+
+
+(defn- deposit-desc
+  "Description for a security deposit `payment`."
+  [account payment]
+  (let [entire-deposit-desc  "entire security deposit payment"
+        partial-deposit-desc "security deposit installment"
+        deposit              (deposit/by-account account)
+        entire-py?           (= :deposit.type/full (deposit/type deposit))
+        first-py?            (or (= (count (deposit/payments deposit)) 1)
+                                 (= (td/id payment)
+                                    (->> (deposit/payments deposit)
+                                         (map (juxt td/id tpayment/amount))
+                                         (sort-by second <)
+                                         ffirst)))]
+    (cond
+      entire-py? entire-deposit-desc
+      first-py?  (str "first " partial-deposit-desc)
+      :otherwise (str "second " partial-deposit-desc))))
+
+
+(defn description
+  "A description of this `payment`. Varies based on payment type."
+  [{:keys [teller]} _ payment]
+  (letfn [(-rent-desc [payment]
+            (->> [(tpayment/period-start payment) (tpayment/period-end payment)]
+                 (map date/short)
+                 (apply format "rent for %s-%s")))
+          (-order-desc [payment]
+            (let [order        (order/by-payment (d/db (teller/db payment)) payment)
+                  service-desc (service/name (order/service order))]
+              (or (when-let [d (order/summary order)]
+                    (format "%s (%s)" d service-desc))
+                  service-desc)))]
+    (case (tpayment/type payment)
+      :payment.type/rent    (-rent-desc payment)
+      :payment.type/order   (-order-desc payment)
+      :payment.type/deposit (deposit-desc (tcustomer/account (tpayment/customer payment)) payment)
+      nil)))
+
+
+(defn due
+  "The instant this `payment` is due."
+  [_ _ payment]
+  (tpayment/due payment))
+
+
 (defn late-fee
-  "Any late fees associated with this payment."
+  "Any late fees associated with this `payment`."
   [_ _ payment]
   (->> (tpayment/associated payment)
        (filter tpayment/late-fee?)
@@ -58,72 +111,8 @@
        (apply +)))
 
 
-(defn payment-type
-  "What is this payment for?"
-  [_ _ payment]
-  (-> (tpayment/type payment)
-      name
-      (string/replace "-" "_")
-      keyword))
-
-
-(defn- deposit-desc
-  "Description for a security deposit payment."
-  [account payment]
-  (let [deposit   (deposit/by-account account)
-        first-py? (or (= (count (deposit/payments deposit)) 1)
-                      (= (td/id payment)
-                         (->> (deposit/payments deposit)
-                              (map (juxt td/id tpayment/amount))
-                              (sort-by second <)
-                              ffirst)))]
-    (cond
-      (= :deposit.type/full (deposit/type deposit)) "entire security deposit payment"
-      first-py?                                     "first security deposit installment"
-      :otherwise                                    "second security deposit installment")))
-
-
-(defn description
-  "A description of this payment. Varies based on payment type."
-  [{conn :conn} _ payment]
-<<<<<<< HEAD
-  (let [payment (d/entity (d/db conn) (td/id payment))] ; ensure we're working with an entity
-    (letfn [(-rent-desc [payment]
-              (->> [(payment/period-start payment) (payment/period-end payment)]
-                   #_(map date/short-date)
-                   (apply format "rent for %s-%s")))
-            (-order-desc [payment]
-              (let [order        (order/by-payment (d/db conn) payment)
-                    service-desc (service/service-name (order/service order))]
-                (or (when-let [d (order/summary order)]
-                      (format "%s (%s)" d service-desc))
-                    service-desc)))]
-      (case (payment/payment-for payment)
-        :payment.for/deposit (deposit-desc (payment/account payment) payment)
-        :payment.for/rent    (-rent-desc payment)
-        :payment.for/order   (-order-desc payment)
-        nil))))
-=======
-  (letfn [(-rent-desc [payment]
-            (->> [(tpayment/period-start payment) (tpayment/period-end payment)]
-                 (map date/short)
-                 (apply format "rent for %s-%s")))
-          (-order-desc [payment]
-            (let [order        (order/by-payment (d/db conn) payment)
-                  service-desc (service/name (order/service order))]
-              (or (when-let [d (order/summary order)]
-                    (format "%s (%s)" d service-desc))
-                  service-desc)))]
-    (case (tpayment/type payment)
-      :payment.type/deposit (deposit-desc (tcustomer/account (tpayment/customer payment)) payment)
-      :payment.type/rent    (-rent-desc payment)
-      :payment.type/order   (-order-desc payment)
-      nil)))
->>>>>>> add teller payment resolvers wip
-
-
 (defn method
-  "The method with which this payment was made."
+  "The method with which this `payment` was made."
   [_ _ payment]
   (when-not (#{:payment.status/due} (tpayment/status payment))
     (let [source (tpayment/source payment)]
@@ -134,28 +123,54 @@
         :else                          :other))))
 
 
-(defn status
-  "The status of this payment."
+(defn order
+  "The order associated with this `payment`, if any."
   [_ _ payment]
-  )
+  (order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
+
+
+(defn paid-on
+  "The instant this `payment` was paid."
+  [_ _ payment]
+  (tpayment/paid-on payment))
+
+
+(defn period-end
+  "The instant the period of this `payment` ends."
+  [_ _ payment]
+  (tpayment/period-end payment))
+
+(defn period-start
+  "The instant the period of this `payment` ends."
+  [_ _ payment]
+  (tpayment/period-start payment))
+
+(defn property
+  "The property associated with the account that made this `payment`, if any."
+  [_ _ payment]
+  (tpayment/property payment))
 
 
 (defn source
-  "The payment source used to make this payment, if any."
+  "The payment source used to make this `payment`, if any."
   [_ _ payment]
-  )
+  (tpayment/source payment))
 
 
-(defn order
-  "The order associated with this payment, if any."
+(defn status
+  "The status of this `payment`."
   [_ _ payment]
-  )
+  (tpayment/source payment))
 
 
-(defn property
-  "The property associated with the account that made this payment, if any."
+(defn payment-type
+  "What is this `payment` for?"
   [_ _ payment]
-  )
+  (-> (tpayment/type payment)
+      name
+      (string/replace "-" "_")
+      keyword))
+
 
 (comment
 
@@ -278,20 +293,20 @@
       (resolve/resolve-as nil {:message error})
       (tpayment/charge! payment {:source source}))
     #_(go
-      (try
-        (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
-          (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
-            (resolve/deliver! result nil {:message error})
-            (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
-              @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
-                                           (assoc :stripe/source-id (:id source))
-                                           (assoc :payment/status :payment.status/pending)
-                                           (assoc :payment/paid-on (java.util.Date.)))])
-              (resolve/deliver! result (d/entity (d/db conn) id)))))
-        (catch Throwable t
-          (timbre/error t ::pay-rent params)
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))))
+        (try
+          (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
+            (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
+              (resolve/deliver! result nil {:message error})
+              (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
+                @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
+                                             (assoc :stripe/source-id (:id source))
+                                             (assoc :payment/status :payment.status/pending)
+                                             (assoc :payment/paid-on (java.util.Date.)))])
+                (resolve/deliver! result (d/entity (d/db conn) id)))))
+          (catch Throwable t
+            (timbre/error t ::pay-rent params)
+            (resolve/deliver! result nil {:message  (.getMessage t)
+                                          :err-data (ex-data t)}))))))
 
 
 
@@ -299,18 +314,18 @@
 (defn pay-deposit!
   [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
   #_(let [result     (resolve/resolve-promise)
-        deposit    (deposit/by-account requester)
-        license    (member-license/active (d/db conn) requester)
-        connect-id (member-license/deposit-connect-id license)
-        customer   (customer/by-account (d/db conn) requester)]
-    (go
-      (try
-        (tpayment/create! customer (deposit/amount-remaining deposit) :payment.type/deposit)
-        (catch Throwable t
-          (timbre/error t ::pay-deposit {:id (:db/id requester) :source-id source-id})
-          (resolve/deliver! result nil {:message  (.getMessage t)
-                                        :err-data (ex-data t)}))))
-    result))
+          deposit    (deposit/by-account requester)
+          license    (member-license/active (d/db conn) requester)
+          connect-id (member-license/deposit-connect-id license)
+          customer   (customer/by-account (d/db conn) requester)]
+      (go
+        (try
+          (tpayment/create! customer (deposit/amount-remaining deposit) :payment.type/deposit)
+          (catch Throwable t
+            (timbre/error t ::pay-deposit {:id (:db/id requester) :source-id source-id})
+            (resolve/deliver! result nil {:message  (.getMessage t)
+                                          :err-data (ex-data t)}))))
+      result))
 
 
 ;; =============================================================================
@@ -336,14 +351,16 @@
    :payment/amount       amount
    :payment/autopay?     autopay?
    :payment/check        check
-   :payment/created      (fn [{conn :conn} _ payment]
-                           ;; TODO: Provide this via some sort of public api
-                           (->> payment teller/entity (td/created-at (d/db conn))))
+   :payment/created      created
    :payment/description  description
+   :payment/due          due
    :payment/entity-id    (fn [_ _ payment] (td/id payment))
    :payment/late-fee     late-fee
    :payment/method       method
    :payment/order        order
+   :payment/paid-on      paid-on
+   :payment/pend         period-end
+   :payment/pstart       period-start
    :payment/property     property
    :payment/source       source
    :payment/status       status
