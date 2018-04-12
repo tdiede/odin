@@ -133,7 +133,6 @@
   :check
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
-            ;; TODO:
             :payment     {:type    (non-null :payment)
                           :resolve :check/payment}
             :amount      {:type    (non-null Float)

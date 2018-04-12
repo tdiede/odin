@@ -1,5 +1,7 @@
 (ns odin.graphql.resolvers.check
   (:require [blueprints.models.check :as check]
+            [teller.payment :as tpayment]
+            [teller.check :as tcheck]
             [odin.graphql.authorization :as authorization]
             [blueprints.models.account :as account]
             [datomic.api :as d]
@@ -9,18 +11,17 @@
 (defn payment
   "The payment that this check belongs to."
   [_ _ check]
-  (check/payment check))
+  (tcheck/payment check))
 
 
 (defn create!
   [{:keys [requester conn]} {{:keys [payment amount name received_date check_date]} :params} _]
   (let [check (check/create2 name amount check_date received_date)]
-    @(d/transact conn [{:db/id           payment
-                        :payment/method  :payment.method/check
-                        :payment/check   check
-                        :payment/status  :payment.status/paid
-                        :payment/paid-on received_date}])
-    (:payment/check (d/entity (d/db conn) payment))))
+(tpayment/create! customer amount type {:check check})
+
+
+
+    ))
 
 
 (defmethod authorization/authorized? :check/create! [_ account _]
@@ -28,7 +29,7 @@
 
 
 (def resolvers
-  {;;fields
+  {;; fields
    :check/payment payment
    ;; mutations
    :check/create! create!})
