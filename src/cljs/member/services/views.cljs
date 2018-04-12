@@ -226,10 +226,6 @@
    [shopping-cart-footer requester]])
 
 
-(defn empty-cart []
-  [empty-view "There are no services selected" (routes/path-for :services/book) "Book services" " to add services to your requests"])
-
-
 ;; add credit card modal ========================================================
 
 
@@ -367,10 +363,6 @@
    [active-orders-list orders requester]])
 
 
-(defn empty-orders []
-  [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Book services" " to request services"])
-
-
 ;; ==============================================================================
 ;; manage subscriptions =========================================================
 ;; ==============================================================================
@@ -424,10 +416,6 @@
    [active-subscriptions-list subscriptions requester]])
 
 
-(defn empty-subscriptions []
-  [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Book services" " to request services"])
-
-
 ;; ==============================================================================
 ;; order history ================================================================
 ;; ==============================================================================
@@ -471,10 +459,6 @@
    [order-history-list history requester]])
 
 
-(defn empty-history []
-  [empty-view "You don't have an order history yet" (routes/path-for :services/book) "Book services" " to add services to your requests"])
-
-
 ;; ==============================================================================
 ;; premium services content =====================================================
 ;; ==============================================================================
@@ -506,7 +490,7 @@
     [:div
      (if-not (empty? @orders)
        [active-orders (sort-by :created > @orders) requester]
-       [empty-orders])]))
+       [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Book services" " to request services"])]))
 
 
 (defmethod content :services/subscriptions [{:keys [requester]}]
@@ -514,7 +498,7 @@
     [:div
      (if-not (empty? @subscriptions)
        [active-subscriptions @subscriptions requester]
-       [empty-subscriptions])]))
+       [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Book services" " to request services"])]))
 
 
 (defmethod content :services/history [{:keys [requester]}]
@@ -522,7 +506,7 @@
     [:div
      (if-not (empty? @history)
        [order-history @history requester]
-       [empty-history])]))
+       [empty-view "You don't have an order history yet" (routes/path-for :services/book) "Book services" " to add services to your requests"])]))
 
 
 
@@ -541,7 +525,7 @@
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
        [shopping-cart-body (sort-by :index @cart-items) requester]
-       [empty-cart])]))
+       [empty-view "There are no services selected" (routes/path-for :services/book) "Book services" " to add services to your requests"])]))
 
 
 
