@@ -12,7 +12,7 @@
    :values      [:cat :dog]}
 
   :currencies
-  {:description "Currencie to make payments."
+  {:description "Currencies to make payments."
    :values [:usd]}
 
   :deposit_status

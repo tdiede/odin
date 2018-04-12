@@ -231,9 +231,7 @@
    params
    :customers (when-some [a account]
                 [(tcustomer/by-account teller a)])
-   ;; TODO how do these get passed in the plural? can only one property be sent to `parse-gql-params`
    :properties (when-some [p property]
-                     ;; TODO is this the community code?
                  [(tproperty/by-community teller p)])
    :sources (when-some [s source]
               [(tsource/by-id teller s)])
