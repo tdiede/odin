@@ -241,7 +241,8 @@
             (map #(keyword "payment.type" (name %)) xs))
    :statuses (when-some [xs statuses]
                (map #(keyword "payment.status" (name %)) xs))
-   (:currency (name (first currencies)))))
+   :currency (when-let [c (first currencies)]
+               (name c))))
 
 
 (s/fdef parse-gql-params
