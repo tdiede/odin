@@ -212,29 +212,44 @@
 
 
 (s/def :gql/account integer?)
+(s/def :gql/property string?)
+(s/def :gql/source string?)
+(s/def :gql/source-types vector?)
 (s/def :gql/types vector?)
 (s/def :gql/from inst?)
 (s/def :gql/to inst?)
 (s/def :gql/statuses vector?)
+(s/def :gql/currencies vector?)
 (s/def :gql/datekey keyword?)
 
 
 (defn- parse-gql-params
-  [{:keys [teller] :as ctx} {:keys [account types from to statuses datekey] :as params}]
+  [{:keys [teller] :as ctx}
+   {:keys [account property source source_types types
+           from to statuses currencies datekey] :as params}]
   (tb/assoc-when
    params
    :customers (when-some [a account]
                 [(tcustomer/by-account teller a)])
+   ;; TODO how do these get passed in the plural? can only one property be sent to `parse-gql-params`
+   :properties (when-some [p property]
+                     ;; TODO is this the community code?
+                 [(tproperty/by-community teller p)])
+   :sources (when-some [s source]
+              [(tsource/by-id teller s)])
+   :source-types (when-some [xs source_types]
+                   (map #(keyword "payment-source.type" (name %)) xs))
    :types (when-some [xs types]
             (map #(keyword "payment.type" (name %)) xs))
    :statuses (when-some [xs statuses]
-               (map #(keyword "payment.status" (name %)) xs))))
+               (map #(keyword "payment.status" (name %)) xs))
+   (:currency (name (first currencies)))))
 
 
 (s/fdef parse-gql-params
         :args (s/cat :ctx map?
-                     :params (s/keys :opt-un [:gql/account :gql/types :gql/from :gql/to
-                                              :gql/statuses :gql/datekey]))
+                     :params (s/keys :opt-un [:gql/account :gql/property :gql/source :gql/source-types :gql/types
+                                              :gql/from :gql/to :gql/statuses :gql/currencies :gql/datekey]))
         :ret :teller.payment/query-params)
 
 

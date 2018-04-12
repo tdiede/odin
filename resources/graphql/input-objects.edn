@@ -98,6 +98,13 @@
   {:description "Parameters to query for payments."
    :fields      {:account  {:type        :Long
                             :description "ID of an account to query payments for."}
+                 :property {:type String
+                            :description "ID of a property to query payments for."}
+                 :source {:type String
+                          :description "ID of a payment sources to query payments for."}
+                 :source_types {:type (list :payment_source_type)
+                                :default-value [:bank :card]
+                                :description "List of payment source types."}
                  :types    {:type          (list :payment_type)
                             :default-value [:deposit :order :rent]
                             :description   "List of payment types to query."}
@@ -108,6 +115,9 @@
                  :statuses {:type          (list :payment_status)
                             :default-value [:due :canceled :paid :pending :failed :refunded]
                             :description   "List of payment statuses to query."}
+                 :currencies {:type (list :currencies)
+                              :default-value [:usd]
+                              :description "List of currencies used to make payments."}
                  :datekey  {:type          :payments_date_key
                             :default-value :created
                             :description   "Specifies which date attribute to use for date params."}}}
