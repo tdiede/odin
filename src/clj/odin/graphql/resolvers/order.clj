@@ -60,6 +60,12 @@
   (order/fulfilled-on order))
 
 
+(defn payments
+  "The payments made towards this `order`."
+  [{teller :teller} _ order]
+  (map (partial tpayment/by-entity teller) (order/payments order)))
+
+
 (defn- property-for-account [db account]
   (case (account/role account)
     :account.role/onboarding (-> account approval/by-account approval/property)
@@ -293,7 +299,7 @@
 ;; be structured as a migration...?
 
 
-(defn- fetch-or-create-plan!
+#_(defn- fetch-or-create-plan!
   [teller service]
   (or (plan/by-id teller (order/uuid order))
       (let []
@@ -307,21 +313,12 @@
 
 (defmethod process-order! :service.billed/monthly
   [{:keys [teller conn]} order]
-  #_(let [account (order/account order)
-          customer  (tcustomer/by-account teller account)
-          price     (order/computed-price order)
-          source    (tcustomer/source customer :payment.type/order)
-          ;; plan ()
-          subs      (subscription/subscribe! customer )
-          tx-res    @(d/transact conn
-                                 [{:db/id          id
-                                   :order/payments [:payment/id (tpayment/id payment)]}])]
-    (d/entity (:db-after tx-res) id)))
+  order)
 
 
 (defn charge!
   "Charge an order."
-  [{:keys [teller requester conn]} {:keys [id]} _]
+  [{:keys [teller requester conn] :as ctx} {:keys [id]} _]
   (let [customer (tcustomer/by-account teller requester)
         order    (d/entity (d/db conn) id)
         price    (order/computed-price order)
@@ -342,12 +339,7 @@
 
       :otherwise
       (try
-        (let [payment (tpayment/create! customer price :payment.type/order
-                                        {:source source})
-              tx-res  @(d/transact conn
-                                   [{:db/id          id
-                                     :order/payments [:payment/id (tpayment/id payment)]}])]
-          (d/entity (:db-after tx-res) id))
+        (process-order! ctx order)
         (catch Throwable t
           (timbre/error t ::order {:order-id id :source source})
           (resolve/resolve-as nil {:message  (error-message t)
@@ -408,6 +400,7 @@
    :order/status       status
    :order/billed-on    billed-on
    :order/fulfilled-on fulfilled-on
+   :order/payments     payments
    :order/property     property
    ;; queries
    :order/list         orders
