@@ -21,6 +21,14 @@
    (time-between (.now js/moment) end)))
 
 
+(defn days-between
+  "Returns the duration (in days) between two provided times. `start` defaults to now."
+  ([start end]
+   (-> (js/moment end) (.diff (js/moment start) "days")))
+  ([end]
+   (days-between (.now js/moment) end)))
+
+
 (defn is-before [first second]
   (-> (js/moment first) (.isBefore (js/moment second))))
 
