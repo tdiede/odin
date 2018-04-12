@@ -491,7 +491,7 @@
 
 (defn membership-orders-list [account orders]
   [ant/card
-   {:title (str (format/make-first-name-possessive (:name account)) "Premium Service Orders")}
+   {:title (str (format/make-first-name-possessive (:name account)) "Helping Hands Orders")}
    [ant/table
     (let [service-route #(routes/path-for :services.orders/entry :order-id (.-id %))]
       {:columns     [{:title     ""
