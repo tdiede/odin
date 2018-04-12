@@ -11,6 +11,7 @@
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
             [taoensso.timbre :as timbre]
+            [teller.property :as tproperty]
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
             [teller.source :as tsource]
@@ -126,7 +127,8 @@
 (defn order
   "The order associated with this `payment`, if any."
   [_ _ payment]
-  (order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
+  ;; TODO we will discuss how to keep the stripe-id out of the public api
+  #_(order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
 
 
 (defn paid-on
@@ -140,15 +142,17 @@
   [_ _ payment]
   (tpayment/period-end payment))
 
+
 (defn period-start
   "The instant the period of this `payment` ends."
   [_ _ payment]
   (tpayment/period-start payment))
 
+
 (defn property
   "The property associated with the account that made this `payment`, if any."
   [_ _ payment]
-  (tpayment/property payment))
+  (tproperty/community (tpayment/property payment)))
 
 
 (defn source
