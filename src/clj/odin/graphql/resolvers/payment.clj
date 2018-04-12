@@ -7,6 +7,7 @@
             [clj-time.coerce :as c]
             [clj-time.core :as t]
             [clojure.string :as string]
+            [odin.graphql.resolvers.utils :refer [error-message]]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
@@ -19,7 +20,8 @@
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
-            [teller.core :as teller]))
+            [teller.core :as teller]
+            [clojure.spec.alpha :as s]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -189,17 +191,18 @@
   (let [customer (tcustomer/by-email teller "member@test.com")]
     (tpayment/query teller {:customers [customer]}))
 
-
-  (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
-    (execute odin.graphql/schema
-             (venia/graphql-query
-              {:venia/queries
-               [[:payments {:params {:account account-id}}
-                 [:autopay :type]]]})
-             nil
-             {:conn      conn
-              :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
-              :teller    teller}))
+  (clojure.pprint/pprint
+   (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
+     (execute odin.graphql/schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payments {:params {:account account-id}}
+                  [:id :amount :type :due :pstart :pend
+                   [:account [:id]]]]]})
+              nil
+              {:conn      conn
+               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
+               :teller    teller})))
 
   )
 
@@ -208,16 +211,31 @@
 ;; =============================================================================
 
 
+(s/def :gql/account integer?)
+(s/def :gql/types vector?)
+(s/def :gql/from inst?)
+(s/def :gql/to inst?)
+(s/def :gql/statuses vector?)
+(s/def :gql/datekey keyword?)
+
+
 (defn- parse-gql-params
-  [{:keys [teller]} {:keys [statuses types account] :as params}]
+  [{:keys [teller] :as ctx} {:keys [account types from to statuses datekey] :as params}]
   (tb/assoc-when
    params
-   :statuses (when-some [xs statuses]
-               (map #(keyword "payment.status" (name %)) xs))
+   :customers (when-some [a account]
+                [(tcustomer/by-account teller a)])
    :types (when-some [xs types]
             (map #(keyword "payment.type" (name %)) xs))
-   :customers (when-some [a account]
-                [(tcustomer/by-account teller a)])))
+   :statuses (when-some [xs statuses]
+               (map #(keyword "payment.status" (name %)) xs))))
+
+
+(s/fdef parse-gql-params
+        :args (s/cat :ctx map?
+                     :params (s/keys :opt-un [:gql/account :gql/types :gql/from :gql/to
+                                              :gql/statuses :gql/datekey]))
+        :ret :teller.payment/query-params)
 
 
 ;; =============================================================================
@@ -227,16 +245,50 @@
 (defn payments
   "Query payments based on `params`."
   [{:keys [teller] :as ctx} {params :params} _]
-  (try
-    (tpayment/query teller (parse-gql-params ctx params))
-    (catch Throwable t
-      (timbre/error t ::query params)
-      (resolve/resolve-as nil {:message  (.getMessage t)
-                               :err-data (ex-data t)}))))
+  (let [tparams (parse-gql-params ctx params)]
+    (clojure.pprint/pprint tparams)
+    (try
+      (tpayment/query teller tparams)
+      (catch Throwable t
+        (timbre/error t ::query params)
+        (resolve/resolve-as nil {:message  (error-message t)
+                                 :err-data (ex-data t)})))))
 
 
+(comment
+
+  (do
+    (require '[com.walmartlabs.lacinia :refer [execute]])
+    (require '[odin.datomic :refer [conn]])
+    (require '[odin.teller :refer [teller]])
+    (require '[datomic.api :as d])
+    (require '[venia.core :as venia]))
+
+  (let [customer (tcustomer/by-email teller "member@test.com")
+        sources  (tcustomer/sources customer)]
+    (println (tpayment/query teller {:customers [customer]}))
+    ;; TODO why do no sources return?
+    (println sources)
+    (println (tpayment/query teller {:sources sources})))
 
 
+  (clojure.pprint/pprint
+   (let [account-id  (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))
+         property-id (:db/id (d/entity (d/db conn) [:property/code "52gilbert"]))]
+     (execute odin.graphql/schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payments {:params {:account account-id
+                                      :types   [:rent]}}
+                  [:id :amount :type :due :pstart :pend
+                   [:account [:id]]
+                   [:source [:type]]]]]})
+              nil
+              {:conn      conn
+               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
+               :teller    teller})))
+
+  )
 
 ;; ==============================================================================
 ;; mutations ====================================================================

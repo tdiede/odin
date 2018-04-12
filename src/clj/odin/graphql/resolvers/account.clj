@@ -16,7 +16,8 @@
             [toolbelt.async :refer [<!?]]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
-            [odin.util.validation :as uv]))
+            [odin.util.validation :as uv]
+            [teller.customer :as tcustomer]))
 
 ;; =============================================================================
 ;; Fields
@@ -64,17 +65,14 @@
 
 
 (defn service-source
-  [{:keys [conn stripe]} _ account]
-  (let [result (resolve/resolve-promise)]
-    (go
-      (try
-        (let [source (<!? (payment-source/service-source (d/db conn) stripe account))]
-          (resolve/deliver! result source))
-        (catch Throwable t
-          (timbre/error t ::service-source {:account (:db/id account)})
-          (resolve/deliver! result nil {:mesage   (error-message t)
-                                        :err-data (ex-data t)}))))
-    result))
+  [{:keys [teller]} _ account]
+  (try
+    (let [customer (tcustomer/by-account teller account)]
+      (tcustomer/source customer :payment.type/order))
+    (catch Throwable t
+      (timbre/error t ::service-source {:account (:db/id account)})
+      (resolve/resolve-as nil {:mesage   (error-message t)
+                               :err-data (ex-data t)}))))
 
 
 (defn notes
@@ -110,7 +108,7 @@
     (query-accounts (d/db conn) params)
     (catch Throwable t
       (timbre/error t "error querying accounts")
-      (resolve/resolve-as nil {:message  (.getMessage t)
+      (resolve/resolve-as nil {:message  (error-message t)
                                :err-data (ex-data t)}))))
 
 

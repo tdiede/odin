@@ -6,6 +6,7 @@
                  :q          {:type        String
                               :description "Query string to search for accounts by name or email."}
                  :properties {:type (list :Long)}}}
+
   :update_account
   {:description "Inputs to update an account."
    :fields      {:first_name        {:type String}
@@ -13,6 +14,8 @@
                  :last_name         {:type String}
                  :phone             {:type String}
                  :emergency_contact {:type :update_account}}}
+
+
    ;;; Application
   :approve_application
   {:description "Inputs to approve an application."
@@ -20,6 +23,8 @@
                  :term     {:type (non-null Int)}
                  :move_in  {:type (non-null :Instant)}
                  :unit     {:type (non-null :Long)}}}
+
+
   ;;; Check
   :create_check_params
   {:description "Inputs to create a check."
@@ -28,6 +33,8 @@
                  :name          {:type (non-null String)}
                  :received_date {:type (non-null :Instant)}
                  :check_date    {:type (non-null :Instant)}}}
+
+
   ;;; License
   :reassign_member_unit_params
   {:description "Inputs to reassign a member to a new unit."
@@ -36,7 +43,9 @@
                  :rate    {:type (non-null Float)}
                  ;; :term    {:type (non-null Int)}
                  }}
-  ;;; Orders
+
+
+  ;;; Order
   :orders_query_params
   {:description "Parameters to query for orders."
    :fields
@@ -54,7 +63,6 @@
                  :description "Orders after."}
     :to         {:type        :Instant
                  :description "Orders until."}}}
-
 
   :mutate_line_item_params
   {:description "Parameters to create a line item."
@@ -78,16 +86,13 @@
                  :line_items {:type (list :mutate_line_item_params)}}}
 
 
-  ;;; Payments
-
-
+  ;;; Payment
   :create_payment_params
   {:description "Inputs to create a payment."
    :fields      {:account {:type (non-null :Long)}
                  :type    {:type (non-null :payment_type)}
                  :month   {:type :Instant}
                  :amount  {:type (non-null Float)}}}
-
 
   :payments_query_params
   {:description "Parameters to query for payments."
@@ -108,6 +113,7 @@
                             :description   "Specifies which date attribute to use for date params."}}}
 
 
+  ;;; Note
   :create_note_params
   {:description "Parameters to create a new note."
    :fields      {:account {:type        (non-null :Long)
@@ -115,7 +121,6 @@
                  :subject {:type (non-null String)}
                  :content {:type (non-null String)}
                  :notify  {:type Boolean}}}
-
 
   :update_note_params
   {:description "Parameters to update a note."
@@ -125,12 +130,14 @@
                  :content {:type String}}}
 
 
+  ;;; Services
   :services_query_params
   {:description "Parameters to query for services."
    :fields      {:q {:type        String
                      :description "Query term."}}}
 
 
+  ;;; Units
   :units_query_params
   {:description "Parameters to query for units."
    :fields      {:property {:type        :Long
