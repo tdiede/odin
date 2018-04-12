@@ -85,10 +85,6 @@
    {:db (assoc db :params query-params)}))
 
 
-(defn parse-special-chars [str]
-  (string/replace str "&amp;" "&"))
-
-
 (reg-event-fx
  :services/fetch-orders
  (fn [{db :db} [k account]]
@@ -105,7 +101,7 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [orders (->> (get-in response [:data :orders])
-                     (map #(assoc % :name (parse-special-chars (:name %)))))]
+                     (map #(assoc % :name (:name %))))]
      {:db (assoc db :orders orders)})))
 
 
@@ -141,11 +137,9 @@
                 :on-failure [:graphql/failure k]}})))
 
 
-(defn onboarding? [service]
+(defn only-onboarding? [service]
   (let [svc-cat (set (:catalogs service))]
-    (if (= #{:onboarding} svc-cat)
-      true
-      false)))
+    (= #{:onboarding} svc-cat)))
 
 
 (reg-event-fx
@@ -153,8 +147,8 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [services (->> (get-in response [:data :services])
-                       (remove onboarding?)
-                       (map #(assoc % :name (parse-special-chars (:name %)) :description (parse-special-chars (:description %))))
+                       (remove only-onboarding?)
+                       (map #(assoc % :name (:name %) :description (:description %)))
                        (sort-by #(string/lower-case (:name %))))
          clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
                     (distinct)
@@ -359,8 +353,7 @@
  ::order-cancel-success
  [(path db/path)]
  (fn [{db :db} [_ k account-id response]]
-   (let [order-name (->> (get-in response [:data :cancel_order :name])
-                         (parse-special-chars))]
+   (let [order-name (get-in response [:data :cancel_order :name])]
      {:dispatch-n   [[:ui/loading k false]
                      [:services/fetch-orders account-id]]
       :db           (dissoc db :canceling)

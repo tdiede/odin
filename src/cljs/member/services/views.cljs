@@ -40,6 +40,13 @@
          "/mo")))
 
 
+(defn empty-view [header route anchor message]
+  [:div.empty-cart
+   [:p.fs3.bold header]
+   [:p.fs3 "Go to "
+    [:a {:href route} anchor] message]])
+
+
 ;; ==============================================================================
 ;; BOOK SERVICES ================================================================
 ;; ==============================================================================
@@ -220,11 +227,7 @@
 
 
 (defn empty-cart []
-  [:div.empty-cart
-   [:p.fs3.bold "There are no services selected"]
-   [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to add services to your requests"]])
-
+  [empty-view "There are no services selected" (routes/path-for :services/book) "Book services" " to add services to your requests"])
 
 
 ;; add credit card modal ========================================================
@@ -365,10 +368,7 @@
 
 
 (defn empty-orders []
-  [:div.empty-cart
-   [:p.fs3.bold "You don't have any active orders at the moment"]
-   [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to request services"]])
+  [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Book services" " to request services"])
 
 
 ;; ==============================================================================
@@ -425,10 +425,7 @@
 
 
 (defn empty-subscriptions []
-  [:div.empty-cart
-   [:p.fs3.bold "You don't have any active subscriptions"]
-   [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to request services"]])
+  [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Book services" " to request services"])
 
 
 ;; ==============================================================================
@@ -475,10 +472,7 @@
 
 
 (defn empty-history []
-  [:div.empty-cart
-   [:p.fs3.bold "You don't have an order history yet"]
-   [:p.fs3 "Go to "
-    [:a {:href "book"} "Book services"] " to add services to your requests"]])
+  [empty-view "You don't have an order history yet" (routes/path-for :services/book) "Book services" " to add services to your requests"])
 
 
 ;; ==============================================================================
