@@ -755,7 +755,7 @@
 
    [create-service-modal]
 
-   (typography/view-header "Premium Services" "Manage and view premium service offerings")
+   (typography/view-header "Helping Hands" "Manage and view Helping Hands service offerings")
 
    [:div.mb2
     [menu route]]
