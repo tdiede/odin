@@ -105,7 +105,7 @@
                         :community [:property/code "2072mission"]})))
 
 
-(def mock-visa
+(def mock-visa-credit
   {:object    "card"
    :exp_month 12
    :exp_year  23
@@ -115,10 +115,12 @@
 (defn- seed-payments [teller]
   (let [customer (tcustomer/create! teller "member@test.com"
                                     {:account  [:account/email "member@test.com"]
-                                     :source   mock-visa
+                                     :source   mock-visa-credit
                                      :property (tproperty/by-id teller "52gilbert")})]
+
     (tpayment/create! customer 25.0 :payment.type/application-fee)
     (tpayment/create! customer 500.0 :payment.type/deposit)
+    (tpayment/create! customer 50.0 :payment.type/order)
     (tpayment/create! customer 2000.0 :payment.type/rent {:period [#inst "2018-05-31"
                                                                    #inst "2018-06-30"]})))
 
