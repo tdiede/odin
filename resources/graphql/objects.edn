@@ -133,6 +133,7 @@
   :check
   {:fields {:id          {:type    (non-null :Long)
                           :resolve (:get :db/id)}
+            ;; TODO:
             :payment     {:type    (non-null :payment)
                           :resolve :check/payment}
             :amount      {:type    (non-null Float)
@@ -158,7 +159,7 @@
                                :resolve (:get :deposit/account)}
             :payments         {:type        (list :payment)
                                :description "Payments made towards the security deposit."
-                               :resolve     (:get :deposit/payments)}
+                               :resolve     :deposit/payments}
             :status           {:type    (non-null :deposit_status)
                                :resolve :deposit/status}
             :amount_remaining {:type        (non-null Float)
@@ -195,7 +196,7 @@
                           :resolve     (:get :member-license/rate)}
             :payments    {:type        (list :payment)
                           :description "The rent payments for this license."
-                          :resolve     (:get :member-license/rent-payments)}
+                          :resolve     :member-license/rent-payments}
             :starts      {:type        (non-null :Instant)
                           :description "Start date of the member license (commencement)."
                           :resolve     (:get :member-license/commencement)}
@@ -268,7 +269,7 @@
             :service               {:type    (non-null :service)
                                     :resolve (:get :order/service)}
             :payments              {:type    (list :payment)
-                                    :resolve (:get :order/payments)}
+                                    :resolve :order/payments}
             :property              {:type    (non-null :property)
                                     :resolve :order/property}
             :projected_fulfillment {:type    :Instant
@@ -313,9 +314,8 @@
 
 
   :payment
-  {:fields {:id          {:type        (non-null :Long)
-                          :description "DEPRECATED"
-                          :resolve     :payment/entity-id}
+  {:fields {:id          {:type    (non-null :ID)
+                          :resolve :payment/id}
             :account     {:type    (non-null :account)
                           :resolve :payment/account}
             :amount      {:type    (non-null Float)
@@ -330,7 +330,7 @@
             :description {:type    String
                           :resolve :payment/description}
             :due         {:type    :Instant
-                          :resolve (:get :payment/due)}
+                          :resolve :payment/due}
             :ext_id      {:type        String
                           :description "DEPRECATED: The Stripe external id."
                           :resolve     :payment/id}
@@ -341,23 +341,22 @@
             :order       {:type    :order
                           :resolve :payment/order}
             :paid_on     {:type    :Instant
-                          :resolve (:get :payment/paid-on)}
+                          :resolve :payment/paid-on}
             :pend        {:type        :Instant
                           :description "Period end."
-                          :resolve     (:get :payment/pend)}
+                          :resolve     :payment/pend}
             :property    {:type        :property
                           :description "The property that the member that made this payment is associated with."
                           :resolve     :payment/property}
             :pstart      {:type        :Instant
                           :description "Period start."
-                          :resolve     (:get :payment/pstart)}
+                          :resolve     :payment/pstart}
             :source      {:type    :payment_source
                           :resolve :payment/source}
             :status      {:type    :payment_status
                           :resolve :payment/status}
             :type        {:type    :payment_type
                           :resolve :payment/type}
-            ;; TODO: rename to `:id` after removing the above
             :uuid        {:type    (non-null String)
                           :resolve :payment/id}}}
 

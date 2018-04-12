@@ -10,7 +10,8 @@
             [clojure.string :as string]
             [teller.property :as tproperty]
             [teller.payment :as tpayment]
-            [teller.customer :as tcustomer]))
+            [teller.customer :as tcustomer]
+            [toolbelt.date :as date]))
 
 
 (defn- referrals []
@@ -116,13 +117,13 @@
   (let [customer (tcustomer/create! teller "member@test.com"
                                     {:account  [:account/email "member@test.com"]
                                      :source   mock-visa-credit
-                                     :property (tproperty/by-id teller "52gilbert")})]
+                                     :property (tproperty/by-id teller "52gilbert")})
+        tz       (t/time-zone-for-id "America/Los_Angeles")]
 
-    (tpayment/create! customer 25.0 :payment.type/application-fee)
-    (tpayment/create! customer 500.0 :payment.type/deposit)
-    (tpayment/create! customer 50.0 :payment.type/order)
-    (tpayment/create! customer 2000.0 :payment.type/rent {:period [#inst "2018-05-31"
-                                                                   #inst "2018-06-30"]})))
+    (tpayment/create! customer 2000.0 :payment.type/rent
+                      {:due    (date/end-of-day (java.util.Date.) tz)
+                       :period [(date/beginning-of-month (java.util.Date.) tz)
+                                (date/end-of-month (java.util.Date.) tz)]})))
 
 
 (defn seed-teller [teller]

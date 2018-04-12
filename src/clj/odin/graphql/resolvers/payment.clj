@@ -6,22 +6,21 @@
             [blueprints.models.service :as service]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
+            [clojure.spec.alpha :as s]
             [clojure.string :as string]
-            [odin.graphql.resolvers.utils :refer [error-message]]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
+            [odin.graphql.resolvers.utils :refer [error-message]]
             [taoensso.timbre :as timbre]
-            [teller.property :as tproperty]
+            [teller.core :as teller]
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
+            [teller.property :as tproperty]
             [teller.source :as tsource]
-            [teller.subscription :as tsubscription]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]
-            [teller.core :as teller]
-            [clojure.spec.alpha :as s]))
+            [toolbelt.datomic :as td]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -56,8 +55,8 @@
 ;; TODO: Provide this via some sort of public api
 (defn created
   "The instant this `payment` was created."
-  [{:keys [teller]} _ payment]
-  (->> payment teller/entity (td/created-at (d/db (teller/db payment)))))
+  [{:keys [teller conn]} _ payment]
+  (->> payment teller/entity (td/created-at (d/db conn))))
 
 
 (defn- deposit-desc
@@ -81,13 +80,14 @@
 
 (defn description
   "A description of this `payment`. Varies based on payment type."
-  [{:keys [teller]} _ payment]
+  [{:keys [teller conn]} _ payment]
   (letfn [(-rent-desc [payment]
             (->> [(tpayment/period-start payment) (tpayment/period-end payment)]
                  (map date/short)
                  (apply format "rent for %s-%s")))
           (-order-desc [payment]
-            (let [order        (order/by-payment (d/db (teller/db payment)) payment)
+            ;; NOTE: cheating...kinda
+            (let [order        (order/by-payment (d/db conn) (teller/entity payment))
                   service-desc (service/name (order/service order))]
               (or (when-let [d (order/summary order)]
                     (format "%s (%s)" d service-desc))
@@ -166,7 +166,7 @@
 (defn status
   "The status of this `payment`."
   [_ _ payment]
-  (tpayment/source payment))
+  (keyword (name (tpayment/status payment))))
 
 
 (defn payment-type
@@ -327,14 +327,16 @@
 
 (defn- ensure-payment-allowed
   [payment source]
-  (let [retry (#{:payment.status/due :payment.status/failed} (payment/status payment))
-        rent  (= (tpayment/type payment) :payment.type/rent)
-        bank  (tsource/bank-account? source)]
+  (let [retry        (#{:payment.status/due :payment.status/failed}
+                      (tpayment/status payment))
+        correct-type (#{:payment.type/rent :payment.type/deposit}
+                      (tpayment/type payment))
+        bank         (tsource/bank-account? source)]
     (cond
       (not retry)
-      (format "This payment has status %s; cannot pay!" (name (payment/status payment)))
+      (format "This payment has status %s; cannot pay!" (name (tpayment/status payment)))
 
-      (not (and rent bank))
+      (not (and correct-type bank))
       "Only bank accounts can be used to pay rent.")))
 
 
@@ -359,24 +361,13 @@
   [{:keys [requester teller] :as ctx} {:keys [id source] :as params} _]
   (let [payment (tpayment/by-id teller id)
         source  (tsource/by-id teller source)]
-    (if-let [error (ensure-payment-allowed payment source)]
-      (resolve/resolve-as nil {:message error})
-      (tpayment/charge! payment {:source source}))
-    #_(go
-        (try
-          (let [source (<!? (rcu/fetch-source stripe (customer/id customer) source))]
-            (if-let [error (ensure-payment-allowed (d/db conn) requester payment source)]
-              (resolve/deliver! result nil {:message error})
-              (let [charge-id (:id (<!? (create-bank-charge! ctx requester payment customer (:id source))))]
-                @(d/transact-async conn [(-> (payment/add-charge payment charge-id)
-                                             (assoc :stripe/source-id (:id source))
-                                             (assoc :payment/status :payment.status/pending)
-                                             (assoc :payment/paid-on (java.util.Date.)))])
-                (resolve/deliver! result (d/entity (d/db conn) id)))))
-          (catch Throwable t
-            (timbre/error t ::pay-rent params)
-            (resolve/deliver! result nil {:message  (.getMessage t)
-                                          :err-data (ex-data t)}))))))
+    (try
+      (if-let [error (ensure-payment-allowed payment source)]
+        (resolve/resolve-as nil {:message error})
+        (tpayment/charge! payment {:source source}))
+      (catch Throwable t
+        (timbre/error t ::pay-rent {:payment-id id :source-id source})
+        (resolve/resolve-as nil {:message (error-message t)})))))
 
 
 
@@ -409,9 +400,17 @@
 
 
 (defmethod authorization/authorized? :payment/pay-rent!
-  [{conn :conn} account params]
-  (let [payment (d/entity (d/db conn) (:id params))]
-    (= (:db/id account) (:db/id (payment/account payment)))))
+  [{teller :teller} account params]
+  (let [payment  (tpayment/by-id teller (:id params))
+        customer (tcustomer/by-account teller account)]
+    (= customer (tpayment/customer payment))))
+
+
+(defmethod authorization/authorized? :payment/pay-deposit!
+  [{teller :teller} account params]
+  (let [payment  (tpayment/by-id teller (:id params))
+        customer (tcustomer/by-account teller account)]
+    (= customer (tpayment/customer payment))))
 
 
 (def resolvers

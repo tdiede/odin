@@ -165,7 +165,7 @@
   :pay_rent_payment
   {:type        :payment
    :description "Make a payment."
-   :args        {:id     {:type        (non-null :Long)
+   :args        {:id     {:type        (non-null :ID)
                           :description "ID of the payment entity."}
                  :source {:type        (non-null String)
                           :description "ID of the source to use for the payment. Must be a bank account."}}
