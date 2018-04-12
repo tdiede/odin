@@ -59,23 +59,35 @@
   (->> payment teller/entity (td/created-at (d/db conn))))
 
 
+(defn- is-first-deposit-payment?
+  [teller payment]
+  (let [customer (tpayment/customer payment)
+        payments (tpayment/query teller
+                                 {:customers     [customer]
+                                  :payment-types [:payment.type/deposit]})]
+    (or (= (count payments) 1)
+        (= (tpayment/id payment)
+           (->> payments
+                (map (juxt tpayment/id tpayment/amount))
+                (sort-by second <)
+                ffirst)))))
+
+
 (defn- deposit-desc
   "Description for a security deposit `payment`."
-  [account payment]
+  [teller account payment]
   (let [entire-deposit-desc  "entire security deposit payment"
         partial-deposit-desc "security deposit installment"
-        deposit              (deposit/by-account account)
-        entire-py?           (= :deposit.type/full (deposit/type deposit))
-        first-py?            (or (= (count (deposit/payments deposit)) 1)
-                                 (= (td/id payment)
-                                    (->> (deposit/payments deposit)
-                                         (map (juxt td/id tpayment/amount))
-                                         (sort-by second <)
-                                         ffirst)))]
+        deposit              (deposit/by-account account)]
     (cond
-      entire-py? entire-deposit-desc
-      first-py?  (str "first " partial-deposit-desc)
-      :otherwise (str "second " partial-deposit-desc))))
+      (= :deposit.type/full (deposit/type deposit))
+      entire-deposit-desc
+
+      (is-first-deposit-payment? teller payment)
+      (str "first " partial-deposit-desc)
+
+      :otherwise
+      (str "second " partial-deposit-desc))))
 
 
 (defn description
@@ -95,7 +107,7 @@
     (case (tpayment/type payment)
       :payment.type/rent    (-rent-desc payment)
       :payment.type/order   (-order-desc payment)
-      :payment.type/deposit (deposit-desc (tcustomer/account (tpayment/customer payment)) payment)
+      :payment.type/deposit (deposit-desc teller (tcustomer/account (tpayment/customer payment)) payment)
       nil)))
 
 
@@ -370,23 +382,29 @@
         (resolve/resolve-as nil {:message (error-message t)})))))
 
 
-
-;; TODO: Refactor using above as reference
 (defn pay-deposit!
-  [{:keys [stripe conn requester] :as ctx} {source-id :source} _]
-  #_(let [result     (resolve/resolve-promise)
-          deposit    (deposit/by-account requester)
-          license    (member-license/active (d/db conn) requester)
-          connect-id (member-license/deposit-connect-id license)
-          customer   (customer/by-account (d/db conn) requester)]
-      (go
-        (try
-          (tpayment/create! customer (deposit/amount-remaining deposit) :payment.type/deposit)
-          (catch Throwable t
-            (timbre/error t ::pay-deposit {:id (:db/id requester) :source-id source-id})
-            (resolve/deliver! result nil {:message  (.getMessage t)
-                                          :err-data (ex-data t)}))))
-      result))
+  [{:keys [conn requester teller] :as ctx} {source-id :source} _]
+  (let [source   (tsource/by-id teller source-id)
+        customer (tcustomer/by-account teller requester)
+        deposit  (deposit/by-account requester)]
+    (try
+      (if-not (tsource/bank-account? source)
+        (resolve/resolve-as nil {:message
+                                 "Your deposit can only be paid with a bank account."})
+        ;; NOTE: `deposit/amount-remaining` relies on relations established
+        ;; between deposit and payment entities. this can be represented using
+        ;; teller (rather than outdated `blueprints.models.payment` namespace)
+        ;; after importing blueprints models to `odin`.
+        (let [payment (tpayment/create! customer
+                                        (deposit/amount-remaining deposit)
+                                        :payment.type/deposit
+                                        {:source source})]
+          @(d/transact conn [{:db/id            (td/id deposit)
+                              :deposit/payments (td/id payment)}])
+          (deposit/by-account (d/entity (d/db conn) (td/id requester)))))
+      (catch Throwable t
+        (timbre/error t ::pay-deposit {:source-id source-id})
+        (resolve/resolve-as nil {:message (error-message t)})))))
 
 
 ;; =============================================================================
@@ -400,13 +418,6 @@
 
 
 (defmethod authorization/authorized? :payment/pay-rent!
-  [{teller :teller} account params]
-  (let [payment  (tpayment/by-id teller (:id params))
-        customer (tcustomer/by-account teller account)]
-    (= customer (tpayment/customer payment))))
-
-
-(defmethod authorization/authorized? :payment/pay-deposit!
   [{teller :teller} account params]
   (let [payment  (tpayment/by-id teller (:id params))
         customer (tcustomer/by-account teller account)]
