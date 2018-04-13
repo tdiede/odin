@@ -17,7 +17,7 @@
 
 (defn create!
   [{:keys [teller]}
-   {{:keys [payment amount name received_date check_date bank number status]} :params} _]
+   {{:keys [payment amount name received_date check_date bank number]} :params} _]
   (let [payment'   (tpayment/by-entity teller payment)
         check-data {:amount      amount
                     :name        name
