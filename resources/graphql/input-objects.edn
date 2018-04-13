@@ -32,7 +32,9 @@
                  :amount        {:type (non-null Float)}
                  :name          {:type (non-null String)}
                  :received_date {:type (non-null :Instant)}
-                 :check_date    {:type (non-null :Instant)}}}
+                 :check_date    {:type (non-null :Instant)}
+                 :bank          {:type (non-null String)}
+                 :number        {:type (non-null :Long)}}}
 
 
   ;;; License
@@ -104,31 +106,31 @@
 
   :payments_query_params
   {:description "Parameters to query for payments."
-   :fields      {:account  {:type        :Long
-                            :description "ID of an account to query payments for."}
-                 :property {:type String
-                            :description "ID of a property to query payments for."}
-                 :source {:type String
-                          :description "ID of a payment sources to query payments for."}
-                 :source_types {:type (list :payment_source_type)
+   :fields      {:account      {:type        :Long
+                                :description "ID of an account to query payments for."}
+                 :property     {:type        String
+                                :description "ID of a property to query payments for."}
+                 :source       {:type        String
+                                :description "ID of a payment sources to query payments for."}
+                 :source_types {:type          (list :payment_source_type)
                                 :default-value [:bank :card]
-                                :description "List of payment source types."}
-                 :types    {:type          (list :payment_type)
-                            :default-value [:deposit :order :rent]
-                            :description   "List of payment types to query."}
-                 :from     {:type        :Instant
-                            :description "Payments after."}
-                 :to       {:type        :Instant
-                            :description "Payments until."}
-                 :statuses {:type          (list :payment_status)
-                            :default-value [:due :canceled :paid :pending :failed :refunded]
-                            :description   "List of payment statuses to query."}
-                 :currencies {:type (list :currencies)
-                              :default-value [:usd]
-                              :description "List of currencies used to make payments."}
-                 :datekey  {:type          :payments_date_key
-                            :default-value :created
-                            :description   "Specifies which date attribute to use for date params."}}}
+                                :description   "List of payment source types."}
+                 :types        {:type          (list :payment_type)
+                                :default-value [:deposit :order :rent]
+                                :description   "List of payment types to query."}
+                 :from         {:type        :Instant
+                                :description "Payments after."}
+                 :to           {:type        :Instant
+                                :description "Payments until."}
+                 :statuses     {:type          (list :payment_status)
+                                :default-value [:due :canceled :paid :pending :failed :refunded]
+                                :description   "List of payment statuses to query."}
+                 :currencies   {:type          (list :currencies)
+                                :default-value [:usd]
+                                :description   "List of currencies used to make payments."}
+                 :datekey      {:type          :payments_date_key
+                                :default-value :created
+                                :description   "Specifies which date attribute to use for date params."}}}
 
 
   ;;; Note
