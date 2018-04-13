@@ -1,5 +1,6 @@
 (ns odin.graphql.resolvers.check
   (:require [blueprints.models.check :as check]
+            [odin.teller :as teller]
             [teller.payment :as tpayment]
             [teller.check :as tcheck]
             [odin.graphql.authorization :as authorization]
@@ -15,13 +16,11 @@
 
 
 (defn create!
-  [{:keys [requester conn]} {{:keys [payment amount name received_date check_date]} :params} _]
-  (let [check (check/create2 name amount check_date received_date)]
-(tpayment/create! customer amount type {:check check})
-
-
-
-    ))
+  [{:keys [teller requester]}
+   {{:keys [payment amount name received_date check_date bank number status]} :params} _]
+  (let [check-data {:amount amount :name name :received-on received_date :date check_date
+                    :bank bank :number number}]
+    (tpayment/add-check! payment check-data)))
 
 
 (defmethod authorization/authorized? :check/create! [_ account _]
