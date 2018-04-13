@@ -16,11 +16,16 @@
 
 
 (defn create!
-  [{:keys [teller requester]}
+  [{:keys [teller]}
    {{:keys [payment amount name received_date check_date bank number status]} :params} _]
-  (let [check-data {:amount amount :name name :received-on received_date :date check_date
-                    :bank bank :number number}]
-    (tpayment/add-check! payment check-data)))
+  (let [payment'   (tpayment/by-entity teller payment)
+        check-data {:amount      amount
+                    :name        name
+                    :received-on received_date
+                    :date        check_date
+                    :bank        bank
+                    :number      number}]
+    (tpayment/add-check! payment' check-data)))
 
 
 (defmethod authorization/authorized? :check/create! [_ account _]
