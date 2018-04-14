@@ -163,7 +163,7 @@
 ;; ==============================================================================
 
 
-(defn cart-item [{:keys [index name description price fields]}]
+(defn cart-item [{:keys [index name description price fields fee?]}]
   (let [service-item {:index       index
                       :name        name
                       :description description
@@ -171,7 +171,8 @@
     [ant/card {:style {:margin "10px 0"}}
      [:div.columns
       [:div.column.is-6
-       [:h4.subtitle.is-5 name]]
+       [:h4.subtitle.is-5 name]
+       (when fee? [:div description])]
       [:div.column.is-2
        [:p.price (if (some? price)
                    (format/currency price)
@@ -205,10 +206,55 @@
       "Submit orders"]]))
 
 
+(defn- filter-svcs-with-fees
+  [cart-items]
+  (filter #(not (empty? (:fees %))) cart-items))
+
+
+(defn- extract-fee-ids
+  [services]
+  (reduce
+   (fn [fees svc]
+     (apply conj fees (map :id (:fees svc))))
+   #{}
+   services))
+
+
+(defn- build-fees-map
+  [fee-ids]
+  (reduce
+   (fn [fee id]
+     (assoc fee id {}))
+   {}
+   fee-ids))
+
+
+(defn- update-fees-map
+  [fees-acc {:keys [fees] :as svc}]
+  (reduce
+   (fn [fees-acc {:keys [id name price] :as fee}]
+     (if (empty? (get-in fees-acc [id]))
+       (assoc-in fees-acc [id] {:fee? true :id id :name name :price price :description (str "For "  (:name svc))})
+       (-> (update-in fees-acc [id :price] #(+ (get-in fees-acc [id :price]) (/ price 2)))
+           (update-in [id :description] str (str ", " (:name svc))))))
+   fees-acc
+   fees))
+
+
+(defn- extract-fees
+  [cart-items]
+  (let [services (filter #(not (empty? (:fees %))) cart-items)
+        fees (->> (extract-fee-ids services)
+                  build-fees-map)]
+    (vals (reduce update-fees-map fees services))))
+
+
 (defn shopping-cart-body [cart-items requester]
   [:div
    (doall
-    (map-indexed #(with-meta [cart-item %2] {:key %1}) cart-items))
+    (map-indexed
+     #(with-meta [cart-item %2] {:key %1})
+     (concat cart-items (extract-fees cart-items))))
    [shopping-cart-footer requester]])
 
 
