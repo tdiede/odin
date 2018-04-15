@@ -115,29 +115,6 @@
   [{conn :conn} {order-id :id} _]
   (d/entity (d/db conn) order-id))
 
-(comment
-
-  (parse-gql-params {:billed [:service.billed/once]})
-
-  ;; Run the query.
-  (let [conn odin.datomic/conn]
-    (com.walmartlabs.lacinia/execute
-     odin.graphql/schema
-     (venia.core/graphql-query
-      {:venia/queries
-       [[:orders {:params {;; :billed [:monthly]
-                           :accounts [285873023223100]}}
-         [:id :name :billed
-          [:payments [:id :amount :status :paid_on]]
-          [:fields [:id :type :label :index :value]]]]]})
-     nil
-     {:conn      conn
-      :requester (d/entity (d/db conn) [:account/email "member@test.com"])}))
-
-
-
-  )
-
 
 ;; =============================================================================
 ;; Mutations
@@ -195,6 +172,26 @@
                              fields)))))
 
 
+(defn- tally-fees
+  [fee occurences]
+  (* (/ (:service/price fee) 2) (inc occurences)))
+
+
+(defn- prepare-fees
+  [db params]
+  (let [services (map :service params)
+        account  ((comp :account first) params)]
+    (->> (mapcat (comp :service/fees (partial d/entity db)) services)
+         (filter (comp not nil?))
+         (group-by identity)
+         (reduce-kv
+          (fn [m k v]
+            (assoc m k {:fee   (:db/id k)
+                        :price (tally-fees (first v) (count v))})) {})
+         vals
+         (map (fn [f] (order/create account (:fee f) {:price (:price f)}))))))
+
+
 (defn create!
   "Create a new order."
   [{:keys [requester conn]} {params :params} _]
@@ -208,17 +205,19 @@
 (defn create-many!
   "Create many new orders"
   [{:keys [requester conn]} {params :params} _]
-  (let [orders (map (comp (partial prepare-order (d/db conn)) parse-params) params)]
+  (let [orders          (map (comp (partial prepare-order (d/db conn)) parse-params) params)
+        fees            (prepare-fees (d/db conn) params)
+        orders-and-fees (concat orders fees)]
+
     @(d/transact conn (concat
-                       (conj orders (source/create requester))
+                       (conj orders-and-fees  (source/create requester))
                        (map
                         #(events/order-created requester (order/uuid %) true)
-                        orders)))
-    (map #(order/by-uuid (d/db conn) (order/uuid %)) orders)))
+                        orders-and-fees)))
+    (map #(order/by-uuid (d/db conn) (order/uuid %)) orders-and-fees)))
 
 
 ;; Given set of existing ids, examine set of `old` ids
-
 (defn- update-line-item-tx
   [db {:keys [id desc cost price] :as item}]
   (let [entity (d/entity db id)]
@@ -383,6 +382,7 @@
 (defmethod authorization/authorized? :order/create!
   [{conn :conn} account {account-id :account}]
   (or (account/admin? account) (= account-id (:db/id account))))
+
 
 (defmethod authorization/authorized? :order/update!
   [{conn :conn} account {account-id :account}]
