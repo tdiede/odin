@@ -85,7 +85,7 @@
       [:p.price (format-price price billed)]]
      [:div.column.is-2
       [ant/button
-       {:type "primary"
+       {:type     "primary"
         :on-click #(dispatch [:services.add-service/show service])}
        "Request Service"]]]]])
 
@@ -537,7 +537,6 @@
 (defmethod content :services/active-orders [{:keys [requester]}]
   (let [orders (subscribe [:orders/active])]
     [:div
-     (.log js/console @orders)
      (if-not (empty? @orders)
        [active-orders (sort-by :created > @orders) requester]
        [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Book services" " to request services"])]))
@@ -546,7 +545,6 @@
 (defmethod content :services/subscriptions [{:keys [requester]}]
   (let [subscriptions (subscribe [:orders/subscriptions])]
     [:div
-     (.log js/console @subscriptions)
      (if-not (empty? @subscriptions)
        [active-subscriptions @subscriptions requester]
        [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Book services" " to request services"])]))
