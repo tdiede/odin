@@ -2,6 +2,7 @@
   (:require [antizer.reagent :as ant]
             [cljsjs.moment]
             [iface.components.form :as form]
+            [iface.utils.formatters :as format]
             [reagent.core :as r]))
 
 
@@ -140,11 +141,20 @@
     action]])
 
 
+(defn format-price
+  "Accepts a price and billed status and returns a string with the correct price"
+  [price billed]
+  (str (if (some? price)
+         (format/currency price)
+         (format/currency 0))
+       (when (= billed :monthly)
+         "/mo")))
+
 
 (defn service-modal
   [{:keys [action is-visible service form-fields can-submit on-cancel on-submit on-change]}]
   [ant/modal
-   {:title     (str action " " (:name service))
+   {:title     (str action " " (:name service) " - (" (format-price (:price service) (:billed service)) ")")
     :visible   is-visible
     :on-cancel on-cancel
     :footer    (r/as-element

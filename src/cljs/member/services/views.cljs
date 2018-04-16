@@ -85,7 +85,8 @@
       [:p.price (format-price price billed)]]
      [:div.column.is-2
       [ant/button
-       {:on-click #(dispatch [:services.add-service/show service])}
+       {:type     "primary"
+        :on-click #(dispatch [:services.add-service/show service])}
        "Request Service"]]]]])
 
 
@@ -291,6 +292,8 @@
           :on-ok     #(dispatch [:modal/hide :payment.souce/add])
           :on-cancel #(dispatch [:modal/hide :payment.source/add])
           :footer    nil}
+         [:p "The credit card you provide will be kept on file."]
+         [:br]
          [:div
           (r/as-element (ant/create-form
                          (form/credit-card
