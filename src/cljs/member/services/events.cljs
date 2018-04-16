@@ -54,7 +54,7 @@
  ::load-cart-from-store
  [(inject-cofx :store) (path db/path)]
  (fn [{:keys [store db]} _]
-   {:db (assoc db :cart (or (:cart store) []))}))
+   {:db (assoc db :cart (or (:cart store) {}))}))
 
 
 (reg-event-fx
@@ -199,9 +199,8 @@
 (reg-event-fx
  :services/catalogs
  [(path db/path)]
- (fn [{db :db} [_ k response]]
-   (let [services (->> (get-in response [:data :services])
-                       (remove only-onboarding?)
+ (fn [{db :db} [_ k services]]
+   (let [services (->> (remove only-onboarding? services)
                        (map #(assoc % :name (:name %) :description (:description %)))
                        (sort-by #(string/lower-case (:name %))))
          clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
@@ -283,11 +282,13 @@
                      [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
 
+
 (reg-event-fx
  ::store-hash
  [(inject-cofx :store)]
  (fn [{:keys [store]} [_ service]]
    {:store (update store ::hashes #(if (set? %) (conj % (hash service)) #{(hash service)}))}))
+
 
 (defn construct-order-fields
   "When field type is of `text` we replace all instances of `\n` for a space"
