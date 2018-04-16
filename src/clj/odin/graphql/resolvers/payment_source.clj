@@ -127,8 +127,6 @@
     (tcustomer/create! teller (account/email account) {:account account})))
 
 
-;; NOTE: The `requester` in `ctx` is the *account* entity that is making the
-;; request
 (defn add-source!
   "Add a new source to the requester's Stripe customer, or create the customer
   and add the source if it doesn't already exist."
