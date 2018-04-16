@@ -22,7 +22,7 @@
                                           (aget % "key")])}
      [ant/menu-item {:key "book"
                      :class "book-services"}
-      "Book services"]
+      "Order services"]
      [ant/menu-item {:key "cart"}
       [ant/icon {:type "shopping-cart"}] "Shopping Cart (" @count ")"]
      [ant/menu-item {:key "history" :style {:float "right"}} "Order history"]
