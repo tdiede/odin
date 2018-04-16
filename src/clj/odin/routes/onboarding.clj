@@ -41,6 +41,17 @@
 ;; ==============================================================================
 
 
+;; services =====================================================================
+
+
+(defn byof-service [db]
+  (d/entity db [:service/code "furniture,member-supplied,all"]))
+
+
+(defn byom-service [db]
+  (d/entity db [:service/code "furniture,member-supplied,mattress"]))
+
+
 ;; request ======================================================================
 
 
@@ -52,7 +63,8 @@
 
 (s/fdef requester
         :args (s/cat :db td/db? :request map?)
-        :ret (s/or :nothing nil? :entity td/entity?))
+        :ret (s/nilable td/entity?))
+
 
 ;; response =====================================================================
 
@@ -164,9 +176,9 @@
 (s/def ::step (set steps))
 
 
-;; =============================================================================
-;; validate
-;; =============================================================================
+;; ==============================================================================
+;; validate =====================================================================
+;; ==============================================================================
 
 
 (defmulti validations
@@ -219,10 +231,16 @@
           (-after-commencement? [date]
             (or (= date (-commencement account))
                 (t/after? (c/to-date-time date) (c/to-date-time (-commencement account)))))]
-    {:needed [[v/required :message "Please indicate whether or not you need moving assistance."]]
-     :date   [[v/required :message "Please provide a move-in date." :pre (comp true? :needed)]
-              [-after-commencement? :message "Your move-in date cannot be before your license commences." :pre (comp true? :needed)]]
-     :time   [[v/required :message "Please provide a move-in time." :pre (comp true? :needed)]]}))
+    {:furniture [[v/required :message "Please indicate whether or not you are bringing furniture."]]
+     :mattress  [[v/required :message "Please indicate whether or not you are bringing a mattress."]]
+     :date      [[v/required
+                  :message "Please provide a move-in date."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]
+                 [-after-commencement?
+                  :message "Your move-in date cannot be before your license commences."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]]
+     :time      [[v/required :message "Please provide a move-in time."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]]}))
 
 ;; NOTE: Skipping validations on catalogue services atm
 ;; TODO: Validations on catalogue services
@@ -307,8 +325,8 @@
   (let [onboard (onboard/by-account account)]
     (or (onboard/seen-moving? onboard)
         (and (inst? (onboard/move-in onboard))
-             (let [s (service/moving-assistance (d/db conn))]
-               (order/exists? db account s))))))
+             (or (order/exists? db account (byof-service db))
+                 (order/exists? db account (byom-service db)))))))
 
 
 (defmethod complete? :services/storage
@@ -495,11 +513,13 @@
 (defmethod fdata :services/moving
   [conn account step]
   (let [onboard (onboard/by-account account)
-        service (service/moving-assistance (d/db conn))
-        order   (order/by-account (d/db conn) account service)]
-    {:needed (when (onboard/seen-moving? onboard) (td/entity? order))
-     :date   (onboard/move-in onboard)
-     :time   (onboard/move-in onboard)}))
+        db      (d/db conn)]
+    {:furniture (when (onboard/seen-moving? onboard)
+                  (td/entityd? (order/by-account db account (byof-service db))))
+     :mattress  (when (onboard/seen-moving? onboard)
+                  (td/entityd? (order/by-account db account (byom-service db))))
+     :date      (onboard/move-in onboard)
+     :time      (onboard/move-in onboard)}))
 
 
 (defmethod fdata :services/storage
@@ -859,8 +879,8 @@
                      :catalogs (s/* keyword?))
         :ret vector?)
 
-;; =====================================
-;; Moving Assistance
+;; move-in assistance ==================
+
 
 (defn- combine [date time]
   (let [date (c/to-date-time date)
@@ -868,34 +888,55 @@
     (-> (t/date-time (t/year date) (t/month date) (t/day date) (t/hour time) (t/minute time))
         (c/to-date))))
 
-(defn- add-move-in-tx
-  [db onboard move-in]
-  (let [service (service/moving-assistance db)]
-    (tb/conj-when
-     [{:db/id           (:db/id onboard)
-       :onboard/move-in move-in}]
-     ;; When there's not an moving-assistance order, create one.
-     (when-not (order/exists? db (onboard/account onboard) service)
-       (order/create (onboard/account onboard) service)))))
 
-(defn- remove-move-in-tx
-  [db account onboard]
-  (let [retract-move-in (when-let [v (onboard/move-in onboard)]
-                          [:db/retract (:db/id onboard) :onboard/move-in v])
-        retract-order   (order/remove-existing db account (service/moving-assistance db))]
-    (tb/conj-when [] retract-move-in retract-order)))
+;; (defn- add-move-in-tx
+;;   [db onboard {:keys [furniture mattress date time]}]
+;;   (let [move-in (combine date time)]
+;;     (tb/conj-when
+;;      [{:db/id           (:db/id onboard)
+;;        :onboard/move-in move-in}]
+;;      ;; when there's not a moving-assistance order, create one.
+;;      (when-not (order/exists? db (onboard/account onboard) service)
+;;        (order/create (onboard/account onboard) service)))))
+
+
+;; (defn- remove-move-in-tx
+;;   [db account onboard]
+;;   (let [retract-move-in (when-let [v (onboard/move-in onboard)]
+;;                           [:db/retract (:db/id onboard) :onboard/move-in v])
+;;         retract-order   (order/remove-existing db account (service/moving-assistance db))]
+;;     (tb/conj-when [] retract-move-in retract-order)))
+
 
 (defmethod save! :services/moving
-  [conn account step {:keys [needed date time]}]
+  [conn account step {:keys [furniture mattress date time] :as params}]
   (let [onboard (onboard/by-account account)
-        service (service/moving-assistance (d/db conn))
-        order   (order/by-account (d/db conn) account service)]
-    @(d/transact conn (-> (if needed
-                            (add-move-in-tx (d/db conn) onboard (combine date time))
-                            (remove-move-in-tx (d/db conn) account onboard))
-                          (conj (onboard/add-seen onboard step))))))
+        byof    (byof-service (d/db conn))
+        byom    (byom-service (d/db conn))]
+    (->> (cond-> []
+           (and date time)
+           (conj {:db/id           (td/id onboard)
+                  :onboard/move-in (combine date time)})
 
-;; =====================================
+           (and furniture (not (order/exists? (d/db conn) account byof)))
+           (conj (order/create account byof))
+
+           (and (not furniture) (order/exists? (d/db conn) account byof))
+           (conj (order/remove-existing (d/db conn) account byof))
+
+           (and mattress (not (order/exists? (d/db conn) account byom)))
+           (conj (order/create account byom))
+
+           (and (not mattress) (order/exists? (d/db conn) account byom))
+           (conj (order/remove-existing (d/db conn) account byom))
+
+           (and (not furniture) (not mattress) (some? (onboard/move-in onboard)))
+           (conj [:db/retract (td/id onboard) :onboard/move-in (onboard/move-in onboard)])
+
+           true
+           (conj (onboard/add-seen onboard step)))
+         (d/transact conn)
+         (deref))))
 
 
 (defmethod save! :services/storage

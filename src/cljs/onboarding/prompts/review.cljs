@@ -140,8 +140,8 @@
          [:div.modal-background
           {:on-click #(dispatch [:finish.review.cc/toggle false])}]
          [:div.modal-content.box
-          [:h4.title "Please enter your payment information"]
-          [:p "We won't charge your account until your move-in date or your service(s) are delivered, whichever happens last."]
+          [:h3.title "Please enter your payment information"]
+          [:p "We won't charge your account until your move-in date or your service(s) are delivered, whichever happens last (we'll keep this payment source on file)."]
           [:div {:style {:background-color "#f7f8f9"
                          :padding          24
                          :border-radius    4

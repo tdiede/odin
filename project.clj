@@ -57,7 +57,7 @@
                  [cljsjs/moment "2.17.1-1"]
                  [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
-                 [starcity/blueprints "2.4.1"
+                 [starcity/blueprints "2.4.2"
                   :exclusions [com.datomic/datomic-free
                                com.google.guava/guava]]
                  ;; dep resolution

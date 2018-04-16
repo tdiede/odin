@@ -320,9 +320,10 @@
   (:method data))
 
 (defmethod can-advance? :services/moving [{data :data}]
-  (let [{:keys [needed date time]} data]
-    (or (false? needed)
-        (and needed date time))))
+  (let [{:keys [furniture mattress date time]} data]
+    (or (and (false? furniture) (false? mattress))
+        (and mattress date time)
+        (and furniture date time))))
 
 ;; =============================================================================
 
