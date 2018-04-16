@@ -132,17 +132,17 @@
 
   :check
   {:fields {:id          {:type    (non-null :Long)
-                          :resolve (:get :db/id)}
+                          :resolve :check/id}
             :payment     {:type    (non-null :payment)
                           :resolve :check/payment}
             :amount      {:type    (non-null Float)
-                          :resolve (:get :check/amount)}
+                          :resolve :check/amount}
             :name        {:type    (non-null String)
-                          :resolve (:get :check/name)}
+                          :resolve :check/name}
             :dated       {:type    (non-null :Instant)
-                          :resolve (:get :check/date)}
+                          :resolve :check/date}
             :received_on {:type    (non-null :Instant)
-                          :resolve (:get :check/received-on)}}}
+                          :resolve :check/received-on}}}
 
 
   :deposit
