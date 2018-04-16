@@ -222,7 +222,7 @@
    :payment-source/type            type
    :payment-source/name            name
    :payment-source/payments        payments
-   ;; queri-s
+   ;; queries
    :payment.sources/list           sources
    ;; mutations
    :payment.sources/delete!        delete!
