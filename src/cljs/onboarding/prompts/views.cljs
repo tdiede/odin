@@ -14,16 +14,10 @@
             [re-frame.core :refer [dispatch subscribe]]
             [onboarding.db :as db]))
 
-(def ^:private advisor-image
-  [:img.is-circular
-   {:src   "/assets/images/meg.jpg"
-    :alt   "community advisor headshot"
-    :class "community-advisor"}])
-
 (defn prompt-header []
   (let [title (subscribe [:prompt/title])]
     [:header
-     [:figure.image.is-64x64
+     #_[:figure.image.is-64x64
       [:a {:on-click #(dispatch [:help/toggle])} advisor-image]]
      [:h3.prompt-title.title.is-4 @title]]))
 
