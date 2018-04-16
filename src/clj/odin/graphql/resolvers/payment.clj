@@ -271,7 +271,6 @@
   "Query payments based on `params`."
   [{:keys [teller] :as ctx} {params :params} _]
   (let [tparams (parse-gql-params ctx params)]
-    (clojure.pprint/pprint tparams)
     (try
       (tpayment/query teller tparams)
       (catch Throwable t
