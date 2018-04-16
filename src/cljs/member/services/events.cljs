@@ -54,7 +54,7 @@
  ::load-cart-from-store
  [(inject-cofx :store) (path db/path)]
  (fn [{:keys [store db]} _]
-   {:db (assoc db :cart (or (:cart store) {}))}))
+   {:db (assoc db :cart (or (:cart store) []))}))
 
 
 (reg-event-fx
@@ -134,10 +134,11 @@
 (reg-event-fx
  :services/fetch-orders
  (fn [{db :db} [k account]]
-   {:graphql {:query [[:orders {:params {:accounts [account]}}
-                       [:id :name :price :status :created :billed :billed_on :fulfilled_on :updated
-                        [:payments [:id :amount :status :paid_on]]
-                        [:fields [:id :label :value :type :index]]]]]
+   {:graphql {:query      [[:orders {:params {:accounts [account]}}
+                            [:id :name :price :status :created :billed :billed_on :fulfilled_on :updated
+                             [:payments [:id :amount :status :paid_on]]
+                             [:fields [:id :label :value :type :index]]
+                             [:service [:type]]]]]
               :on-success [::fetch-orders k]
               :on-failure [:graphql/failure k]}}))
 
@@ -147,7 +148,8 @@
  [(path db/path)]
  (fn [{db :db} [_ k response]]
    (let [orders (->> (get-in response [:data :orders])
-                     (map #(assoc % :name (:name %))))]
+                     (map #(-> (assoc % :name (:name %) :type (:type (:service %)))
+                               (dissoc :service))))]
      {:db (assoc db :orders orders)})))
 
 

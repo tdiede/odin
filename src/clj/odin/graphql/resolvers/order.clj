@@ -14,7 +14,8 @@
             [toolbelt.datomic :as td]
             [toolbelt.async :refer [<!!?]]
             [odin.models.payment-source :as payment-source]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [blueprints.models.service :as service]))
 
 ;; =============================================================================
 ;; Fields
@@ -391,7 +392,10 @@
 
 (defmethod authorization/authorized? :order/cancel!
   [{conn :conn} account {order-id :id}]
-  (admin-or-owner? (d/db conn) order-id account))
+  (let [order (d/entity (d/db conn) order-id)]
+    (if (= :service.type/fee (service/type (order/service order)))
+      (account/admin? account)
+      (admin-or-owner? (d/db conn) order-id account))))
 
 
 (defmethod authorization/authorized? :order/charge!
