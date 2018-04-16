@@ -59,7 +59,7 @@
 
                  ;; DB
                  [starcity/teller "0.1.0-SNAPSHOT"]
-                 [starcity/blueprints "3.0.0-SNAPSHOT"
+                 [starcity/blueprints "2.5.0-SNAPSHOT"
                   :exclusions [com.datomic/datomic-free
                                com.andrewmcveigh/cljs-time
                                com.google.guava/guava
