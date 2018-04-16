@@ -54,7 +54,7 @@
  ::load-cart-from-store
  [(inject-cofx :store) (path db/path)]
  (fn [{:keys [store db]} _]
-   {:db (assoc db :cart (or (:cart store) {}))}))
+   {:db (assoc db :cart (or (:cart store) []))}))
 
 
 (reg-event-fx
