@@ -1,6 +1,7 @@
 (ns member.services.events
   (:require [akiroz.re-frame.storage :refer [reg-co-fx!]]
             [antizer.reagent :as ant]
+            [clojure.string :as string]
             [member.routes :as routes]
             [member.services.db :as db]
             [re-frame.core :refer [reg-event-fx reg-event-db path inject-cofx]]
@@ -78,7 +79,7 @@
  (fn [_ [_ k]]
    {:dispatch-n   [[::save-cart []]
                    [:ui/loading k false]]
-    :notification [:success "Your premium service orders have been placed!"]
+    :notification [:success "Your orders have been placed!"]
     :route        (routes/path-for :services/active-orders)}))
 
 
@@ -88,6 +89,7 @@
     [[:services/set-default-route route]]
     [[:services/fetch (db/parse-query-params page params)]
      [:services/fetch-catalogs]
+     [:services/fetch-orders (:id requester)]
      [::load-cart]]))
 
 
@@ -97,9 +99,16 @@
    [::load-cart]])
 
 
-(defmethod routes/dispatches :services/manage
-  [_]
-  [[::load-cart]])
+(defmethod routes/dispatches :services/subscriptions
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
+
+
+(defmethod routes/dispatches :services/order-history
+  [{:keys [requester] :as route}]
+  [[:services/fetch-orders (:id requester)]
+   [::load-cart]])
 
 
 (defmethod routes/dispatches :services/cart
@@ -137,7 +146,9 @@
  ::fetch-orders
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   {:db (assoc db :orders (get-in response [:data :orders]))}))
+   (let [orders (->> (get-in response [:data :orders])
+                     (map #(assoc % :name (:name %))))]
+     {:db (assoc db :orders orders)})))
 
 
 (reg-event-fx
@@ -166,12 +177,17 @@
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query      [[:services {:params {:properties [property-id]
                                                   :active     true}}
-                              [:id :name :description :price :catalogs :active
+                              [:id :name :description :price :catalogs :active :billed
                                [:fees [:id :name :description :price]]
                                [:fields [:id :index :label :type :required
                                          [:options [:index :label :value]]]]]]]
                 :on-success [::extract-services k on-success]
                 :on-failure [:graphql/failure k]}})))
+
+
+(defn only-onboarding? [service]
+  (let [svc-cat (set (:catalogs service))]
+    (= #{:onboarding} svc-cat)))
 
 
 (reg-event-fx
@@ -183,9 +199,15 @@
 (reg-event-fx
  :services/catalogs
  [(path db/path)]
- (fn [{db :db} [_ k services]]
-   (let [services (sort-by #(clojure.string/lower-case (:name %)) services)
-         clist    (sort (distinct (reduce #(concat %1 (:catalogs %2)) [] services)))]
+ (fn [{db :db} [_ k response]]
+   (let [services (->> (get-in response [:data :services])
+                       (remove only-onboarding?)
+                       (map #(assoc % :name (:name %) :description (:description %)))
+                       (sort-by #(string/lower-case (:name %))))
+         clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
+                    (distinct)
+                    (remove #(= :onboarding %))
+                    (sort))]
      {:dispatch [:ui/loading k false]
       :db       (-> (assoc db :catalogs clist :services services)
                     (norms/normalize :services/norms services))})))
@@ -223,11 +245,12 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [id name description price fields fees]}]]
+ (fn [{db :db} [_ {:keys [id name description price fields billed fees]}]]
    (let [service {:id          id
                   :name        name
                   :description description
                   :price       price
+                  :billed      billed
                   :fees        fees}]
      {:dispatch [:modal/show db/modal]
       :db       (assoc db :adding service :form-data (sort-by :index fields))})))
@@ -245,13 +268,14 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id name description fees price]} (:adding db)
+   (let [{:keys [id name description fees price billed]} (:adding db)
          adding                                   {:index       (count (:cart db))
                                                    :service     id
                                                    :name        name
                                                    :description description
                                                    :price       price
                                                    :fees        fees
+                                                   :billed      billed
                                                    :fields      (:form-data db)}
          new-cart                                 (conj (:cart db) adding)]
      {:dispatch-n   [[:services.add-service/close]
@@ -259,20 +283,22 @@
                      [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
 
-
 (reg-event-fx
  ::store-hash
  [(inject-cofx :store)]
  (fn [{:keys [store]} [_ service]]
    {:store (update store ::hashes #(if (set? %) (conj % (hash service)) #{(hash service)}))}))
 
-
-(defn construct-order-fields [fields]
+(defn construct-order-fields
+  "When field type is of `text` we replace all instances of `\n` for a space"
+  [fields]
   (map
-   (fn [{:keys [id value]}]
+   (fn [{:keys [id value type]}]
      (tb/assoc-when
       {:service_field id}
-      :value value))
+      :value (if (and (= type :text) (some? value))
+               (string/replace value "\n" " ")
+               value)))
    fields))
 
 
@@ -365,7 +391,7 @@
    {:dispatch-n   [[:ui/loading k false]
                    [:services.cart/submit (:account db)]
                    [:modal/hide :payment.source/add]]
-    :notification [:success "Payment method added!" {:description "You van now pay for premium services with your credit card on file"}]
+    :notification [:success "Payment method added!" {:description "You can now pay for services with your credit card on file"}]
     :route        (routes/path-for :services/cart)}))
 
 
@@ -391,7 +417,8 @@
  ::order-cancel-success
  [(path db/path)]
  (fn [{db :db} [_ k account-id response]]
-   {:dispatch-n   [[:ui/loading k false]
-                   [:services/fetch-orders account-id]]
-    :db           (dissoc db :canceling)
-    :notification [:success (str (get-in response [:data :cancel_order :name]) " has been canceled")]}))
+   (let [order-name (get-in response [:data :cancel_order :name])]
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/fetch-orders account-id]]
+      :db           (dissoc db :canceling)
+      :notification [:success (str order-name " has been canceled")]})))

@@ -12,9 +12,9 @@
 span.tag
   border-radius: $inner-component-border-radius
 
-  // &.is-hollow
-    // background: none
-    // border: 1px solid #aaa
+  /* &.is-hollow
+  /*   background: none
+  /*   border: 1px solid #aaa
 
   &.is-success
     background: $text-green
@@ -25,6 +25,26 @@ span.tag
   //   border: 1px solid $text-green
   //   color:  $text-green
   //   background: white
+
+  &.is-processing
+    color: $text-green
+    border: 1px solid $text-green
+    background: white
+
+  &.is-cancel
+    color: $text-red
+    border: 1px solid $text-red
+    backgroud: white
+
+  &.is-placed
+    color: $text-blue
+    border: 1px solid $text-blue
+    background: white
+
+  &.is-fulfilled
+    color: white
+    background: $text-blue
+
 
 table, .table
   .tag

@@ -30,12 +30,12 @@
  :<- [:route/current]
  (fn [{page :page} _]
    (case page
-     :services/book          "Premium Services"
+     :services/book          "Helping Hands"
      :services/cart          "Shopping Cart"
      :services/active-orders "Requested Services"
      :services/subscriptions "Active Subscriptions"
      :services/history       "Order History"
-     "Premium Services")))
+     "Helping Hands")))
 
 
 ;; NOTE We need better subheads for these sections
@@ -44,7 +44,7 @@
  :<- [:route/current]
  (fn [{page :page} _]
    (case page
-     :services/book          "Browse and order premium services"
+     :services/book          "Browse and order services"
      :services/cart          "Review and confirm your order"
      :services/active-orders "Manage your active requests"
      :services/subscriptions "Manage your current subscriptions"
@@ -55,14 +55,17 @@
 (reg-sub
  :services.book/categories
  :<- [db/path]
- (fn [db _]
-   (-> (reduce (fn [catalogs c]
-                 (conj catalogs {:category c :label (string/capitalize (name c))}))
-               [{:category :all
-                 :label    "All"}]
-               (:catalogs db))
-       (conj {:category :misc
-              :label    "Miscellaneous"}))))
+ :<- [:services.book/services-by-catalog :misc]
+ (fn [[db misc] _]
+   (let [categories (reduce (fn [catalogs c]
+                              (conj catalogs {:category c :label (string/capitalize (name c))}))
+                            [{:category :all
+                              :label    "All"}]
+                            (:catalogs db))]
+     (if-not (empty? misc)
+       (conj categories {:category :misc
+                         :label    "Miscellaneous"})
+       categories))))
 
 
 (reg-sub
@@ -204,4 +207,5 @@
  :orders/history
  :<- [db/path]
  (fn [db _]
-   (filter #(not (some (fn [v] (= v (:status %))) [:pending :placed])) (:orders db))))
+   (filter #(or (and (= (:billed %) :monthly) (= (:status %) :canceled))
+                (and (= (:billed %) :once) (not (some (fn [v] (= v (:status %))) [:pending :placed])))) (:orders db))))
