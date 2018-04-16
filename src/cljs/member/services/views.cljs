@@ -332,7 +332,28 @@
     [:span.tag.is-hollow (name status)]))
 
 
-(defn above-the-fold [{:keys [id name date price status billed cancel-btn]} is-open requester]
+(defn- cancel-order-button
+  [{:keys [id type]} account-id loading canceling]
+  (let [opts {:on-click #(dispatch [:services.order/cancel-order id account-id])
+              :type     "danger"
+              :icon     "close"
+              :loading  (if (= @canceling id)
+                          @loading
+                          false)}
+         ]
+    (if (= type :fee)
+      [ant/tooltip
+       {:placement "top"
+        :title "For help with this order, reach out to a community team member."}
+       [ant/button
+        (assoc opts :disabled true)
+        "Cancel"]]
+      [ant/button
+       opts
+       "Cancel"])))
+
+
+(defn above-the-fold [{:keys [id name date price status billed type cancel-btn] :as order} is-open requester]
   (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
         account-id (:id requester)
         canceling  (subscribe [:orders/canceling])]
@@ -355,14 +376,9 @@
       [status-tag status]]
      [:div.column.is-2.has-text-right
       (when (and cancel-btn (or (= status :pending) (= billed :monthly)))
-        [ant/button
-         {:on-click #(dispatch [:services.order/cancel-order id account-id])
-          :type     "danger"
-          :icon     "close"
-          :loading  (if (= @canceling id)
-                      @loading
-                      false)}
-         "Cancel"])]]))
+        [ant/tooltip
+
+         [cancel-order-button order account-id loading canceling]])]]))
 
 
 (defn paginated-list [items requester list-item-fn]
@@ -393,6 +409,7 @@
 
 
 (defn active-order-item [{:keys [fields] :as order} requester]
+  (js/console.log "order is totes " order)
   (let [is-open (r/atom false)
         order'  (assoc order :date (:created order) :cancel-btn true)]
     (fn []
