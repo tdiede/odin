@@ -178,6 +178,7 @@
      {:graphql {:query      [[:services {:params {:properties [property-id]
                                                   :active     true}}
                               [:id :name :description :price :catalogs :active :billed
+                               [:fees [:id :name :description :price]]
                                [:fields [:id :index :label :type :required
                                          [:options [:index :label :value]]]]]]]
                 :on-success [::extract-services k on-success]
@@ -244,12 +245,13 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [id name description price fields billed]}]]
+ (fn [{db :db} [_ {:keys [id name description price fields billed fees]}]]
    (let [service {:id          id
                   :name        name
                   :description description
                   :price       price
-                  :billed      billed}]
+                  :billed      billed
+                  :fees        fees}]
      {:dispatch [:modal/show db/modal]
       :db       (assoc db :adding service :form-data (sort-by :index fields))})))
 
@@ -266,15 +268,16 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id name description price billed]} (:adding db)
-         adding                              {:index       (count (:cart db))
-                                              :service     id
-                                              :name        name
-                                              :description description
-                                              :price       price
-                                              :billed      billed
-                                              :fields      (:form-data db)}
-         new-cart                            (conj (:cart db) adding)]
+   (let [{:keys [id name description fees price billed]} (:adding db)
+         adding                                   {:index       (count (:cart db))
+                                                   :service     id
+                                                   :name        name
+                                                   :description description
+                                                   :price       price
+                                                   :fees        fees
+                                                   :billed      billed
+                                                   :fields      (:form-data db)}
+         new-cart                                 (conj (:cart db) adding)]
      {:dispatch-n   [[:services.add-service/close]
                      [::store-hash (norms/get-norm db :services/norms id)]
                      [::save-cart new-cart]]
