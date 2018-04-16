@@ -140,9 +140,8 @@
 
 (defn order
   "The order associated with this `payment`, if any."
-  [_ _ payment]
-  ;; TODO we will discuss how to keep the stripe-id out of the public api
-  #_(order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
+  [{conn :conn} _ payment]
+  (order/by-payment (d/db conn) (teller/entity payment)))
 
 
 (defn paid-on
