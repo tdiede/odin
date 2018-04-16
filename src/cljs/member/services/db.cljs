@@ -20,7 +20,7 @@
 (def default-value
   {path {:params        default-params
          :adding        nil
-         :cart          []
+         :cart          {}
          ;; :last-modified ""
          :form-data     []
          :orders        []}})

@@ -51,7 +51,7 @@
 
 (def add-service-state-init
   {:form-fields (:fields sample-data)
-   :cart        []
+   :cart        {}
    :loading     false})
 
 
