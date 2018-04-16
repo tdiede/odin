@@ -22,7 +22,7 @@
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :active :catalogs :price]]]
+                             [:id :name :code :active :catalogs :price :type]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -81,7 +81,8 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :active :code :price :cost :billed :rental :catalogs
+                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs
+                              [:fees [:id :name :price]]
                               [:fields [:id :index :type :label :required
                                         [:options [:index :value :label]]]]
                               [:properties [:id]]
@@ -253,23 +254,27 @@
  [(path db/path)]
  (fn [db [_ service]]
    (if (some? service)
-     (let [{:keys [name description code active properties catalogs price cost billed rental fields]} service]
+     (let [{:keys [name description code active type properties catalogs price cost billed rental fields fees]} service]
        (dissoc db :form)
-       (assoc db :form {:name name
+       (assoc db :form {:name        name
                         :description description
-                        :code code
-                        :active active
-                        :properties properties
-                        :catalogs (map clojure.core/name catalogs)
-                        :price price
-                        :cost cost
-                        :billed billed
-                        :rental (if (nil? rental)
-                                  false
-                                  rental)
-                        :fields (if (nil? fields)
-                                  []
-                                  (vecify-fields fields))}))
+                        :code        code
+                        :active      active
+                        :properties  properties
+                        :catalogs    (map clojure.core/name catalogs)
+                        :type        (if (some? type) type :service)
+                        :price       price
+                        :cost        cost
+                        :billed      billed
+                        :rental      (if (nil? rental)
+                                       false
+                                       rental)
+                        :fields      (if (nil? fields)
+                                       []
+                                       (vecify-fields fields))
+                        :fees        (if (nil? fees)
+                                       []
+                                       (mapv :id fees))}))
      (assoc db :form db/form-defaults))))
 
 
@@ -374,6 +379,27 @@
                     (-> (assoc-in fields [(:index field) :options index2] option-one)
                         (assoc-in [(:index field) :options index1] option-two))))))))
 
+
+(reg-event-db
+ :service.form.fee/add
+ [(path db/path)]
+ (fn [db [_ fee-id]]
+   (update-in db [:form :fees] conj fee-id)))
+
+
+
+
+(reg-event-db
+ :service.form.fee/remove
+ [(path db/path)]
+ (fn [db [_ fee-id]]
+   (update-in db [:form :fees]
+              (fn [fs]
+                (filter
+                 #(not= fee-id %)
+                 fs)))))
+
+
 (reg-event-fx
  :service.form/update
  [(path db/path)]
@@ -399,7 +425,7 @@
      {:db       (-> (assoc-in db [:form-validation :name] (not (empty? name)))
                     (assoc-in [:form-validation :description] (not (empty? description)))
                     (assoc-in [:form-validation :code] (not (or (empty? code)
-                                                                 (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
+                                                                (contains? (set (map :code (norms/denormalize db :services/norms))) code)))))
       :dispatch [::validate-create form]})))
 
 

@@ -36,6 +36,13 @@
 
 
 (reg-sub
+ :services/fees
+ :<- [:services/list]
+ (fn [services _]
+   (filter #(= :fee (:type %)) services)))
+
+
+(reg-sub
  :service-id
  :<- [db/path]
  (fn [db _]

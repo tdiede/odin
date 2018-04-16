@@ -69,6 +69,20 @@
 
 
 (reg-sub
+ :services.book/category-icon
+ (fn [_ [_ category]]
+   (case category
+     :all           "/assets/svg/catalog/all.svg"
+     :cleaning      "/assets/svg/catalog/cleaning.svg"
+     :furniture     "/assets/svg/catalog/furniture-rental.svg"
+     :laundry       "/assets/svg/catalog/laundry.svg"
+     :pets          "/assets/svg/catalog/pets.svg"
+     :storage       "/assets/svg/catalog/storage.svg"
+     :subscriptions "/assets/svg/catalog/subscriptions.svg"
+     :misc          "/assets/svg/catalog/misc.svg"
+     (str "/assets/svg/catalog/" (string/lower-case (first (name category))) ".svg"))))
+
+(reg-sub
  :services.book/category
  :<- [db/path]
  (fn [db _]
