@@ -14,6 +14,7 @@
             [toolbelt.async :refer [<!!?]]
             [toolbelt.date :as date]
             [teller.property :as tproperty]
+            [teller.subscription :as tsubscription]
             [clj-time.core :as t]))
 
 ;; ==============================================================================
@@ -32,11 +33,12 @@
 ;; ==============================================================================
 
 
-;; TODO:
 (defn autopay-on
   "Whether or not autopay is active for this license."
-  [_ _ license]
-  (keyword (name (member-license/autopay-on? license))))
+  [{teller :teller} _ license]
+  (let [customer (license-customer teller license)]
+    (some? (tsubscription/query teller {:customers [customer]
+                                        :payment-types   [:payment.type/rent]}))))
 
 
 (defn- payment-within
