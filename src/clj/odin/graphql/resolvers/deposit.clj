@@ -1,7 +1,9 @@
 (ns odin.graphql.resolvers.deposit
   (:require [blueprints.models.security-deposit :as deposit]
             [clj-time.core :as t]
-            [clj-time.coerce :as c]))
+            [clj-time.coerce :as c]
+            [teller.payment :as tpayment]
+            [teller.customer :as tcustomer]))
 
 
 ;; =============================================================================
@@ -22,6 +24,13 @@
 (defn amount-pending
   [_ _ deposit]
   (deposit/amount-pending deposit))
+
+
+(defn payments
+  [{teller :teller} _ deposit]
+  (let [customer (tcustomer/by-account teller (deposit/account deposit))]
+    (tpayment/query teller {:payment-types [:payment.type/deposit]
+                            :customers     [customer]})))
 
 
 (defn deposit-status
@@ -51,5 +60,6 @@
    :deposit/amount-remaining amount-remaining
    :deposit/amount-paid      amount-paid
    :deposit/amount-pending   amount-pending
-   :deposit/status           deposit-status
-   :deposit/refund-status    refund-status})
+   :deposit/payments         payments
+   :deposit/refund-status    refund-status
+   :deposit/status           deposit-status})

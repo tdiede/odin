@@ -6,6 +6,7 @@
                  :q          {:type        String
                               :description "Query string to search for accounts by name or email."}
                  :properties {:type (list :Long)}}}
+
   :update_account
   {:description "Inputs to update an account."
    :fields      {:first_name        {:type String}
@@ -13,6 +14,8 @@
                  :last_name         {:type String}
                  :phone             {:type String}
                  :emergency_contact {:type :update_account}}}
+
+
    ;;; Application
   :approve_application
   {:description "Inputs to approve an application."
@@ -20,6 +23,8 @@
                  :term     {:type (non-null Int)}
                  :move_in  {:type (non-null :Instant)}
                  :unit     {:type (non-null :Long)}}}
+
+
   ;;; Check
   :create_check_params
   {:description "Inputs to create a check."
@@ -27,7 +32,11 @@
                  :amount        {:type (non-null Float)}
                  :name          {:type (non-null String)}
                  :received_date {:type (non-null :Instant)}
-                 :check_date    {:type (non-null :Instant)}}}
+                 :check_date    {:type (non-null :Instant)}
+                 :bank          {:type (non-null String)}
+                 :number        {:type (non-null :Long)}}}
+
+
   ;;; License
   :reassign_member_unit_params
   {:description "Inputs to reassign a member to a new unit."
@@ -36,7 +45,9 @@
                  :rate    {:type (non-null Float)}
                  ;; :term    {:type (non-null Int)}
                  }}
-  ;;; Orders
+
+
+  ;;; Order
   :orders_query_params
   {:description "Parameters to query for orders."
    :fields
@@ -54,7 +65,6 @@
                  :description "Orders after."}
     :to         {:type        :Instant
                  :description "Orders until."}}}
-
 
   :mutate_line_item_params
   {:description "Parameters to create a line item."
@@ -86,9 +96,7 @@
                  :value         {:type :Any}}}
 
 
-  ;;; Payments
-
-
+  ;;; Payment
   :create_payment_params
   {:description "Inputs to create a payment."
    :fields      {:account {:type (non-null :Long)}
@@ -96,26 +104,36 @@
                  :month   {:type :Instant}
                  :amount  {:type (non-null Float)}}}
 
-
   :payments_query_params
   {:description "Parameters to query for payments."
-   :fields      {:account  {:type        :Long
-                            :description "ID of an account to query payments for."}
-                 :types    {:type          (list :payment_type)
-                            :default-value [:deposit :order :rent]
-                            :description   "List of payment types to query."}
-                 :from     {:type        :Instant
-                            :description "Payments after."}
-                 :to       {:type        :Instant
-                            :description "Payments until."}
-                 :statuses {:type          (list :payment_status)
-                            :default-value [:due :canceled :paid :pending :failed :refunded]
-                            :description   "List of payment statuses to query."}
-                 :datekey  {:type          :payments_date_key
-                            :default-value :created
-                            :description   "Specifies which date attribute to use for date params."}}}
+   :fields      {:account      {:type        :Long
+                                :description "ID of an account to query payments for."}
+                 :property     {:type        String
+                                :description "ID of a property to query payments for."}
+                 :source       {:type        String
+                                :description "ID of a payment sources to query payments for."}
+                 :source_types {:type          (list :payment_source_type)
+                                :default-value [:bank :card]
+                                :description   "List of payment source types."}
+                 :types        {:type          (list :payment_type)
+                                :default-value [:deposit :order :rent]
+                                :description   "List of payment types to query."}
+                 :from         {:type        :Instant
+                                :description "Payments after."}
+                 :to           {:type        :Instant
+                                :description "Payments until."}
+                 :statuses     {:type          (list :payment_status)
+                                :default-value [:due :canceled :paid :pending :failed :refunded]
+                                :description   "List of payment statuses to query."}
+                 :currencies   {:type          (list :currencies)
+                                :default-value [:usd]
+                                :description   "List of currencies used to make payments."}
+                 :datekey      {:type          :payments_date_key
+                                :default-value :created
+                                :description   "Specifies which date attribute to use for date params."}}}
 
 
+  ;;; Note
   :create_note_params
   {:description "Parameters to create a new note."
    :fields      {:account {:type        (non-null :Long)
@@ -123,7 +141,6 @@
                  :subject {:type (non-null String)}
                  :content {:type (non-null String)}
                  :notify  {:type Boolean}}}
-
 
   :update_note_params
   {:description "Parameters to update a note."
@@ -133,24 +150,7 @@
                  :content {:type String}}}
 
 
-
-  :service_field_option_object
-  {:description "The options given to a member in a service field of type `:dropdown`"
-   :fields      {:index {:type (non-null :Long)}
-                 :label {:type (non-null String)}
-                 :value {:type (non-null String)}}}
-
-
-  :service_field_object
-  {:description "Custom fields to be defined when a new `service` is created."
-   :fields      {:index    {:type (non-null :Long)}
-                 :id       {:type :Long}
-                 :type     {:type (non-null :service_field_type)}
-                 :label    {:type (non-null String)}
-                 :required {:type Boolean}
-                 :options  {:type (list :service_field_option_object)}}}
-
-
+  ;;; Services
   :services_query_params
   {:description "Parameters to query for services."
    :fields      {:q          {:type        String
@@ -198,6 +198,7 @@
                  :fees        {:type (list :Long)}}}
 
 
+  ;;; Units
   :units_query_params
   {:description "Parameters to query for units."
    :fields      {:property {:type        :Long

@@ -36,6 +36,7 @@
  :<- [::membership]
  (fn [db [_ {:keys [status]}]]
    (let [payments (get-in db [:license :payments])]
+     (js/console.log payments)
      (if (some? status)
        (filter #(= status (:status %)) payments)
        payments))))

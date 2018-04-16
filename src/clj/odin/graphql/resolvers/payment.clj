@@ -6,19 +6,22 @@
             [blueprints.models.service :as service]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
+            [clojure.spec.alpha :as s]
             [clojure.string :as string]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
+            [odin.graphql.resolvers.utils :refer [error-message]]
             [taoensso.timbre :as timbre]
+            [teller.core :as teller]
             [teller.customer :as tcustomer]
             [teller.payment :as tpayment]
+            [teller.property :as tproperty]
             [teller.source :as tsource]
             [teller.subscription :as tsubscription]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]
-            [teller.core :as teller]))
+            [toolbelt.datomic :as td]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -53,38 +56,51 @@
 ;; TODO: Provide this via some sort of public api
 (defn created
   "The instant this `payment` was created."
-  [{:keys [teller]} _ payment]
-  (->> payment teller/entity (td/created-at (d/db (teller/db payment)))))
+  [{:keys [teller conn]} _ payment]
+  (->> payment teller/entity (td/created-at (d/db conn))))
+
+
+(defn- is-first-deposit-payment?
+  [teller payment]
+  (let [customer (tpayment/customer payment)
+        payments (tpayment/query teller
+                                 {:customers     [customer]
+                                  :payment-types [:payment.type/deposit]})]
+    (or (= (count payments) 1)
+        (= (tpayment/id payment)
+           (->> payments
+                (map (juxt tpayment/id tpayment/amount))
+                (sort-by second <)
+                ffirst)))))
 
 
 (defn- deposit-desc
   "Description for a security deposit `payment`."
-  [account payment]
+  [teller account payment]
   (let [entire-deposit-desc  "entire security deposit payment"
         partial-deposit-desc "security deposit installment"
-        deposit              (deposit/by-account account)
-        entire-py?           (= :deposit.type/full (deposit/type deposit))
-        first-py?            (or (= (count (deposit/payments deposit)) 1)
-                                 (= (td/id payment)
-                                    (->> (deposit/payments deposit)
-                                         (map (juxt td/id tpayment/amount))
-                                         (sort-by second <)
-                                         ffirst)))]
+        deposit              (deposit/by-account account)]
     (cond
-      entire-py? entire-deposit-desc
-      first-py?  (str "first " partial-deposit-desc)
-      :otherwise (str "second " partial-deposit-desc))))
+      (= :deposit.type/full (deposit/type deposit))
+      entire-deposit-desc
+
+      (is-first-deposit-payment? teller payment)
+      (str "first " partial-deposit-desc)
+
+      :otherwise
+      (str "second " partial-deposit-desc))))
 
 
 (defn description
   "A description of this `payment`. Varies based on payment type."
-  [{:keys [teller]} _ payment]
+  [{:keys [teller conn]} _ payment]
   (letfn [(-rent-desc [payment]
             (->> [(tpayment/period-start payment) (tpayment/period-end payment)]
                  (map date/short)
                  (apply format "rent for %s-%s")))
           (-order-desc [payment]
-            (let [order        (order/by-payment (d/db (teller/db payment)) payment)
+            ;; NOTE: cheating...kinda
+            (let [order        (order/by-payment (d/db conn) (teller/entity payment))
                   service-desc (service/name (order/service order))]
               (or (when-let [d (order/summary order)]
                     (format "%s (%s)" d service-desc))
@@ -92,7 +108,7 @@
     (case (tpayment/type payment)
       :payment.type/rent    (-rent-desc payment)
       :payment.type/order   (-order-desc payment)
-      :payment.type/deposit (deposit-desc (tcustomer/account (tpayment/customer payment)) payment)
+      :payment.type/deposit (deposit-desc teller (tcustomer/account (tpayment/customer payment)) payment)
       nil)))
 
 
@@ -126,7 +142,8 @@
 (defn order
   "The order associated with this `payment`, if any."
   [_ _ payment]
-  (order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
+  ;; TODO we will discuss how to keep the stripe-id out of the public api
+  #_(order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
 
 
 (defn paid-on
@@ -139,6 +156,15 @@
   "The instant the period of this `payment` ends."
   [_ _ payment]
   (tpayment/period-end payment))
+<<<<<<< HEAD
+=======
+
+
+(defn period-start
+  "The instant the period of this `payment` ends."
+  [_ _ payment]
+  (tpayment/period-start payment))
+>>>>>>> 3310f346a247521f7245d212a071044b656852fa
 
 (defn period-start
   "The instant the period of this `payment` ends."
@@ -148,7 +174,11 @@
 (defn property
   "The property associated with the account that made this `payment`, if any."
   [_ _ payment]
+<<<<<<< HEAD
   (tpayment/property payment))
+=======
+  (tproperty/community (tpayment/property payment)))
+>>>>>>> 3310f346a247521f7245d212a071044b656852fa
 
 
 (defn source
@@ -160,7 +190,11 @@
 (defn status
   "The status of this `payment`."
   [_ _ payment]
+<<<<<<< HEAD
   (tpayment/source payment))
+=======
+  (keyword (name (tpayment/status payment))))
+>>>>>>> 3310f346a247521f7245d212a071044b656852fa
 
 
 (defn payment-type
@@ -185,17 +219,18 @@
   (let [customer (tcustomer/by-email teller "member@test.com")]
     (tpayment/query teller {:customers [customer]}))
 
-
-  (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
-    (execute odin.graphql/schema
-             (venia/graphql-query
-              {:venia/queries
-               [[:payments {:params {:account account-id}}
-                 [:autopay :type]]]})
-             nil
-             {:conn      conn
-              :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
-              :teller    teller}))
+  (clojure.pprint/pprint
+   (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
+     (execute odin.graphql/schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payments {:params {:account account-id}}
+                  [:id :amount :type :due :pstart :pend
+                   [:account [:id]]]]]})
+              nil
+              {:conn      conn
+               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
+               :teller    teller})))
 
   )
 
@@ -204,16 +239,45 @@
 ;; =============================================================================
 
 
+(s/def :gql/account integer?)
+(s/def :gql/property string?)
+(s/def :gql/source string?)
+(s/def :gql/source-types vector?)
+(s/def :gql/types vector?)
+(s/def :gql/from inst?)
+(s/def :gql/to inst?)
+(s/def :gql/statuses vector?)
+(s/def :gql/currencies vector?)
+(s/def :gql/datekey keyword?)
+
+
 (defn- parse-gql-params
-  [{:keys [teller]} {:keys [statuses types account] :as params}]
+  [{:keys [teller] :as ctx}
+   {:keys [account property source source_types types
+           from to statuses currencies datekey] :as params}]
   (tb/assoc-when
    params
-   :statuses (when-some [xs statuses]
-               (map #(keyword "payment.status" (name %)) xs))
+   :customers (when-some [a account]
+                [(tcustomer/by-account teller a)])
+   :properties (when-some [p property]
+                 [(tproperty/by-community teller p)])
+   :sources (when-some [s source]
+              [(tsource/by-id teller s)])
+   :source-types (when-some [xs source_types]
+                   (map #(keyword "payment-source.type" (name %)) xs))
    :types (when-some [xs types]
             (map #(keyword "payment.type" (name %)) xs))
-   :customers (when-some [a account]
-                [(tcustomer/by-account teller a)])))
+   :statuses (when-some [xs statuses]
+               (map #(keyword "payment.status" (name %)) xs))
+   :currency (when-let [c (first currencies)]
+               (name c))))
+
+
+(s/fdef parse-gql-params
+        :args (s/cat :ctx map?
+                     :params (s/keys :opt-un [:gql/account :gql/property :gql/source :gql/source-types :gql/types
+                                              :gql/from :gql/to :gql/statuses :gql/currencies :gql/datekey]))
+        :ret :teller.payment/query-params)
 
 
 ;; =============================================================================
@@ -223,16 +287,50 @@
 (defn payments
   "Query payments based on `params`."
   [{:keys [teller] :as ctx} {params :params} _]
-  (try
-    (tpayment/query teller (parse-gql-params ctx params))
-    (catch Throwable t
-      (timbre/error t ::query params)
-      (resolve/resolve-as nil {:message  (.getMessage t)
-                               :err-data (ex-data t)}))))
+  (let [tparams (parse-gql-params ctx params)]
+    (clojure.pprint/pprint tparams)
+    (try
+      (tpayment/query teller tparams)
+      (catch Throwable t
+        (timbre/error t ::query params)
+        (resolve/resolve-as nil {:message  (error-message t)
+                                 :err-data (ex-data t)})))))
 
 
+(comment
+
+  (do
+    (require '[com.walmartlabs.lacinia :refer [execute]])
+    (require '[odin.datomic :refer [conn]])
+    (require '[odin.teller :refer [teller]])
+    (require '[datomic.api :as d])
+    (require '[venia.core :as venia]))
+
+  (let [customer (tcustomer/by-email teller "member@test.com")
+        sources  (tcustomer/sources customer)]
+    (println (tpayment/query teller {:customers [customer]}))
+    ;; TODO why do no sources return?
+    (println sources)
+    (println (tpayment/query teller {:sources sources})))
 
 
+  (clojure.pprint/pprint
+   (let [account-id  (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))
+         property-id (:db/id (d/entity (d/db conn) [:property/code "52gilbert"]))]
+     (execute odin.graphql/schema
+              (venia/graphql-query
+               {:venia/queries
+                [[:payments {:params {:account account-id
+                                      :types   [:rent]}}
+                  [:id :amount :type :due :pstart :pend
+                   [:account [:id]]
+                   [:source [:type]]]]]})
+              nil
+              {:conn      conn
+               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
+               :teller    teller})))
+
+  )
 
 ;; ==============================================================================
 ;; mutations ====================================================================
@@ -257,14 +355,16 @@
 
 (defn- ensure-payment-allowed
   [payment source]
-  (let [retry (#{:payment.status/due :payment.status/failed} (payment/status payment))
-        rent  (= (tpayment/type payment) :payment.type/rent)
-        bank  (tsource/bank-account? source)]
+  (let [retry        (#{:payment.status/due :payment.status/failed}
+                      (tpayment/status payment))
+        correct-type (#{:payment.type/rent :payment.type/deposit}
+                      (tpayment/type payment))
+        bank         (tsource/bank-account? source)]
     (cond
       (not retry)
-      (format "This payment has status %s; cannot pay!" (name (payment/status payment)))
+      (format "This payment has status %s; cannot pay!" (name (tpayment/status payment)))
 
-      (not (and rent bank))
+      (not (and correct-type bank))
       "Only bank accounts can be used to pay rent.")))
 
 
@@ -289,6 +389,7 @@
   [{:keys [requester teller] :as ctx} {:keys [id source] :as params} _]
   (let [payment (tpayment/by-id teller id)
         source  (tsource/by-id teller source)]
+<<<<<<< HEAD
     (if-let [error (ensure-payment-allowed payment source)]
       (resolve/resolve-as nil {:message error})
       (tpayment/charge! payment {:source source}))
@@ -326,6 +427,40 @@
             (resolve/deliver! result nil {:message  (.getMessage t)
                                           :err-data (ex-data t)}))))
       result))
+=======
+    (try
+      (if-let [error (ensure-payment-allowed payment source)]
+        (resolve/resolve-as nil {:message error})
+        (tpayment/charge! payment {:source source}))
+      (catch Throwable t
+        (timbre/error t ::pay-rent {:payment-id id :source-id source})
+        (resolve/resolve-as nil {:message (error-message t)})))))
+
+
+(defn pay-deposit!
+  [{:keys [conn requester teller] :as ctx} {source-id :source} _]
+  (let [source   (tsource/by-id teller source-id)
+        customer (tcustomer/by-account teller requester)
+        deposit  (deposit/by-account requester)]
+    (try
+      (if-not (tsource/bank-account? source)
+        (resolve/resolve-as nil {:message
+                                 "Your deposit can only be paid with a bank account."})
+        ;; NOTE: `deposit/amount-remaining` relies on relations established
+        ;; between deposit and payment entities. this can be represented using
+        ;; teller (rather than outdated `blueprints.models.payment` namespace)
+        ;; after importing blueprints models to `odin`.
+        (let [payment (tpayment/create! customer
+                                        (deposit/amount-remaining deposit)
+                                        :payment.type/deposit
+                                        {:source source})]
+          @(d/transact conn [{:db/id            (td/id deposit)
+                              :deposit/payments (td/id payment)}])
+          (deposit/by-account (d/entity (d/db conn) (td/id requester)))))
+      (catch Throwable t
+        (timbre/error t ::pay-deposit {:source-id source-id})
+        (resolve/resolve-as nil {:message (error-message t)})))))
+>>>>>>> 3310f346a247521f7245d212a071044b656852fa
 
 
 ;; =============================================================================
@@ -339,9 +474,10 @@
 
 
 (defmethod authorization/authorized? :payment/pay-rent!
-  [{conn :conn} account params]
-  (let [payment (d/entity (d/db conn) (:id params))]
-    (= (:db/id account) (:db/id (payment/account payment)))))
+  [{teller :teller} account params]
+  (let [payment  (tpayment/by-id teller (:id params))
+        customer (tcustomer/by-account teller account)]
+    (= customer (tpayment/customer payment))))
 
 
 (def resolvers

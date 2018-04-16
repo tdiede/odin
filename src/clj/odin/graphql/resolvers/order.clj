@@ -18,7 +18,10 @@
             [clojure.set :as set]
             [teller.payment :as tpayment]
             [teller.source :as tsource]
-            [teller.customer :as tcustomer]))
+            [teller.customer :as tcustomer]
+            [teller.plan :as plan]
+            [teller.subscription :as subscription]
+            [blueprints.models.service :as service]))
 
 ;; =============================================================================
 ;; Fields
@@ -56,6 +59,12 @@
   "Date that `order` was fulfilled."
   [{conn :conn} _ order]
   (order/fulfilled-on order))
+
+
+(defn payments
+  "The payments made towards this `order`."
+  [{teller :teller} _ order]
+  (map (partial tpayment/by-entity teller) (order/payments order)))
 
 
 (defn- property-for-account [db account]
@@ -329,9 +338,59 @@
         (d/entity (d/db conn) id)))))
 
 
+;; charge ===============================
+
+
+(defn- ensure-can-charge
+  [ order]
+  )
+
+
+(defmulti ^:private process-order!
+  (fn [_ order]
+    (service/billed (order/service order))))
+
+
+(defmethod process-order! :service.billed/once
+  [{:keys [teller conn]} order]
+  (let [account  (order/account order)
+        customer (tcustomer/by-account teller account)
+        price    (order/computed-price order)
+        source   (tcustomer/source customer :payment.type/order)
+        payment  (tpayment/create! customer price :payment.type/order
+                                   {:source source})
+        tx-res   @(d/transact conn
+                              [{:db/id          (td/id order)
+                                :order/payments [:payment/id (tpayment/id payment)]}])]
+    (d/entity (:db-after tx-res) (td/id order))))
+
+
+;;; impasse!
+
+;; `teller` plans neeed to be created for for each service. This should probably
+;; be structured as a migration...?
+
+
+#_(defn- fetch-or-create-plan!
+  [teller service]
+  (or (plan/by-id teller (order/uuid order))
+      (let []
+        (plan/create! teller ()))))
+
+
+;; (defn- subscribe!
+;;   [teller order]
+;;   )
+
+
+(defmethod process-order! :service.billed/monthly
+  [{:keys [teller conn]} order]
+  order)
+
+
 (defn charge!
   "Charge an order."
-  [{:keys [teller requester conn]} {:keys [id]} _]
+  [{:keys [teller requester conn] :as ctx} {:keys [id]} _]
   (let [customer (tcustomer/by-account teller requester)
         order    (d/entity (d/db conn) id)
         price    (order/computed-price order)
@@ -352,9 +411,7 @@
 
       :otherwise
       (try
-        (let [payment (tpayment/create! customer price :payment.type/order {:source source})
-              tx-res  @(d/transact conn [[:db/add id :order/payments [:payment/id (tpayment/id payment)]]])]
-          (d/entity (:db-after tx-res) id))
+        (process-order! ctx order)
         (catch Throwable t
           (timbre/error t ::order {:order-id id :source source})
           (resolve/resolve-as nil {:message  (error-message t)
@@ -416,6 +473,7 @@
    :order/status       status
    :order/billed-on    billed-on
    :order/fulfilled-on fulfilled-on
+   :order/payments     payments
    :order/property     property
    :order-field/value  field-value
    ;; queries

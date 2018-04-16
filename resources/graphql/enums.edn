@@ -11,6 +11,10 @@
   {:description "Allowed types of pets."
    :values      [:cat :dog]}
 
+  :currencies
+  {:description "Currencies to make payments."
+   :values [:usd]}
+
   :deposit_status
   {:description "Security deposit statuses."
    :values      [:pending :paid :overdue :unpaid :partial]}

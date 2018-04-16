@@ -1,15 +1,32 @@
 (ns odin.graphql.resolvers.member-license
-  (:require [blueprints.models.member-license :as member-license]
+  (:require [blueprints.models.account :as account]
+            [blueprints.models.customer :as customer]
+            [blueprints.models.member-license :as member-license]
             [blueprints.models.payment :as payment]
             [blueprints.models.source :as source]
-            [datomic.api :as d]
-            [odin.models.autopay :as autopay]
-            [blueprints.models.customer :as customer]
-            [toolbelt.async :refer [<!!?]]
             [com.walmartlabs.lacinia.resolve :as resolve]
-            [taoensso.timbre :as timbre]
+            [datomic.api :as d]
             [odin.graphql.authorization :as authorization]
-            [blueprints.models.account :as account]))
+            [odin.models.autopay :as autopay]
+            [taoensso.timbre :as timbre]
+            [teller.customer :as tcustomer]
+            [teller.payment :as tpayment]
+            [toolbelt.async :refer [<!!?]]
+            [toolbelt.date :as date]
+            [teller.property :as tproperty]
+            [teller.subscription :as tsubscription]
+            [clj-time.core :as t]))
+
+;; ==============================================================================
+;; helpers ======================================================================
+;; ==============================================================================
+
+
+(defn- license-customer
+  "Given a member's `license`, produce the teller customer."
+  [teller license]
+  (tcustomer/by-account teller (member-license/account license)))
+
 
 ;; ==============================================================================
 ;; fields -----------------------------------------------------------------------
@@ -18,26 +35,48 @@
 
 (defn autopay-on
   "Whether or not autopay is active for this license."
-  [_ _ license]
-  (keyword (name (member-license/autopay-on? license))))
+  [{teller :teller} _ license]
+  (let [customer (license-customer teller license)]
+    (some? (tsubscription/query teller {:customers [customer]
+                                        :payment-types   [:payment.type/rent]}))))
+
+
+(defn- payment-within
+  [teller license date]
+  (let [customer (license-customer teller license)
+        tz       (t/time-zone-for-id (tproperty/timezone (tcustomer/property customer)))
+        from     (date/beginning-of-month date tz)
+        to       (date/end-of-month date tz)]
+    (first
+     (tpayment/query teller {:customers     [customer]
+                             :payment-types [:payment.type/rent]
+                             :from          from
+                             :to            to}))))
 
 
 (defn rent-status
   "What's the status of this license owner's rent?"
-  [{:keys [conn]} _ license]
-  (when-some [payment (member-license/payment-within (d/db conn) license (java.util.Date.))]
+  [{teller :teller} _ license]
+  (when-some [payment (payment-within teller license (java.util.Date.))]
     (cond
-      (nil? payment)             :due
-      (payment/pending? payment) :pending
-      (payment/paid? payment)    :paid
-      (payment/overdue? payment) :overdue
-      :otherwise                 :due)))
+      (tpayment/due? payment)     :due
+      (tpayment/pending? payment) :pending
+      (tpayment/paid? payment)    :paid
+      (tpayment/overdue? payment) :overdue
+      :otherwise                  :due)))
 
 
 (defn status
   "The status of the member license."
   [_ _ license]
   (keyword (name (member-license/status license))))
+
+
+(defn- rent-payments
+  "All rent payments made by the owner of this license."
+  [{teller :teller} _ license]
+  (tpayment/query teller {:customers     [(license-customer teller license)]
+                          :payment-types [:payment.type/rent]}))
 
 
 ;; ==============================================================================
@@ -78,8 +117,9 @@
 
 (def resolvers
   {;; fields
-   :member-license/status      status
-   :member-license/autopay-on  autopay-on
-   :member-license/rent-status rent-status
+   :member-license/status        status
+   :member-license/autopay-on    autopay-on
+   :member-license/rent-payments rent-payments
+   :member-license/rent-status   rent-status
    ;; mutations
-   :member-license/reassign!   reassign!})
+   :member-license/reassign!     reassign!})
