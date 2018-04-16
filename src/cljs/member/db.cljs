@@ -9,7 +9,7 @@
    {:lang    :en
     :menu    {:showing false
               :items   [{:key  :services
-                         :name "Premium Services"
+                         :name "Helping Hands"
                          :uri  "/services/book"}]
               }
     :account account
