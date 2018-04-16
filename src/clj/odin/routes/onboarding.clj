@@ -522,6 +522,7 @@
      :time      (onboard/move-in onboard)}))
 
 
+
 (defmethod fdata :services/storage
   [conn account step]
   (let [onboard  (onboard/by-account account)
@@ -937,6 +938,7 @@
            (conj (onboard/add-seen onboard step)))
          (d/transact conn)
          (deref))))
+
 
 
 (defmethod save! :services/storage
