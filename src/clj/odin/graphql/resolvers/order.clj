@@ -269,11 +269,6 @@
 ;; charge ===============================
 
 
-(defn- ensure-can-charge
-  [ order]
-  )
-
-
 (defmulti ^:private process-order!
   (fn [_ order]
     (service/billed (order/service order))))
@@ -293,27 +288,18 @@
     (d/entity (:db-after tx-res) (td/id order))))
 
 
-;;; impasse!
-
-;; `teller` plans neeed to be created for for each service. This should probably
-;; be structured as a migration...?
-
-
-#_(defn- fetch-or-create-plan!
-  [teller service]
-  (or (plan/by-id teller (order/uuid order))
-      (let []
-        (plan/create! teller ()))))
-
-
-;; (defn- subscribe!
-;;   [teller order]
-;;   )
-
-
 (defmethod process-order! :service.billed/monthly
   [{:keys [teller conn]} order]
-  order)
+  (let [service  (order/service order)
+        plan     (plan/by-entity teller (service/plan service))
+        customer (tcustomer/by-account teller (order/account order))
+        source   (tcustomer/source customer :payment.type/order)
+        subs     (subscription/subscribe! customer plan {:source source})
+        subs-ref [:teller-subscription/id (subscription/id subs)]
+        tx-res   @(d/transact conn
+                              [{:db/id              (td/id order)
+                                :order/subscription subs-ref}])]
+    (d/entity (:db-after tx-res) (td/id order))))
 
 
 (defn charge!

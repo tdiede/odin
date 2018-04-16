@@ -12,7 +12,8 @@
             [teller.customer :as tcustomer]
             [teller.source :as tsource]
             [toolbelt.core :as tb]
-            [teller.payment :as tpayment]))
+            [teller.payment :as tpayment]
+            [teller.subscription :as subscription]))
 
 ;; =============================================================================
 ;; Fields
@@ -64,9 +65,9 @@
 
 (defn autopay?
   "Is this source being used for autopay?"
-  [_ _ source]
-  ;; TODO return once subscriptions API is complete
-  false)
+  [{teller :teller} _ source]
+  (not (empty? (subscription/query teller {:payment-types [:payment.type/rent]
+                                           :sources       [source]}))))
 
 
 (defn type
@@ -126,8 +127,6 @@
     (tcustomer/create! teller (account/email account) {:account account})))
 
 
-;; NOTE: The `requester` in `ctx` is the *account* entity that is making the
-;; request
 (defn add-source!
   "Add a new source to the requester's Stripe customer, or create the customer
   and add the source if it doesn't already exist."

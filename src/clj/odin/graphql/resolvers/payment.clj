@@ -140,9 +140,8 @@
 
 (defn order
   "The order associated with this `payment`, if any."
-  [_ _ payment]
-  ;; TODO we will discuss how to keep the stripe-id out of the public api
-  #_(order/by-subscription-id (tsubscription/stripe-id (tpayment/subscription payment))))
+  [{conn :conn} _ payment]
+  (order/by-payment (d/db conn) (teller/entity payment)))
 
 
 (defn paid-on
@@ -272,7 +271,6 @@
   "Query payments based on `params`."
   [{:keys [teller] :as ctx} {params :params} _]
   (let [tparams (parse-gql-params ctx params)]
-    (clojure.pprint/pprint tparams)
     (try
       (tpayment/query teller tparams)
       (catch Throwable t
