@@ -24,7 +24,7 @@
                      :class "book-services"}
       "Book services"]
      [ant/menu-item {:key "cart"}
-      [ant/icon {:type "shopping-cart"}] @count]
+      [ant/icon {:type "shopping-cart"}] "Shopping Cart (" @count ")"]
      [ant/menu-item {:key "history" :style {:float "right"}} "Order history"]
      [ant/menu-item {:key "subscriptions" :style {:float "right"}} "Subscriptions"]
      [ant/menu-item {:key "active-orders" :style {:float "right"}} "Active orders"]]))
