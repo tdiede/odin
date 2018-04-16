@@ -131,7 +131,7 @@
 
 
   :check
-  {:fields {:id          {:type    (non-null :Long)
+  {:fields {:id          {:type    (non-null :ID)
                           :resolve :check/id}
             :payment     {:type    (non-null :payment)
                           :resolve :check/payment}
