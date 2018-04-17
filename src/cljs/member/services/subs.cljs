@@ -59,8 +59,7 @@
  (fn [[db misc] _]
    (let [categories (reduce (fn [catalogs c]
                               (conj catalogs {:category c :label (string/capitalize (name c))}))
-                            [{:category :all
-                              :label    "All"}]
+                            []
                             (:catalogs db))]
      (if-not (empty? misc)
        (conj categories {:category :misc
@@ -150,7 +149,6 @@
  :<- [db/path]
  (fn [db [_ selected]]
    (case selected
-     :all  (:services db)
      :misc (get
             (group-by #(empty? (:catalogs %)) (:services db))
             true)
