@@ -17,7 +17,8 @@
             [teller.subscription :as tsubscription]
             [blueprints.models.member-license :as member-license]
             [teller.property :as tproperty]
-            [blueprints.models.customer :as customer]))
+            [blueprints.models.customer :as customer]
+            [blueprints.models.unit :as unit]))
 
 
 ;; =============================================================================
@@ -189,11 +190,11 @@
   [teller license]
   (let [account       (member-license/account license)
         email         (account/email account)
-        unit-name     (:unit/name (member-license/unit license))
+        unit-name     (unit/name (member-license/unit license))
         customer      (tcustomer/by-account teller account)
         property      (tcustomer/property customer)
         property-name (tproperty/name property)]
-    (str "rent autopay for " unit-name " @ " property-name " by " email )))
+    (str "autopay for " email " @ " property-name " in " unit-name)))
 
 
 (defn set-autopay!
