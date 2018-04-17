@@ -192,16 +192,18 @@
        (when fee? [:div description])]
       [:div.column.is-2
        [:p.price (format-price price billed)]]
-      [:div.column.is-2.align-right
-       [ant/button {:icon     "edit"
-                    :on-click #(dispatch [:services.cart.item/edit service-item fields])}
-        "Edit Item"]]
-      [:div.column.is-2
-       [ant/button
-        {:type     "danger"
-         :icon     "close"
-         :on-click #(dispatch [:services.cart.item/remove index name])}
-        "Remove item"]]]
+      (when (not fee?)
+        [:div.column.is-2.align-right
+         [ant/button {:icon     "edit"
+                      :on-click #(dispatch [:services.cart.item/edit service-item fields])}
+          "Edit Item"]])
+      (when (not fee?)
+        [:div.column.is-2
+         [ant/button
+          {:type     "danger"
+           :icon     "close"
+           :on-click #(dispatch [:services.cart.item/remove index name])}
+          "Remove item"]])]
      (when-not (empty? fields)
        [fields-data (sort-by :index fields)])]))
 
@@ -547,7 +549,7 @@
     [:div
      (if-not (empty? @orders)
        [active-orders (sort-by :created > @orders) requester]
-       [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Book services" " to request services"])]))
+       [empty-view "You don't have any active orders at the moment" (routes/path-for :services/book) "Order services" " to request services"])]))
 
 
 (defmethod content :services/subscriptions [{:keys [requester]}]
@@ -555,7 +557,7 @@
     [:div
      (if-not (empty? @subscriptions)
        [active-subscriptions @subscriptions requester]
-       [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Book services" " to request services"])]))
+       [empty-view "You don't have any active subscriptions" (routes/path-for :services/book) "Order services" " to request services"])]))
 
 
 (defmethod content :services/history [{:keys [requester]}]
@@ -563,7 +565,7 @@
     [:div
      (if-not (empty? @history)
        [order-history @history requester]
-       [empty-view "You don't have an order history yet" (routes/path-for :services/book) "Book services" " to add services to your requests"])]))
+       [empty-view "You don't have an order history yet" (routes/path-for :services/book) "Order services" " to add services to your requests"])]))
 
 
 
@@ -582,7 +584,7 @@
        :on-change   #(dispatch [:services.add-service.form/update %1 %2])}]
      (if-not (empty? @cart-items)
        [shopping-cart-body (sort-by :index @cart-items) requester]
-       [empty-view "There are no services selected" (routes/path-for :services/book) "Book services" " to add services to your requests"])]))
+       [empty-view "There are no services selected" (routes/path-for :services/book) "Order services" " to add services to your requests"])]))
 
 
 
