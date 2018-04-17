@@ -44,7 +44,7 @@
  :<- [:route/current]
  (fn [{page :page} _]
    (case page
-     :services/book          "Browse and order services"
+     :services/book          "Home services at your fingertips"
      :services/cart          "Review and confirm your order"
      :services/active-orders "Manage your active requests"
      :services/subscriptions "Manage your current subscriptions"
