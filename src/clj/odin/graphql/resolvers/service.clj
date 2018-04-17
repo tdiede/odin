@@ -277,13 +277,6 @@
     (d/entity (d/db conn) service_id)))
 
 
-(defn delete!
-  [{:keys [conn requester]} {:keys [service]} _]
-  @(d/transact conn [[:db.fn/retractEntity service]
-                     (source/create requester)])
-  :ok)
-
-
 ;; =============================================================================
 ;; Resolvers
 ;; =============================================================================
@@ -310,7 +303,6 @@
    :service/type    svc-type
    ;; mutations
    :service/create! create!
-   :service/delete! delete!
    :service/update! update!
    ;; queries
    :service/query   query
