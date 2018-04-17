@@ -187,13 +187,13 @@
 
 (defn- plan-name
   [teller license]
-  (let [account (member-license/account license)
-        full-name     (account/full-name account)
+  (let [account       (member-license/account license)
+        email         (account/email account)
         unit-name     (:unit/name (member-license/unit license))
         customer      (tcustomer/by-account teller account)
         property      (tcustomer/property customer)
         property-name (tproperty/name property)]
-    (str full-name " rent autopay, unit:" unit-name " @ " property-name)))
+    (str "rent autopay for " unit-name " @ " property-name " by " email )))
 
 
 (defn set-autopay!
