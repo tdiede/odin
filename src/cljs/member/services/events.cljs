@@ -20,34 +20,36 @@
  ::load-cart
  [(inject-cofx :store) (path db/path)]
  (fn [{:keys [store db]} _]
-   {:dispatch [::check-last-modified]}))
+   {:dispatch [::check-cart-last-modified]}))
 
 
 (reg-event-fx
- ::check-last-modified
+ ::check-cart-last-modified
  [(inject-cofx :store) (path db/path)]
  (fn [{:keys [store db]} _]
    (let [last-modified (or (:last-modified store) (time/now))]
      (if (>= (* -1 (time/days-between last-modified)) 2)
        {:dispatch [::load-cart-empty]}
-       {:dispatch [::check-hash]}))))
+       {:dispatch [::check-service-modified]}))))
 
 
 (reg-event-fx
- ::check-hash
- [(inject-cofx :store)]
- (fn [{:keys [store db]} k]
-   {:dispatch [::fetch-property k (get-in db [:account :id]) [::check-hashes]]}))
-
-
-(reg-event-fx
- ::check-hashes
+ ::check-service-modified
  [(inject-cofx :store) (path db/path)]
- (fn [{:keys [store db]} [_ _ services]]
-   (if (= (set/intersection (set (map hash services)) (::hashes store))
-          (::hashes store))
-     {:dispatch [::load-cart-from-store]}
-     {:dispatch [::load-cart-empty]})))
+ (fn [{:keys [store db]} _]
+   (let [svc<->updated  (map #(assoc {} :id (:id %) :updated (:updated_at %)) (:services db))
+         cart<->updated (map #(assoc {} :id (:service %) :updated (:updated_at %)) (:cart db))
+         all-matches?   (reduce
+                         (fn [matched {:keys [id updated]}]
+                           (and matched
+                                (= updated
+                                   (:updated
+                                    (tb/find-by #(= (:id %) id) svc<->updated)))))
+                         true
+                         cart<->updated)]
+     (if all-matches?
+       {:dispatch [::load-cart-from-store]}
+       {:dispatch [::load-cart-empty]}))))
 
 
 (reg-event-fx
@@ -179,7 +181,7 @@
    (let [property-id (get-in response [:data :account :property :id])]
      {:graphql {:query      [[:services {:params {:properties [property-id]
                                                   :active     true}}
-                              [:id :name :description :price :catalogs :active :billed
+                              [:id :name :description :price :catalogs :active :billed :updated_at
                                [:fees [:id :name :description :price]]
                                [:fields [:id :index :label :type :required
                                          [:options [:index :label :value]]]]]]]
@@ -246,12 +248,13 @@
 (reg-event-fx
  :services.add-service/show
  [(path db/path)]
- (fn [{db :db} [_ {:keys [id name description price fields billed fees]}]]
+ (fn [{db :db} [_ {:keys [id name description price fields billed updated_at fees]}]]
    (let [service {:id          id
                   :name        name
                   :description description
                   :price       price
                   :billed      billed
+                  :updated_at  updated_at
                   :fees        fees}]
      {:dispatch [:modal/show db/modal]
       :db       (assoc db :adding service :form-data (sort-by :index fields))})))
@@ -269,9 +272,10 @@
  :services.add-service/add
  [(path db/path) ]
  (fn [{db :db} _]
-   (let [{:keys [id name description fees price billed]} (:adding db)
+   (let [{:keys [id name description fees price billed updated_at] :as svc} (:adding db)
          adding                                   {:index       (count (:cart db))
                                                    :service     id
+                                                   :updated_at  updated_at
                                                    :name        name
                                                    :description description
                                                    :price       price
@@ -280,16 +284,8 @@
                                                    :fields      (:form-data db)}
          new-cart                                 (conj (:cart db) adding)]
      {:dispatch-n   [[:services.add-service/close]
-                     [::store-hash (norms/get-norm db :services/norms id)]
                      [::save-cart new-cart]]
       :notification [:success (str name " has been added to your cart")]})))
-
-
-(reg-event-fx
- ::store-hash
- [(inject-cofx :store)]
- (fn [{:keys [store]} [_ service]]
-   {:store (update store ::hashes #(if (set? %) (conj % (hash service)) #{(hash service)}))}))
 
 
 (defn construct-order-fields

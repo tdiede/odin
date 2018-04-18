@@ -73,7 +73,7 @@
         @categories))]]))
 
 
-(defn service-item [{:keys [name description price billed] :as service}]
+(defn service-item [{:keys [name description price billed updated_at] :as service}]
   [ant/card
    [:div.service
     [:div.columns
