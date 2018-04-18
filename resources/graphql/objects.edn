@@ -455,7 +455,9 @@
             :fees        {:type    (list :service)
                           :resolve (:get :service/fees)}
             :type        {:type    :service_type
-                          :resolve :service/type}}}
+                          :resolve :service/type}
+            :updated_at  {:type    :Instant
+                          :resolve :service/updated}}}
 
 
   :service_field

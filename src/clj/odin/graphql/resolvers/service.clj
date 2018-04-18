@@ -1,5 +1,4 @@
 (ns odin.graphql.resolvers.service
-
   (:require [blueprints.models.account :as account]
             [blueprints.models.service :as service]
             [com.walmartlabs.lacinia.resolve :as resolve]
@@ -10,16 +9,12 @@
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
             [clojure.set :as set]
-            [re-frame.db :as db]))
+            [re-frame.db :as db]
+            [clj-time.coerce :as c]))
 
-;; =============================================================================
-;; Fields
-;; =============================================================================
-
-
-(defn billed
-  [_ _ service]
-  (-> (service/billed service) name keyword))
+;; ==============================================================================
+;; helpers ======================================================================
+;; ==============================================================================
 
 
 (defn make-billed-key
@@ -27,14 +22,34 @@
   (keyword "service.billed" (name billed)))
 
 
+(defn make-type-key
+  [svc-type]
+  (keyword "service.type" (name svc-type)))
+
+
+;; ==============================================================================
+;; fields =======================================================================
+;; ==============================================================================
+
+
+(defn billed
+  [_ _ service]
+  (-> (service/billed service) name keyword))
+
+
 (defn svc-type
   [_ _ service]
   (-> (service/type service) name keyword))
 
 
-(defn make-type-key
-  [svc-type]
-  (keyword "service.type" (name svc-type)))
+(defn updated
+  [{conn :conn} _ service]
+  (let [fields  (service/fields service)
+        options (mapcat service/options fields)]
+    (->> (concat [service] fields options)
+         (map (comp c/to-long (partial td/updated-at (d/db conn))))
+         (apply max)
+         (c/to-date))))
 
 
 ;; =============================================================================
@@ -301,6 +316,7 @@
   {;; fields
    :service/billed  billed
    :service/type    svc-type
+   :service/updated updated
    ;; mutations
    :service/create! create!
    :service/update! update!
