@@ -61,9 +61,10 @@
                    [:id :price :created :quantity :name :request :summary :status
                     :billed_on :fulfilled_on :projected_fulfillment :cost
                     [:line_items [:id :desc :cost :price]]
+                    [:fields [:id :label :index :value :type]]
                     [:variant [:id :name :price]]
                     [:account [:id :name [:service_source [:id]]]]
-                    [:service [:id :name :desc :code :cost :billed :price]]
+                    [:service [:id :name :description :code :cost :billed :price]]
                     [:property [:id :name]]
                     [:payments [:id :amount :description :paid_on]]]]]
                  :on-success [::order-fetch k]
@@ -74,7 +75,9 @@
  ::order-fetch
  [(path db/path)]
  (fn [{db :db} [_ k response]]
-   (let [order (get-in response [:data :order])]
+   (let [order (-> (get-in response [:data :order])
+                   (update :fields #(sort-by :index %)))]
+     (js/console.log order)
      {:db       (norms/assoc-norm db :orders/norms (:id order) order)
       :dispatch [:ui/loading k false]})))
 

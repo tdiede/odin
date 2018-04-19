@@ -7,6 +7,7 @@
             [cards.admin.orders.views]
             [cards.admin.properties.views]
             [cards.member.services]
+            [cards.iface.components.form]
             [cards.iface.components.menu]
             [cards.member.services.cart]))
 

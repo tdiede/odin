@@ -277,10 +277,28 @@
                                     :resolve (:get :order/variant)}
             :line_items            {:type    (list :line_item)
                                     :resolve (:get :order/lines)}
+            :fields                {:type    (list :order_field)
+                                    :resolve (:get :order/fields)}
             :created               {:type    (non-null :Instant)
                                     :resolve :entity/created}
             :updated               {:type    (non-null :Instant)
-                                    :resolve :entity/updated}}}
+                                    :resolve :entity/updated}
+            :billed                {:type        :service_billed
+                                    :description "Orders are billed `once` for one time services or `monthly` for subscriptions"
+                                    :resolve     (:keyword/name :order/service :service/billed)}}}
+
+
+  :order_field
+  {:fields {:id    {:type    (non-null :Long)
+                    :resolve (:get :db/id)}
+            :label {:type    (non-null String)
+                    :resolve (:get :order-field/service-field :service-field/label)}
+            :value {:type    :Any
+                    :resolve :order-field/value}
+            :type  {:type    (non-null :service_field_type)
+                    :resolve (:keyword/name :order-field/service-field :service-field/type)}
+            :index {:type    (non-null :Long)
+                    :resolve (:get :order-field/service-field :service-field/index)}}}
 
 
   :line_item
@@ -408,24 +426,62 @@
 
 
   :service
+  {:fields {:id          {:type    (non-null :Long)
+                          :resolve (:get :db/id)}
+            :name        {:type    (non-null String)
+                          :resolve (:get :service/name)}
+            :description {:type    String
+                          :resolve (:get :service/desc)}
+            :code        {:type    (non-null String)
+                          :resolve (:get :service/code)}
+            :price       {:type    Float
+                          :resolve (:get :service/price)}
+            :cost        {:type    Float
+                          :resolve (:get :service/cost)}
+            :billed      {:type    :service_billed
+                          :resolve :service/billed}
+            :rental      {:type    Boolean
+                          :resolve (:get :service/rental)}
+            :variants    {:type    (list :service_variant)
+                          :resolve (:get :service/variants)}
+            :active      {:type    Boolean
+                          :resolve (:get :service/active)}
+            :catalogs    {:type    (list :Keyword)
+                          :resolve (:get :service/catalogs)}
+            :properties  {:type    (list :property)
+                          :resolve (:get :service/properties)}
+            :fields      {:type    (list :service_field)
+                          :resolve (:get :service/fields)}
+            :fees        {:type    (list :service)
+                          :resolve (:get :service/fees)}
+            :type        {:type    :service_type
+                          :resolve :service/type}
+            :updated_at  {:type    :Instant
+                          :resolve :service/updated}}}
+
+
+  :service_field
   {:fields {:id       {:type    (non-null :Long)
                        :resolve (:get :db/id)}
-            :name     {:type    (non-null String)
-                       :resolve (:get :service/name)}
-            :desc     {:type    String
-                       :resolve (:get :service/desc)}
-            :code     {:type    (non-null String)
-                       :resolve (:get :service/code)}
-            :price    {:type    Float
-                       :resolve (:get :service/price)}
-            :cost     {:type    Float
-                       :resolve (:get :service/cost)}
-            :billed   {:type    :service_billed
-                       :resolve :service/billed}
-            :rental   {:type    Boolean
-                       :resolve (:get :service/rental)}
-            :variants {:type    (list :service_variant)
-                       :resolve (:get :service/variants)}}}
+            :index    {:type    (non-null Int)
+                       :resolve (:get :service-field/index)}
+            :type     {:type    :service_field_type
+                       :resolve (:keyword/name :service-field/type)}
+            :label    {:type    (non-null String)
+                       :resolve (:get :service-field/label)}
+            :required {:type    Boolean
+                       :resolve (:get :service-field/required)}
+            :options  {:type    (list :service_field_option)
+                       :resolve (:get :service-field/options)}}}
+
+
+  :service_field_option
+  {:fields {:index {:type    (non-null :Long)
+                    :resolve (:get :service-field-option/index)}
+            :value {:type    (non-null String)
+                    :resolve (:get :service-field-option/value)}
+            :label {:type    (non-null String)
+                    :resolve (:get :service-field-option/label)}}}
 
 
   :service_variant

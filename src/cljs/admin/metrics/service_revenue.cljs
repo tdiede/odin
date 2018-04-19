@@ -257,7 +257,7 @@
         (dispatch-sync [:metrics.service-revenue/bootstrap]))
       :reagent-render
       (fn []
-        [ant/card {:title   (r/as-element [:b "Premium Service Order Revenue"])
+        [ant/card {:title   (r/as-element [:b "Helping Hands Order Revenue"])
                    :extra   (r/as-element [service-revenue-chart-options showing-controls])
                    :loading @is-loading}
          (when @showing-controls

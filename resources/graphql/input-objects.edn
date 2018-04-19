@@ -76,16 +76,24 @@
 
   :mutate_order_params
   {:description "Parameters needed to create an order."
-   :fields      {:account    {:type (non-null Long)}
-                 :service    {:type (non-null Long)}
-                 :variant    {:type        Long
+   :fields      {:account    {:type (non-null :Long)}
+                 :service    {:type (non-null :Long)}
+                 :variant    {:type        :Long
                               :description "Optional variant of the service."}
                  :price      {:type Float}
                  :cost       {:type Float}
                  :quantity   {:type Float}
                  :request    {:type String}
                  :summary    {:type String}
-                 :line_items {:type (list :mutate_line_item_params)}}}
+                 :line_items {:type (list :mutate_line_item_params)}
+                 :fields     {:type (list :mutate_order_field_params)}}}
+
+
+  :mutate_order_field_params
+  {:description "Parameters needed to create or edit order fields"
+   :fields      {:id            {:type :Long}
+                 :service_field {:type :Long}
+                 :value         {:type :Any}}}
 
 
   ;;; Payment
@@ -143,10 +151,69 @@
 
 
   ;;; Services
+
+  :service_field_option_object
+  {:description "The options given to a member in a service field of type `:dropdown`"
+   :fields      {:index {:type (non-null :Long)}
+                 :label {:type (non-null String)}
+                 :value {:type (non-null String)}}}
+
+
+  :service_field_object
+  {:description "Custom fields to be defined when a new `service` is created."
+   :fields      {:index    {:type (non-null :Long)}
+                 :id       {:type :Long}
+                 :type     {:type (non-null :service_field_type)}
+                 :label    {:type (non-null String)}
+                 :required {:type Boolean}
+                 :options  {:type (list :service_field_option_object)}}}
+
+
   :services_query_params
   {:description "Parameters to query for services."
-   :fields      {:q {:type        String
-                     :description "Query term."}}}
+   :fields      {:q          {:type        String
+                              :description "Query term."}
+                 :catalogs   {:type        (list :Keyword)
+                              :description "List of catalogs we want services from"}
+                 :properties {:type        (list :Long)
+                              :description "List of property IDs"}
+                 :billed     {:type (list :service_billed)}
+                 :active     {:type        Boolean
+                              :description "Is this service being offered?"}}}
+
+
+  :service_create_params
+  {:description "Parameters to create a new service."
+   :fields      {:name        {:type (non-null String)}
+                 :code        {:type (non-null String)}
+                 :description {:type (non-null String)}
+                 :catalogs    {:type (list String)}
+                 :active      {:type Boolean}
+                 :type        {:type :service_type}
+                 :fields      {:type (list :service_field_object)}
+                 :properties  {:type (list :Long)}
+                 :price       {:type Float}
+                 :cost        {:type Float}
+                 :billed      {:type :service_billed}
+                 :rental      {:type Boolean}
+                 :fees        {:type (list :Long)}}}
+
+
+  :service_update_params
+  {:description "Parameters to update a new service"
+   :fields      {:name        {:type String}
+                 :code        {:type String}
+                 :description {:type String}
+                 :catalogs    {:type (list String)}
+                 :active      {:type Boolean}
+                 :type        {:type :service_type}
+                 :fields      {:type (list :service_field_object)}
+                 :properties  {:type (list :Long)}
+                 :price       {:type Float}
+                 :cost        {:type Float}
+                 :billed      {:type :service_billed}
+                 :rental      {:type Boolean}
+                 :fees        {:type (list :Long)}}}
 
 
   ;;; Units

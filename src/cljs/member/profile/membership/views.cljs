@@ -1,6 +1,6 @@
 (ns member.profile.membership.views
   (:require [antizer.reagent :as ant]
-            [iface.typography :as typography]
+            [iface.components.typography :as typography]
             [iface.components.payments :as payments-ui]
             [iface.components.membership :as membership]
             [iface.utils.formatters :as format]

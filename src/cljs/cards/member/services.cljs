@@ -2,7 +2,7 @@
   (:require [antizer.reagent :as ant]
             [cljsjs.moment]
             [devcards.core]
-            [member.services.views :as view]
+            [iface.components.services :as services]
             [member.services.db :as db]
             [reagent.core :as r])
   (:require-macros [devcards.core :as dc :refer [defcard
@@ -50,9 +50,9 @@
 
 
 (def add-service-state-init
-  {:form    {}
-   :cart    []
-   :loading false})
+  {:form-fields (:fields sample-data)
+   :cart        {}
+   :loading     false})
 
 
 (defonce add-service-state
@@ -62,10 +62,20 @@
 (defcard-rg add-service-form
   "The form rendered inside of the `add-service-modal`."
   (fn [data _]
-    [view/add-service-form (:form @data) (:fields sample-data)
-     {:on-change #(swap! add-service-state assoc-in [:form %1] %2)}])
+    [services/add-service-form (:form-fields @data)
+     {:on-change #(swap! data update :form-fields (fn [fields]
+                                                    (map
+                                                     (fn [field]
+                                                       (if (= (:key field) %1)
+                                                         (assoc field :value %2)
+                                                         field))
+                                                     fields)))}])
   add-service-state
   {:inspect-data true})
+
+
+(defn get-from-service [key item]
+  (get-in item [:service key]))
 
 
 (defn on-submit [data]
@@ -74,8 +84,10 @@
     (.setTimeout js/window
                  #(do
                     (swap! data update :cart conj {:service (get-in sample-data [:service :id])
-                                                   :form    (:form @data)})
-                    (swap! data assoc :form {})
+                                                   :price   (get-in sample-data [:service :price])
+                                                   :title   (get-in sample-data [:service :title])
+                                                   :fields  (:form-fields @data)})
+                    (swap! data assoc :form-fields (:fields sample-data))
                     (swap! data assoc :loading false))
                  1000)))
 
@@ -83,8 +95,8 @@
 (defcard-rg add-service-modal-footer
   "Some docs over here....."
   (fn [data _]
-    (let [can-submit (db/can-add-service? (:form @data) (:fields sample-data))]
-      [view/add-service-modal-footer can-submit
+    (let [can-submit (db/can-add-service? (:form-fields @data))]
+      [services/add-service-modal-footer can-submit
        {:on-cancel  identity
         :on-submit  (on-submit data)
         :is-loading (:loading @data)}]))

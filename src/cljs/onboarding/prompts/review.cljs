@@ -55,38 +55,11 @@
     :dataIndex :action
     :className "no-break column-center"
     :render    (table/wrap-cljs
-                (fn [_ {id :id}]
-                  [:a {:on-click #(do (.preventDefault %)
-                                      (dispatch [:order/delete id]))}
-                   "Remove"]))}
-
-   ])
-
-;; (def ^:private columns
-;;   [(column "name"
-;;            :title "Order"
-;;            :class "width-75"
-;;            :render (fn [name {:keys [desc rental]}]
-;;                      [:div
-;;                       [:span [:b {:dangerouslySetInnerHTML {:__html name}}]
-;;                        (when rental [:i " (rental)"])]
-;;                       [:p {:style                   {:word-break "break-word"}
-;;                            :dangerouslySetInnerHTML {:__html desc}}]]))
-;;    (column "quantity"
-;;            ;; :class "column-right no-break"
-;;            :render (fn [q _]
-;;                      [:span {:dangerouslySetInnerHTML {:__html (or q "&mdash;")}}]))
-;;    (column "price"
-;;            ;; :class "column-right no-break"
-;;            :render (fn [price {:keys [billed quantity]}]
-;;                      (let [bill (if (= billed "monthly") "/mo" "")]
-;;                        (if (nil? price) "Quote" (str "$" price bill)))))
-;;    (column "action"
-;;            ;; :class "no-break column-center"
-;;            :render (fn [_ {id :id}]
-;;                      [:a {:on-click #(do (.preventDefault %)
-;;                                          (dispatch [:order/delete id]))}
-;;                       "Remove"]))])
+                (fn [_ {:keys [id service-type] :as record}]
+                  (when-not (= service-type "fee")
+                    [:a {:on-click #(do (.preventDefault %)
+                                        (dispatch [:order/delete id]))}
+                     "Remove"])))}])
 
 
 ;; =============================================================================
@@ -167,8 +140,8 @@
          [:div.modal-background
           {:on-click #(dispatch [:finish.review.cc/toggle false])}]
          [:div.modal-content.box
-          [:h4.title "Please enter your payment information"]
-          [:p "We won't charge your account until your move-in date or your service(s) are delivered, whichever happens last."]
+          [:h3.title "Please enter your payment information"]
+          [:p "We won't charge your account until your move-in date or your service(s) are delivered, whichever happens last (we'll keep this payment source on file)."]
           [:div {:style {:background-color "#f7f8f9"
                          :padding          24
                          :border-radius    4

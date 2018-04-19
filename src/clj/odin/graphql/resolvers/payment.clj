@@ -189,34 +189,6 @@
       keyword))
 
 
-(comment
-
-  (do
-    (require '[com.walmartlabs.lacinia :refer [execute]])
-    (require '[odin.datomic :refer [conn]])
-    (require '[odin.teller :refer [teller]])
-    (require '[datomic.api :as d])
-    (require '[venia.core :as venia]))
-
-
-  (let [customer (tcustomer/by-email teller "member@test.com")]
-    (tpayment/query teller {:customers [customer]}))
-
-  (clojure.pprint/pprint
-   (let [account-id (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))]
-     (execute odin.graphql/schema
-              (venia/graphql-query
-               {:venia/queries
-                [[:payments {:params {:account account-id}}
-                  [:id :amount :type :due :pstart :pend
-                   [:account [:id]]]]]})
-              nil
-              {:conn      conn
-               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
-               :teller    teller})))
-
-  )
-
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -278,41 +250,6 @@
         (resolve/resolve-as nil {:message  (error-message t)
                                  :err-data (ex-data t)})))))
 
-
-(comment
-
-  (do
-    (require '[com.walmartlabs.lacinia :refer [execute]])
-    (require '[odin.datomic :refer [conn]])
-    (require '[odin.teller :refer [teller]])
-    (require '[datomic.api :as d])
-    (require '[venia.core :as venia]))
-
-  (let [customer (tcustomer/by-email teller "member@test.com")
-        sources  (tcustomer/sources customer)]
-    (println (tpayment/query teller {:customers [customer]}))
-    ;; TODO why do no sources return?
-    (println sources)
-    (println (tpayment/query teller {:sources sources})))
-
-
-  (clojure.pprint/pprint
-   (let [account-id  (:db/id (d/entity (d/db conn) [:account/email "member@test.com"]))
-         property-id (:db/id (d/entity (d/db conn) [:property/code "52gilbert"]))]
-     (execute odin.graphql/schema
-              (venia/graphql-query
-               {:venia/queries
-                [[:payments {:params {:account account-id
-                                      :types   [:rent]}}
-                  [:id :amount :type :due :pstart :pend
-                   [:account [:id]]
-                   [:source [:type]]]]]})
-              nil
-              {:conn      conn
-               :requester (d/entity (d/db conn) [:account/email "admin@test.com"])
-               :teller    teller})))
-
-  )
 
 ;; ==============================================================================
 ;; mutations ====================================================================
@@ -448,5 +385,4 @@
    ;; mutations
    :payment/create!      create-payment!
    :payment/pay-rent!    pay-rent!
-   :payment/pay-deposit! pay-deposit!
-   })
+   :payment/pay-deposit! pay-deposit!})

@@ -20,7 +20,7 @@
                          :name "Communities"
                          :uri  "/properties"}
                         {:key  :services
-                         :name "Premium Services"
+                         :name "Helping Hands"
                          :uri  "/services"}
                         {:key  :metrics
                          :name "Metrics"

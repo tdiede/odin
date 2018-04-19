@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 49 (51002) - http://www.bohemiancoding.com/sketch -->
+    <title>storage</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="storage" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(19.000000, 19.000000)" fill="#1186C9" fill-rule="nonzero">
+            <path d="M4,26 L4,61 L58,61 L58,26 L4,26 Z M4,23 L58,23 C59.6568542,23 61,24.3431458 61,26 L61,61 C61,62.6568542 59.6568542,64 58,64 L4,64 C2.34314575,64 1,62.6568542 1,61 L1,26 C1,24.3431458 2.34314575,23 4,23 Z" id="Rectangle-6-Copy"></path>
+            <path d="M4,3 L14,23 L48,23 L58,3 L4,3 Z M4,0 L58,0 C60.2301461,0 61.6806332,2.34693751 60.6832816,4.34164079 L50.6832816,24.3416408 C50.1751055,25.3579929 49.1363162,26 48,26 L14,26 C12.8636838,26 11.8248945,25.3579929 11.3167184,24.3416408 L1.31671843,4.34164079 C0.319366788,2.34693751 1.76985394,0 4,0 Z" id="Rectangle-6-Copy" transform="translate(31.000000, 13.000000) scale(1, -1) translate(-31.000000, -13.000000) "></path>
+            <path d="M31.5,24.5217289 L31.5,1.5 L31.5,24.5217289 Z M30.5,1.5 C30.5,0.94771525 30.9477153,0.5 31.5,0.5 C32.0522847,0.5 32.5,0.94771525 32.5,1.5 L32.5,24.5217289 C32.5,25.0740136 32.0522847,25.5217289 31.5,25.5217289 C30.9477153,25.5217289 30.5,25.0740136 30.5,24.5217289 L30.5,1.5 Z" id="Line-3"></path>
+        </g>
+    </g>
+</svg>

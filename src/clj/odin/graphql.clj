@@ -8,7 +8,8 @@
             [com.walmartlabs.lacinia.util :as util]
             [datomic.api :as d]
             [mount.core :refer [defstate]]
-            [odin.graphql.resolvers :as resolvers]))
+            [odin.graphql.resolvers :as resolvers]
+            [taoensso.timbre :as timbre]))
 
 (defn- parse-keyword [s]
   (let [[ns' n'] (string/split s #"/")]
@@ -23,7 +24,8 @@
 
     :Keyword
     {:parse     (schema/as-conformer
-                 #(format "%s/%s" (namespace %) (name %)))
+                 (fn [x]
+                   (format "%s/%s" (namespace x) (name x))))
      :serialize (schema/as-conformer identity)}
 
     :Instant

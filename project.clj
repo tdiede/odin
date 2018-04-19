@@ -1,4 +1,4 @@
-(defproject odin "1.8.2-SNAPSHOT"
+(defproject odin "1.9.2-SNAPSHOT"
   :description "The all-dashboard."
   :url "http://my.starcity.com"
   :license {:name "Eclipse Public License"
@@ -29,7 +29,7 @@
                  ;; Other
                  [kami "0.1.0" :exclusions [starcity/toolbelt]]
                  ;; GraphQL
-                 [com.walmartlabs/lacinia "0.21.0"]
+                 [com.walmartlabs/lacinia "0.25.0"]
                  [vincit/venia "0.2.3"]
                  ;; CLJS
                  [tongue "0.2.3"]
@@ -56,7 +56,7 @@
                  [starcity.re-frame/stripe-fx "0.1.0"
                   :exclusions [org.clojure/clojurescript]]
                  [cljsjs/moment "2.17.1-1"]
-
+                 [akiroz.re-frame/storage "0.1.2"]
                  ;; DB
                  [starcity/teller "0.1.0-SNAPSHOT"]
                  [starcity/blueprints "2.5.0-SNAPSHOT"

@@ -3,57 +3,27 @@
             [clojure.string :as string]))
 
 
-(def path ::services)
+(def path
+  ::services)
 
 
-(def modal :member.services/add-service)
+(def modal
+  :member.services/add-service)
 
 
 (def default-params
-  {:category :all})
+  {:category :cleaning})
 
 
-(def ^:private single-dog-walk-item
-  {:service {:id          1
-             :title       "Single Dog Walk"
-             :description "Aliquam posuere. Nulla facilisis, risus a rhoncus fermentum, tellus tellus lacinia purus, et dictum nunc justo sit amet elit."
-             :price       15.0}
-   :fields [{:id       1
-             :type     :date
-             :key      :date
-             :label    "Select day for dog walk"
-             :required true}
-            {:id       2
-             :type     :time
-             :key      :time
-             :label    "Select time for dog walk"
-             :required true}
-            {:id       3
-             :type     :desc
-             :key      :desc
-             :label    "Include any special instructions here."
-             :required false}
-            {:id       4
-             :type     :variants
-             :key      :dog-size
-             :options  [{:key   :s
-                         :label "Small"}
-                        {:key   :m
-                         :label "Medium"}
-                        {:key   :l
-                         :label "Large"}]
-             :label    "Select your dog size:"
-             :required true}]})
-
-
+;; Should submited ps requests be held here? are these keys appropriate for them?
+;; We should probably seed some items in them
 (def default-value
-  {path {:params     default-params
-         ;; TODO:
-         :catalogues [{:id    234
-                       :name  "Room Upgrades"
-                       :key   :room-upgrades
-                       :items [single-dog-walk-item]}]
-         :form-data  {}}})
+  {path {:params        default-params
+         :adding        nil
+         :cart          {}
+         ;; :last-modified ""
+         :form-data     []
+         :orders        []}})
 
 
 (defmulti params->route (fn [page params] page))
@@ -81,11 +51,11 @@
 
 
 (defn can-add-service?
-  [form-data fields]
+  [fields]
   (->> (filter :required fields)
        (reduce
         (fn [acc field]
-          (let [v (get form-data (:key field))]
+          (let [v (:value field)]
             (and acc (if (string? v)
                        (not (string/blank? v))
                        v))))

@@ -5,6 +5,7 @@
             [blueprints.models.member-license :as member-license]
             [blueprints.models.order :as order]
             [blueprints.models.source :as source]
+            [clj-time.coerce :as c]
             [com.walmartlabs.lacinia.resolve :as resolve]
             [datomic.api :as d]
             [odin.graphql.resolvers.utils :refer [error-message]]
@@ -82,6 +83,15 @@
                              :order-id (:db/id order)})))
 
 
+(defn field-value
+  "The field value according to the service-field-type"
+  [{conn :conn} _ order-field]
+  (let [svc-field (:order-field/service-field order-field)
+        value-key (order/order-field-key svc-field)]
+    (when (some? value-key)
+      (value-key order-field))))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -135,31 +145,92 @@
     (and (zero? lcost) (nil? vcost))))
 
 
+(defn parse-params
+  "Parse to params and converts them into the needed format"
+  [{:keys [fields] :as params}]
+  params)
+
+
+(defn parse-fields
+  "Parse and convert fields to the needed format"
+  [db fields]
+  (map
+   (fn [field]
+     (-> (order/order-field (d/entity db (:service_field field)) (:value field))
+         (tb/transform-when-key-exists
+             {:order-field.value/number #(float (tb/str->int %))
+              :order-field.value/date   c/to-date})))
+   fields))
+
+
+(defn prepare-order
+  [db {:keys [account service line_items fields] :as params}]
+  (let [line-items (when-not (empty? line_items)
+                     (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
+        fields     (when-not (empty? fields)
+                     (parse-fields db fields))]
+    (order/create account service
+                  (tb/assoc-when
+                   {}
+                   :lines line-items
+                   :summary (:summary params)
+                   :request (:request params)
+                   :price (when (use-order-price? service params)
+                            (:price params))
+                   :cost (when (use-order-cost? service params)
+                           (:cost params))
+                   :variant (:variant params)
+                   :quantity (:quantity params)
+                   :fields (when fields
+                             fields)))))
+
+
+(defn- tally-fees
+  [fee occurences]
+  (* (/ (:service/price fee) 2) (inc occurences)))
+
+
+(defn- prepare-fees
+  [db params]
+  (let [services (map :service params)
+        account  ((comp :account first) params)]
+    (->> (mapcat (comp :service/fees (partial d/entity db)) services)
+         (filter (comp not nil?))
+         (group-by identity)
+         (reduce-kv
+          (fn [m k v]
+            (assoc m k {:fee   (:db/id k)
+                        :price (tally-fees (first v) (count v))})) {})
+         vals
+         (map (fn [f] (order/create account (:fee f) {:price (:price f)}))))))
+
+
 (defn create!
   "Create a new order."
-  [{:keys [requester conn]} {{:keys [account service line_items] :as params} :params} _]
-  (let [[account service] (td/entities (d/db conn) account service)
-        line-items        (when-not (empty? line_items)
-                            (map #(order/line-item (:desc %) (:price %) (:cost %)) line_items))
-        order             (order/create account service
-                                        (tb/assoc-when
-                                         {}
-                                         :lines line-items
-                                         :summary (:summary params)
-                                         :request (:request params)
-                                         :price (when (use-order-price? service params)
-                                                  (:price params))
-                                         :cost (when (use-order-cost? service params)
-                                                 (:cost params))
-                                         :variant (:variant params)
-                                         :quantity (:quantity params)))]
-    @(d/transact conn [order (source/create requester)])
-    (d/entity (d/db conn) [:order/uuid (:order/uuid order)])))
+  [{:keys [requester conn]} {params :params} _]
+  (let [order (prepare-order (d/db conn) (parse-params params))]
+    @(d/transact conn [order
+                       (events/order-created requester (order/uuid order) true)
+                       (source/create requester)])
+    (order/by-uuid (d/db conn) (order/uuid order))))
+
+
+(defn create-many!
+  "Create many new orders"
+  [{:keys [requester conn]} {params :params} _]
+  (let [orders          (map (comp (partial prepare-order (d/db conn)) parse-params) params)
+        fees            (prepare-fees (d/db conn) params)
+        orders-and-fees (concat orders fees)]
+
+    @(d/transact conn (concat
+                       (conj orders-and-fees  (source/create requester))
+                       (map
+                        #(events/order-created requester (order/uuid %) true)
+                        orders-and-fees)))
+    (map #(order/by-uuid (d/db conn) (order/uuid %)) orders-and-fees)))
 
 
 ;; Given set of existing ids, examine set of `old` ids
-
-
 (defn- update-line-item-tx
   [db {:keys [id desc cost price] :as item}]
   (let [entity (d/entity db id)]
@@ -351,8 +422,9 @@
     (or (account/admin? account) (= (:db/id (order/account order)) (:db/id account)))))
 
 
-(defmethod authorization/authorized? :order/list [_ account _]
-  (account/admin? account))
+(defmethod authorization/authorized? :order/list [{conn :conn} account {params :params}]
+  (or (account/admin? account)
+      (= (:accounts params) [(td/id account)])))
 
 
 (defmethod authorization/authorized? :order/entry [{conn :conn} account params]
@@ -363,6 +435,7 @@
   [{conn :conn} account {account-id :account}]
   (or (account/admin? account) (= account-id (:db/id account))))
 
+
 (defmethod authorization/authorized? :order/update!
   [{conn :conn} account {account-id :account}]
   (or (account/admin? account) (= account-id (:db/id account))))
@@ -370,7 +443,10 @@
 
 (defmethod authorization/authorized? :order/cancel!
   [{conn :conn} account {order-id :id}]
-  (admin-or-owner? (d/db conn) order-id account))
+  (let [order (d/entity (d/db conn) order-id)]
+    (if (= :service.type/fee (service/type (order/service order)))
+      (account/admin? account)
+      (admin-or-owner? (d/db conn) order-id account))))
 
 
 (defmethod authorization/authorized? :order/charge!
@@ -388,11 +464,13 @@
    :order/fulfilled-on fulfilled-on
    :order/payments     payments
    :order/property     property
+   :order-field/value  field-value
    ;; queries
    :order/list         orders
    :order/entry        order
    ;; mutations
    :order/create!      create!
+   :order/create-many! create-many!
    :order/update!      update!
    :order/place!       place!
    :order/fulfill!     fulfill!

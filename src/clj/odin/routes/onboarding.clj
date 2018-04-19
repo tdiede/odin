@@ -20,7 +20,7 @@
             [clj-time.core :as t]
             [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [compojure.core :refer [defroutes GET POST]]
+            [compojure.core :as compojure :refer [defroutes GET POST DELETE]]
             [datomic.api :as d]
             [ribbon.charge :as rc]
             [ribbon.customer :as rcu]
@@ -45,6 +45,17 @@
 ;; ==============================================================================
 
 
+;; services =====================================================================
+
+
+(defn byof-service [db]
+  (d/entity db [:service/code "furniture,member-supplied,all"]))
+
+
+(defn byom-service [db]
+  (d/entity db [:service/code "furniture,member-supplied,mattress"]))
+
+
 ;; request ======================================================================
 
 
@@ -56,7 +67,8 @@
 
 (s/fdef requester
         :args (s/cat :db td/db? :request map?)
-        :ret (s/or :nothing nil? :entity td/entity?))
+        :ret (s/nilable td/entity?))
+
 
 ;; response =====================================================================
 
@@ -158,7 +170,6 @@
   [:admin/emergency
    :services/moving
    :services/storage
-   :services/customize
    :services/cleaning
    :services/upgrades
    :deposit/method
@@ -169,9 +180,9 @@
 (s/def ::step (set steps))
 
 
-;; =============================================================================
-;; validate
-;; =============================================================================
+;; ==============================================================================
+;; validate =====================================================================
+;; ==============================================================================
 
 
 (defmulti validations
@@ -224,10 +235,16 @@
           (-after-commencement? [date]
             (or (= date (-commencement account))
                 (t/after? (c/to-date-time date) (c/to-date-time (-commencement account)))))]
-    {:needed [[v/required :message "Please indicate whether or not you need moving assistance."]]
-     :date   [[v/required :message "Please provide a move-in date." :pre (comp true? :needed)]
-              [-after-commencement? :message "Your move-in date cannot be before your license commences." :pre (comp true? :needed)]]
-     :time   [[v/required :message "Please provide a move-in time." :pre (comp true? :needed)]]}))
+    {:furniture [[v/required :message "Please indicate whether or not you are bringing furniture."]]
+     :mattress  [[v/required :message "Please indicate whether or not you are bringing a mattress."]]
+     :date      [[v/required
+                  :message "Please provide a move-in date."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]
+                 [-after-commencement?
+                  :message "Your move-in date cannot be before your license commences."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]]
+     :time      [[v/required :message "Please provide a move-in time."
+                  :pre #(or (true? (:furniture %)) (true? (:mattress %)))]]}))
 
 ;; NOTE: Skipping validations on catalogue services atm
 ;; TODO: Validations on catalogue services
@@ -312,20 +329,14 @@
   (let [onboard (onboard/by-account account)]
     (or (onboard/seen-moving? onboard)
         (and (inst? (onboard/move-in onboard))
-             (let [s (service/moving-assistance (d/db conn))]
-               (order/exists? db account s))))))
+             (or (order/exists? db account (byof-service db))
+                 (order/exists? db account (byom-service db)))))))
 
 
 (defmethod complete? :services/storage
   [_ account _]
   (let [onboard (onboard/by-account account)]
     (onboard/seen-storage? onboard)))
-
-
-(defmethod complete? :services/customize
-  [_ account _]
-  (let [onboard (onboard/by-account account)]
-    (onboard/seen-customize? onboard)))
 
 
 (defmethod complete? :services/cleaning
@@ -344,26 +355,32 @@
 ;; Fetch
 
 
+(defn- ordered-from-catalogs
+  [db account catalogs]
+  (->> (d/q '[:find [?o ...]
+              :in $ ?a [?c ...]
+              :where
+              [?o :order/service ?s]
+              [?o :order/account ?a]
+              [?s :service/catalogs ?c]
+              [?s :service/catalogs :onboarding]]
+            db (td/id account) catalogs)
+       (map (partial d/entity db))))
+
+
 (defn- order-params
   "Produce the client-side parameters for services ordered by `account` from
   `catalogue`."
-  [db account catalogue]
-  (->> (service/ordered-from-catalogue db account catalogue)
-       (d/q '[:find ?o ?s
-              :in $ ?a [?s ...]
-              :where
-              [?o :order/account ?a]
-              [?o :order/service ?s]]
-            db (:db/id account))
+  [db account & catalogs]
+  (->> (ordered-from-catalogs db account catalogs)
+       (map (juxt :db/id (comp :db/id :order/service)))
        (reduce
         (fn [acc [order-id service-id]]
           (let [order (d/entity db order-id)]
             (-> {service-id
                  (tb/assoc-when
                   {}
-                  :quantity (order/quantity order)
-                  :desc (order/desc order)
-                  :variant (:db/id (order/variant order)))}
+                  :desc (order/desc order))}
                 (merge acc))))
         {})))
 
@@ -378,12 +395,74 @@
 (s/fdef order-params
         :args (s/cat :db td/db?
                      :account td/entity?
-                     :catalogue td/entity?)
+                     :catalogs (s/+ keyword?))
         :ret ::order-params)
+
+
+(defmulti clientize-field :service-field/type)
+
+
+(defmethod clientize-field :default [_]
+  nil)
+
+
+(defmethod clientize-field :service-field.type/text [field]
+  {:type  :desc
+   :label (:service-field/label field)
+   :key   :desc})
+
+
+(defmethod clientize-field :service-field.type/number [field]
+  {:type  :quantity
+   :label (:service-field/label field)
+   :key   :quantity
+   :min   0
+   :max   100
+   :step  1})
+
+
+(defn- query-catalog-services [db account catalogs]
+  (->> (d/q '[:find [?s ...]
+              :in $ ?a [?c ...]
+              :where
+              [?s :service/catalogs ?c]
+              [?s :service/active true]
+              [?s :service/properties ?p]
+              [?app :approval/account ?a]
+              [?app :approval/unit ?u]
+              [?p :property/units ?u]
+              [?s :service/catalogs :onboarding]]
+            db (td/id account) catalogs)
+       (map (partial d/entity db))))
+
+
+(defn- clientize-service [service]
+  {:service (td/id service)
+   :name    (service/service-name service)
+   :desc    (service/desc service)
+   :price   (service/price service)
+   :billed  (when-let [b (service/billed service)]
+              (keyword (name b)))
+   :fields  (remove nil? (map clientize-field (service/fields service)))
+   :rental  (service/rental service)
+   :fees    (when-let [fees (:service/fees service)]
+              (map
+               (fn [fee]
+                 {:name  (service/service-name fee)
+                  :desc  (service/desc fee)
+                  :price (service/price fee)})
+               fees))})
+
+
+(defn- generate-catalog [db account name & catalogs]
+  (let [services (query-catalog-services db account catalogs)]
+    {:name  name
+     :items (map clientize-service services)}))
 
 
 (defmulti ^:private fdata
   (fn [conn account step] step))
+
 
 (defn fetch
   "Given a `step`, produce a map containing keys `complete` and `data`, where
@@ -397,10 +476,11 @@
         :args (s/cat :conn td/conn?
                      :account td/entity?
                      :step ::step)
-        :ret (s/or :response (s/keys :req-un [::complete ::data])
-                   :nothing nil?))
+        :ret (s/nilable (s/keys :req-un [::complete ::data])))
+
 
 (defmethod fdata :default [_ _ _] nil)
+
 
 (defmethod fdata :admin/emergency [_ account _]
   (let [contact (:account/emergency-contact account)]
@@ -408,73 +488,75 @@
      :last-name    (:person/last-name contact)
      :phone-number (:person/phone-number contact)}))
 
+
 (defmethod fdata :deposit/method
   [conn account step]
   (let [deposit (deposit/by-account account)
         method  (deposit/method deposit)]
     (if method {:method (name method)} {})))
 
+
 (defmethod fdata :deposit.method/bank
   [conn account step]
   ;; No data required, just completion
   {})
+
 
 (defmethod fdata :deposit.method/verify
   [conn account step]
   ;; No data required, just completion
   {})
 
+
 (defmethod fdata :deposit/pay
   [conn account step]
   ;; No data required, just completion
   {})
 
+
 (defmethod fdata :services/moving
   [conn account step]
   (let [onboard (onboard/by-account account)
-        service (service/moving-assistance (d/db conn))
-        order   (order/by-account (d/db conn) account service)]
-    {:needed (when (onboard/seen-moving? onboard) (td/entity? order))
-     :date   (onboard/move-in onboard)
-     :time   (onboard/move-in onboard)}))
+        db      (d/db conn)]
+    {:furniture (when (onboard/seen-moving? onboard)
+                  (td/entityd? (order/by-account db account (byof-service db))))
+     :mattress  (when (onboard/seen-moving? onboard)
+                  (td/entityd? (order/by-account db account (byom-service db))))
+     :date      (onboard/move-in onboard)
+     :time      (onboard/move-in onboard)}))
+
+
 
 (defmethod fdata :services/storage
   [conn account step]
-  (let [onboard   (onboard/by-account account)
-        property  (-> account approval/by-account approval/property)
-        catalogue (catalogue/storage (d/db conn) property)]
+  (let [onboard  (onboard/by-account account)
+        property (-> account approval/by-account approval/property)]
     {:seen      (onboard/seen-storage? onboard)
-     :orders    (order-params (d/db conn) account catalogue)
-     :catalogue (catalogue/clientize catalogue)}))
+     :orders    (order-params (d/db conn) account :storage)
+     :catalogue (generate-catalog (d/db conn) account "Storage" :storage)}))
 
-(defmethod fdata :services/customize
-  [conn account step]
-  (let [onboard   (onboard/by-account account)
-        catalogue (catalogue/customization (d/db conn))]
-    {:seen      (onboard/seen-customize? onboard)
-     :orders    (order-params (d/db conn) account catalogue)
-     :catalogue (catalogue/clientize catalogue)}))
 
 (defmethod fdata :services/cleaning
   [_ account _]
-  (let [onboard   (onboard/by-account account)
-        catalogue (catalogue/cleaning+laundry (d/db conn))]
+  (let [onboard (onboard/by-account account)]
     {:seen      (onboard/seen-cleaning? onboard)
-     :orders    (order-params (d/db conn) account catalogue)
-     :catalogue (catalogue/clientize catalogue)}))
+     :orders    (order-params (d/db conn) account :cleaning :laundry)
+     :catalogue (generate-catalog (d/db conn) account "Cleaning & Laundry" :cleaning :laundry)}))
+
 
 (defmethod fdata :services/upgrades
   [_ account _]
-  (let [onboard   (onboard/by-account account)
-        property  (-> account approval/by-account approval/property)
-        catalogue (catalogue/upgrades (d/db conn) property)]
+  (let [onboard  (onboard/by-account account)
+        property (-> account approval/by-account approval/property)]
     {:seen      (onboard/seen-upgrades? onboard)
-     :orders    (order-params (d/db conn) account catalogue)
-     :catalogue (catalogue/clientize catalogue)}))
+     :orders    (order-params (d/db conn) account :furniture)
+     :catalogue (generate-catalog (d/db conn) account "Furniture Rentals" :furniture)}))
+
 
 ;; =============================================================================
 ;; fetch-all
 ;; =============================================================================
+
 
 (defn fetch-all
   "This is just `fetch`, but performed on all steps: i.e. a reduction."
@@ -488,6 +570,7 @@
 (s/fdef fetch-all
         :args (s/cat :conn td/conn? :account td/entity?)
         :ret map?)
+
 
 ;; =============================================================================
 ;; save
@@ -627,16 +710,10 @@
                          payment
                          (events/deposit-payment-made account charge-id)]))))
 
-(comment
-
-  (let [account (d/entity (d/db conn) [:account/email "onboard@test.com"])]
-    (rcu/fetch (config/stripe-secret-key config)
-               (:customer/platform-id (customer/by-account (d/db conn) account))))
-
-  )
 
 ;; =============================================================================
 ;; Services
+
 
 (defn- update-orders
   "Update all orders for services in `params` that are also in `existing`."
@@ -657,11 +734,10 @@
                 order                                      (d/entity db order-id)]
             (->> (tb/assoc-when
                   {}
-                  :quantity (when-let [q quantity] (float q))
-                  :desc     desc
-                  :variant  variant)
+                  :desc desc)
                  (order/update order)))))
        (remove empty?)))
+
 
 (defn- remove-orders
   "Remoe all orders for services in `existing` but not in `params`."
@@ -677,6 +753,7 @@
        ;; gen txes
        (map (partial conj [:db.fn/retractEntity]))))
 
+
 (defn- create-orders
   "Create new orders for all services in `params`."
   [db account params existing]
@@ -689,29 +766,144 @@
             (order/create account service
                           (tb/assoc-when
                            {}
-                           :quantity (when-let [q (:quantity params)] (float q))
-                           :desc (:desc params)
-                           :variant (:variant params))))))))
+                           :desc (:desc params))))))))
+
+
+(defn- all-fees [db account]
+  (->> (order/query db :accounts [account])
+       (mapcat #(get-in % [:order/service :service/fees]))))
+
+(s/fdef all-fees
+        :args (s/cat :db td/db? :account td/entity?)
+        :ret (s/* td/entityd?))
+
+
+(defn- fee-service-names [db account fee]
+  (->> (d/q '[:find [?sname ...]
+              :in $ ?a ?f
+              :where
+              [?o :order/account ?a]
+              [?o :order/service ?s]
+              [?s :service/fees ?f]
+              [?s :service/name ?sname]]
+            db (td/id account) (td/id fee))
+       (interpose ", ")
+       (apply str)))
+
+
+(s/def ::fee-totals
+  (s/* (s/keys :req-un [::fee-id ::price ::desc])))
+
+
+(defn- fee-amount-total [db account]
+  (let [fees (all-fees db account)]
+    (reduce
+     (fn [acc [fee-id fees]]
+       (let [price (:service/price (first fees))
+             n     (count (rest fees))]
+         (conj acc
+               {:fee-id fee-id
+                :price  (+ price (* n (/ price 2)))
+                :desc   (format "%s: %s"
+                                (:service/name (first fees))
+                                (fee-service-names db account fee-id))})))
+     []
+     (group-by :db/id fees))))
+
+(s/fdef fee-amount-total
+        :args (s/cat :db td/db? :account td/entity?)
+        :ret ::fee-totals)
+
+
+(comment
+  (let [fees (all-fees (d/db conn) [:account/email "onboard@test.com"])]
+    #_(fee-service-names (d/db conn) [:account/email "onboard@test.com"] (first fees))
+    (fee-amount-total (d/db conn) [:account/email "onboard@test.com"]))
+
+
+
+  )
+
+
+(defn- find-existing-order
+  [db account fee-id]
+  (->> (d/q '[:find ?o .
+              :in $ ?a ?s
+              :where
+              [?o :order/account ?a]
+              [?o :order/service ?s]]
+            db (td/id account) fee-id)
+       (d/entity db)))
+
+
+(defn- update-fee-order-tx
+  [order {:keys [price desc] :as fee-total}]
+  (cond-> []
+    (not= (order/computed-price order) price)
+    (conj [:db/add (td/id order) :order/price price])
+
+    (not= (order/summary order) desc)
+    (conj [:db/add (td/id order) :order/summary desc])))
+
+
+(defn- create-fee-order-tx
+  [account {:keys [fee-id price desc] :as fee-total}]
+  [(order/create account fee-id {:price price :summary desc})])
+
+
+(defn- remove-fees
+  [db account new-totals]
+  (let [old-totals (fee-amount-total db account)
+        diffed     (set/difference (set (map :fee-id old-totals))
+                                   (set (map :fee-id new-totals)))]
+    (when-not (empty? diffed)
+      (map
+       (fn [fee-id]
+         [:db.fn/retractEntity (td/id (find-existing-order db account fee-id))])
+       diffed))))
+
+
+(defn- create-or-update-fees
+  [db account fee-totals]
+  (reduce
+   (fn [acc fee-total]
+     (->> (if-let [existing (find-existing-order db account (:fee-id fee-total))]
+            (update-fee-order-tx existing fee-total)
+            (create-fee-order-tx account fee-total))
+          (concat acc)))
+   []
+   fee-totals))
+
+
+(defn- inject-fees
+  [db account tx-data]
+  (let [totals (-> (d/with db tx-data) :db-after (fee-amount-total account))]
+    (concat (remove-fees db account totals)
+            (create-or-update-fees db account totals)
+            tx-data)))
+
 
 (defn orders-tx
   "Given server-side `params` and a `catalogue`, generate a transaction to
   create orders for newly requested services, remove orders that are no longer
   requested, and update any orders that may have changed."
-  [db account catalogue params]
-  (let [existing (service/ordered-from-catalogue db account catalogue)]
-    (->> ((juxt create-orders update-orders remove-orders)
-          db account params existing)
-         (apply concat))))
+  [db account params & catalogs]
+  (let [existing (map (comp td/id order/service)
+                      (ordered-from-catalogs db account catalogs))
+        tx-data  (->> ((juxt create-orders update-orders remove-orders)
+                       db account params existing)
+                      (apply concat))]
+    (inject-fees db account tx-data)))
 
 (s/fdef orders-tx
         :args (s/cat :db td/db?
                      :account td/entity?
-                     :catalogue td/entity?
-                     :params ::order-params)
+                     :params ::order-params
+                     :catalogs (s/* keyword?))
         :ret vector?)
 
-;; =====================================
-;; Moving Assistance
+;; move-in assistance ==================
+
 
 (defn- combine [date time]
   (let [date (c/to-date-time date)
@@ -719,68 +911,83 @@
     (-> (t/date-time (t/year date) (t/month date) (t/day date) (t/hour time) (t/minute time))
         (c/to-date))))
 
-(defn- add-move-in-tx
-  [db onboard move-in]
-  (let [service (service/moving-assistance db)]
-    (tb/conj-when
-     [{:db/id           (:db/id onboard)
-       :onboard/move-in move-in}]
-     ;; When there's not an moving-assistance order, create one.
-     (when-not (order/exists? db (onboard/account onboard) service)
-       (order/create (onboard/account onboard) service)))))
 
-(defn- remove-move-in-tx
-  [db account onboard]
-  (let [retract-move-in (when-let [v (onboard/move-in onboard)]
-                          [:db/retract (:db/id onboard) :onboard/move-in v])
-        retract-order   (order/remove-existing db account (service/moving-assistance db))]
-    (tb/conj-when [] retract-move-in retract-order)))
+;; (defn- add-move-in-tx
+;;   [db onboard {:keys [furniture mattress date time]}]
+;;   (let [move-in (combine date time)]
+;;     (tb/conj-when
+;;      [{:db/id           (:db/id onboard)
+;;        :onboard/move-in move-in}]
+;;      ;; when there's not a moving-assistance order, create one.
+;;      (when-not (order/exists? db (onboard/account onboard) service)
+;;        (order/create (onboard/account onboard) service)))))
+
+
+;; (defn- remove-move-in-tx
+;;   [db account onboard]
+;;   (let [retract-move-in (when-let [v (onboard/move-in onboard)]
+;;                           [:db/retract (:db/id onboard) :onboard/move-in v])
+;;         retract-order   (order/remove-existing db account (service/moving-assistance db))]
+;;     (tb/conj-when [] retract-move-in retract-order)))
+
 
 (defmethod save! :services/moving
-  [conn account step {:keys [needed date time]}]
+  [conn account step {:keys [furniture mattress date time] :as params}]
   (let [onboard (onboard/by-account account)
-        service (service/moving-assistance (d/db conn))
-        order   (order/by-account (d/db conn) account service)]
-    @(d/transact conn (-> (if needed
-                            (add-move-in-tx (d/db conn) onboard (combine date time))
-                            (remove-move-in-tx (d/db conn) account onboard))
-                          (conj (onboard/add-seen onboard step))))))
+        byof    (byof-service (d/db conn))
+        byom    (byom-service (d/db conn))]
+    (->> (cond-> []
+           (and date time)
+           (conj {:db/id           (td/id onboard)
+                  :onboard/move-in (combine date time)})
 
-;; =====================================
+           (and furniture (not (order/exists? (d/db conn) account byof)))
+           (conj (order/create account byof))
+
+           (and (not furniture) (order/exists? (d/db conn) account byof))
+           (conj (order/remove-existing (d/db conn) account byof))
+
+           (and mattress (not (order/exists? (d/db conn) account byom)))
+           (conj (order/create account byom))
+
+           (and (not mattress) (order/exists? (d/db conn) account byom))
+           (conj (order/remove-existing (d/db conn) account byom))
+
+           (and (not furniture) (not mattress) (some? (onboard/move-in onboard)))
+           (conj [:db/retract (td/id onboard) :onboard/move-in (onboard/move-in onboard)])
+
+           true
+           (conj (onboard/add-seen onboard step)))
+         (d/transact conn)
+         (deref))))
+
+
 
 (defmethod save! :services/storage
   [conn account step {seen :seen :as params}]
-  (let [onboard   (onboard/by-account account)
-        property  (-> account approval/by-account approval/property)
-        catalogue (catalogue/storage (d/db conn) property)]
+  (let [onboard  (onboard/by-account account)
+        property (-> account approval/by-account approval/property)]
     @(d/transact conn (conj
-                       (orders-tx (d/db conn) account catalogue (:orders params))
+                       (orders-tx (d/db conn) account (:orders params) :storage)
                        (onboard/add-seen onboard step)))))
 
-(defmethod save! :services/customize
-  [conn account step {seen :seen :as params}]
-  (let [onboard   (onboard/by-account account)
-        catalogue (catalogue/customization (d/db conn))]
-    @(d/transact conn (conj
-                       (orders-tx (d/db conn) account catalogue (:orders params))
-                       (onboard/add-seen onboard step)))))
 
 (defmethod save! :services/cleaning
   [conn account step {seen :seen :as params}]
-  (let [onboard   (onboard/by-account account)
-        catalogue (catalogue/cleaning+laundry (d/db conn))]
+  (let [onboard (onboard/by-account account)]
     @(d/transact conn (conj
-                       (orders-tx (d/db conn) account catalogue (:orders params))
+                       (orders-tx (d/db conn) account (:orders params) :cleaning :laundry)
                        (onboard/add-seen onboard step)))))
+
 
 (defmethod save! :services/upgrades
   [conn account step {seen :seen :as params}]
-  (let [onboard   (onboard/by-account account)
-        property  (-> account approval/by-account approval/property)
-        catalogue (catalogue/upgrades (d/db conn) property)]
+  (let [onboard  (onboard/by-account account)
+        property (-> account approval/by-account approval/property)]
     @(d/transact conn (conj
-                       (orders-tx (d/db conn) account catalogue (:orders params))
+                       (orders-tx (d/db conn) account (:orders params) :furniture)
                        (onboard/add-seen onboard step)))))
+
 
 ;; =============================================================================
 ;; Error Responses
@@ -809,7 +1016,6 @@
     (and (deposit/is-paid? deposit)
          (complete? db account :admin/emergency)
          (onboard/seen-cleaning? onboard)
-         (onboard/seen-customize? onboard)
          (onboard/seen-moving? onboard)
          (onboard/seen-storage? onboard)
          (onboard/seen-upgrades? onboard))))
@@ -845,6 +1051,40 @@
                    (-> (transit-ok {:message "ok"})
                        (assoc :session session))))))
 
+
+(defn- clientize [order]
+  (let [clientized (order/clientize order)]
+    (assoc clientized :service-type (service/type (order/service order)))))
+
+
+(defn fetch-orders [req]
+  (let [account (->requester req)]
+    (-> {:result (->> (order/orders (->db req) account)
+                      (map clientize)
+                      (sort-by :price #(if (and %1 %2) (> %1 %2) false)))}
+        (resp/response)
+        (resp/content-type "application/transit+json"))))
+
+
+(defn delete-order
+  [req order-id]
+  (let [account (->requester req)
+        order   (d/entity (->db req) order-id)]
+    (cond
+      (not= (td/id account) (-> order order/account td/id))
+      (-> (resp/response {:error "You do not own this order."})
+          (resp/content-type "application/transit+json")
+          (resp/status 403))
+
+      (= (service/type (order/service order)) :service.type/fee)
+      (transit-unprocessable {:error "You cannot remove fees."})
+
+      :otherwise
+      (do
+        @(d/transact (->conn req) (inject-fees (->db req) account [[:db.fn/retractEntity order-id]]))
+        (transit-ok {})))))
+
+
 (defroutes routes
   (GET "/" []
        (fn [req]
@@ -861,6 +1101,14 @@
                 (transit-ok {:result (fetch conn (d/entity (d/db conn) (:db/id account)) step)})
                 (catch Exception e
                   (on-error conn account step e)))))))
+
+  (compojure/context "/orders" []
+    (compojure/routes
+        (GET "/" [] fetch-orders)
+
+      (DELETE "/:order-id" [order-id]
+              (fn [req]
+                (delete-order req (tb/str->int order-id))))))
 
   (POST "/finish" [] finish-handler))
 

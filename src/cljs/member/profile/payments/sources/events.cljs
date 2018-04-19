@@ -24,6 +24,7 @@
  :payment.sources/set-default-route
  [(path db/path)]
  (fn [{{sources :sources} :db} [_ account-id]]
+   (timbre/info sources)
    (if-let [source (first sources)]
      {:route (routes/path-for :profile.payment/sources :query-params {:source-id (:id source)})}
      {:dispatch [:payment.sources/fetch account-id true]})))
@@ -69,6 +70,7 @@
    (let [route   (when (and change-route? (active-source-should-change? db sources))
                    (routes/path-for :profile.payment/sources
                                     :query-params {:source-id (:id (first sources))}))]
+     (timbre/info "changing route?" change-route? sources (:current db))
      (tb/assoc-when
       {:db       (assoc db :sources sources)
        :dispatch [:ui/loading k false]}
