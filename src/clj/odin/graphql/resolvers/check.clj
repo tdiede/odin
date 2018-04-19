@@ -25,7 +25,7 @@
   (tcheck/amount check))
 
 
-(defn name
+(defn check-name
   "The name of the person who wrote this `check`."
   [_ _ check]
   (tcheck/name check))
@@ -75,7 +75,7 @@
    :check/id          (fn [_ _ check] (tcheck/id check))
    :check/payment     payment
    :check/amount      amount
-   :check/name        name
+   :check/name        check-name
    :check/received-on received-on
    :check/date        date
    ;; mutations
