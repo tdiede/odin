@@ -161,7 +161,9 @@
                               :description "List of property IDs"}
                  :billed     {:type (list :service_billed)}
                  :active     {:type        Boolean
-                              :description "Is this service being offered?"}}}
+                              :description "Is this service being offered?"}
+                 :archived   {:type        Boolean
+                              :description "Has this service been archived?"}}}
 
 
   :service_create_params
@@ -195,7 +197,8 @@
                  :cost        {:type Float}
                  :billed      {:type :service_billed}
                  :rental      {:type Boolean}
-                 :fees        {:type (list :Long)}}}
+                 :fees        {:type (list :Long)}
+                 :archived    {:type Boolean}}}
 
 
   :units_query_params
