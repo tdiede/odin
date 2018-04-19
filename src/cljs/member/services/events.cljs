@@ -87,12 +87,10 @@
 
 (defmethod routes/dispatches :services/book
   [{:keys [params page requester] :as route}]
-  (if (empty? params)
-    [[:services/set-default-route route]]
-    [[:services/fetch (db/parse-query-params page params)]
-     [:services/fetch-catalogs]
-     [:services/fetch-orders (:id requester)]
-     [::load-cart]]))
+  [[:services/fetch (db/parse-query-params page params)]
+   [:services/fetch-catalogs]
+   [:services/fetch-orders (:id requester)]
+   [::load-cart]])
 
 
 (defmethod routes/dispatches :services/active-orders
@@ -207,13 +205,16 @@
    (let [services (->> (remove only-onboarding? services)
                        (map #(assoc % :name (:name %) :description (:description %)))
                        (sort-by #(string/lower-case (:name %))))
-         clist (->> (reduce #(concat %1 (:catalogs %2)) [] services)
-                    (distinct)
-                    (remove #(= :onboarding %))
-                    (sort))]
-     {:dispatch [:ui/loading k false]
-      :db       (-> (assoc db :catalogs clist :services services)
-                    (norms/normalize :services/norms services))})))
+         clist    (->> (reduce #(concat %1 (:catalogs %2)) [] services)
+                       (distinct)
+                       (remove #(= :onboarding %))
+                       (sort))]
+     (tb/assoc-when
+      {:dispatch [:ui/loading k false]
+       :db       (-> (assoc db :catalogs clist :services services)
+                     (norms/normalize :services/norms services))}
+      :route (when (nil? (get-in db [:params :category]))
+               (routes/path-for :services/book :query-params {:category (name (first clist))}))))))
 
 
 (reg-event-fx
