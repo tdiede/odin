@@ -91,7 +91,7 @@
 
 
 (defn catalog [services]
-  (let [selected @(subscribe [:services.book/category])]
+  (when-let [selected @(subscribe [:services.book/category])]
     [:div.catalogue
      [:div.colums {:style {:margin-bottom "0px"}}
       [:div.colums.is-10
