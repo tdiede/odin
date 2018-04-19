@@ -37,13 +37,12 @@
   [:div.columns
    [:div.column
     [ant/form-item {:label (:label field)}
-     [ant/date-picker
+     [form/date-picker
       {:style         {:width "50%"}
        :value         (when-let [date (:value field)]
                         (js/moment date))
        :on-change     #(on-change (:index field) (when-let [x %] (.toISOString x)))
-       :disabled-date (fn [current]
-                        (and current (< (.valueOf current) (.valueOf (js/moment.)))))
+       :disabled-days [0 6]
        :show-today    false}]]]])
 
 
@@ -61,24 +60,6 @@
        :value       (when-let [time (:value field)]
                       (js/moment time))
        :on-change   #(on-change (:index field) (.toISOString %))}]]]])
-
-
-;; Are we keeping variants?
-#_(defmethod form-fields :variants [k fields {on-change :on-change}]
-  [:div
-   (map-indexed
-    (fn [i field]
-      ^{:key i}
-      [:div.columns
-       [:div.column
-        [ant/form-item {:label (:label field)}
-         [ant/radio-group
-          {:value     (keyword (:value field))
-           :on-change #(on-change (:key field) (.. % -target -value))}
-          (map-indexed
-           #(with-meta [ant/radio {:value (:key %2)} (:label %2)] {:key %1})
-           (:options field))]]]])
-    (get-fields fields k))])
 
 
 (defmethod form-fields :text [k field {on-change :on-change}]
