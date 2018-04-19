@@ -13,7 +13,13 @@
             [teller.source :as tsource]
             [toolbelt.core :as tb]
             [teller.payment :as tpayment]
-            [teller.subscription :as subscription]))
+            [teller.plan :as tplan]
+            [teller.subscription :as tsubscription]
+            [blueprints.models.member-license :as member-license]
+            [teller.property :as tproperty]
+            [blueprints.models.customer :as customer]
+            [blueprints.models.unit :as unit]))
+
 
 ;; =============================================================================
 ;; Fields
@@ -66,8 +72,10 @@
 (defn autopay?
   "Is this source being used for autopay?"
   [{teller :teller} _ source]
-  (not (empty? (subscription/query teller {:payment-types [:payment.type/rent]
-                                           :sources       [source]}))))
+  (let [subs (tsubscription/query teller {:payment-types [:payment.type/rent]
+                                          :sources                  [source]})]
+    (when (not (empty? subs))
+      (not (empty? (tb/find-by #(not (tsubscription/canceled? %)) subs))))))
 
 
 (defn type
@@ -131,8 +139,12 @@
   "Add a new source to the requester's Stripe customer, or create the customer
   and add the source if it doesn't already exist."
   [{:keys [teller requester] :as ctx} {:keys [token]} _]
-  (let [customer (fetch-or-create-customer! teller requester)]
-    (tsource/add-source! customer token)))
+  (try
+    (let [customer (fetch-or-create-customer! teller requester)]
+      (tsource/add-source! customer token))
+    (catch Throwable t
+      (timbre/error t ::add-source! {:email (account/email requester)})
+      (resolve/resolve-as nil {:message (error-message t)}))))
 
 
 ;; =============================================================================
@@ -171,11 +183,38 @@
 (defn- is-bank-id? [source-id]
   (string/starts-with? source-id "ba_"))
 
+;;; plan name
+;; who the plan's for, which unit, which community
+
+(defn- plan-name
+  [teller license]
+  (let [account       (member-license/account license)
+        email         (account/email account)
+        unit-name     (unit/name (member-license/unit license))
+        customer      (tcustomer/by-account teller account)
+        property      (tcustomer/property customer)
+        property-name (tproperty/name property)]
+    (str "autopay for " email " @ " property-name " in " unit-name)))
+
 
 (defn set-autopay!
   "Set a source as the autopay source. Source must be a bank account source."
-  [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
-  )
+  [{:keys [conn requester teller] :as ctx} {:keys [id]} _]
+  (let [customer (tcustomer/by-account teller requester)
+        subs     (tsubscription/query teller {:customers     [customer]
+                                              :payment-types [:payment.type/rent]})]
+    (if (not (empty? subs))
+      (resolve/resolve-as nil {:message "You're already subscribed to autopay."})
+      (try
+        (let [source  (tsource/by-id teller id)
+              license (member-license/active (d/db conn) requester)
+              rate    (member-license/rate license)
+              plan    (tplan/create! teller (plan-name teller license) :payment.type/rent rate)]
+          (tsubscription/subscribe! customer plan {:source source})
+          (tsource/by-id teller id))
+        (catch Throwable t
+          (timbre/error t ::set-autopay! {:email (account/email requester)})
+          (resolve/resolve-as nil {:message (error-message t)}))))))
 
 
 ;; =============================================================================
@@ -185,8 +224,19 @@
 (defn unset-autopay!
   "Unset a source as the autopay source. Source must be presently used for
   autopay."
-  [{:keys [conn requester stripe] :as ctx} {:keys [id]} _]
-  )
+  [{:keys [conn requester teller] :as ctx} {:keys [id]} _]
+  (let [customer (tcustomer/by-account teller requester)
+        subs (tsubscription/query teller {:customers [customer]
+                                          :payment-types [:payment.type/rent]})
+        active-sub (tb/find-by #(not (tsubscription/canceled? %)) subs)]
+    (if (empty? active-sub)
+      (resolve/resolve-as nil {:message "You're already unsubscribed to autopay."})
+      (try
+        (tsubscription/cancel! active-sub)
+        (tsource/by-id teller id)
+        (catch Throwable t
+          (timbre/error t ::set-autopay! {:email (account/email requester)})
+          (resolve/resolve-as nil {:message (error-message t)}))))))
 
 
 ;; =============================================================================
@@ -222,7 +272,7 @@
    :payment-source/type            type
    :payment-source/name            name
    :payment-source/payments        payments
-   ;; queri-s
+   ;; queries
    :payment.sources/list           sources
    ;; mutations
    :payment.sources/delete!        delete!
