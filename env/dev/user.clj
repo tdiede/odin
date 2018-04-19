@@ -1,35 +1,30 @@
 (ns user
-  (:require
-   [blueprints.models.account :as account]
-   [blueprints.models.application :as application]
-   [blueprints.models.customer :as customer]
-   [blueprints.models.events :as events]
-   [blueprints.models.license :as license]
-   [blueprints.models.member-license :as ml]
-   [blueprints.models.note :as note]
-   [blueprints.models.order :as order]
-   [blueprints.models.payment :as payment]
-   [blueprints.models.promote :as promote]
-   [blueprints.models.property :as property]
-   [blueprints.models.security-deposit :as deposit]
-   [blueprints.models.service :as service]
-   [blueprints.models.unit :as unit]
-   [clojure.spec.test.alpha :as stest]
-   [clojure.tools.namespace.repl :refer [refresh set-refresh-dirs]]
-   [datomic.api :as d]
-   [figwheel-sidecar.repl-api :as ra]
-   [mount.core :as mount :refer [defstate]]
-   [odin.datomic :refer [conn]]
-   [odin.config :as config :refer [config]]
-   [odin.core]
-   [odin.seed :as seed]
-   [odin.teller :refer [teller]]
-   [reactor.reactor :as reactor]
-   [taoensso.timbre :as timbre]
-   [toolbelt.core]
-   [clojure.core.async :as a]
-   [clojure.java.io :as io]))
-
+  (:require [blueprints.models.account :as account]
+            [blueprints.models.application :as application]
+            [blueprints.models.customer :as customer]
+            [blueprints.models.events :as events]
+            [blueprints.models.license :as license]
+            [blueprints.models.member-license :as ml]
+            [blueprints.models.note :as note]
+            [blueprints.models.order :as order]
+            [blueprints.models.payment :as payment]
+            [blueprints.models.promote :as promote]
+            [blueprints.models.property :as property]
+            [blueprints.models.security-deposit :as deposit]
+            [blueprints.models.service :as service]
+            [blueprints.models.unit :as unit]
+            [clojure.core.async :as a]
+            [clojure.spec.test.alpha :as stest]
+            [clojure.tools.namespace.repl :refer [refresh]]
+            [figwheel-sidecar.repl-api :as ra]
+            [migrations.teller.plans :as plans-migrations]
+            [mount.core :as mount :refer [defstate]]
+            [odin.config :as config :refer [config]]
+            [odin.datomic :refer [conn]]
+            [odin.seed :as seed]
+            [odin.teller :refer [teller]]
+            [reactor.reactor :as reactor]
+            [taoensso.timbre :as timbre]))
 
 (timbre/refer-timbre)
 
@@ -55,7 +50,8 @@
   :start (when (in-memory-db? (config/datomic-uri config))
            (timbre/debug "seeding dev database...")
            (seed/seed conn)
-           (seed/seed-teller teller)))
+           (seed/seed-teller teller)
+           (plans-migrations/attach-plans-to-subscription-services teller conn)))
 
 
 (defstate reactor
@@ -70,7 +66,7 @@
                      :public-hostname    "http://localhost:8080"
                      :dashboard-hostname "http://localhost:8082"}
                chan (a/chan (a/sliding-buffer 512))]
-           (reactor/start! conn chan conf))
+           (reactor/start! conn teller chan conf))
   :stop (reactor/stop! reactor))
 
 
