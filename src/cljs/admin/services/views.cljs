@@ -633,11 +633,25 @@
     [:p (:name fee)]]])
 
 
+(defn archive-service-popover
+  [service]
+  [:div
+   [:div
+    [:b.fs2 "Are you sure you want to archive this service?"]
+    [:p.fs2 "Doing this will remove this service from our current offerings"]]
+   [:div.align-right
+    {:style {:margin-top "10px"}}
+    [ant/button
+     {:on-click #(dispatch [:service/archive! service])}
+     "Archive"]]])
+
+
 (defn- service-entry [service]
   (let [{:keys [id name description code active price cost billed fees type
                 rental catalogs properties order-count fields]} @service
         is-loading                                              @(subscribe [:ui/loading? :service/fetch])]
     [:div
+     (.log js/console @service)
      [:div.mb2
       [:div
        [ant/button
@@ -645,7 +659,10 @@
         "Edit"]
        [ant/button
         {:on-click #(dispatch [:service/copy-service @service])}
-        "Make a Copy"]]]
+        "Make a Copy"]
+       [ant/popover
+        {:content (r/as-element [archive-service-popover @service])}
+        [ant/button "Archive"]]]]
      [ant/card
       {:title   "Service Details"
        :loading is-loading}

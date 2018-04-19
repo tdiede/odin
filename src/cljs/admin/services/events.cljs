@@ -22,7 +22,7 @@
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :active :catalogs :price :type]]]
+                             [:id :name :code :active :catalogs :price :type :archived]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -81,7 +81,7 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs
+                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs :archived
                               [:fees [:id :name :price]]
                               [:fields [:id :index :type :label :required :excluded_days
                                         [:options [:index :value :label]]]]
@@ -153,6 +153,31 @@
      [:services/query]
      [:properties/query]
      [:service/cancel-edit]]))
+
+
+;; ==============================================================================
+;; archive ======================================================================
+;; ==============================================================================
+
+
+(reg-event-fx
+ :service/archive!
+ [(path db/path)]
+ (fn [{db :db} [k {:keys [id name]}]]
+   (.log js/console "archiving service " name " of id: " id)
+   {:graphql {:mutation
+              [[:service_update {:service_id id
+                                 :params {:archived true}}
+                [:id :name :archived :active]]]
+              :on-success [::archive-success]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::archive-success
+ [(path db/path)]
+ (fn [{db :db} [_ response]]
+   (.log js/console (get-in response [:data]) " has been archived")))
 
 
 ;; ==============================================================================

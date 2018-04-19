@@ -292,9 +292,6 @@
       (and (not= (:service/rental existing) (:rental updated)) (some? (:rental updated)))
       (conj [:db/add id :service/rental (:rental updated)])
 
-      (and (not= (:service/active existing) (:active updated)) (some? (:active updated)))
-      (conj [:db/add id :service/active (:active updated)])
-
       (and (not= (:service/catalogs existing) (set (:catalogs updated))) (some? (:catalogs updated)))
       (concat (update-service-catalogs-tx existing (map keyword (:catalogs updated))))
 
@@ -302,7 +299,18 @@
       (concat (update-service-properties-tx existing (:properties updated)))
 
       (and (not= (set (map td/id (:service/fees existing))) (set (map td/id (:fees updated)))))
-      (concat (update-service-fees-tx existing (:fees updated))))))
+      (concat (update-service-fees-tx existing (:fees updated)))
+
+      (and (not= (:service/archived existing) (:archived updated)) (some? (:archived updated)))
+      (conj [:db/add id :service/archived (:archived updated)])
+
+      (and (not= (:service/active existing) (:active updated)) (some? (:active updated)))
+      (conj [:db/add id :service/active (:active updated)])
+
+      (and (true? (:service/active existing)) (true? (:archived updated)))
+      (conj [:db/add id :service/active false])
+
+      )))
 
 
 (defn update!
