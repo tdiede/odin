@@ -1,18 +1,16 @@
 (ns odin.seed
-  (:require [blueprints.seed.accounts :as accounts]
+  (:require [blueprints.models.license :as license]
+            [blueprints.seed.accounts :as accounts]
             [blueprints.seed.orders :as orders]
-            [blueprints.models.license :as license]
-            [io.rkn.conformity :as cf]
-            [datomic.api :as d]
-            [toolbelt.core :as tb]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
-            [clojure.string :as string]
-            [teller.property :as tproperty]
-            [teller.payment :as tpayment]
+            [datomic.api :as d]
+            [io.rkn.conformity :as cf]
             [teller.customer :as tcustomer]
+            [teller.payment :as tpayment]
+            [teller.property :as tproperty]
+            [toolbelt.core :as tb]
             [toolbelt.date :as date]))
-
 
 (defn- referrals []
   (let [sources ["craigslist" "word of mouth" "video" "starcity member" "instagram"]
@@ -94,16 +92,18 @@
 
 (defn- seed-properties [teller]
   (let [fees (tproperty/construct-fees (tproperty/fee 5))]
-    (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
-                       {:fees      fees
-                        :deposit   "acct_1C5LJXEd7myLyyjs"
-                        :ops       "acct_1C3TmPHnEDeEkGIS"
-                        :community [:property/code "52gilbert"]})
-    (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com"
-                       {:fees      fees
-                        :deposit   "acct_1C3S9tD1iZkoyuLX"
-                        :ops       "acct_1C3TmMEBSLaHdiO2"
-                        :community [:property/code "2072mission"]})))
+    (when-not (tproperty/by-id teller "52gilbert")
+      (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
+                         {:fees      fees
+                          :deposit   "acct_1C5LJXEd7myLyyjs"
+                          :ops       "acct_1C3TmPHnEDeEkGIS"
+                          :community [:property/code "52gilbert"]}))
+    (when-not (tproperty/by-id teller "2072mission")
+      (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com"
+                         {:fees      fees
+                          :deposit   "acct_1C3S9tD1iZkoyuLX"
+                          :ops       "acct_1C3TmMEBSLaHdiO2"
+                          :community [:property/code "2072mission"]}))))
 
 
 (def mock-visa-credit
