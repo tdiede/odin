@@ -44,14 +44,16 @@
 (defn- payment-within
   [teller license date]
   (let [customer (license-customer teller license)
-        tz       (t/time-zone-for-id (tproperty/timezone (tcustomer/property customer)))
+        tz       (member-license/time-zone license)
         from     (date/beginning-of-month date tz)
         to       (date/end-of-month date tz)]
-    (first
-     (tpayment/query teller {:customers     [customer]
-                             :payment-types [:payment.type/rent]
-                             :from          from
-                             :to            to}))))
+    (when (some? customer)
+      (first
+       (tpayment/query teller {:customers     [customer]
+                               :payment-types [:payment.type/rent]
+                               :statuses      [:payment.status/due]
+                               :from          from
+                               :to            to})))))
 
 
 (defn rent-status
