@@ -156,7 +156,6 @@
  :service/archive!
  [(path db/path)]
  (fn [{db :db} [k {:keys [id name]}]]
-   (.log js/console "archiving service " name " of id: " id)
    {:graphql {:mutation
               [[:service_update {:service_id id
                                  :params {:archived true}}
@@ -169,7 +168,10 @@
  ::archive-success
  [(path db/path)]
  (fn [{db :db} [_ response]]
-   (.log js/console (get-in response [:data]) " has been archived")))
+   (let [service-name (get-in response [:data :service_update :name])]
+     {:dispatch     [:services/query]
+      :notification [:success (str service-name " has been archived")]
+      :route        (routes/path-for :services.archived/list)})))
 
 
 ;; ==============================================================================
@@ -486,7 +488,6 @@
  :service/create!
  [(path db/path)]
  (fn [{db :db} [k form]]
-   (js/console.log form)
    {:graphql {:mutation [[:service_create {:params form}
                           [:id]]]
               :on-success [::create-success k]
