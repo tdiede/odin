@@ -156,6 +156,49 @@
 
 
 ;; ==============================================================================
+;; archive ======================================================================
+;; ==============================================================================
+
+
+(defmethod routes/dispatches :services.archived/list
+  [route]
+  [[:services/query]
+   [:properties/query]])
+
+
+(defmethod routes/dispatches :services.archived/entry
+  [route]
+  (let [service-id (get-in route [:params :service-id])]
+    [[::set-initial-service-id service-id]
+     [:service/fetch (tb/str->int service-id)]
+     [:services/query]
+     [:properties/query]
+     [:service/cancel-edit]]))
+
+
+(reg-event-fx
+ :service/archive!
+ [(path db/path)]
+ (fn [{db :db} [k {:keys [id name]}]]
+   {:graphql {:mutation
+              [[:service_update {:service_id id
+                                 :params {:archived true}}
+                [:id :name]]]
+              :on-success [::archive-success]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::archive-success
+ [(path db/path)]
+ (fn [{db :db} [_ response]]
+   (let [{:keys [name id]} (get-in response [:data :service_update])]
+     {:dispatch     [:services/query]
+      :notification [:success (str name " has been archived")]
+      :route        (routes/path-for :services.archived/entry :service-id id)})))
+
+
+;; ==============================================================================
 ;; unarchive ====================================================================
 ;; ==============================================================================
 
@@ -180,33 +223,6 @@
      {:dispatch     [:services/query]
       :notification [:success (str name " has been unarchived")]
       :route        (routes/path-for :services/entry :service-id id)})))
-
-
-;; ==============================================================================
-;; archive ======================================================================
-;; ==============================================================================
-
-
-(reg-event-fx
- :service/archive!
- [(path db/path)]
- (fn [{db :db} [k {:keys [id name]}]]
-   {:graphql {:mutation
-              [[:service_update {:service_id id
-                                 :params {:archived true}}
-                [:id :name]]]
-              :on-success [::archive-success]
-              :on-failure [:graphql/failure k]}}))
-
-
-(reg-event-fx
- ::archive-success
- [(path db/path)]
- (fn [{db :db} [_ response]]
-   (let [{:keys [name id]} (get-in response [:data :service_update])]
-     {:dispatch     [:services/query]
-      :notification [:success (str name " has been archived")]
-      :route        (routes/path-for :services.archived/entry :service-id id)})))
 
 
 ;; ==============================================================================
