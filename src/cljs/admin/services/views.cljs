@@ -535,8 +535,10 @@
 (defn- path->selected
   [path]
   (case (vec (rest path))
-    [:list]           :services
-    [:orders :list]   :orders
+    [:list]            :services
+    [:orders :list]    :orders
+    [:archived :list]  :archived
+    [:archived :entry] :archived
     :services))
 
 
@@ -548,15 +550,21 @@
      "Service Offerings"]]
    [ant/menu-item {:key :orders}
     [:a {:href (routes/path-for :services.orders/list)}
-     "Manage Orders"]]])
+     "Manage Orders"]]
+   [ant/menu-item {:key :archived}
+    [:a {:href (routes/path-for :services.archived/list)}
+     "Archived Services"]]])
 
 
-(defn- services-list [services]
-  (let [columns     [{:title     "Name"
+(defn- services-list [path services]
+  (let [path        (if (some #(= :archived %) path)
+                      :services.archived/entry
+                      :services/entry)
+        columns     [{:title     "Name"
                       :dataIndex "name"
                       :key       "name"
                       :render    #(r/as-element
-                                   [:a {:href                    (routes/path-for :services/entry :service-id (aget %2 "id"))
+                                   [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
                                         :dangerouslySetInnerHTML {:__html %1}}])
                       }]
         search-text @(subscribe [:services/search-text])
@@ -646,23 +654,25 @@
      "Archive"]]])
 
 
-(defn- service-entry [service]
+(defn- service-entry [{:keys [path]} service]
   (let [{:keys [id name description code active price cost billed fees type
                 rental catalogs properties order-count fields]} @service
         is-loading                                              @(subscribe [:ui/loading? :service/fetch])]
     [:div
-     (.log js/console @service)
      [:div.mb2
-      [:div
-       [ant/button
-        {:on-click #(dispatch [:service/edit-service @service])}
-        "Edit"]
-       [ant/button
-        {:on-click #(dispatch [:service/copy-service @service])}
-        "Make a Copy"]
-       [ant/popover
-        {:content (r/as-element [archive-service-popover @service])}
-        [ant/button "Archive"]]]]
+      (if (not (some #(= :archived %) path))
+        [:div
+         [ant/button
+          {:on-click #(dispatch [:service/edit-service @service])}
+          "Edit"]
+         [ant/button
+          {:on-click #(dispatch [:service/copy-service @service])}
+          "Make a Copy"]
+         [ant/popover
+          {:content (r/as-element [archive-service-popover @service])}
+          [ant/button "Archive"]]]
+        [:div
+         [ant/button "Unarchive"]])]
      [ant/card
       {:title   "Service Details"
        :loading is-loading}
@@ -782,25 +792,27 @@
           fields)])]]))
 
 
-(defn services-list-container [services]
+(defn services-list-container [{:keys [page path]} services]
   [:div.column.is-3
-   [:div.mb2
-    [ant/button
-     {:style {:width "100%"}
-      :type  :primary
-      :icon  "plus"
-      :on-click #(dispatch [:service.form/show])}
-     "Create New Service/Fee"]]
+   (.log js/console "page: " page " path: " path)
+   (when (not (some #(= :archived %) path))
+     [:div.mb2
+      [ant/button
+       {:style {:width "100%"}
+        :type  :primary
+        :icon  "plus"
+        :on-click #(dispatch [:service.form/show])}
+       "Create New Service/Fee"]])
    [:div.mb1
     [service-filter]]
-   [services-list @services]])
+   [services-list path @services]])
 
 
 (defn services-entry-container [route]
   (if (not (nil? (get-in route [:params :service-id])))
     (when-let [service (subscribe [:service (tb/str->int (get-in route [:params :service-id]))])]
       [:div.column.is-9
-       [service-entry service]])
+       [service-entry route service]])
     [:p.mt2.ml2
      "Select a service from the list to see more details."]))
 
@@ -821,13 +833,17 @@
 
 
 (defn services-subview
-  [route]
-  (let [services (subscribe [:services/list])]
-    [:div.columns
-     [services-list-container services]
-     (if @(subscribe [:services/is-editing])
-       [services-editing-container route]
-       [services-entry-container route])]))
+  [route services]
+  [:div.columns
+   [services-list-container route services]
+   (if @(subscribe [:services/is-editing])
+     [services-editing-container route]
+     [services-entry-container route])])
+
+
+(defn services-archived []
+  [:div
+   [:h1 "archived services"]])
 
 
 (defn service-layout [route] ;;receives services, which is obtained from graphql
@@ -842,9 +858,11 @@
 
    ;; render subviews based on the active menu item
    (case (:page route)
-     :services/list          [services-subview route]
-     :services/entry         [services-subview route]
-     :services.orders/list   [orders-views/subview])])
+     :services/list           [services-subview route (subscribe [:services/list])]
+     :services/entry          [services-subview route (subscribe [:services/list])]
+     :services.orders/list    [orders-views/subview]
+     :services.archived/list  [services-subview route (subscribe [:services/archived])]
+     :services.archived/entry [services-subview route (subscribe [:services/archived])])])
 
 
 
