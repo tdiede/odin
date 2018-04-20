@@ -162,13 +162,12 @@
 (reg-event-fx
  :services.order/charge!
  (fn [_ [k {id :id}]]
-   {:dispatch       [:ui/loading k true]
-    :graphql        {:mutation
-                     [[:charge_order {:id id} [:id]]]
-                     :on-success [::charge! k]
-                     :on-failure [:graphql/failure k]}
-    :dispatch-later [{:ms       3000
-                      :dispatch [:services.order/fetch id]}]}))
+   {:dispatch-n [[:ui/loading k true]
+                 [:services.order/fetch id]]
+    :graphql    {:mutation
+                 [[:charge_order {:id id} [:id]]]
+                 :on-success [::charge! k]
+                 :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
