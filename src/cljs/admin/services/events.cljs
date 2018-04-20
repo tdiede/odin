@@ -148,6 +148,33 @@
 
 
 ;; ==============================================================================
+;; unarchive ====================================================================
+;; ==============================================================================
+
+
+(reg-event-fx
+ :service/unarchive!
+ [(path db/path)]
+ (fn [{db :db} [k {:keys [id name]}]]
+   {:graphql {:mutation
+              [[:service_update {:service_id id
+                                 :params {:archived false}}
+                [:id :name]]]
+              :on-success [::unarchive-success]
+              :on-failure [:graphql/failure k]}}))
+
+
+(reg-event-fx
+ ::unarchive-success
+ [(path db/path)]
+ (fn [{db :db} [_ response]]
+   (let [{:keys [name id]} (get-in response [:data :service_update])]
+     {:dispatch     [:services/query]
+      :notification [:success (str name " has been unarchived")]
+      :route        (routes/path-for :services/entry :service-id id)})))
+
+
+;; ==============================================================================
 ;; archive ======================================================================
 ;; ==============================================================================
 
@@ -159,7 +186,7 @@
    {:graphql {:mutation
               [[:service_update {:service_id id
                                  :params {:archived true}}
-                [:id :name :archived :active]]]
+                [:id :name]]]
               :on-success [::archive-success]
               :on-failure [:graphql/failure k]}}))
 
@@ -168,10 +195,10 @@
  ::archive-success
  [(path db/path)]
  (fn [{db :db} [_ response]]
-   (let [service-name (get-in response [:data :service_update :name])]
+   (let [{:keys [name id]} (get-in response [:data :service_update])]
      {:dispatch     [:services/query]
-      :notification [:success (str service-name " has been archived")]
-      :route        (routes/path-for :services.archived/list)})))
+      :notification [:success (str name " has been archived")]
+      :route        (routes/path-for :services.archived/entry :service-id id)})))
 
 
 ;; ==============================================================================
