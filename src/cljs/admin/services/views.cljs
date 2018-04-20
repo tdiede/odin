@@ -672,7 +672,9 @@
           {:content (r/as-element [archive-service-popover @service])}
           [ant/button "Archive"]]]
         [:div
-         [ant/button "Unarchive"]])]
+         [ant/button
+          {:on-click #(dispatch [:service/unarchive! @service])}
+          "Unarchive"]])]
      [ant/card
       {:title   "Service Details"
        :loading is-loading}
