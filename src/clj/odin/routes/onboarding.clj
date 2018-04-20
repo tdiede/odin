@@ -964,7 +964,7 @@
   (let [community (approval/property (approval/by-account account))]
     (when token
       (if-let [customer (tcustomer/by-account teller account)]
-        (tsource/add-source! customer token)
+        (tsource/add-source! customer token {:payment-type :payment.type/order})
         (tcustomer/create! teller (account/email account)
                            {:source   token
                             :account  account
