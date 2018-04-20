@@ -20,6 +20,7 @@
             [migrations.teller.plans :as plans-migrations]
             [mount.core :as mount :refer [defstate]]
             [odin.config :as config :refer [config]]
+            [odin.core]
             [odin.datomic :refer [conn]]
             [odin.seed :as seed]
             [odin.teller :refer [teller]]

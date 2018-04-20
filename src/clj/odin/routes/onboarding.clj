@@ -1,11 +1,9 @@
 (ns odin.routes.onboarding
   (:require [blueprints.models.account :as account]
             [blueprints.models.approval :as approval]
-            [blueprints.models.catalogue :as catalogue]
             [blueprints.models.customer :as customer]
             [blueprints.models.events :as events]
             [blueprints.models.member-license :as member-license]
-            [blueprints.models.news :as news]
             [blueprints.models.onboard :as onboard]
             [blueprints.models.order :as order]
             [blueprints.models.payment :as payment]
@@ -20,25 +18,25 @@
             [clj-time.core :as t]
             [clojure.set :as set]
             [clojure.spec.alpha :as s]
-            [compojure.core :as compojure :refer [defroutes GET POST DELETE]]
+            [compojure.core :as compojure :refer [defroutes DELETE GET POST]]
             [datomic.api :as d]
+            [odin.config :as config :refer [config]]
+            [odin.datomic :refer [conn]]
+            [odin.routes.util :refer :all]
+            [odin.teller :refer [teller]]
             [ribbon.charge :as rc]
             [ribbon.customer :as rcu]
             [ring.util.response :as resp]
-            [odin.config :as config :refer [config]]
-            [odin.datomic :refer [conn]]
-            [odin.teller :refer [teller]]
-            [odin.routes.util :refer :all]
             [taoensso.timbre :as timbre]
+            [teller.customer :as tcustomer]
+            [teller.property :as tproperty]
+            [teller.source :as tsource]
             [toolbelt.async :refer [<!!?]]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
             [toolbelt.datomic :as td]
-            [odin.teller :refer [teller]]
-            [teller.property :as tproperty]
-            [teller.customer :as tcustomer]
-            [teller.source :as tsource]))
-
+            [teller.payment :as tpayment]
+            [teller.core :as teller]))
 
 ;; ==============================================================================
 ;; util =========================================================================
@@ -246,8 +244,6 @@
      :time      [[v/required :message "Please provide a move-in time."
                   :pre #(or (true? (:furniture %)) (true? (:mattress %)))]]}))
 
-;; NOTE: Skipping validations on catalogue services atm
-;; TODO: Validations on catalogue services
 
 (defn validate
   "Produces `nil` when `data` is valid for `step`, and a vector of error
@@ -299,29 +295,30 @@
 
 
 (defmethod complete? :deposit.method/bank
-  [db account _]
+  [_ account _]
   (if (= (-> account deposit/by-account deposit/method)
          :deposit.method/check)
     nil
-    (if-let [customer (customer/by-account db account)]
-      (let [stripe (config/stripe-secret-key config)
-            cus    (<!!? (rcu/fetch stripe (customer/id customer)))]
-        (or (some? (rcu/unverified-bank-account cus))
-            (rcu/has-verified-bank-account? cus)))
+    (if-let [customer (tcustomer/by-account teller account)]
+      (boolean
+       (some #(and (tsource/bank-account? %)
+                   (#{"verified" "new"} (tsource/status %)))
+             (tcustomer/sources customer)))
       false)))
 
 
 (defmethod complete? :deposit.method/verify
-  [db account _]
-  (let [stripe (config/stripe-secret-key config)]
-    (when-let [customer (customer/by-account db account)]
-      (rcu/has-verified-bank-account? (<!!? (rcu/fetch stripe (customer/id customer)))))))
+  [_ account _]
+  (when-let [customer (tcustomer/by-account teller account)]
+    (boolean
+     (some #(and (tsource/bank-account? %)
+                 (#{"verified"} (tsource/status %)))
+           (tcustomer/sources customer)))))
 
 
 (defmethod complete? :deposit/pay
   [_ account _]
-  (let [deposit (deposit/by-account account)]
-    (deposit/is-paid? deposit)))
+  (not (empty? (tpayment/query teller {:payment-types [:payment.type/deposit]}))))
 
 
 (defmethod complete? :services/moving
@@ -438,7 +435,7 @@
 
 (defn- clientize-service [service]
   {:service (td/id service)
-   :name    (service/service-name service)
+   :name    (service/name service)
    :desc    (service/desc service)
    :price   (service/price service)
    :billed  (when-let [b (service/billed service)]
@@ -448,7 +445,7 @@
    :fees    (when-let [fees (:service/fees service)]
               (map
                (fn [fee]
-                 {:name  (service/service-name fee)
+                 {:name  (service/name fee)
                   :desc  (service/desc fee)
                   :price (service/price fee)})
                fees))})
@@ -614,20 +611,23 @@
   [conn account _ {method :method}]
   (let [method  (keyword "security-deposit.payment-method" method)
         deposit (deposit/by-account account)]
-    @(d/transact conn [{:db/id                   (:db/id deposit)
+    @(d/transact conn [{:db/id                           (:db/id deposit)
                         :security-deposit/payment-method method}])))
 
 
 (defmethod save! :deposit.method/bank
   [conn account _ {token :stripe-token}]
-  (if-some [customer (tcustomer/by-account teller account)]
-    (tsource/add-source! teller customer token)
-    (let [cm (account/current-property (d/db conn) account)]
+  (let [community (approval/property (approval/by-account account))
+        property  (tproperty/by-community teller community)]
+    (if-some [customer (tcustomer/by-account teller account)]
+      (do
+        (when-not (tcustomer/connected? customer property)
+          (tcustomer/add-property! customer property))
+        (tsource/add-source! teller customer token))
       (tcustomer/create! teller (account/email account)
-                         (cond-> {:source token
-                                  :account account}
-                           (some? cm)
-                           (conj {:property (tproperty/by-community teller cm)}))))))
+                         {:source   token
+                          :account  account
+                          :property property}))))
 
 
 (def ^:private verification-failed-error
@@ -636,7 +636,7 @@
 
 (defmethod save! :deposit.method/verify
   [conn account _ {:keys [amount-1 amount-2]}]
-  (let [customer (tcustomer/by-account account)
+  (let [customer (tcustomer/by-account teller account)
         source   (first (tcustomer/sources customer))]
     (try
       (tsource/verify-bank-account! source [amount-1 amount-2])
@@ -653,62 +653,29 @@
         (timbre/error t ::verification-error)
         (throw (ex-info (.getMessage t) {:message "An unknown error has occurred."}))))))
 
-;; (defmethod save! :deposit.method/verify
-;;   [conn account _ {:keys [amount-1 amount-2]}]
-;;   (let [stripe   (config/stripe-secret-key config)
-;;         customer (customer/by-account (d/db conn) account)
-;;         cus      (<!!? (rcu/fetch stripe (customer/id customer)))]
-;;     (if (rcu/verification-failed? cus)
-;;       (let [sid (:id (tb/find-by rcu/failed-bank-account? (rcu/bank-accounts cus)))]
-;;         @(d/transact conn [(events/delete-source (customer/id customer) sid)])
-;;         (throw (ex-info "Verification has failed!" {:message verification-failed-error})))
-;;       (do
-;;         (<!!? (rcu/verify-bank-account! stripe
-;;                                         (customer/id customer)
-;;                                         (:id (rcu/unverified-bank-account cus))
-;;                                         amount-1 amount-2))
-;;         @(d/transact conn [(assoc {:db/id (td/id customer)}
-;;                                   :stripe-customer/bank-account-token (:id (rcu/unverified-bank-account cus)))])))))
-
 
 (defn- charge-amount
   "Determine the correct amount to charge in cents given "
   [method deposit]
   (if (= "full" method)
-    (int (* (deposit/amount deposit) 100))
-    50000))
+    (deposit/amount deposit)
+    500.0))
 
-(defn- create-charge
-  [db account deposit method]
-  (let [customer (customer/by-account db account)]
-    (<!!? (rc/create! (config/stripe-secret-key config)
-                      (charge-amount method deposit)
-                      (customer/bank-token customer)
-                      :email (account/email account)
-                      :description (format "'%s' security deposit payment" method)
-                      :customer-id (customer/id customer)
-                      :destination (-> account
-                                       account/approval
-                                       approval/unit
-                                       unit/property
-                                       property/deposit-connect-id)))))
 
 (defmethod save! :deposit/pay
   [conn account step {method :method}]
   (if (complete? (d/db conn) account step)
     (throw (ex-info "Cannot charge customer for security deposit twice!"
                     {:account (:db/id account)}))
-    (let [deposit   (deposit/by-account account)
-          charge-id (:id (create-charge (d/db conn) account deposit method))
-          amount    (float (/ (charge-amount method deposit) 100))
-          payment   (payment/create amount account
-                                    :for :payment.for/deposit
-                                    :charge-id charge-id)]
-      @(d/transact conn [{:db/id            (:db/id deposit)
+    (let [customer (tcustomer/by-account teller account)
+          deposit  (deposit/by-account account)
+          source   (tb/find-by tsource/bank-account? (tcustomer/sources customer))
+          payment  (tpayment/create! customer (charge-amount method deposit) :payment.type/deposit
+                                     {:source source})]
+      @(d/transact conn [{:db/id            (td/id deposit)
                           :deposit/type     (keyword "deposit.type" method)
                           :deposit/payments (td/id payment)}
-                         payment
-                         (events/deposit-payment-made account charge-id)]))))
+                         (events/deposit-payment-made account (tpayment/id payment))]))))
 
 
 ;; =============================================================================
@@ -815,16 +782,6 @@
         :ret ::fee-totals)
 
 
-(comment
-  (let [fees (all-fees (d/db conn) [:account/email "onboard@test.com"])]
-    #_(fee-service-names (d/db conn) [:account/email "onboard@test.com"] (first fees))
-    (fee-amount-total (d/db conn) [:account/email "onboard@test.com"]))
-
-
-
-  )
-
-
 (defn- find-existing-order
   [db account fee-id]
   (->> (d/q '[:find ?o .
@@ -912,25 +869,6 @@
         (c/to-date))))
 
 
-;; (defn- add-move-in-tx
-;;   [db onboard {:keys [furniture mattress date time]}]
-;;   (let [move-in (combine date time)]
-;;     (tb/conj-when
-;;      [{:db/id           (:db/id onboard)
-;;        :onboard/move-in move-in}]
-;;      ;; when there's not a moving-assistance order, create one.
-;;      (when-not (order/exists? db (onboard/account onboard) service)
-;;        (order/create (onboard/account onboard) service)))))
-
-
-;; (defn- remove-move-in-tx
-;;   [db account onboard]
-;;   (let [retract-move-in (when-let [v (onboard/move-in onboard)]
-;;                           [:db/retract (:db/id onboard) :onboard/move-in v])
-;;         retract-order   (order/remove-existing db account (service/moving-assistance db))]
-;;     (tb/conj-when [] retract-move-in retract-order)))
-
-
 (defmethod save! :services/moving
   [conn account step {:keys [furniture mattress date time] :as params}]
   (let [onboard (onboard/by-account account)
@@ -1010,6 +948,7 @@
 ;; Routes & Handlers
 ;; =============================================================================
 
+
 (defn- is-finished? [db account]
   (let [deposit (deposit/by-account account)
         onboard (onboard/by-account account)]
@@ -1020,14 +959,19 @@
          (onboard/seen-storage? onboard)
          (onboard/seen-upgrades? onboard))))
 
+
 (defn- finish! [conn account {token :token}]
-  (when token
-    (if-let [customer (customer/by-account (d/db conn) account)]
-      (<!!? (rcu/add-source! (config/stripe-secret-key config)
-                             (customer/id customer) token))
-      (<!!? (rcu/create! (config/stripe-secret-key config) (account/email account) token))))
-  @(d/transact conn (conj (promote/promote account)
-                          (events/account-promoted account))))
+  (let [community (approval/property (approval/by-account account))]
+    (when token
+      (if-let [customer (tcustomer/by-account teller account)]
+        (tsource/add-source! customer token)
+        (tcustomer/create! teller (account/email account)
+                           {:source   token
+                            :account  account
+                            :property (tproperty/by-community teller community)})))
+    @(d/transact conn (conj (promote/promote account)
+                            (events/account-promoted account)))))
+
 
 (defn finish-handler
   [{:keys [params session] :as req}]
@@ -1111,8 +1055,3 @@
                 (delete-order req (tb/str->int order-id))))))
 
   (POST "/finish" [] finish-handler))
-
-(comment
-  (fetch-all conn (account/by-email (d/db conn) "onboarding@test.com"))
-
-  )

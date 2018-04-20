@@ -20,7 +20,8 @@
             [teller.source :as tsource]
             [toolbelt.core :as tb]
             [toolbelt.date :as date]
-            [toolbelt.datomic :as td]))
+            [toolbelt.datomic :as td]
+            [blueprints.models.events :as events]))
 
 ;; ==============================================================================
 ;; fields =======================================================================
@@ -330,12 +331,19 @@
         ;; between deposit and payment entities. this can be represented using
         ;; teller (rather than outdated `blueprints.models.payment` namespace)
         ;; after importing blueprints models to `odin`.
-        (let [payment (tpayment/create! customer
-                                        (deposit/amount-remaining deposit)
-                                        :payment.type/deposit
-                                        {:source source})]
-          @(d/transact conn [{:db/id            (td/id deposit)
-                              :deposit/payments (td/id payment)}])
+        (let [payment      (tpayment/create! customer
+                                             (deposit/amount-remaining deposit)
+                                             :payment.type/deposit
+                                             {:source source})
+              is-remainder (< (tpayment/amount payment) (deposit/amount deposit))]
+          (->> (tb/conj-when
+                [{:db/id            (td/id deposit)
+                  :deposit/payments (td/id payment)}]
+                (when is-remainder
+                  ;; issue event when remainder of deposit is made to trigger notification
+                  (events/remainder-deposit-payment-made requester (tpayment/id payment))))
+               (d/transact conn)
+               (deref))
           (deposit/by-account (d/entity (d/db conn) (td/id requester)))))
       (catch Throwable t
         (timbre/error t ::pay-deposit {:source-id source-id})
