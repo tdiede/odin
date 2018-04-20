@@ -16,6 +16,7 @@
             [clojure.core.async :as a]
             [clojure.spec.test.alpha :as stest]
             [clojure.tools.namespace.repl :refer [refresh]]
+            [datomic.api :as d]
             [figwheel-sidecar.repl-api :as ra]
             [migrations.teller.plans :as plans-migrations]
             [mount.core :as mount :refer [defstate]]
