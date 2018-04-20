@@ -508,8 +508,13 @@
                       :dataIndex "name"
                       :key       "name"
                       :render    #(r/as-element
-                                   [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
-                                        :dangerouslySetInnerHTML {:__html %1}}])
+                                   [:div
+                                    [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
+                                         :dangerouslySetInnerHTML {:__html %1}}]
+                                    (when (and (= path :services/entry) (= true (aget %2 "active")))
+                                      [ant/icon {:type  "check-circle"
+                                                 :style {:float "right"
+                                                         :color "#1186C9"}}])])
                       }]
         search-text @(subscribe [:services/search-text])
         is-loading  @(subscribe [:ui/loading? :services/query])]
