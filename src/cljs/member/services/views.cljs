@@ -336,8 +336,7 @@
 
 (defn- cancel-order-button
   [{:keys [id type]} account-id loading canceling]
-  (let [opts {:on-click #(dispatch [:services.order/cancel-order id account-id])
-              :type     "danger"
+  (let [opts {:type     "danger"
               :icon     "close"
               :loading  (if (= @canceling id) @loading false)}]
     (if (= type :fee)
@@ -345,7 +344,12 @@
        {:placement "top"
         :title "For help with this order, reach out to a community team member."}
        [ant/button (assoc opts :disabled true) "Cancel"]]
-      [ant/button opts "Cancel"])))
+      [ant/popconfirm
+       {:title "Are you sure you want to cancel this order?"
+        :ok-text "Yes, cancel order"
+        :cancel-text "No"
+        :on-confirm #(dispatch [:services.order/cancel-order id account-id])}
+       [ant/button opts "Cancel"]])))
 
 
 (defn above-the-fold [{:keys [id name date price status billed type cancel-btn] :as order} is-open requester]
