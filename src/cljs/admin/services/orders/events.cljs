@@ -77,7 +77,6 @@
  (fn [{db :db} [_ k response]]
    (let [order (-> (get-in response [:data :order])
                    (update :fields #(sort-by :index %)))]
-     (js/console.log order)
      {:db       (norms/assoc-norm db :orders/norms (:id order) order)
       :dispatch [:ui/loading k false]})))
 
@@ -88,7 +87,8 @@
 
 
 (defmethod routes/dispatches :services.orders/entry [route]
-  [[:services.order/fetch (tb/str->int (get-in route [:params :order-id]))]])
+  (let [order-id (get-in route [:params :order-id])]
+    [[:services.order/fetch (tb/str->int order-id)]]))
 
 
 (reg-event-fx
