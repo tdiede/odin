@@ -509,12 +509,13 @@
                       :key       "name"
                       :render    #(r/as-element
                                    [:div
-                                    [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
-                                         :dangerouslySetInnerHTML {:__html %1}}]
                                     (when (and (= path :services/entry) (= true (aget %2 "active")))
                                       [ant/icon {:type  "check-circle"
-                                                 :style {:float "right"
-                                                         :color "#1186C9"}}])])
+                                                 :style {:float "left"
+                                                         :color "#1186C9"
+                                                         :margin-right "5px"}}])
+                                    [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
+                                         :dangerouslySetInnerHTML {:__html %1}}]])
                       }]
         search-text @(subscribe [:services/search-text])
         is-loading  @(subscribe [:ui/loading? :services/query])]
@@ -572,19 +573,6 @@
     [:p (:name fee)]]])
 
 
-(defn archive-service-popover
-  [service]
-  [:div
-   [:div
-    [:b.fs2 "Are you sure you want to archive this service?"]
-    [:p.fs2 "Doing this will remove this service from our current offerings"]]
-   [:div.align-right
-    {:style {:margin-top "10px"}}
-    [ant/button
-     {:on-click #(dispatch [:service/archive! service])}
-     "Archive"]]])
-
-
 (defn- service-entry [{:keys [path]} service]
   (let [{:keys [id name description code active price cost billed fees type
                 rental catalogs properties order-count fields]} @service
@@ -599,8 +587,11 @@
          [ant/button
           {:on-click #(dispatch [:service/copy-service @service])}
           "Make a Copy"]
-         [ant/popover
-          {:content (r/as-element [archive-service-popover @service])}
+         [ant/popconfirm
+          {:title       "Archiving this service will remove it from our current offerings. Are you sure?"
+           :ok-text     "Yes, archive."
+           :cancel-text "Cancel"
+           :on-confirm  #(dispatch [:service/archive! @service])}
           [ant/button "Archive"]]]
         [:div
          [ant/button
