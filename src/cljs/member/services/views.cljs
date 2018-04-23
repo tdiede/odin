@@ -352,19 +352,23 @@
        [ant/button opts "Cancel"]])))
 
 
-(defn above-the-fold [{:keys [id name date price status billed type cancel-btn] :as order} is-open requester]
+(defn above-the-fold [{:keys [id name date price status billed type cancel-btn fields] :as order} is-open requester]
   (let [loading    (subscribe [:ui/loading? :services.order/cancel-order])
         account-id (:id requester)
-        canceling  (subscribe [:orders/canceling])]
+        canceling  (subscribe [:orders/canceling])
+        route      (subscribe [:services/section])]
     [:div.columns
      [:div.column.is-6
-      [:span [ant/button {:on-click #(swap! is-open not)
-                          :icon     (if @is-open "minus" "plus")
-                          :style    {:width        "30px"
-                                     :align        "center"
-                                     :padding      "0px"
-                                     :font-size    20
-                                     :margin-right "10px"}}]]
+      [:span [ant/button (tb/assoc-when
+                          {:on-click #(swap! is-open not)
+                           :icon     (if @is-open "minus" "plus")
+                           :style    {:width        "30px"
+                                      :align        "center"
+                                      :padding      "0px"
+                                      :font-size    20
+                                      :margin-right "10px"}}
+                          :disabled (when (and (= @route "active-orders") (empty? fields))
+                                      :true))]]
       [:span {:style {:display "inline-block"}}
        [:p.body name]]]
      [:div.column.is-2
