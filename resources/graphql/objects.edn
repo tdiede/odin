@@ -461,18 +461,20 @@
 
 
   :service_field
-  {:fields {:id       {:type    (non-null :Long)
-                       :resolve (:get :db/id)}
-            :index    {:type    (non-null Int)
-                       :resolve (:get :service-field/index)}
-            :type     {:type    :service_field_type
-                       :resolve (:keyword/name :service-field/type)}
-            :label    {:type    (non-null String)
-                       :resolve (:get :service-field/label)}
-            :required {:type    Boolean
-                       :resolve (:get :service-field/required)}
-            :options  {:type    (list :service_field_option)
-                       :resolve (:get :service-field/options)}}}
+  {:fields {:id            {:type    (non-null :Long)
+                            :resolve (:get :db/id)}
+            :index         {:type    (non-null Int)
+                            :resolve (:get :service-field/index)}
+            :type          {:type    :service_field_type
+                            :resolve (:keyword/name :service-field/type)}
+            :label         {:type    (non-null String)
+                            :resolve (:get :service-field/label)}
+            :required      {:type    Boolean
+                            :resolve (:get :service-field/required)}
+            :options       {:type    (list :service_field_option)
+                            :resolve (:get :service-field/options)}
+            :excluded_days {:type (list :Long)
+                            :resolve :service-field.date/excluded_days}}}
 
 
   :service_field_option

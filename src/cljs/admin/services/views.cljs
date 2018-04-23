@@ -184,6 +184,45 @@
      (str "Menu Options (" (count options) ")")]]])
 
 
+(defn- service-field-date-button
+  [field-index day-of-week day]
+  [ant/button
+   {:type     (if @(subscribe [:service.form.field.date/is-excluded? field-index day-of-week])
+                :default
+                :primary)
+    :on-click #(dispatch [:service.form.field.date/toggle-excluded field-index day-of-week])}
+   day])
+
+
+(defn- service-field-settings-date
+  [{:keys [index] :as field}]
+  (let [days ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"]]
+    [:div.has-text-centered
+     [ant/form-item
+      {:label "Available Days"}
+      [ant/button-group
+       {:size "small"}
+       (map-indexed
+        (fn [i day]
+          (with-meta
+            [service-field-date-button index i day]
+            {:key day}))
+        days)]]]))
+
+
+(defn- service-field-settings-date-container
+  [field]
+  [ant/form-item
+   {:label (when (zero? (:index field)) "Settings")}
+   [ant/popover
+    {:title "Settings"
+     :overlay-style {:width "30%"}
+     :content (r/as-element [service-field-settings-date field])}
+    [ant/button
+     {:style {:width "100%"}}
+     "Settings"]]])
+
+
 (defmulti render-service-field :type)
 
 
@@ -196,6 +235,23 @@
     [service-field-label index label]]
    [:div.column.is-3
     [service-field-options-container field options]]
+   [:div.column.is-1
+    [service-field-required index required]]
+   [:div.column.is-1
+    [service-field-remove index]]
+   [:div.column.is-2
+    [service-field-order index]]])
+
+
+(defmethod render-service-field :date
+  [{:keys [index label required type options] :as field}]
+  [:div.columns
+   [:div.column.is-1
+    [service-field-type index type]]
+   [:div.column.is-5
+    [service-field-label index label]]
+   [:div.column.is-3
+    [service-field-settings-date-container field]]
    [:div.column.is-1
     [service-field-required index required]]
    [:div.column.is-1
@@ -517,7 +573,21 @@
 ;; =====================================================
 
 
-(defn- service-entry-field [{:keys [id index type label required options]}]
+(def days-of-week ;; position in vector corresponds to momentjs' numerical indication of the day
+  ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"])
+
+
+(defn- service-entry-field-available-days
+  [excluded]
+  (let [included (clojure.set/difference #{0 1 2 3 4 5 6} excluded)]
+    (reduce
+     (fn [days day]
+       (str days (get days-of-week day) " "))
+     ""
+     (sort included))))
+
+
+(defn- service-entry-field [{:keys [id index type label required options] :as field}]
   [:div
    [:div.columns
     [:div.column.is-1
@@ -530,6 +600,10 @@
        [:p [:b "Label"]])
      [:p label]
      [:div
+      (when (and (= :date type) true #_(not (empty? (:excluded_days field))))
+        [:div
+         [:b "Available Days: "]
+         [:span (service-entry-field-available-days (:excluded_days field))]])
       (when (and (= :dropdown type) (not (empty? options)))
         [:div
          [:b "Options: "]

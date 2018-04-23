@@ -161,12 +161,13 @@
 
   :service_field_object
   {:description "Custom fields to be defined when a new `service` is created."
-   :fields      {:index    {:type (non-null :Long)}
-                 :id       {:type :Long}
-                 :type     {:type (non-null :service_field_type)}
-                 :label    {:type (non-null String)}
-                 :required {:type Boolean}
-                 :options  {:type (list :service_field_option_object)}}}
+   :fields      {:index         {:type (non-null :Long)}
+                 :id            {:type :Long}
+                 :type          {:type (non-null :service_field_type)}
+                 :label         {:type (non-null String)}
+                 :required      {:type Boolean}
+                 :options       {:type (list :service_field_option_object)}
+                 :excluded_days {:type (list :Long)}}}
 
 
   :services_query_params
