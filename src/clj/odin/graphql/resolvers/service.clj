@@ -52,6 +52,11 @@
          (c/to-date))))
 
 
+(defn excluded-days
+  [{conn :conn} _ field]
+  (:service-field.date/excluded-days field))
+
+
 ;; =============================================================================
 ;; Queries
 ;; =============================================================================
@@ -93,11 +98,12 @@
 
 
 (defn- parse-service-field
-  [{:keys [index type label required options]}]
+  [{:keys [index type label required excluded_days options]}]
   (service/create-field label type
-                        {:index    index
-                         :required required
-                         :options  (map parse-service-field-option options)}))
+                        {:index         index
+                         :required      required
+                         :excluded_days excluded_days
+                         :options       (map parse-service-field-option options)}))
 
 
 (defn- parse-mutate-params
@@ -157,8 +163,23 @@
       (concat field-options-tx))))
 
 
+(defn- update-date-excluded-days-tx
+  [db field existing-days days-params]
+  (let [existing     (if (some? existing-days) (set existing-days) #{})
+        updated      (set days-params)
+        [keep added] (map set ((juxt filter remove) (partial contains? existing) updated))
+        removed      (clojure.set/difference existing (clojure.set/union keep added))]
+
+    (cond-> []
+      (not (empty? added))
+      (concat (map #(vector :db/add (td/id field) :service-field.date/excluded-days %) added))
+
+      (not (empty? removed))
+      (concat (map #(vector :db/retract (td/id field) :service-field.date/excluded-days %) removed)))))
+
+
 (defn- update-field-tx
-  [db {:keys [id label index required options]}]
+  [db {:keys [id label index required excluded_days options]}]
   (let [e (d/entity db id)]
     (cond-> []
       (not= label (:service-field/label e))
@@ -167,8 +188,11 @@
       (not= index (:service-field/index e))
       (conj [:db/add id :service-field/index (int index)])
 
-      (not= required (:service-field/required required))
+      (not= required (:service-field/required e))
       (conj [:db/add id :service-field/required required])
+
+      (not= excluded_days (:service-field.date/excluded-days e))
+      (concat (update-date-excluded-days-tx db e (:service-field.date/excluded-days e) excluded_days))
 
       (and (some? options) (not (empty? options)))
       (concat (update-field-options-tx db e (:service-field/options e) options)))))
@@ -314,12 +338,13 @@
 
 (def resolvers
   {;; fields
-   :service/billed  billed
-   :service/type    svc-type
-   :service/updated updated
+   :service/billed                   billed
+   :service/type                     svc-type
+   :service/updated                  updated
+   :service-field.date/excluded_days excluded-days
    ;; mutations
-   :service/create! create!
-   :service/update! update!
+   :service/create!                  create!
+   :service/update!                  update!
    ;; queries
-   :service/query   query
-   :service/entry   entry})
+   :service/query                    query
+   :service/entry                    entry})

@@ -96,6 +96,13 @@
  (fn [fields [_ {:keys [options]} option-index]]
    (= option-index (dec (count options)))))
 
+(reg-sub
+ :service.form.field.date/is-excluded?
+ :<- [:services.form/fields]
+ (fn [fields [_ index day]]
+   (let [excluded (get-in fields [index :excluded_days])]
+     (contains? excluded day))))
+
 
 (reg-sub
  :services/is-editing
