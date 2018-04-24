@@ -367,8 +367,7 @@
                                       :padding      "0px"
                                       :font-size    20
                                       :margin-right "10px"}}
-                          :disabled (when (and (= @route "active-orders") (empty? fields))
-                                      :true))]]
+                          :disabled (and (= @route "active-orders") (empty? fields)))]]
       [:span {:style {:display "inline-block"}}
        [:p.body name]]]
      [:div.column.is-2
