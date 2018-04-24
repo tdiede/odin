@@ -284,9 +284,7 @@
       (conj [:db/add id :service/active (:active updated)])
 
       (and (true? (:service/active existing)) (true? (:archived updated)))
-      (conj [:db/add id :service/active false])
-
-      )))
+      (conj [:db/add id :service/active false]))))
 
 
 (defn update!
