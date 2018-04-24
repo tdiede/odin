@@ -102,7 +102,7 @@
   (service/create-field label type
                         {:index         index
                          :required      required
-                         :excluded_days excluded_days
+                         :excluded-days excluded_days
                          :options       (map parse-service-field-option options)}))
 
 
