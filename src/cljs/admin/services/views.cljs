@@ -557,7 +557,7 @@
 
 
 (defn- services-list [path services]
-  (let [path        (if (some #(= :archived %) path)
+  (let [path        (if (some #{:archived} path)
                       :services.archived/entry
                       :services/entry)
         columns     [{:title     "Name"
@@ -565,14 +565,13 @@
                       :key       "name"
                       :render    #(r/as-element
                                    [:div
-                                    (when (and (= path :services/entry) (= true (aget %2 "active")))
+                                    (when (and (= path :services/entry) (aget %2 "active"))
                                       [ant/icon {:type  "check-circle"
-                                                 :style {:float "left"
-                                                         :color "#1186C9"
+                                                 :style {:float        "left"
+                                                         :color        "#1186C9"
                                                          :margin-right "5px"}}])
-                                    [:a {:href                    (routes/path-for path :service-id (aget %2 "id"))
-                                         :dangerouslySetInnerHTML {:__html %1}}]])
-                      }]
+                                    [:a {:href (routes/path-for path :service-id (aget %2 "id"))}
+                                     %1]])}]
         search-text @(subscribe [:services/search-text])
         is-loading  @(subscribe [:ui/loading? :services/query])]
     [ant/table
@@ -650,7 +649,9 @@
 (defn- service-entry [{:keys [path]} service]
   (let [{:keys [id name description code active price cost billed fees type
                 rental catalogs properties order-count fields]} @service
-        is-loading                                              @(subscribe [:ui/loading? :service/fetch])]
+        toggle-loading                                          @(subscribe [:ui/loading? :service/toggle-archive!])
+        is-loading                                              (or toggle-loading
+                                                                    @(subscribe [:ui/loading? :service/fetch]))]
     [:div
      [:div.mb2
       (if (not (some #(= :archived %) path))
@@ -665,11 +666,14 @@
           {:title       "Archiving this service will remove it from our current offerings. Are you sure?"
            :ok-text     "Yes, archive."
            :cancel-text "Cancel"
-           :on-confirm  #(dispatch [:service/archive! @service])}
-          [ant/button "Archive"]]]
+           :on-confirm  #(dispatch [:service/toggle-archive! @service])}
+          [ant/button
+           {:loading toggle-loading}
+           "Archive"]]]
         [:div
          [ant/button
-          {:on-click #(dispatch [:service/unarchive! @service])}
+          {:on-click #(dispatch [:service/toggle-archive! @service])
+           :loading  toggle-loading}
           "Unarchive"]])]
      [ant/card
       {:title   "Service Details"
@@ -792,7 +796,6 @@
 
 (defn services-list-container [{:keys [page path]} services]
   [:div.column.is-3
-   (.log js/console "page: " page " path: " path)
    (when (not (some #(= :archived %) path))
      [:div.mb2
       [ant/button

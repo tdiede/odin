@@ -32,7 +32,7 @@
  :<- [db/path]
  (fn [db _]
    (let [services (norms/denormalize db :services/norms)]
-     (->> (remove #(true? (:archived %)) services)
+     (->> (remove :archived services)
           (sort-by-name-and-active)))))
 
 
@@ -41,7 +41,7 @@
  :<- [db/path]
  (fn [db _]
    (let [services (norms/denormalize db :services/norms)]
-     (filter #(true? (:archived %)) services))))
+     (filter :archived services))))
 
 
 (reg-sub

@@ -177,50 +177,39 @@
 
 
 (reg-event-fx
- :service/archive!
+ :service/toggle-archive!
  [(path db/path)]
- (fn [{db :db} [k {:keys [id name]}]]
-   {:graphql {:mutation
-              [[:service_update {:service_id id
-                                 :params {:archived true}}
-                [:id :name]]]
-              :on-success [::archive-success]
-              :on-failure [:graphql/failure k]}}))
+ (fn [_ [k {:keys [id name archived]}]]
+   (let [on-success (if archived
+                      [::unarchive-success k]
+                      [::archive-success k])]
+     {:dispatch [:ui/loading k true]
+      :graphql  {:mutation
+                 [[:service_update {:service_id id
+                                    :params     {:archived (not archived)}}
+                   [:id :name]]]
+                 :on-success on-success
+                 :on-failure [:graphql/failure k]}})))
 
 
 (reg-event-fx
  ::archive-success
  [(path db/path)]
- (fn [{db :db} [_ response]]
+ (fn [{db :db} [_ k response]]
    (let [{:keys [name id]} (get-in response [:data :service_update])]
-     {:dispatch     [:services/query]
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/query]]
       :notification [:success (str name " has been archived")]
       :route        (routes/path-for :services.archived/entry :service-id id)})))
-
-
-;; ==============================================================================
-;; unarchive ====================================================================
-;; ==============================================================================
-
-
-(reg-event-fx
- :service/unarchive!
- [(path db/path)]
- (fn [{db :db} [k {:keys [id name]}]]
-   {:graphql {:mutation
-              [[:service_update {:service_id id
-                                 :params {:archived false}}
-                [:id :name]]]
-              :on-success [::unarchive-success]
-              :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
  ::unarchive-success
  [(path db/path)]
- (fn [{db :db} [_ response]]
+ (fn [{db :db} [_ k response]]
    (let [{:keys [name id]} (get-in response [:data :service_update])]
-     {:dispatch     [:services/query]
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/query]]
       :notification [:success (str name " has been unarchived")]
       :route        (routes/path-for :services/entry :service-id id)})))
 
