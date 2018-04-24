@@ -100,6 +100,7 @@
                    (member-license/autopay-on? license-before))
           (let [account  (member-license/account license-before)
                 customer (customer/by-account (d/db conn) account)]
+            ;; TODO:
             (<!!? (autopay/turn-off-autopay! conn stripe license-after (customer/bank-token customer)))
             (<!!? (autopay/turn-on-autopay! conn stripe (d/entity (d/db conn) license) (customer/bank-token customer)))))
         (d/entity (d/db conn) license))

@@ -134,6 +134,44 @@
 ;; =============================================================================
 
 
+;; helpers ======================================================================
+
+
+(defmulti ^:private process-order!
+  (fn [_ order]
+    (service/billed (order/service order))))
+
+
+(defmethod process-order! :service.billed/once
+  [{:keys [teller conn requester]} order]
+  (let [account  (order/account order)
+        customer (tcustomer/by-account teller account)
+        price    (order/computed-price order)
+        source   (tcustomer/source customer :payment.type/order)
+        payment  (tpayment/create! customer price :payment.type/order
+                                   {:source source})]
+    [{:db/id           (td/id order)
+      :order/status    :order.status/charged
+      :order/billed-on (java.util.Date.)
+      :order/payments  (td/id payment)}
+     (source/create requester)]))
+
+
+(defmethod process-order! :service.billed/monthly
+  [{:keys [teller conn requester]} order]
+  (let [service  (order/service order)
+        plan     (plan/by-entity teller (service/plan service))
+        customer (tcustomer/by-account teller (order/account order))
+        source   (tcustomer/source customer :payment.type/order)
+        subs     (subscription/subscribe! customer plan {:source source})
+        subs-ref [:teller-subscription/id (subscription/id subs)]]
+    [{:db/id              (td/id order)
+      :order/status       :order.status/charged
+      :order/billed-on    (java.util.Date.)
+      :order/subscription subs-ref}
+     (source/create requester)]))
+
+
 (defn- use-order-price? [service {:keys [line_items variant]}]
   (let [vprice (:price (tb/find-by (comp (partial = variant) :db/id) (:service/variants service)))]
     (and (empty? line_items) (nil? vprice))))
@@ -143,6 +181,9 @@
   (let [vcost (:cost (tb/find-by (comp (partial = variant) :db/id) (:service/variants service)))
         lcost (->> line_items (map (fnil :cost 0)) (apply +))]
     (and (zero? lcost) (nil? vcost))))
+
+
+;; resolvers ====================================================================
 
 
 (defn parse-params
@@ -307,9 +348,10 @@
 
 (defn fulfill!
   "Fulfill an order."
-  [{:keys [conn requester stripe]} {:keys [id fulfilled_on charge notify]} _]
-  (let [order  (d/entity (d/db conn) id)
-        source (<!!? (payment-source/service-source (d/db conn) stripe (order/account order)))]
+  [{:keys [conn requester teller] :as ctx} {:keys [id fulfilled_on charge notify]} _]
+  (let [order    (d/entity (d/db conn) id)
+        customer (tcustomer/by-account teller (order/account order))
+        source   (tcustomer/source customer :payment.type/order)]
     (cond
       (not (or (order/pending? order) (order/placed? order)))
       (resolve/resolve-as nil {:message  "Order must be in pending or placed status!"
@@ -325,59 +367,23 @@
                                :err-data {:order-id id}})
 
       :otherwise
-      (do
-        @(d/transact conn (concat
-                           [(source/create requester)
-                            (events/order-fulfilled requester order notify)]
-                           (if charge
-                             [(events/process-order requester order)
-                              [:db/add id :order/fulfilled-on fulfilled_on]
-                              [:db/add id :order/status :order.status/processing]]
-                             [(order/is-fulfilled id fulfilled_on)])))
-        (d/entity (d/db conn) id)))))
+      (let [db (:db-after @(d/transact conn (concat
+                                             [(source/create requester)
+                                              (events/order-fulfilled requester order notify)]
+                                             (if charge
+                                               (process-order! ctx order)
+                                               [(order/is-fulfilled id fulfilled_on)]))))]
+        (d/entity db id)))))
 
 
 ;; charge ===============================
 
 
-(defmulti ^:private process-order!
-  (fn [_ order]
-    (service/billed (order/service order))))
-
-
-(defmethod process-order! :service.billed/once
-  [{:keys [teller conn]} order]
-  (let [account  (order/account order)
-        customer (tcustomer/by-account teller account)
-        price    (order/computed-price order)
-        source   (tcustomer/source customer :payment.type/order)
-        payment  (tpayment/create! customer price :payment.type/order
-                                   {:source source})
-        tx-res   @(d/transact conn
-                              [{:db/id          (td/id order)
-                                :order/payments [:payment/id (tpayment/id payment)]}])]
-    (d/entity (:db-after tx-res) (td/id order))))
-
-
-(defmethod process-order! :service.billed/monthly
-  [{:keys [teller conn]} order]
-  (let [service  (order/service order)
-        plan     (plan/by-entity teller (service/plan service))
-        customer (tcustomer/by-account teller (order/account order))
-        source   (tcustomer/source customer :payment.type/order)
-        subs     (subscription/subscribe! customer plan {:source source})
-        subs-ref [:teller-subscription/id (subscription/id subs)]
-        tx-res   @(d/transact conn
-                              [{:db/id              (td/id order)
-                                :order/subscription subs-ref}])]
-    (d/entity (:db-after tx-res) (td/id order))))
-
-
 (defn charge!
   "Charge an order."
   [{:keys [teller requester conn] :as ctx} {:keys [id]} _]
-  (let [customer (tcustomer/by-account teller requester)
-        order    (d/entity (d/db conn) id)
+  (let [order    (d/entity (d/db conn) id)
+        customer (tcustomer/by-account teller (order/account order))
         price    (order/computed-price order)
         source   (tcustomer/source customer :payment.type/order)]
     (cond
@@ -396,7 +402,8 @@
 
       :otherwise
       (try
-        (process-order! ctx order)
+        (let [db (:db-after @(d/transact conn (process-order! ctx order)))]
+          (d/entity db id))
         (catch Throwable t
           (timbre/error t ::order {:order-id id :source source})
           (resolve/resolve-as nil {:message  (error-message t)
