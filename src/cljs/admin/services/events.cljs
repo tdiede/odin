@@ -22,7 +22,7 @@
  (fn [{db :db} [k params]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:services {:params params}
-                             [:id :name :code :active :catalogs :price :type]]]
+                             [:id :name :code :active :catalogs :price :type :archived]]]
                :on-success [::services-query k params]
                :on-failure [:graphql/failure k]}}))
 
@@ -81,7 +81,7 @@
  (fn [{db :db} [k service-id]]
    {:dispatch [:ui/loading k true]
     :graphql  {:query      [[:service {:id service-id}
-                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs
+                             [:id :name :description :active :type :code :price :cost :billed :rental :catalogs :archived
                               [:fees [:id :name :price]]
                               [:fields [:id :index :type :label :required :excluded_days
                                         [:options [:index :value :label]]]]
@@ -153,6 +153,65 @@
      [:services/query]
      [:properties/query]
      [:service/cancel-edit]]))
+
+
+;; ==============================================================================
+;; archive ======================================================================
+;; ==============================================================================
+
+
+(defmethod routes/dispatches :services.archived/list
+  [route]
+  [[:services/query]
+   [:properties/query]])
+
+
+(defmethod routes/dispatches :services.archived/entry
+  [route]
+  (let [service-id (get-in route [:params :service-id])]
+    [[::set-initial-service-id service-id]
+     [:service/fetch (tb/str->int service-id)]
+     [:services/query]
+     [:properties/query]
+     [:service/cancel-edit]]))
+
+
+(reg-event-fx
+ :service/toggle-archive!
+ [(path db/path)]
+ (fn [_ [k {:keys [id name archived]}]]
+   (let [on-success (if archived
+                      [::unarchive-success k]
+                      [::archive-success k])]
+     {:dispatch [:ui/loading k true]
+      :graphql  {:mutation
+                 [[:service_update {:service_id id
+                                    :params     {:archived (not archived)}}
+                   [:id :name]]]
+                 :on-success on-success
+                 :on-failure [:graphql/failure k]}})))
+
+
+(reg-event-fx
+ ::archive-success
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [{:keys [name id]} (get-in response [:data :service_update])]
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/query]]
+      :notification [:success (str name " has been archived")]
+      :route        (routes/path-for :services.archived/entry :service-id id)})))
+
+
+(reg-event-fx
+ ::unarchive-success
+ [(path db/path)]
+ (fn [{db :db} [_ k response]]
+   (let [{:keys [name id]} (get-in response [:data :service_update])]
+     {:dispatch-n   [[:ui/loading k false]
+                     [:services/query]]
+      :notification [:success (str name " has been unarchived")]
+      :route        (routes/path-for :services/entry :service-id id)})))
 
 
 ;; ==============================================================================

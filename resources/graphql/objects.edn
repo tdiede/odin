@@ -457,7 +457,9 @@
             :type        {:type    :service_type
                           :resolve :service/type}
             :updated_at  {:type    :Instant
-                          :resolve :service/updated}}}
+                          :resolve :service/updated}
+            :archived    {:type    Boolean
+                          :resolve (:get :service/archived)}}}
 
 
   :service_field
