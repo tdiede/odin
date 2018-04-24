@@ -1,18 +1,17 @@
 (ns odin.seed
-  (:require [blueprints.seed.accounts :as accounts]
+  (:require [blueprints.models.license :as license]
+            [blueprints.seed.accounts :as accounts]
             [blueprints.seed.orders :as orders]
-            [blueprints.models.license :as license]
-            [io.rkn.conformity :as cf]
-            [datomic.api :as d]
-            [toolbelt.core :as tb]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
-            [clojure.string :as string]
-            [teller.property :as tproperty]
-            [teller.payment :as tpayment]
+            [datomic.api :as d]
+            [io.rkn.conformity :as cf]
             [teller.customer :as tcustomer]
-            [toolbelt.date :as date]))
-
+            [teller.payment :as tpayment]
+            [teller.property :as tproperty]
+            [toolbelt.core :as tb]
+            [toolbelt.date :as date]
+            [teller.source :as tsource]))
 
 (defn- referrals []
   (let [sources ["craigslist" "word of mouth" "video" "starcity member" "instagram"]
@@ -94,16 +93,20 @@
 
 (defn- seed-properties [teller]
   (let [fees (tproperty/construct-fees (tproperty/fee 5))]
-    (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
-                       {:fees      fees
-                        :deposit   "acct_1C5LJXEd7myLyyjs"
-                        :ops       "acct_1C3TmPHnEDeEkGIS"
-                        :community [:property/code "52gilbert"]})
-    (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com"
-                       {:fees      fees
-                        :deposit   "acct_1C3S9tD1iZkoyuLX"
-                        :ops       "acct_1C3TmMEBSLaHdiO2"
-                        :community [:property/code "2072mission"]})))
+    (when-not (tproperty/by-id teller "52gilbert")
+      (tproperty/create! teller "52gilbert" "52 Gilbert" "jesse@starcity.com"
+                         {:fees      fees
+                          :deposit   "acct_1C5LJXEd7myLyyjs"
+                          :ops       "acct_1C3TmPHnEDeEkGIS"
+                          :community [:property/code "52gilbert"]
+                          :timezone  "America/Los_Angeles"}))
+    (when-not (tproperty/by-id teller "2072mission")
+      (tproperty/create! teller "2072mission" "2072 Mission" "jesse@starcity.com"
+                         {:fees      fees
+                          :deposit   "acct_1C3S9tD1iZkoyuLX"
+                          :ops       "acct_1C3TmMEBSLaHdiO2"
+                          :community [:property/code "2072mission"]
+                          :timezone  "America/Los_Angeles"}))))
 
 
 (def mock-visa-credit
@@ -114,16 +117,17 @@
 
 
 (defn- seed-payments [teller]
-  (let [customer (tcustomer/create! teller "member@test.com"
-                                    {:account  [:account/email "member@test.com"]
-                                     :source   mock-visa-credit
-                                     :property (tproperty/by-id teller "52gilbert")})
-        tz       (t/time-zone-for-id "America/Los_Angeles")]
-
-    (tpayment/create! customer 2000.0 :payment.type/rent
-                      {:due    (date/end-of-day (java.util.Date.) tz)
-                       :period [(date/beginning-of-month (java.util.Date.) tz)
-                                (date/end-of-month (java.util.Date.) tz)]})))
+  (when (nil? (tcustomer/by-email teller "member@test.com"))
+    (let [customer (tcustomer/create! teller "member@test.com"
+                                      {:account  [:account/email "member@test.com"]
+                                       :source   mock-visa-credit
+                                       :property (tproperty/by-id teller "52gilbert")})
+          tz       (t/time-zone-for-id "America/Los_Angeles")]
+      (tsource/set-default! (first (tcustomer/sources customer)) :payment.type/order)
+      (tpayment/create! customer 2000.0 :payment.type/rent
+                        {:due    (date/end-of-day (java.util.Date.) tz)
+                         :period [(date/beginning-of-month (java.util.Date.) tz)
+                                  (date/end-of-month (java.util.Date.) tz)]}))))
 
 
 (defn seed-teller [teller]
@@ -140,8 +144,8 @@
                          (map (fn [m] [:account/email (:account/email m)])))]
     (->> {:seed/accounts  {:txes [accounts-tx]}
           :seed/referrals {:txes [(referrals)]}
-          :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
-                           :requires [:seed/accounts]}
+          ;; :seed/orders    {:txes     [(orders/gen-orders db member-ids)]
+          ;;                  :requires [:seed/accounts]}
           :seed/onboard   {:txes     [(accounts/onboard [:account/email "admin@test.com"] [:unit/name "52gilbert-1"] (:db/id license)
                                                         :email "onboard@test.com")]
                            :requires [:seed/accounts]}}

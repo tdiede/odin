@@ -140,19 +140,15 @@
 (reg-event-fx
  :services.order/fulfill!
  (fn [_ [k {id :id} {:keys [send-notification actual-fulfillment process-charge]}]]
-   (tb/assoc-when
-    {:dispatch [:ui/loading k true]
-     :graphql  {:mutation
-                [[:fulfill_order {:id           id
-                                  :fulfilled_on (.toISOString actual-fulfillment)
-                                  :charge       (boolean process-charge)
-                                  :notify       (boolean send-notification)}
-                  [:id]]]
-                :on-success [::fulfill! k]
-                :on-failure [:graphql/failure k]}}
-    :dispatch-later (when process-charge
-                      [{:ms      3000
-                        :dispatch [:services.order/fetch id]}]))))
+   {:dispatch [:ui/loading k true]
+    :graphql  {:mutation
+               [[:fulfill_order {:id           id
+                                 :fulfilled_on (.toISOString actual-fulfillment)
+                                 :charge       (boolean process-charge)
+                                 :notify       (boolean send-notification)}
+                 [:id]]]
+               :on-success [::fulfill! k]
+               :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx
@@ -166,13 +162,12 @@
 (reg-event-fx
  :services.order/charge!
  (fn [_ [k {id :id}]]
-   {:dispatch       [:ui/loading k true]
-    :graphql        {:mutation
-                     [[:charge_order {:id id} [:id]]]
-                     :on-success [::charge! k]
-                     :on-failure [:graphql/failure k]}
-    :dispatch-later [{:ms       3000
-                      :dispatch [:services.order/fetch id]}]}))
+   {:dispatch-n [[:ui/loading k true]
+                 [:services.order/fetch id]]
+    :graphql    {:mutation
+                 [[:charge_order {:id id} [:id]]]
+                 :on-success [::charge! k]
+                 :on-failure [:graphql/failure k]}}))
 
 
 (reg-event-fx

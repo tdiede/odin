@@ -38,14 +38,13 @@
     (try
       (handler req)
       (catch Throwable t
-        (do
-          (timbre/error t ::error (tb/assoc-when
-                                   {:uri         uri
-                                    :method      request-method
-                                    :remote-addr remote-addr}
-                                   :user (get-in session [:identity :account/email])))
-          {:status 500
-           :body   "Unexpected server error!"})))))
+        (timbre/error t ::error (tb/assoc-when
+                                 {:uri         uri
+                                  :method      request-method
+                                  :remote-addr remote-addr}
+                                 :user (get-in session [:identity :account/email])))
+        {:status 500
+         :body   "Unexpected server error!"}))))
 
 
 (defn wrap-logging

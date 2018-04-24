@@ -190,7 +190,7 @@
   [teller license]
   (let [account       (member-license/account license)
         email         (account/email account)
-        unit-name     (unit/name (member-license/unit license))
+        unit-name     (unit/code (member-license/unit license))
         customer      (tcustomer/by-account teller account)
         property      (tcustomer/property customer)
         property-name (tproperty/name property)]

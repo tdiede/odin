@@ -44,14 +44,16 @@
 (defn- payment-within
   [teller license date]
   (let [customer (license-customer teller license)
-        tz       (t/time-zone-for-id (tproperty/timezone (tcustomer/property customer)))
+        tz       (member-license/time-zone license)
         from     (date/beginning-of-month date tz)
         to       (date/end-of-month date tz)]
-    (first
-     (tpayment/query teller {:customers     [customer]
-                             :payment-types [:payment.type/rent]
-                             :from          from
-                             :to            to}))))
+    (when (some? customer)
+      (first
+       (tpayment/query teller {:customers     [customer]
+                               :payment-types [:payment.type/rent]
+                               :statuses      [:payment.status/due]
+                               :from          from
+                               :to            to})))))
 
 
 (defn rent-status
@@ -98,6 +100,7 @@
                    (member-license/autopay-on? license-before))
           (let [account  (member-license/account license-before)
                 customer (customer/by-account (d/db conn) account)]
+            ;; TODO:
             (<!!? (autopay/turn-off-autopay! conn stripe license-after (customer/bank-token customer)))
             (<!!? (autopay/turn-on-autopay! conn stripe (d/entity (d/db conn) license) (customer/bank-token customer)))))
         (d/entity (d/db conn) license))
