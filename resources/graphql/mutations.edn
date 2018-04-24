@@ -265,7 +265,7 @@
    :resolve     :service/create!}
 
 
-    :service_update
+  :service_update
   {:type        :service
    :description "edit an existing premium service offering's details"
    :args        {:service_id {:type        (non-null Long)
