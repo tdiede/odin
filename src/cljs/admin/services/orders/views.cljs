@@ -239,7 +239,7 @@
   [{{order-id :order-id} :params}]
   (let [order      (subscribe [:order (tb/str->int order-id)])
         is-loading (subscribe [:ui/loading? :services.order/fetch])]
-    (if (and @is-loading (nil? @order))
+    (if (or @is-loading (nil? @order))
       (loading/fullpage :text "Fetching order...")
       [:div
        [:div.columns
