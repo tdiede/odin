@@ -220,13 +220,14 @@
 (reg-event-fx
  :accounts.entry/approve
  [(path db/path)]
- (fn [{db :db} [k application-id {:keys [move-in unit term]}]]
+ (fn [{db :db} [k application-id {:keys [move-in unit term community]}]]
    {:dispatch [:ui/loading k true]
     :graphql  {:mutation
                [[:approve_application {:application application-id
-                                       :params      {:move_in (.toISOString move-in)
-                                                     :unit    (tb/str->int unit)
-                                                     :term    (tb/str->int term)}}
+                                       :params      {:property community
+                                                     :move_in  (.toISOString move-in)
+                                                     :unit     (tb/str->int unit)
+                                                     :term     (tb/str->int term)}}
                  [:id [:account [:id]]]]]
                :on-success [::approve-success k]
                :on-failure [:graphql/failure k]}}))
