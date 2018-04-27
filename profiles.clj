@@ -7,7 +7,7 @@
                       [binaryage/devtools "0.9.4"]
                       [com.datomic/datomic-free "0.9.5544"]
                       [devcards "0.2.4"]
-                      [starcity/reactor "1.8.1-SNAPSHOT"
+                      [starcity/reactor "1.9.0-SNAPSHOT"
                        :exclusions [ring cheshire clj-time
                                     org.apache.httpcomponents/httpcore
                                     commons-codec

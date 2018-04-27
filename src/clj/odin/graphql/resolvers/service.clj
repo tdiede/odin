@@ -113,19 +113,20 @@
 
 (defn create!
   [{:keys [conn requester teller]} {params :params} _]
-  (let [{:keys [code name description billed]} params]
-    (when (= billed :monthly)
-      (assoc params
-             :service/plan
-             (tplan/create! teller code :payment.type/order :service/price)))
-    @(d/transact (d/db conn)
-                 [(service/create code name description (parse-mutate-params params))
-                  (source/create requester)])
-    (d/entity (d/db conn) [:service/code code])))
+  (let [{:keys [code name description billed]} params
+        params'                                (parse-mutate-params params)
+        service-tx                             (service/create code name description params')]
+    (if (= billed :monthly)
+      (let [plan (tplan/create! teller code :payment.type/order :service/price)]
+        @(d/transact (d/db conn)
+                     [(assoc servic-tx :service/plan (td/id plan)) (source/create requester)]))
+      @(d/transact (d/db conn)
+                   [service-tx (source/create requester)])))
+  (d/entity (d/db conn) [:service/code code])))
 
 
 (defn delete!
-  [{:keys [conn requester]} {:keys [service]} _]
+[{:keys [conn requester]} {:keys [service]} _]
   @(d/transact conn [[:db.fn/retractEntity service]
                      (source/create requester)])
   :ok)
