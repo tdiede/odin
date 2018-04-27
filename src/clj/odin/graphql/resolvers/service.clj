@@ -119,14 +119,14 @@
     (if (= billed :monthly)
       (let [plan (tplan/create! teller code :payment.type/order :service/price)]
         @(d/transact (d/db conn)
-                     [(assoc servic-tx :service/plan (td/id plan)) (source/create requester)]))
+                     [(assoc service-tx :service/plan (td/id plan)) (source/create requester)]))
       @(d/transact (d/db conn)
-                   [service-tx (source/create requester)])))
-  (d/entity (d/db conn) [:service/code code])))
+                   [service-tx (source/create requester)]))
+    (d/entity (d/db conn) [:service/code code])))
 
 
 (defn delete!
-[{:keys [conn requester]} {:keys [service]} _]
+  [{:keys [conn requester]} {:keys [service]} _]
   @(d/transact conn [[:db.fn/retractEntity service]
                      (source/create requester)])
   :ok)
