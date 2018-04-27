@@ -115,7 +115,9 @@
   [{:keys [conn requester teller]} {params :params} _]
   (let [{:keys [code name description billed]} params]
     (when (= billed :monthly)
-      (tplan/create! teller code :payment.type/order :service/price))
+      (assoc params
+             :service/plan
+             (tplan/create! teller code :payment.type/order :service/price)))
     @(d/transact (d/db conn)
                  [(service/create code name description (parse-mutate-params params))
                   (source/create requester)])
