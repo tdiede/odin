@@ -8,6 +8,8 @@
             [blueprints.models.source :as source]
             [toolbelt.core :as tb]
             [toolbelt.datomic :as td]
+            [teller.core :as teller]
+            [teller.plan :as tplan]
             [clojure.set :as set]
             [re-frame.db :as db]
             [clj-time.coerce :as c]))
@@ -116,10 +118,13 @@
 
 
 (defn create!
-  [{:keys [conn requester]} {params :params} _]
-  (let [{:keys [code name description]} params]
-    @(d/transact conn [(service/create code name description (parse-mutate-params params))
-                       (source/create requester)])
+  [{:keys [conn requester teller]} {params :params} _]
+  (let [{:keys [code name description billed]} params]
+    (when (= billed :monthly)
+      (tplan/create! teller code :payment.type/order :service/price))
+    @(d/transact (d/db conn)
+                 [(service/create code name description (parse-mutate-params params))
+                  (source/create requester)])
     (d/entity (d/db conn) [:service/code code])))
 
 
