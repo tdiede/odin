@@ -151,13 +151,11 @@
 
 
   ;;; Services
-
   :service_field_option_object
   {:description "The options given to a member in a service field of type `:dropdown`"
    :fields      {:index {:type (non-null :Long)}
                  :label {:type (non-null String)}
                  :value {:type (non-null String)}}}
-
 
   :service_field_object
   {:description "Custom fields to be defined when a new `service` is created."
@@ -167,7 +165,6 @@
                  :label    {:type (non-null String)}
                  :required {:type Boolean}
                  :options  {:type (list :service_field_option_object)}}}
-
 
   :services_query_params
   {:description "Parameters to query for services."
@@ -180,7 +177,6 @@
                  :billed     {:type (list :service_billed)}
                  :active     {:type        Boolean
                               :description "Is this service being offered?"}}}
-
 
   :service_create_params
   {:description "Parameters to create a new service."
@@ -197,7 +193,6 @@
                  :billed      {:type :service_billed}
                  :rental      {:type Boolean}
                  :fees        {:type (list :Long)}}}
-
 
   :service_update_params
   {:description "Parameters to update a new service"
